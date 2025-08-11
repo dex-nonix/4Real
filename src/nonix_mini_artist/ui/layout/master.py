@@ -18,16 +18,17 @@ class MasterLayout:
     
     def _build_layout(self):
         """Build the master layout structure"""
-        with ui.row().classes('w-full h-screen'):
-            # Sidebar
+        # Use flexbox layout with proper classes
+        with ui.row().classes('w-full h-screen flex'):
+            # Sidebar - fixed width, full height
             self.sidebar = Sidebar()
             
-            # Main content area
-            with ui.column().classes('flex-1 h-full'):
+            # Main content area - flexible width, full height
+            with ui.column().classes('flex-1 h-full flex flex-col'):
                 # Header
                 self.header = Header()
                 
-                # Content area
+                # Content area - flexible, scrollable
                 self.content = ContentArea()
     
     def set_title(self, title: str):

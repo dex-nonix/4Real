@@ -101,11 +101,12 @@ class MusicManagerApp:
     
     def _show_dashboard(self):
         """Show the dashboard view"""
-        with ui.column().classes('w-full') as dashboard:
-            ui.label('🎵 Welcome to Nonix Mini Artist Manager').classes('text-3xl font-bold mb-4')
-            ui.label('Manage your music collection with ease').classes('text-lg text-gray-600 mb-6')
+        with ui.column().classes('w-full flex flex-col items-center') as dashboard:
+            ui.label('🎵 Welcome to Nonix Mini Artist Manager').classes('text-3xl font-bold mb-4 text-center')
+            ui.label('Manage your music collection with ease').classes('text-lg text-gray-600 mb-6 text-center')
             
-            with ui.row().classes('gap-4'):
+            # Navigation buttons in a proper flexbox row
+            with ui.row().classes('gap-4 flex flex-wrap justify-center mb-8'):
                 ui.button('🎤 Artists', on_click=lambda: self._show_artists()).classes('px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600')
                 ui.button('💿 Albums', on_click=lambda: self._show_albums()).classes('px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600')
                 ui.button('🎵 Tracks', on_click=lambda: self._show_tracks()).classes('px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600')
@@ -115,8 +116,8 @@ class MusicManagerApp:
                 ui.button('💬 Chat', on_click=lambda: self._show_chat()).classes('px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600')
             
             # Quick stats
-            ui.separator().classes('my-6')
-            ui.label('Quick Stats').classes('text-xl font-bold mb-4')
+            ui.separator().classes('my-6 w-full')
+            ui.label('Quick Stats').classes('text-xl font-bold mb-4 text-center')
             
             # Load real data for stats - make it synchronous
             self._load_dashboard_stats_sync(dashboard)
@@ -134,47 +135,48 @@ class MusicManagerApp:
             ai_presets = self.ai_service.get_presets()
             ai_ready = self.ai_service.are_providers_ready()
             
-            with ui.row().classes('gap-6'):
-                with ui.card().classes('p-4 text-center'):
+            # Stats cards in a proper grid layout
+            with ui.row().classes('gap-6 w-full flex flex-wrap justify-center'):
+                with ui.card().classes('p-4 text-center min-w-[120px]'):
                     ui.label('0').classes('text-2xl font-bold text-blue-500')
                     ui.label('Artists').classes('text-sm text-gray-600')
                 
-                with ui.card().classes('p-4 text-center'):
+                with ui.card().classes('p-4 text-center min-w-[120px]'):
                     ui.label('0').classes('text-2xl font-bold text-green-500')
                     ui.label('Albums').classes('text-sm text-gray-600')
                 
-                with ui.card().classes('p-4 text-center'):
+                with ui.card().classes('p-4 text-center min-w-[120px]'):
                     ui.label('0').classes('text-2xl font-bold text-purple-500')
                     ui.label('Tracks').classes('text-sm text-gray-600')
                 
-                with ui.card().classes('p-4 text-center'):
+                with ui.card().classes('p-4 text-center min-w-[120px]'):
                     ui.label('0').classes('text-2xl font-bold text-orange-500')
                     ui.label('Styles').classes('text-sm text-gray-600')
                 
-                with ui.card().classes('p-4 text-center'):
+                with ui.card().classes('p-4 text-center min-w-[120px]'):
                     ui.label(str(len(ai_presets))).classes('text-2xl font-bold text-red-500')
                     ui.label('AI Presets').classes('text-sm text-gray-600')
                     ui.label(f"{'🟢' if ai_ready else '🔴'} AI {'Active' if ai_ready else 'Inactive'}").classes('text-xs text-gray-500')
         except Exception as e:
             # Fallback to zeros if there's an error
-            with ui.row().classes('gap-6'):
-                with ui.card().classes('p-4 text-center'):
+            with ui.row().classes('gap-6 w-full flex flex-wrap justify-center'):
+                with ui.card().classes('p-4 text-center min-w-[120px]'):
                     ui.label('0').classes('text-2xl font-bold text-blue-500')
                     ui.label('Artists').classes('text-sm text-gray-600')
                 
-                with ui.card().classes('p-4 text-center'):
+                with ui.card().classes('p-4 text-center min-w-[120px]'):
                     ui.label('0').classes('text-2xl font-bold text-green-500')
                     ui.label('Albums').classes('text-sm text-gray-600')
                 
-                with ui.card().classes('p-4 text-center'):
+                with ui.card().classes('p-4 text-center min-w-[120px]'):
                     ui.label('0').classes('text-2xl font-bold text-purple-500')
                     ui.label('Tracks').classes('text-sm text-gray-600')
                 
-                with ui.card().classes('p-4 text-center'):
+                with ui.card().classes('p-4 text-center min-w-[120px]'):
                     ui.label('0').classes('text-2xl font-bold text-orange-500')
                     ui.label('Styles').classes('text-sm text-gray-600')
                 
-                with ui.card().classes('p-4 text-center'):
+                with ui.card().classes('p-4 text-center min-w-[120px]'):
                     ui.label('0').classes('text-2xl font-bold text-red-500')
                     ui.label('AI Presets').classes('text-sm text-gray-600')
                     ui.label('🔴 AI Inactive').classes('text-xs text-gray-500')

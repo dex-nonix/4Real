@@ -14,7 +14,8 @@ class Sidebar:
     
     def _build_sidebar(self):
         """Build the sidebar structure"""
-        with ui.column().classes('w-64 h-full bg-gray-800 text-white p-4'):
+        # Use flex-shrink-0 to prevent sidebar from shrinking
+        with ui.column().classes('w-64 h-full bg-gray-800 text-white p-4 flex-shrink-0'):
             # Logo/Title
             ui.label('🎵 Music Manager').classes('text-xl font-bold mb-8 text-center')
             
