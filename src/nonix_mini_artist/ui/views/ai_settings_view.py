@@ -114,7 +114,7 @@ class AISettingsView:
     
     def _create_provider_form(self):
         """Create the add provider form"""
-        with ui.card():
+        with ui.card() as form:
             ui.label('Add New AI Provider').classes('text-2xl font-bold mb-6')
             
             # Provider type selection
@@ -143,7 +143,7 @@ class AISettingsView:
             ui.label('Location (Vertex AI only):').classes('font-bold mb-2')
             location = ui.input(
                 label='Location',
-                value='us-central1'
+                value=''
             ).classes('w-full mb-4')
             
             # Submit button
@@ -158,13 +158,12 @@ class AISettingsView:
     
     def _create_preset_form(self):
         """Create the add preset form"""
-        with ui.card():
+        with ui.card() as form:
             ui.label('Add New AI Preset').classes('text-2xl font-bold mb-6')
             
             # Preset name
             ui.label('Preset Name:').classes('font-bold mb-2')
             name = ui.input(
-                label='Name',
                 value=''
             ).classes('w-full mb-4')
             
@@ -178,14 +177,12 @@ class AISettingsView:
             # Model selection
             ui.label('Model:').classes('font-bold mb-2')
             model = ui.input(
-                label='Model',
                 value='gemini-1.5-pro'
             ).classes('w-full mb-4')
             
             # System prompt
             ui.label('System Prompt:').classes('font-bold mb-2')
             system_prompt = ui.textarea(
-                label='System Prompt',
                 value=''
             ).classes('w-full mb-4')
             
@@ -198,7 +195,6 @@ class AISettingsView:
             # Max tokens
             ui.label('Max Tokens:').classes('font-bold mb-2')
             max_tokens = ui.number(
-                label='Max Tokens',
                 value=1000
             ).classes('w-full mb-4')
             

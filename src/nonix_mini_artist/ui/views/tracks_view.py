@@ -70,21 +70,21 @@ class TracksView:
             
             # Track selection
             ui.label('Select Track:').classes('font-bold mb-2')
-            track_select = ui.select(
+            self.track_select = ui.select(
                 options=[f"{t.track_number}. {t.name}" for t in self.tracks] if self.tracks else ['No tracks available'],
                 value=None
             ).classes('w-full mb-4')
             
             # Analysis preset selection
             ui.label('Analysis Type:').classes('font-bold mb-2')
-            preset_select = ui.select(
+            self.preset_select = ui.select(
                 options=['lyrics_analyzer', 'style_classifier', 'content_generator'],
                 value=None
             ).classes('w-full mb-4')
             
             # Analyze button
             ui.button('🔍 Analyze with AI', on_click=lambda: self._run_track_analysis(
-                track_select.value, preset_select.value
+                self.track_select.value, self.preset_select.value
             )).classes('w-full')
             
             # Results area
@@ -124,12 +124,9 @@ class TracksView:
     
     def _update_ai_form_options(self):
         """Update AI form options when data changes"""
-        if hasattr(self, 'ai_form') and self.ai_form:
-            # Find the track select element and update its options
-            for child in self.ai_form.children:
-                if hasattr(child, 'options') and hasattr(child, 'label') and child.label == 'Track':
-                    child.options = [f"{t.track_number}. {t.name}" for t in self.tracks] if self.tracks else ['No tracks available']
-                    break
+        if hasattr(self, 'track_select') and self.track_select:
+            # Update the track select options directly
+            self.track_select.options = [f"{t.track_number}. {t.name}" for t in self.tracks] if self.tracks else ['No tracks available']
     
     async def _create_track(self, **kwargs):
         """Create a new track"""

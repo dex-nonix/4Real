@@ -608,7 +608,8 @@ class PersonaManagementView:
                             {'label': 'Reggae Artist', 'value': 'reggae'},
                             {'label': 'Hip-Hop Artist', 'value': 'hiphop'}
                         ],
-                        value='default'
+                        value=None,
+                        on_change=self._update_template_description
                     ).classes('w-full')
                     
                     # Template descriptions
@@ -619,7 +620,7 @@ class PersonaManagementView:
                         'hiphop': 'Authentic hip-hop artist with street knowledge and culture'
                     }
                     
-                    ui.label(template_descriptions['default']).classes('text-sm text-gray-600 mt-2')
+                    self.template_description_label = ui.label('Select a template type to see description').classes('text-sm text-gray-600 mt-2')
                 
                 # Customization Options
                 with ui.card().classes('p-4'):
@@ -651,7 +652,7 @@ class PersonaManagementView:
         # Clear form
         self.template_custom_name.value = ''
         self.template_additional_traits.value = ''
-        self.template_type_select.value = 'default'
+        self.template_type_select.value = None
         
         # Show dialog
         self.artist_template_dialog.open()
@@ -661,6 +662,22 @@ class PersonaManagementView:
         if hasattr(self, 'template_artist_select'):
             options = [{'label': artist['name'], 'value': artist['id']} for artist in self.artists]
             self.template_artist_select.options = options
+    
+    def _update_template_description(self, event):
+        """Update the template description based on selection"""
+        if hasattr(self, 'template_description_label'):
+            template_descriptions = {
+                'default': 'General artist persona with balanced personality and tools',
+                'dancehall': 'Street-smart dancehall artist with Jamaican patois and culture',
+                'reggae': 'Spiritual reggae artist with wisdom and cultural knowledge',
+                'hiphop': 'Authentic hip-hop artist with street knowledge and culture'
+            }
+            
+            selected_value = event.value
+            if selected_value and selected_value in template_descriptions:
+                self.template_description_label.text = template_descriptions[selected_value]
+            else:
+                self.template_description_label.text = 'Select a template type to see description'
     
     async def _create_artist_template(self):
         """Create an artist persona using the selected template"""
