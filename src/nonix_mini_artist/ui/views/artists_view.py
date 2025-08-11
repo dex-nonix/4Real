@@ -21,7 +21,8 @@ class ArtistsView:
     
     def _build_view(self):
         """Build the artists view"""
-        with ui.column().classes('w-full'):
+        with ui.column().classes('w-full') as container:
+            self.container = container
             # Header
             ui.label('🎤 Artists').classes('text-3xl font-bold mb-6')
             
@@ -50,6 +51,11 @@ class ArtistsView:
                 submit_action=self._create_artist
             )
             self.add_form.visible = False
+    
+    def clear(self):
+        """Clear the view content"""
+        if hasattr(self, 'container'):
+            self.container.clear()
     
     def _handle_search(self, search_text: str, search_type: str):
         """Handle search functionality"""

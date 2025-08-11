@@ -28,19 +28,24 @@ class ChatView:
         self._build_view()
     
     def _build_view(self):
-        """Build the chat view structure"""
-        with ui.row().classes('w-full h-full'):
-            # Chat sidebar (left)
-            self.chat_sidebar = ChatSidebar()
-            self.chat_sidebar.set_callbacks(
-                on_persona_selected=self._on_persona_selected,
-                on_session_selected=self._on_session_selected
+        """Build the chat view"""
+        with ui.row().classes('w-full h-full') as container:
+            self.container = container
+            # Chat sidebar
+            self.chat_sidebar = ChatSidebar(
+                persona_service=self.persona_service,
+                chat_service=self.chat_service,
+                on_persona_select=self._on_persona_select,
+                on_session_select=self._on_session_select
             )
             
-            # Chat interface (right)
+            # Chat interface
             self.chat_interface = ChatInterface()
+            
+            # Set up callbacks
             self.chat_interface.set_callbacks(
-                on_message_sent=self._on_message_sent
+                on_message_sent=self._on_message_sent,
+                on_session_deleted=self._on_session_deleted
             )
     
     async def _on_persona_selected(self, persona_id: int):
@@ -169,3 +174,8 @@ class ChatView:
         if self.chat_sidebar:
             # Reload personas and sessions
             pass
+
+    def clear(self):
+        """Clear the view content"""
+        if hasattr(self, 'container'):
+            self.container.clear()

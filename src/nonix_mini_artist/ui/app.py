@@ -67,7 +67,7 @@ class MusicManagerApp:
             {"title": "Tracks", "icon": "🎵", "route": "/tracks"},
             {"title": "Styles", "icon": "🏷️", "route": "/styles"},
             {"title": "AI Settings", "icon": "🤖", "route": "/ai"},
-            {"title": "Personas", "icon": "🎭", "route": "/personas"},  # NEW PERSONA MANAGEMENT
+            {"title": "Personas", "icon": "🎭", "route": "/personas"},
             {"title": "Chat", "icon": "💬", "route": "/chat"}
         ]
         self.layout.set_sidebar_items(sidebar_items)
@@ -96,11 +96,12 @@ class MusicManagerApp:
             # Health indicator
             self.performance_monitor.show_health_indicator()
         
-        # Set initial content
+        # Set initial content - show dashboard
         self._show_dashboard()
     
     def _show_dashboard(self):
         """Show the dashboard view"""
+        # Create dashboard content
         with ui.column().classes('w-full flex flex-col items-center') as dashboard:
             ui.label('🎵 Welcome to Nonix Mini Artist Manager').classes('text-3xl font-bold mb-4 text-center')
             ui.label('Manage your music collection with ease').classes('text-lg text-gray-600 mb-6 text-center')
@@ -121,6 +122,10 @@ class MusicManagerApp:
             
             # Load real data for stats - make it synchronous
             self._load_dashboard_stats_sync(dashboard)
+        
+        # Set the content properly
+        self.layout.set_content(dashboard)
+        self.current_view = 'dashboard'
     
     def _load_dashboard_stats_sync(self, dashboard):
         """Load real statistics for the dashboard synchronously"""
@@ -181,7 +186,7 @@ class MusicManagerApp:
                     ui.label('AI Presets').classes('text-sm text-gray-600')
                     ui.label('🔴 AI Inactive').classes('text-xs text-gray-500')
         
-        self.layout.set_content(dashboard)
+        # Don't set content here - it's handled in _show_dashboard
         self.current_view = 'dashboard'
     
     def _show_artists(self):
@@ -221,14 +226,16 @@ class MusicManagerApp:
     
     def _show_chat(self):
         """Show the chat view"""
-        self.layout.set_title('💬 AI Chat')
-        chat_view = ChatView()
+        self.layout.set_title('Chat')
+        chat_view = ChatView(self.chat_service, self.persona_service)
         self.layout.set_content(chat_view)
         self.current_view = 'chat'
-
+    
     def _show_personas(self):
-        """Show the persona management view"""
-        self.layout.set_content(PersonaManagementView())
+        """Show the personas view"""
+        self.layout.set_title('Personas')
+        persona_view = PersonaManagementView()
+        self.layout.set_content(persona_view)
         self.current_view = 'personas'
 
 def main():

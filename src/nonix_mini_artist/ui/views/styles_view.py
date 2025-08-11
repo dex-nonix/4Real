@@ -21,7 +21,8 @@ class StylesView:
     
     def _build_view(self):
         """Build the styles view"""
-        with ui.column().classes('w-full'):
+        with ui.column().classes('w-full') as container:
+            self.container = container
             # Header
             ui.label('🏷️ Styles').classes('text-3xl font-bold mb-6')
             
@@ -29,7 +30,7 @@ class StylesView:
             self.search_bar = EntitySearchBar(
                 entity_type="styles",
                 on_search=self._handle_search,
-                placeholder="Search styles by name or category..."
+                placeholder="Search styles by name..."
             )
             
             # Add new style button
@@ -50,6 +51,11 @@ class StylesView:
                 submit_action=self._create_style
             )
             self.add_form.visible = False
+    
+    def clear(self):
+        """Clear the view content"""
+        if hasattr(self, 'container'):
+            self.container.clear()
     
     def _handle_search(self, search_text: str, search_type: str):
         """Handle search functionality"""

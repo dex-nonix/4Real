@@ -21,105 +21,86 @@ class AISettingsView:
     
     def _build_view(self):
         """Build the AI settings view"""
-        with ui.column().classes('w-full'):
+        with ui.column().classes('w-full') as container:
+            self.container = container
             # Header
             ui.label('🤖 AI Settings').classes('text-3xl font-bold mb-6')
             ui.label('Manage Google AI providers and analysis presets').classes('text-lg text-gray-600 mb-6')
             
-            # Tabs for different AI settings
+            # Tabbed interface
             with ui.tabs().classes('w-full mb-6') as tabs:
                 ui.tab('Providers', icon='🔧')
                 ui.tab('Presets', icon='⚙️')
                 ui.tab('Analysis', icon='🔍')
             
-            # Providers Tab
+            # Tab panels
             with ui.tab_panels(tabs, value='Providers').classes('w-full'):
-                # Providers Panel
+                # Providers panel
                 with ui.tab_panel('Providers'):
-                    self._build_providers_panel()
+                    with ui.column().classes('w-full'):
+                        # Providers table
+                        self.providers_table = GenericTable(
+                            data=[],
+                            columns=['name', 'enabled', 'config'],
+                            actions=['view', 'edit', 'delete'],
+                            crud_operations=None  # AI providers use custom CRUD
+                        )
+                        
+                        # Add provider form (hidden by default)
+                        self.add_provider_form = self._create_provider_form()
+                        self.add_provider_form.visible = False
                 
-                # Presets Panel
+                # Presets panel
                 with ui.tab_panel('Presets'):
-                    self._build_presets_panel()
+                    with ui.column().classes('w-full'):
+                        # Presets table
+                        self.presets_table = GenericTable(
+                            data=[],
+                            columns=['name', 'provider', 'model', 'enabled'],
+                            actions=['view', 'edit', 'delete'],
+                            crud_operations=None  # AI presets use custom CRUD
+                        )
+                        
+                        # Add preset form (hidden by default)
+                        self.add_preset_form = self._create_preset_form()
+                        self.add_preset_form.visible = False
                 
-                # Analysis Panel
+                # Analysis panel
                 with ui.tab_panel('Analysis'):
-                    self._build_analysis_panel()
-    
-    def _build_providers_panel(self):
-        """Build the providers management panel"""
-        with ui.column().classes('w-full'):
-            # Add new provider button
-            ui.button('➕ Add New Provider', on_click=self._show_add_provider_form).classes('mb-6 bg-green-500 text-white hover:bg-green-600')
-            
-            # Providers table
-            self.providers_table = GenericTable(
-                data=self.providers,
-                columns=['name', 'enabled', 'config'],
-                actions=['test', 'edit', 'delete'],
-                crud_operations=None  # Custom handling for providers
-            )
-            
-            # Add provider form (hidden by default)
-            self.add_provider_form = self._create_provider_form()
-            self.add_provider_form.visible = False
-    
-    def _build_presets_panel(self):
-        """Build the presets management panel"""
-        with ui.column().classes('w-full'):
-            # Add new preset button
-            ui.button('➕ Add New Preset', on_click=self._show_add_preset_form).classes('mb-6 bg-blue-500 text-white hover:bg-blue-600')
-            
-            # Presets table
-            self.presets_table = GenericTable(
-                data=self.presets,
-                columns=['name', 'provider', 'model', 'enabled'],
-                actions=['view', 'edit', 'delete'],
-                crud_operations=None  # Custom handling for presets
-            )
-            
-            # Add preset form (hidden by default)
-            self.add_preset_form = self._create_preset_form()
-            self.add_preset_form.visible = False
-    
-    def _build_analysis_panel(self):
-        """Build the analysis testing panel"""
-        with ui.column().classes('w-full'):
-            ui.label('Test AI Analysis').classes('text-xl font-bold mb-4')
-            
-            # Analysis test form
-            with ui.card().classes('w-full max-w-2xl p-6'):
-                # Preset selection
-                ui.label('Select Analysis Preset:').classes('font-bold mb-2')
-                self.preset_select = ui.select(
-                    options=[], 
-                    value='',
-                    label='Preset'
-                ).classes('w-full mb-4')
-                
-                # Content input
-                ui.label('Content to Analyze:').classes('font-bold mb-2')
-                self.content_input = ui.textarea(
-                    label='Content',
-                    value='',
-                    placeholder='Enter lyrics, description, or other content to analyze...'
-                ).classes('w-full mb-4')
-                
-                # Context input
-                ui.label('Additional Context (Optional):').classes('font-bold mb-2')
-                self.context_input = ui.textarea(
-                    label='Context',
-                    value='',
-                    placeholder='Genre, artist, mood, etc.'
-                ).classes('w-full mb-4')
-                
-                # Analyze button
-                ui.button('🔍 Analyze with AI', on_click=self._run_analysis).classes('w-full bg-purple-500 text-white hover:bg-purple-600')
-                
-                # Results area
-                ui.separator().classes('my-4')
-                ui.label('Analysis Results:').classes('font-bold mb-2')
-                self.results_area = ui.markdown('').classes('w-full p-4 bg-gray-100 rounded')
+                    with ui.column().classes('w-full'):
+                        # Analysis test form
+                        with ui.card().classes('w-full max-w-2xl p-6'):
+                            # Preset selection
+                            ui.label('Select Analysis Preset:').classes('font-bold mb-2')
+                            self.preset_select = ui.select(
+                                options=[], 
+                                value='',
+                                label='Preset'
+                            ).classes('w-full mb-4')
+                            
+                            # Content input
+                            ui.label('Content to Analyze:').classes('font-bold mb-2')
+                            self.content_input = ui.textarea(
+                                label='Content',
+                                value='',
+                                placeholder='Enter lyrics, description, or other content to analyze...'
+                            ).classes('w-full mb-4')
+                            
+                            # Context input
+                            ui.label('Additional Context (Optional):').classes('font-bold mb-2')
+                            self.context_input = ui.textarea(
+                                label='Context',
+                                value='',
+                                placeholder='Genre, artist, mood, etc.'
+                            ).classes('w-full mb-4')
+                            
+                            # Analyze button
+                            ui.button('🔍 Analyze with AI', on_click=self._run_analysis).classes('w-full bg-purple-500 text-white hover:bg-purple-600')
+                            
+                            # Results area
+                            ui.separator().classes('my-4')
+                            ui.label('Analysis Results:').classes('font-bold mb-2')
+                            self.results_area = ui.markdown('').classes('w-full p-4 bg-gray-100 rounded')
     
     def _create_provider_form(self):
         """Create the add provider form"""
@@ -353,3 +334,8 @@ class AISettingsView:
     async def refresh_data(self):
         """Refresh AI settings data"""
         await self._load_data()
+
+    def clear(self):
+        """Clear the view content"""
+        if hasattr(self, 'container'):
+            self.container.clear()

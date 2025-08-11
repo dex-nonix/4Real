@@ -22,7 +22,8 @@ class AlbumsView:
     
     def _build_view(self):
         """Build the albums view"""
-        with ui.column().classes('w-full'):
+        with ui.column().classes('w-full') as container:
+            self.container = container
             # Header
             ui.label('💿 Albums').classes('text-3xl font-bold mb-6')
             
@@ -47,7 +48,7 @@ class AlbumsView:
             # Add album form (hidden by default)
             self.add_form = GenericForm(
                 model_class=Album,
-                fields=['title', 'album_number', 'artist', 'description', 'release_date'],
+                fields=['title', 'album_number', 'artist', 'release_date'],
                 submit_action=self._create_album
             )
             self.add_form.visible = False
@@ -112,3 +113,8 @@ class AlbumsView:
             self.table.update_data(self.filtered_albums)
         except Exception as e:
             ui.notify(f'Error loading albums: {str(e)}', type='negative')
+
+    def clear(self):
+        """Clear the view content"""
+        if hasattr(self, 'container'):
+            self.container.clear()

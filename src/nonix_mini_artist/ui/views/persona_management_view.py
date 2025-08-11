@@ -30,17 +30,19 @@ class PersonaManagementView:
         self._load_data()
     
     def _build_view(self):
-        """Build the persona management view structure"""
-        with ui.column().classes('w-full h-full p-6'):
-            # Header
+        """Build the persona management view"""
+        with ui.column().classes('w-full h-full p-6') as container:
+            self.container = container
+            # Header with action buttons
             with ui.row().classes('items-center justify-between mb-6'):
                 ui.label('🎭 Persona Management').classes('text-3xl font-bold text-gray-800')
+                
                 with ui.row().classes('gap-3'):
                     ui.button('🎤 Artist Template', on_click=self._show_artist_template_dialog).classes(
-                        'px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600'
+                        'px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 rounded-lg'
                     )
                     ui.button('➕ New Persona', on_click=self._show_create_persona_dialog).classes(
-                        'px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600'
+                        'px-4 py-2 bg-green-500 text-white hover:bg-green-600 rounded-lg'
                     )
             
             # Personas grid
@@ -717,3 +719,8 @@ class PersonaManagementView:
             
         except Exception as e:
             ui.notify(f'Failed to create artist template: {e}', type='error')
+
+    def clear(self):
+        """Clear the view content"""
+        if hasattr(self, 'container'):
+            self.container.clear()

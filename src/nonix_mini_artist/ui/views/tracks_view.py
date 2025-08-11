@@ -26,7 +26,8 @@ class TracksView:
     
     def _build_view(self):
         """Build the tracks view"""
-        with ui.column().classes('w-full'):
+        with ui.column().classes('w-full') as container:
+            self.container = container
             # Header
             ui.label('🎵 Tracks').classes('text-3xl font-bold mb-6')
             
@@ -37,12 +38,9 @@ class TracksView:
                 placeholder="Search tracks by name..."
             )
             
-            # Add new track button
+            # Action buttons
             ui.button('➕ Add New Track', on_click=self._show_add_form).classes('mb-6 bg-green-500 text-white hover:bg-green-600')
-            
-            # AI Analysis button (if AI service available)
-            if self.ai_service:
-                ui.button('🤖 AI Analysis', on_click=self._show_ai_analysis).classes('mb-6 bg-purple-500 text-white hover:bg-purple-600')
+            ui.button('🤖 AI Analysis', on_click=self._show_ai_analysis).classes('mb-6 bg-purple-500 text-white hover:bg-purple-600')
             
             # Tracks table
             self.table = GenericTable(
@@ -55,15 +53,14 @@ class TracksView:
             # Add track form (hidden by default)
             self.add_form = GenericForm(
                 model_class=Track,
-                fields=['track_number', 'name', 'album', 'raw_lyrics', 'formatted_lyrics', 'duration'],
+                fields=['track_number', 'name', 'album', 'duration'],
                 submit_action=self._create_track
             )
             self.add_form.visible = False
             
-            # AI Analysis form (hidden by default)
-            if self.ai_service:
-                self.ai_form = self._create_ai_analysis_form()
-                self.ai_form.visible = False
+            # AI analysis form (hidden by default)
+            self.ai_form = self._create_ai_analysis_form()
+            self.ai_form.visible = False
     
     def _create_ai_analysis_form(self):
         """Create the AI analysis form"""
@@ -251,3 +248,8 @@ class TracksView:
             self.table.update_data(self.filtered_tracks)
         except Exception as e:
             ui.notify(f'Error loading data: {str(e)}', type='negative')
+
+    def clear(self):
+        """Clear the view content"""
+        if hasattr(self, 'container'):
+            self.container.clear()

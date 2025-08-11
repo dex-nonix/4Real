@@ -49,4 +49,12 @@ class MasterLayout:
     def set_content(self, content):
         """Set the main content"""
         if self.content:
+            # Clear any existing content first
+            self.content.clear()
+            # Set new content
             self.content.set_content(content)
+    
+    def clear_content(self):
+        """Clear the main content"""
+        if self.content:
+            self.content.clear()
