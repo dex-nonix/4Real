@@ -22,10 +22,12 @@ class AlbumsView(GenericCRUDView):
         super().__init__(music_service, entity_config)
         self.artists = []
     
-    def _load_data(self):
+    async def _load_data(self):
         """Load albums and artists data"""
         try:
-            data = self.music_service.list_albums()
+            data = await self.music_service.list_albums()
+            self.items = data
+            self.filtered_items = data.copy()
             self.table.update_data(data)
         except Exception as e:
             from nicegui import ui

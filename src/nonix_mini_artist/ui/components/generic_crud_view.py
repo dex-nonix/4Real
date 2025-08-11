@@ -31,9 +31,6 @@ class GenericCRUDView:
         # Build the view
         self._build_view()
         
-        # Load initial data if available
-        if hasattr(self, '_load_data'):
-            self._load_data()
     
     def _build_view(self):
         """Build the generic CRUD view"""
@@ -89,31 +86,70 @@ class GenericCRUDView:
     
     def _show_add_form(self):
         """Generic add form dialog - works for any entity"""
-        # Create form
-        form = GenericForm(
-            model_class=self.model_class,
-            fields=self.fields,
-            submit_action=self._create_entity,
-            embedded=True  # Form will be embedded in dialog
-        )
-        
-        # Create dialog with the form
+        # Create dialog with form fields built directly
         dialog = GenericDialog(
             title=f"Add New {self.entity_name}",
-            content=form,
+            content=self._build_form_fields(),
             confirm_text=f"Create {self.entity_name}",
-            on_confirm=lambda: self._handle_form_submit(form),
+            on_confirm=lambda: self._handle_form_submit(dialog),
             width="600px"
         )
         
         dialog.show()
     
-    def _handle_form_submit(self, form):
+    def _build_form_fields(self):
+        """Build form fields for the dialog"""
+        form_data = {}
+        
+        with ui.column().classes('w-full'):
+            for field in self.fields:
+                label = field.replace('_', ' ').title()
+                
+                if field in ['description', 'persona', 'raw_lyrics', 'formatted_lyrics']:
+                    # Text area for long text fields
+                    ui.label(label).classes('text-sm font-medium mb-1')
+                    textarea = ui.textarea(
+                        value='',
+                        on_change=lambda e, f=field: self._update_form_data(f, e.value)
+                    ).classes('w-full mb-4')
+                elif field in ['created_at', 'release_date']:
+                    # Date picker for date fields
+                    ui.label(label).classes('text-sm font-medium mb-1')
+                    date_input = ui.date(
+                        value=None,
+                        on_change=lambda e, f=field: self._update_form_data(f, e.value)
+                    ).classes('w-full mb-4')
+                elif field in ['album_number', 'track_number', 'duration']:
+                    # Number input for numeric fields
+                    ui.label(label).classes('text-sm font-medium mb-1')
+                    number_input = ui.number(
+                        value=0,
+                        on_change=lambda e, f=field: self._update_form_data(f, e.value)
+                    ).classes('w-full mb-4')
+                else:
+                    # Regular text input
+                    ui.label(label).classes('text-sm font-medium mb-1')
+                    text_input = ui.input(
+                        value='',
+                        on_change=lambda e, f=field: self._update_form_data(f, e.value)
+                    ).classes('w-full mb-4')
+        
+        return form_data
+    
+    def _update_form_data(self, field_name: str, value: Any):
+        """Update form data when field changes"""
+        if not hasattr(self, '_form_data'):
+            self._form_data = {}
+        self._form_data[field_name] = value
+    
+    def _handle_form_submit(self, dialog):
         """Generic form submission handling"""
-        form_data = form.get_data()
-        if form_data:
+        if hasattr(self, '_form_data') and self._form_data:
             # Call the create method
-            asyncio.create_task(self._create_entity(**form_data))
+            asyncio.create_task(self._create_entity(**self._form_data))
+            # Clear form data and close dialog
+            self._form_data = {}
+            dialog.close()
     
     async def _create_entity(self, **kwargs):
         """Generic entity creation - override in subclasses for custom logic"""
@@ -140,6 +176,12 @@ class GenericCRUDView:
         """Clear the view content"""
         if hasattr(self, 'container'):
             self.container.clear()
+    
+    def load_initial_data(self):
+        """Load initial data - can be called when view is displayed"""
+        if hasattr(self, '_load_data'):
+            # Schedule async data loading
+            asyncio.create_task(self._load_data())
     
     async def refresh_data(self):
         """Generic data refresh - override in subclasses for custom logic"""

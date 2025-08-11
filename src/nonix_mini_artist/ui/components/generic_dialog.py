@@ -38,7 +38,8 @@ class GenericDialog:
                     if isinstance(self.content, str):
                         ui.label(self.content).classes('mb-4 text-gray-700')
                     else:
-                        ui.add(self.content)
+                        # Build the content within the dialog context
+                        self.content._build_form()
                 
                 # Actions
                 with ui.row().classes('justify-end gap-3 mt-6'):

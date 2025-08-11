@@ -35,7 +35,7 @@ class TracksView(GenericCRUDView):
         self._add_ai_button()
         
         # Load data after view is built
-        self._load_data()
+        asyncio.create_task(self._load_data())
     
     def _add_ai_button(self):
         """Add AI Analysis button to the view"""
@@ -50,7 +50,7 @@ class TracksView(GenericCRUDView):
             # Track selection
             ui.label('Select Track:').classes('font-bold mb-2')
             self.track_select = ui.select(
-                options=[f"{t.track_number}. {t.name}" for t in self.tracks] if self.tracks else ['No tracks available'],
+                options=[f"{t.track_number}. {t.name}" for t in self.items] if self.items else ['No tracks available'],
                 value=None
             ).classes('w-full mb-4')
             
@@ -73,21 +73,7 @@ class TracksView(GenericCRUDView):
             
             return form
     
-    def _handle_search(self, search_text: str, search_type: str):
-        """Handle search functionality"""
-        if not search_text.strip():
-            self.filtered_tracks = self.tracks.copy()
-        else:
-            search_lower = search_text.lower()
-            self.filtered_tracks = [
-                track for track in self.tracks
-                if search_lower in track.name.lower() or 
-                   (track.album and search_lower in track.album.title.lower())
-            ]
-        
-        self.table.update_data(self.filtered_tracks)
-    
-    def _load_data(self):
+    async def _load_data(self):
         """Load tracks, albums, and artists data"""
         try:
             # Use synchronous database operations
