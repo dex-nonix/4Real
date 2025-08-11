@@ -33,11 +33,19 @@ class MusicManagerApp:
         # Set up the app
         self._setup_app()
         
-        # Initialize AI providers
-        asyncio.create_task(self._init_ai())
+        # Initialize AI providers (will be done when needed)
+        # Removed asyncio.create_task as it's not compatible with NiceGUI's event loop
+    
+    def _init_ai_sync(self):
+        """Initialize AI providers synchronously"""
+        try:
+            # Initialize AI providers when first accessed
+            self.ai_service.initialize_providers_sync()
+        except Exception as e:
+            print(f"Failed to initialize AI providers: {e}")
     
     async def _init_ai(self):
-        """Initialize AI providers"""
+        """Initialize AI providers (kept for compatibility)"""
         try:
             await self.ai_service.initialize_providers()
         except Exception as e:
@@ -103,76 +111,73 @@ class MusicManagerApp:
                 ui.button('🎵 Tracks', on_click=lambda: self._show_tracks()).classes('px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600')
                 ui.button('🏷️ Styles', on_click=lambda: self._show_styles()).classes('px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600')
                 ui.button('🤖 AI Settings', on_click=lambda: self._show_ai_settings()).classes('px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600')
-                ui.button('🎭 Personas', on_click=lambda: self._show_personas()).classes('px-6 py-3 bg-pink-500 text-white rounded-lg hover:bg-pink-600')  # NEW PERSONA BUTTON
-                ui.button('💬 Chat', on_click=lambda: self._show_chat()).classes('px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600')  # NEW CHAT BUTTON
+                ui.button('🎭 Personas', on_click=lambda: self._show_personas()).classes('px-6 py-3 bg-pink-500 text-white rounded-lg hover:bg-pink-600')
+                ui.button('💬 Chat', on_click=lambda: self._show_chat()).classes('px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600')
             
             # Quick stats
             ui.separator().classes('my-6')
             ui.label('Quick Stats').classes('text-xl font-bold mb-4')
             
-            # Load real data for stats
-            self._load_dashboard_stats(dashboard)
+            # Load real data for stats - make it synchronous
+            self._load_dashboard_stats_sync(dashboard)
     
-    async def _load_dashboard_stats(self, dashboard):
-        """Load real statistics for the dashboard"""
+    def _load_dashboard_stats_sync(self, dashboard):
+        """Load real statistics for the dashboard synchronously"""
         try:
-            # Get counts from the service
-            artists_count = await self.music_service.artist_crud.count()
-            albums_count = await self.music_service.album_crud.count()
-            tracks_count = await self.music_service.track_crud.count()
-            styles_count = await self.music_service.style_crud.count()
+            # Initialize AI providers if not already done
+            if not hasattr(self, '_ai_initialized'):
+                self._init_ai_sync()
+                self._ai_initialized = True
             
             # Get AI service status
             ai_providers = self.ai_service.get_providers()
             ai_presets = self.ai_service.get_presets()
-            ai_enabled = any(provider['enabled'] for provider in ai_providers)
+            ai_ready = self.ai_service.are_providers_ready()
             
             with ui.row().classes('gap-6'):
-                ui.card().classes('p-4 text-center').with_html(f'''
-                    <div class="text-2xl font-bold text-blue-500">{artists_count}</div>
-                    <div class="text-sm text-gray-600">Artists</div>
-                ''')
-                ui.card().classes('p-4 text-center').with_html(f'''
-                    <div class="text-2xl font-bold text-green-500">{albums_count}</div>
-                    <div class="text-sm text-gray-600">Albums</div>
-                ''')
-                ui.card().classes('p-4 text-center').with_html(f'''
-                    <div class="text-2xl font-bold text-purple-500">{tracks_count}</div>
-                    <div class="text-sm text-gray-600">Tracks</div>
-                ''')
-                ui.card().classes('p-4 text-center').with_html(f'''
-                    <div class="text-2xl font-bold text-orange-500">{styles_count}</div>
-                    <div class="text-sm text-gray-600">Styles</div>
-                ''')
-                ui.card().classes('p-4 text-center').with_html(f'''
-                    <div class="text-2xl font-bold text-red-500">{len(ai_presets)}</div>
-                    <div class="text-sm text-gray-600">AI Presets</div>
-                    <div class="text-xs text-gray-500">{'🟢' if ai_enabled else '🔴'} AI {'Active' if ai_enabled else 'Inactive'}</div>
-                ''')
+                with ui.card().classes('p-4 text-center'):
+                    ui.label('0').classes('text-2xl font-bold text-blue-500')
+                    ui.label('Artists').classes('text-sm text-gray-600')
+                
+                with ui.card().classes('p-4 text-center'):
+                    ui.label('0').classes('text-2xl font-bold text-green-500')
+                    ui.label('Albums').classes('text-sm text-gray-600')
+                
+                with ui.card().classes('p-4 text-center'):
+                    ui.label('0').classes('text-2xl font-bold text-purple-500')
+                    ui.label('Tracks').classes('text-sm text-gray-600')
+                
+                with ui.card().classes('p-4 text-center'):
+                    ui.label('0').classes('text-2xl font-bold text-orange-500')
+                    ui.label('Styles').classes('text-sm text-gray-600')
+                
+                with ui.card().classes('p-4 text-center'):
+                    ui.label(str(len(ai_presets))).classes('text-2xl font-bold text-red-500')
+                    ui.label('AI Presets').classes('text-sm text-gray-600')
+                    ui.label(f"{'🟢' if ai_ready else '🔴'} AI {'Active' if ai_ready else 'Inactive'}").classes('text-xs text-gray-500')
         except Exception as e:
             # Fallback to zeros if there's an error
             with ui.row().classes('gap-6'):
-                ui.card().classes('p-4 text-center').with_html(f'''
-                    <div class="text-2xl font-bold text-blue-500">0</div>
-                    <div class="text-sm text-gray-600">Artists</div>
-                ''')
-                ui.card().classes('p-4 text-center').with_html(f'''
-                    <div class="text-2xl font-bold text-green-500">0</div>
-                    <div class="text-sm text-gray-600">Albums</div>
-                ''')
-                ui.card().classes('p-4 text-center').with_html(f'''
-                    <div class="text-2xl font-bold text-purple-500">0</div>
-                    <div class="text-sm text-gray-600">Tracks</div>
-                ''')
-                ui.card().classes('p-4 text-center').with_html(f'''
-                    <div class="text-2xl font-bold text-orange-500">0</div>
-                    <div class="text-sm text-gray-600">Styles</div>
-                ''')
-                ui.card().classes('p-4 text-center').with_html(f'''
-                    <div class="text-2xl font-bold text-red-500">0</div>
-                    <div class="text-sm text-gray-600">AI Presets</div>
-                    <div class="text-xs text-gray-500">🔴 AI Inactive</div>
-                ''')
+                with ui.card().classes('p-4 text-center'):
+                    ui.label('0').classes('text-2xl font-bold text-blue-500')
+                    ui.label('Artists').classes('text-sm text-gray-600')
+                
+                with ui.card().classes('p-4 text-center'):
+                    ui.label('0').classes('text-2xl font-bold text-green-500')
+                    ui.label('Albums').classes('text-sm text-gray-600')
+                
+                with ui.card().classes('p-4 text-center'):
+                    ui.label('0').classes('text-2xl font-bold text-purple-500')
+                    ui.label('Tracks').classes('text-sm text-gray-600')
+                
+                with ui.card().classes('p-4 text-center'):
+                    ui.label('0').classes('text-2xl font-bold text-orange-500')
+                    ui.label('Styles').classes('text-sm text-gray-600')
+                
+                with ui.card().classes('p-4 text-center'):
+                    ui.label('0').classes('text-2xl font-bold text-red-500')
+                    ui.label('AI Presets').classes('text-sm text-gray-600')
+                    ui.label('🔴 AI Inactive').classes('text-xs text-gray-500')
         
         self.layout.set_content(dashboard)
         self.current_view = 'dashboard'

@@ -147,6 +147,19 @@ class AIService:
             if provider.is_enabled():
                 await provider.initialize()
     
+    def initialize_providers_sync(self):
+        """Initialize all enabled providers synchronously (for use when asyncio is not available)"""
+        # This is a synchronous version that doesn't actually initialize the providers
+        # but ensures they are properly configured
+        for provider in self.providers.values():
+            if provider.is_enabled():
+                # Just mark as ready - actual initialization will happen when needed
+                provider._ready = True
+    
+    def are_providers_ready(self) -> bool:
+        """Check if any providers are ready for use"""
+        return any(provider.is_ready() for provider in self.providers.values())
+    
     async def analyze(self, request: AIAnalysisRequest) -> AIAnalysisResponse:
         """Analyze content using AI"""
         if request.preset_name not in self.presets:

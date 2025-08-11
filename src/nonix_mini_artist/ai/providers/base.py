@@ -14,6 +14,7 @@ class BaseAIProvider(ABC):
         self.name = config.get('name', 'unknown')
         self.enabled = config.get('enabled', True)
         self._client = None
+        self._ready = False  # Track if provider is ready for use
     
     @abstractmethod
     async def initialize(self) -> bool:
@@ -38,6 +39,10 @@ class BaseAIProvider(ABC):
     def is_enabled(self) -> bool:
         """Check if provider is enabled"""
         return self.enabled
+    
+    def is_ready(self) -> bool:
+        """Check if provider is ready for use"""
+        return self._ready
     
     def get_name(self) -> str:
         """Get provider name"""
