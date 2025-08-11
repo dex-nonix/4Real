@@ -1,0 +1,3 @@
+"""
+Generic CRUD operations
+"""

@@ -1,0 +1,1141 @@
+{
+  "rhyme-types": [
+    {
+      "end_rhyme": {
+        "description": "The most common form of rhyme, occurring at the end of poetic lines.",
+        "common_genres": [
+          {"genre": "Boom Bap", "weight": 1.0},
+          {"genre": "Pop Rap", "weight": 0.9},
+          {"genre": "Conscious Hip-Hop", "weight": 0.8},
+          {"genre": "Trap", "weight": 0.7}
+        ],
+        "example_artists": [
+          {"artist": "Nas", "weight": 0.95},
+          {"artist": "Rakim", "weight": 0.9},
+          {"artist": "Drake", "weight": 0.85}
+        ],
+        "similarity": {
+          "couplet": 0.9,
+          "alternate_rhyme": 0.8,
+          "monorhyme": 0.7,
+          "masculine_rhyme": 0.95
+        }
+      }
+    },
+    {
+      "internal_rhyme": {
+        "description": "Rhyme that occurs within a single line or across the middle of lines rather than at the end.",
+        "common_genres": [
+          {"genre": "Hip-Hop", "weight": 1.0},
+          {"genre": "Battle Rap", "weight": 0.95},
+          {"genre": "Spoken Word", "weight": 0.7},
+          {"genre": "Grime", "weight": 0.85}
+        ],
+        "example_artists": [
+          {"artist": "Eminem", "weight": 0.95},
+          {"artist": "MF DOOM", "weight": 0.9},
+          {"artist": "Tech N9ne", "weight": 0.85}
+        ],
+        "similarity": {
+          "multi_syllabic_rhyme": 0.88,
+          "assonance": 0.7,
+          "slant_rhyme": 0.68,
+          "cross_rhyme": 0.9
+        }
+      }
+    },
+    {
+      "multi-syllabic_rhyme": {
+        "description": "Rhyming with two or more syllables, creating complex and intricate patterns.",
+        "common_genres": [
+          {"genre": "Lyrical Hip-Hop", "weight": 1.0},
+          {"genre": "Chopper Rap", "weight": 0.9},
+          {"genre": "Underground Hip-Hop", "weight": 0.85},
+          {"genre": "Conscious Hip-Hop", "weight": 0.8}
+        ],
+        "example_artists": [
+          {"artist": "Eminem", "weight": 1.0},
+          {"artist": "Rakim", "weight": 0.9},
+          {"artist": "Nas", "weight": 0.85}
+        ],
+        "similarity": {
+          "internal_rhyme": 0.85,
+          "assonance": 0.75,
+          "stacked_multis": 0.9,
+          "feminine_rhyme": 0.9
+        }
+      }
+    },
+    {
+      "slant_rhyme": {
+        "description": "An imperfect rhyme where the stressed syllables of ending consonants match, but the preceding vowel sounds do not.",
+        "common_genres": [
+          {"genre": "Alternative Hip-Hop", "weight": 0.9},
+          {"genre": "Cloud Rap", "weight": 0.8},
+          {"genre": "Lo-fi Hip-Hop", "weight": 0.85},
+          {"genre": "Spoken Word", "weight": 0.7}
+        ],
+        "example_artists": [
+          {"artist": "MF DOOM", "weight": 0.95},
+          {"artist": "Earl Sweatshirt", "weight": 0.9},
+          {"artist": "Aesop Rock", "weight": 0.85}
+        ],
+        "similarity": {
+          "assonance": 0.8,
+          "consonance": 0.7,
+          "internal_rhyme": 0.6
+        }
+      }
+    },
+    {
+      "eye_rhyme": {
+        "description": "Words that are spelled similarly but pronounced differently, creating a visual rhyme on the page.",
+        "common_genres": [
+          {"genre": "Lyrical Hip-Hop", "weight": 0.6},
+          {"genre": "Poetry", "weight": 0.8},
+          {"genre": "Alternative Hip-Hop", "weight": 0.5},
+          {"genre": "Spoken Word", "weight": 0.7}
+        ],
+        "example_artists": [
+          {"artist": "Nas", "weight": 0.7},
+          {"artist": "Lupe Fiasco", "weight": 0.75},
+          {"artist": "Canibus", "weight": 0.65}
+        ],
+        "similarity": {
+          "pun": 0.6,
+          "homograph": 0.8,
+          "slant_rhyme": 0.5
+        }
+      }
+    },
+    {
+      "chain_rhyme": {
+        "description": "Linking rhymes across stanzas by carrying a rhyme from one stanza into the next.",
+        "common_genres": [
+          {"genre": "Lyrical Hip-Hop", "weight": 0.85},
+          {"genre": "Conscious Hip-Hop", "weight": 0.8},
+          {"genre": "Battle Rap", "weight": 0.7},
+          {"genre": "Spoken Word", "weight": 0.75}
+        ],
+        "example_artists": [
+          {"artist": "The Notorious B.I.G.", "weight": 0.9},
+          {"artist": "Eminem", "weight": 0.85},
+          {"artist": "Big Pun", "weight": 0.8}
+        ],
+        "similarity": {
+          "internal_rhyme": 0.8,
+          "multi_syllabic_rhyme": 0.75,
+          "epiphora": 0.6
+        }
+      }
+    },
+    {
+      "monorhyme": {
+        "description": "A passage in which all lines have the same rhyme.",
+        "common_genres": [
+          {"genre": "Old School Hip-Hop", "weight": 0.7},
+          {"genre": "Freestyle Rap", "weight": 0.6},
+          {"genre": "Comedy Rap", "weight": 0.5},
+          {"genre": "Spoken Word", "weight": 0.65}
+        ],
+        "example_artists": [
+          {"artist": "Kurtis Blow", "weight": 0.7},
+          {"artist": "Slick Rick", "weight": 0.65},
+          {"artist": "Dr. Seuss (literature)", "weight": 0.8}
+        ],
+        "similarity": {
+          "end_rhyme": 0.9,
+          "couplet": 0.8,
+          "refrain": 0.7,
+          "identical_rhyme": 0.6
+        }
+      }
+    },
+    {
+      "enjambment_rhyme": {
+        "description": "A line break that interrupts a grammatical phrase, often to create a rhyme.",
+        "common_genres": [
+          {"genre": "Alternative Hip-Hop", "weight": 0.85},
+          {"genre": "Jazz Rap", "weight": 0.8},
+          {"genre": "Spoken Word", "weight": 0.9},
+          {"genre": "Lyrical Hip-Hop", "weight": 0.75}
+        ],
+        "example_artists": [
+          {"artist": "A Tribe Called Quest", "weight": 0.9},
+          {"artist": "André 3000", "weight": 0.95},
+          {"artist": "Mos Def", "weight": 0.85}
+        ],
+        "similarity": {
+          "off-beat": 0.8,
+          "syncopation": 0.75,
+          "parallelism": 0.6
+        }
+      }
+    },
+    {
+      "masculine_rhyme": {
+        "description": "A rhyme in which the stress is on the final syllable of the rhyming words.",
+        "common_genres": [
+            {"genre": "Boom Bap", "weight": 1.0},
+            {"genre": "Old School Hip-Hop", "weight": 1.0},
+            {"genre": "Gangsta Rap", "weight": 0.9},
+            {"genre": "Pop Rap", "weight": 0.9}
+        ],
+        "example_artists": [
+            {"artist": "Rakim", "weight": 0.9},
+            {"artist": "2Pac", "weight": 0.9},
+            {"artist": "LL Cool J", "weight": 0.85}
+        ],
+        "similarity": {
+            "end_rhyme": 0.95,
+            "couplet": 0.8,
+            "feminine_rhyme": 0.7
+        }
+      }
+    },
+    {
+      "feminine_rhyme": {
+        "description": "A rhyme on two syllables in which the first syllable is stressed and the second is unstressed (also known as double rhyme).",
+        "common_genres": [
+            {"genre": "Lyrical Hip-Hop", "weight": 0.9},
+            {"genre": "Conscious Hip-Hop", "weight": 0.8},
+            {"genre": "Spoken Word", "weight": 0.85},
+            {"genre": "Comedy Rap", "weight": 0.7}
+        ],
+        "example_artists": [
+            {"artist": "Eminem", "weight": 0.95},
+            {"artist": "MF DOOM", "weight": 0.9},
+            {"artist": "Childish Gambino", "weight": 0.8}
+        ],
+        "similarity": {
+            "multi_syllabic_rhyme": 0.9,
+            "triple_rhyme": 0.8,
+            "masculine_rhyme": 0.7,
+            "slant_rhyme": 0.7
+        }
+      }
+    },
+    {
+      "triple_rhyme": {
+        "description": "A rhyme involving three syllables, often used for comedic or complex lyrical effect.",
+        "common_genres": [
+            {"genre": "Lyrical Hip-Hop", "weight": 0.85},
+            {"genre": "Chopper Rap", "weight": 0.8},
+            {"genre": "Comedy Rap", "weight": 0.75},
+            {"genre": "Spoken Word", "weight": 0.7}
+        ],
+        "example_artists": [
+            {"artist": "Eminem", "weight": 0.9},
+            {"artist": "Tech N9ne", "weight": 0.8},
+            {"artist": "Gilbert & Sullivan (operetta)", "weight": 0.95}
+        ],
+        "similarity": {
+            "multi_syllabic_rhyme": 0.9,
+            "feminine_rhyme": 0.8,
+            "stacked_multis": 0.7
+        }
+      }
+    },
+    {
+      "rich_rhyme": {
+        "description": "Rhyming homonyms; words that are pronounced identically but have different meanings.",
+        "common_genres": [
+            {"genre": "Battle Rap", "weight": 0.85},
+            {"genre": "Lyrical Hip-Hop", "weight": 0.9},
+            {"genre": "Conscious Hip-Hop", "weight": 0.8}
+        ],
+        "example_artists": [
+            {"artist": "Fabolous", "weight": 0.9},
+            {"artist": "Big L", "weight": 0.85},
+            {"artist": "Lloyd Banks", "weight": 0.8}
+        ],
+        "similarity": {
+            "homophone": 0.95,
+            "pun": 0.9,
+            "eye_rhyme": 0.6
+        }
+      }
+    },
+    {
+      "identical_rhyme": {
+        "description": "Using the same word in rhyming positions, often for emphasis or to establish a rhythmic pattern.",
+        "common_genres": [
+            {"genre": "Trap", "weight": 0.8},
+            {"genre": "Minimalist Hip-Hop", "weight": 0.85},
+            {"genre": "Pop Rap", "weight": 0.75},
+            {"genre": "Spoken Word", "weight": 0.7}
+        ],
+        "example_artists": [
+            {"artist": "Kanye West", "weight": 0.85},
+            {"artist": "Drake", "weight": 0.8},
+            {"artist": "Lou Reed (rock)", "weight": 0.9}
+        ],
+        "similarity": {
+            "refrain": 0.8,
+            "epiphora": 0.7,
+            "monorhyme": 0.6
+        }
+      }
+    }
+  ],
+  "rhyme-patterns": [
+    {
+      "couplet": {
+        "description": "Two consecutive lines of verse that rhyme.",
+        "common_genres": [
+          {"genre": "Boom Bap", "weight": 0.95},
+          {"genre": "Pop Rap", "weight": 0.9},
+          {"genre": "Gangsta Rap", "weight": 0.85},
+          {"genre": "Old School Hip-Hop", "weight": 1.0}
+        ],
+        "example_artists": [
+          {"artist": "Run-DMC", "weight": 0.9},
+          {"artist": "LL Cool J", "weight": 0.85},
+          {"artist": "The Notorious B.I.G.", "weight": 0.8}
+        ],
+        "similarity": {
+          "end_rhyme": 0.9,
+          "alternate_rhyme": 0.7,
+          "monorhyme": 0.6
+        }
+      }
+    },
+    {
+      "alternate_rhyme": {
+        "description": "A rhyme scheme in which lines of verse rhyme in an alternating pattern (ABAB).",
+        "common_genres": [
+          {"genre": "Conscious Hip-Hop", "weight": 0.85},
+          {"genre": "Lyrical Hip-Hop", "weight": 0.8},
+          {"genre": "Storytelling Rap", "weight": 0.75},
+          {"genre": "Pop Rap", "weight": 0.7}
+        ],
+        "example_artists": [
+          {"artist": "Kendrick Lamar", "weight": 0.9},
+          {"artist": "J. Cole", "weight": 0.85},
+          {"artist": "Nas", "weight": 0.8}
+        ],
+        "similarity": {
+          "enclosed_rhyme": 0.8,
+          "couplet": 0.7,
+          "cross_rhyme": 0.6
+        }
+      }
+    },
+    {
+      "enclosed_rhyme": {
+        "description": "A rhyme scheme with a pair of rhyming lines enclosed by another pair (ABBA).",
+        "common_genres": [
+          {"genre": "Lyrical Hip-Hop", "weight": 0.8},
+          {"genre": "Conscious Hip-Hop", "weight": 0.75},
+          {"genre": "Alternative Hip-Hop", "weight": 0.7},
+          {"genre": "Poetry", "weight": 0.9}
+        ],
+        "example_artists": [
+          {"artist": "Lupe Fiasco", "weight": 0.85},
+          {"artist": "Aesop Rock", "weight": 0.8},
+          {"artist": "Canibus", "weight": 0.75}
+        ],
+        "similarity": {
+          "alternate_rhyme": 0.8,
+          "cross_rhyme": 0.7,
+          "parallelism": 0.6
+        }
+      }
+    },
+    {
+      "sporadic_rhyme": {
+        "description": "Rhymes that occur irregularly and without a discernible pattern.",
+        "common_genres": [
+          {"genre": "Experimental Hip-Hop", "weight": 0.9},
+          {"genre": "Cloud Rap", "weight": 0.85},
+          {"genre": "Abstract Hip-Hop", "weight": 0.8},
+          {"genre": "Freestyle Rap", "weight": 0.7}
+        ],
+        "example_artists": [
+          {"artist": "Death Grips", "weight": 0.9},
+          {"artist": "Yung Lean", "weight": 0.85},
+          {"artist": "clipping.", "weight": 0.8}
+        ],
+        "similarity": {
+          "off-beat": 0.7,
+          "stop_and_go": 0.6,
+          "polyrhythmic": 0.5
+        }
+      }
+    },
+    {
+      "cross_rhyme": {
+        "description": "Rhyming words in the middle of a line with the end of the same or adjacent lines.",
+        "common_genres": [
+          {"genre": "Lyrical Hip-Hop", "weight": 0.85},
+          {"genre": "Battle Rap", "weight": 0.8},
+          {"genre": "Underground Hip-Hop", "weight": 0.75},
+          {"genre": "East Coast Hip-Hop", "weight": 0.7}
+        ],
+        "example_artists": [
+          {"artist": "Big L", "weight": 0.9},
+          {"artist": "Rakim", "weight": 0.85},
+          {"artist": "Pharoahe Monch", "weight": 0.8}
+        ],
+        "similarity": {
+          "internal_rhyme": 0.9,
+          "multi_syllabic_rhyme": 0.8,
+          "alternate_rhyme": 0.6
+        }
+      }
+    },
+    {
+      "stacked_multis": {
+        "description": "Placing multiple multi-syllable rhymes in immediate succession for a dense, complex effect.",
+        "common_genres": [
+          {"genre": "Chopper Rap", "weight": 1.0},
+          {"genre": "Lyrical Hip-Hop", "weight": 0.9},
+          {"genre": "Battle Rap", "weight": 0.85},
+          {"genre": "Tech N9ne type beats", "weight": 0.95}
+        ],
+        "example_artists": [
+          {"artist": "Tech N9ne", "weight": 1.0},
+          {"artist": "Twista", "weight": 0.9},
+          {"artist": "Busta Rhymes", "weight": 0.85}
+        ],
+        "similarity": {
+          "multi_syllabic_rhyme": 0.9,
+          "double_time": 0.8,
+          "triplet_flow": 0.7
+        }
+      }
+    }
+  ],
+  "wordplay": [
+    {
+      "alliteration": {
+        "description": "The repetition of the same sound at the beginning of words in a phrase.",
+        "common_genres": [
+          {"genre": "Hip-Hop", "weight": 0.9},
+          {"genre": "Spoken Word", "weight": 0.8},
+          {"genre": "Trap", "weight": 0.7},
+          {"genre": "Mumble Rap", "weight": 0.6}
+        ],
+        "example_artists": [
+          {"artist": "Migos", "weight": 0.85},
+          {"artist": "Big Sean", "weight": 0.8},
+          {"artist": "LL Cool J", "weight": 0.75}
+        ],
+        "similarity": {
+          "consonance": 0.8,
+          "assonance": 0.7,
+          "pun": 0.5
+        }
+      }
+    },
+    {
+      "assonance": {
+        "description": "The repetition of vowel sounds within nearby words.",
+        "common_genres": [
+          {"genre": "Lyrical Hip-Hop", "weight": 0.95},
+          {"genre": "Conscious Hip-Hop", "weight": 0.9},
+          {"genre": "Alternative Hip-Hop", "weight": 0.85},
+          {"genre": "Cloud Rap", "weight": 0.8}
+        ],
+        "example_artists": [
+          {"artist": "Eminem", "weight": 0.95},
+          {"artist": "Nas", "weight": 0.9},
+          {"artist": "Kendrick Lamar", "weight": 0.85}
+        ],
+        "similarity": {
+          "internal_rhyme": 0.8,
+          "slant_rhyme": 0.75,
+          "alliteration": 0.7
+        }
+      }
+    },
+    {
+      "consonance": {
+        "description": "The repetition of consonant sounds within nearby words.",
+        "common_genres": [
+          {"genre": "Lyrical Hip-Hop", "weight": 0.9},
+          {"genre": "Boom Bap", "weight": 0.85},
+          {"genre": "Underground Hip-Hop", "weight": 0.8},
+          {"genre": "G-Funk", "weight": 0.7}
+        ],
+        "example_artists": [
+          {"artist": "Rakim", "weight": 0.9},
+          {"artist": "Snoop Dogg", "weight": 0.85},
+          {"artist": "MF DOOM", "weight": 0.8}
+        ],
+        "similarity": {
+          "alliteration": 0.8,
+          "assonance": 0.7,
+          "slant_rhyme": 0.6
+        }
+      }
+    },
+    {
+      "pun": {
+        "description": "A play on words that exploits multiple meanings of a term, or of similar-sounding words, for an intended humorous or rhetorical effect.",
+        "common_genres": [
+          {"genre": "Battle Rap", "weight": 0.9},
+          {"genre": "Comedy Rap", "weight": 0.85},
+          {"genre": "Conscious Hip-Hop", "weight": 0.7},
+          {"genre": "Pop Rap", "weight": 0.6}
+        ],
+        "example_artists": [
+          {"artist": "Big L", "weight": 0.95},
+          {"artist": "Lil Wayne", "weight": 0.9},
+          {"artist": "Eminem", "weight": 0.85}
+        ],
+        "similarity": {
+          "homophone": 0.8,
+          "homograph": 0.7,
+          "metaphor": 0.6,
+          "rich_rhyme": 0.9
+        }
+      }
+    },
+    {
+      "portmanteau": {
+        "description": "A word blending the sounds and combining the meanings of two others.",
+        "common_genres": [
+          {"genre": "Experimental Hip-Hop", "weight": 0.7},
+          {"genre": "Alternative Hip-Hop", "weight": 0.6},
+          {"genre": "Comedy Rap", "weight": 0.5},
+          {"genre": "Nerdcore", "weight": 0.8}
+        ],
+        "example_artists": [
+          {"artist": "MF DOOM", "weight": 0.75},
+          {"artist": "Deltron 3030", "weight": 0.7},
+          {"artist": "Childish Gambino", "weight": 0.65}
+        ],
+        "similarity": {
+          "neologism": 0.9,
+          "pun": 0.6,
+          "allusion": 0.5
+        }
+      }
+    },
+    {
+      "neologism": {
+        "description": "The creation and use of new words or expressions.",
+        "common_genres": [
+          {"genre": "Hyphy", "weight": 0.85},
+          {"genre": "Trap", "weight": 0.8},
+          {"genre": "Experimental Hip-Hop", "weight": 0.75},
+          {"genre": "Cloud Rap", "weight": 0.7}
+        ],
+        "example_artists": [
+          {"artist": "E-40", "weight": 1.0},
+          {"artist": "Migos", "weight": 0.85},
+          {"artist": "Snoop Dogg", "weight": 0.8}
+        ],
+        "similarity": {
+          "portmanteau": 0.9,
+          "ad-lib": 0.7,
+          "pun": 0.5
+        }
+      }
+    },
+    {
+      "homophone": {
+        "description": "Words that are pronounced the same but have different meanings, origins, or spelling.",
+        "common_genres": [
+          {"genre": "Battle Rap", "weight": 0.9},
+          {"genre": "Lyrical Hip-Hop", "weight": 0.85},
+          {"genre": "Conscious Hip-Hop", "weight": 0.8},
+          {"genre": "Freestyle Rap", "weight": 0.7}
+        ],
+        "example_artists": [
+          {"artist": "Lloyd Banks", "weight": 0.9},
+          {"artist": "Fabolous", "weight": 0.85},
+          {"artist": "Big L", "weight": 0.8}
+        ],
+        "similarity": {
+          "pun": 0.9,
+          "homograph": 0.7,
+          "metaphor": 0.6,
+          "rich_rhyme": 0.95
+        }
+      }
+    },
+    {
+      "homograph": {
+        "description": "Words that are spelled the same but have different meanings and may be pronounced differently.",
+        "common_genres": [
+          {"genre": "Lyrical Hip-Hop", "weight": 0.8},
+          {"genre": "Conscious Hip-Hop", "weight": 0.75},
+          {"genre": "Poetry", "weight": 0.85},
+          {"genre": "Spoken Word", "weight": 0.7}
+        ],
+        "example_artists": [
+          {"artist": "Lupe Fiasco", "weight": 0.9},
+          {"artist": "Canibus", "weight": 0.8},
+          {"artist": "Aesop Rock", "weight": 0.75}
+        ],
+        "similarity": {
+          "pun": 0.8,
+          "homophone": 0.7,
+          "eye_rhyme": 0.9
+        }
+      }
+    },
+    {
+      "onomatopoeia": {
+        "description": "The use of words that imitate the sound they describe.",
+        "common_genres": [
+            {"genre": "Old School Hip-Hop", "weight": 0.8},
+            {"genre": "Comedy Rap", "weight": 0.85},
+            {"genre": "Trap", "weight": 0.75},
+            {"genre": "Horrorcore", "weight": 0.7}
+        ],
+        "example_artists": [
+            {"artist": "Busta Rhymes", "weight": 0.85},
+            {"artist": "The Sugarhill Gang", "weight": 0.8},
+            {"artist": "Eminem", "weight": 0.75}
+        ],
+        "similarity": {
+            "ad-lib": 0.7,
+            "alliteration": 0.5,
+            "imagery": 0.6
+        }
+      }
+    }
+  ],
+  "structural-elements": [
+    {
+      "anaphora": {
+        "description": "The repetition of a word or phrase at the beginning of successive clauses.",
+        "common_genres": [
+          {"genre": "Conscious Hip-Hop", "weight": 0.9},
+          {"genre": "Political Rap", "weight": 0.85},
+          {"genre": "Spoken Word", "weight": 0.95},
+          {"genre": "Trap", "weight": 0.7}
+        ],
+        "example_artists": [
+          {"artist": "Kendrick Lamar", "weight": 0.9},
+          {"artist": "Common", "weight": 0.85},
+          {"artist": "Migos", "weight": 0.8}
+        ],
+        "similarity": {
+          "epiphora": 0.9,
+          "parallelism": 0.8,
+          "refrain": 0.7
+        }
+      }
+    },
+    {
+      "epiphora": {
+        "description": "The repetition of a word or phrase at the end of successive clauses.",
+        "common_genres": [
+          {"genre": "Conscious Hip-Hop", "weight": 0.85},
+          {"genre": "Political Rap", "weight": 0.8},
+          {"genre": "Spoken Word", "weight": 0.9},
+          {"genre": "Gospel Rap", "weight": 0.75}
+        ],
+        "example_artists": [
+          {"artist": "Kanye West", "weight": 0.9},
+          {"artist": "Chance the Rapper", "weight": 0.85},
+          {"artist": "Lauryn Hill", "weight": 0.8}
+        ],
+        "similarity": {
+          "anaphora": 0.9,
+          "refrain": 0.8,
+          "parallelism": 0.7
+        }
+      }
+    },
+    {
+      "refrain": {
+        "description": "A repeated line or number of lines in a song or poem, typically at the end of each verse.",
+        "common_genres": [
+          {"genre": "Pop Rap", "weight": 1.0},
+          {"genre": "Trap", "weight": 0.95},
+          {"genre": "Hip-Hop", "weight": 0.9},
+          {"genre": "R&B", "weight": 0.85}
+        ],
+        "example_artists": [
+          {"artist": "Drake", "weight": 0.95},
+          {"artist": "Post Malone", "weight": 0.9},
+          {"artist": "Travis Scott", "weight": 0.85}
+        ],
+        "similarity": {
+          "anaphora": 0.7,
+          "epiphora": 0.7,
+          "call_and_response": 0.6,
+          "identical_rhyme": 0.8
+        }
+      }
+    },
+    {
+      "call_and_response": {
+        "description": "A succession of two distinct phrases usually written in different parts of the music, where the second phrase is heard as a direct commentary on or in response to the first.",
+        "common_genres": [
+          {"genre": "Old School Hip-Hop", "weight": 0.9},
+          {"genre": "Party Rap", "weight": 0.85},
+          {"genre": "Crunk", "weight": 0.8},
+          {"genre": "Funk", "weight": 0.95}
+        ],
+        "example_artists": [
+          {"artist": "The Sugarhill Gang", "weight": 0.9},
+          {"artist": "Lil Jon", "weight": 0.95},
+          {"artist": "James Brown", "weight": 1.0}
+        ],
+        "similarity": {
+          "ad-lib": 0.8,
+          "refrain": 0.7,
+          "anaphora": 0.5
+        }
+      }
+    },
+    {
+      "parallelism": {
+        "description": "The use of components in a sentence that are grammatically the same; or similar in their construction, sound, meaning, or meter.",
+        "common_genres": [
+          {"genre": "Conscious Hip-Hop", "weight": 0.9},
+          {"genre": "Spoken Word", "weight": 0.85},
+          {"genre": "Lyrical Hip-Hop", "weight": 0.8},
+          {"genre": "Political Rap", "weight": 0.75}
+        ],
+        "example_artists": [
+          {"artist": "Kendrick Lamar", "weight": 0.95},
+          {"artist": "J. Cole", "weight": 0.9},
+          {"artist": "Common", "weight": 0.85}
+        ],
+        "similarity": {
+          "anaphora": 0.8,
+          "epiphora": 0.8,
+          "enjambment_rhyme": 0.6,
+          "antithesis": 0.8
+        }
+      }
+    },
+    {
+      "ad-lib": {
+        "description": "Spoken or sung remarks that are improvised and not part of the written lyrics.",
+        "common_genres": [
+          {"genre": "Trap", "weight": 1.0},
+          {"genre": "Mumble Rap", "weight": 0.9},
+          {"genre": "Drill", "weight": 0.85},
+          {"genre": "Cloud Rap", "weight": 0.8}
+        ],
+        "example_artists": [
+          {"artist": "Migos", "weight": 1.0},
+          {"artist": "Travis Scott", "weight": 0.95},
+          {"artist": "Playboi Carti", "weight": 0.9}
+        ],
+        "similarity": {
+          "call_and_response": 0.7,
+          "neologism": 0.6,
+          "refrain": 0.5,
+          "onomatopoeia": 0.7
+        }
+      }
+    }
+  ],
+  "flow-rhythm": [
+    {
+      "syllable_density": {
+        "description": "The number of syllables packed into a measure or line, affecting the perceived speed and complexity of the flow.",
+        "common_genres": [
+          {"genre": "Chopper Rap", "weight": 1.0},
+          {"genre": "Tech N9ne type beats", "weight": 0.95},
+          {"genre": "Lyrical Hip-Hop", "weight": 0.85},
+          {"genre": "Grime", "weight": 0.8}
+        ],
+        "example_artists": [
+          {"artist": "Busta Rhymes", "weight": 0.95},
+          {"artist": "Twista", "weight": 1.0},
+          {"artist": "Tech N9ne", "weight": 0.9}
+        ],
+        "similarity": {
+          "double_time": 0.9,
+          "triplet_flow": 0.8,
+          "stacked_multis": 0.7
+        }
+      }
+    },
+    {
+      "on-beat": {
+        "description": "A straightforward, rhythmically precise flow where syllables land directly on the beat.",
+        "common_genres": [
+          {"genre": "Old School Hip-Hop", "weight": 0.95},
+          {"genre": "Pop Rap", "weight": 0.9},
+          {"genre": "Boom Bap", "weight": 0.85},
+          {"genre": "Gangsta Rap", "weight": 0.8}
+        ],
+        "example_artists": [
+          {"artist": "Run-DMC", "weight": 0.95},
+          {"artist": "2Pac", "weight": 0.9},
+          {"artist": "50 Cent", "weight": 0.85}
+        ],
+        "similarity": {
+          "off-beat": 0.8,
+          "syncopation": 0.7,
+          "couplet": 0.6
+        }
+      }
+    },
+    {
+      "off-beat": {
+        "description": "A flow where syllables are intentionally placed before or after the beat, creating a syncopated or 'lazy' feel.",
+        "common_genres": [
+          {"genre": "G-Funk", "weight": 0.9},
+          {"genre": "Cloud Rap", "weight": 0.85},
+          {"genre": "Alternative Hip-Hop", "weight": 0.8},
+          {"genre": "Jazz Rap", "weight": 0.75}
+        ],
+        "example_artists": [
+          {"artist": "Snoop Dogg", "weight": 1.0},
+          {"artist": "E-40", "weight": 0.9},
+          {"artist": "MF DOOM", "weight": 0.85}
+        ],
+        "similarity": {
+          "on-beat": 0.8,
+          "syncopation": 0.9,
+          "enjambment_rhyme": 0.7
+        }
+      }
+    },
+    {
+      "polyrhythmic": {
+        "description": "The simultaneous use of two or more conflicting rhythms.",
+        "common_genres": [
+          {"genre": "Experimental Hip-Hop", "weight": 0.9},
+          {"genre": "Jazz Rap", "weight": 0.85},
+          {"genre": "Abstract Hip-Hop", "weight": 0.8},
+          {"genre": "Avant-Garde", "weight": 0.95}
+        ],
+        "example_artists": [
+          {"artist": "Flying Lotus", "weight": 0.9},
+          {"artist": "Shabazz Palaces", "weight": 0.85},
+          {"artist": "clipping.", "weight": 0.8}
+        ],
+        "similarity": {
+          "off-beat": 0.7,
+          "syncopation": 0.8,
+          "sporadic_rhyme": 0.6
+        }
+      }
+    },
+    {
+      "stop_and_go": {
+        "description": "A flow characterized by abrupt pauses and starts, creating a disjointed and impactful rhythm.",
+        "common_genres": [
+          {"genre": "Trap", "weight": 0.9},
+          {"genre": "Drill", "weight": 0.85},
+          {"genre": "Battle Rap", "weight": 0.8},
+          {"genre": "Hardcore Hip-Hop", "weight": 0.75}
+        ],
+        "example_artists": [
+          {"artist": "Tay-K", "weight": 0.9},
+          {"artist": "Valee", "weight": 0.85},
+          {"artist": "Blueface", "weight": 0.8}
+        ],
+        "similarity": {
+          "off-beat": 0.7,
+          "syncopation": 0.6,
+          "ad-lib": 0.5
+        }
+      }
+    },
+    {
+      "double_time": {
+        "description": "Rapping at twice the speed of the instrumental's tempo.",
+        "common_genres": [
+          {"genre": "Chopper Rap", "weight": 1.0},
+          {"genre": "Grime", "weight": 0.9},
+          {"genre": "Trap Metal", "weight": 0.85},
+          {"genre": "Hardcore Hip-Hop", "weight": 0.8}
+        ],
+        "example_artists": [
+          {"artist": "Twista", "weight": 1.0},
+          {"artist": "Busta Rhymes", "weight": 0.95},
+          {"artist": "Tech N9ne", "weight": 0.9}
+        ],
+        "similarity": {
+          "syllable_density": 0.9,
+          "triplet_flow": 0.8,
+          "stacked_multis": 0.7
+        }
+      }
+    },
+    {
+      "triplet_flow": {
+        "description": "A rhythmic pattern that divides a beat into three equal parts.",
+        "common_genres": [
+          {"genre": "Trap", "weight": 1.0},
+          {"genre": "Mumble Rap", "weight": 0.95},
+          {"genre": "Drill", "weight": 0.9},
+          {"genre": "Cloud Rap", "weight": 0.85}
+        ],
+        "example_artists": [
+          {"artist": "Migos", "weight": 1.0},
+          {"artist": "Drake", "weight": 0.9},
+          {"artist": "Future", "weight": 0.85}
+        ],
+        "similarity": {
+          "syllable_density": 0.8,
+          "double_time": 0.7,
+          "stacked_multis": 0.6
+        }
+      }
+    },
+    {
+      "syncopation": {
+        "description": "A deliberate shifting of the accent to a weak beat or an off-beat.",
+        "common_genres": [
+          {"genre": "Jazz Rap", "weight": 0.95},
+          {"genre": "Alternative Hip-Hop", "weight": 0.9},
+          {"genre": "G-Funk", "weight": 0.85},
+          {"genre": "Lo-fi Hip-Hop", "weight": 0.8}
+        ],
+        "example_artists": [
+          {"artist": "A Tribe Called Quest", "weight": 0.95},
+          {"artist": "De La Soul", "weight": 0.9},
+          {"artist": "Slick Rick", "weight": 0.85}
+        ],
+        "similarity": {
+          "off-beat": 0.9,
+          "polyrhythmic": 0.8,
+          "enjambment_rhyme": 0.7
+        }
+      }
+    }
+  ],
+  "rhetorical-devices": [
+    {
+      "metaphor": {
+        "description": "A figure of speech in which a word or phrase is applied to an object or action to which it is not literally applicable.",
+        "common_genres": [
+          {"genre": "Conscious Hip-Hop", "weight": 1.0},
+          {"genre": "Lyrical Hip-Hop", "weight": 0.95},
+          {"genre": "Storytelling Rap", "weight": 0.9},
+          {"genre": "Poetry", "weight": 0.85}
+        ],
+        "example_artists": [
+          {"artist": "Nas", "weight": 0.95},
+          {"artist": "Kendrick Lamar", "weight": 0.9},
+          {"artist": "Common", "weight": 0.85}
+        ],
+        "similarity": {
+          "simile": 0.9,
+          "personification": 0.8,
+          "pun": 0.6,
+          "allegory": 0.8
+        }
+      }
+    },
+    {
+      "simile": {
+        "description": "A figure of speech involving the comparison of one thing with another thing of a different kind, used to make a description more emphatic or vivid (e.g., as brave as a lion).",
+        "common_genres": [
+          {"genre": "Hip-Hop", "weight": 0.95},
+          {"genre": "Battle Rap", "weight": 0.9},
+          {"genre": "Storytelling Rap", "weight": 0.85},
+          {"genre": "Pop Rap", "weight": 0.8}
+        ],
+        "example_artists": [
+          {"artist": "Eminem", "weight": 0.9},
+          {"artist": "Lil Wayne", "weight": 0.85},
+          {"artist": "Big L", "weight": 0.8}
+        ],
+        "similarity": {
+          "metaphor": 0.9,
+          "hyperbole": 0.7,
+          "personification": 0.6
+        }
+      }
+    },
+    {
+      "personification": {
+        "description": "The attribution of a personal nature or human characteristics to something nonhuman, or the representation of an abstract quality in human form.",
+        "common_genres": [
+          {"genre": "Conscious Hip-Hop", "weight": 0.9},
+          {"genre": "Storytelling Rap", "weight": 0.85},
+          {"genre": "Alternative Hip-Hop", "weight": 0.8},
+          {"genre": "Poetry", "weight": 0.95}
+        ],
+        "example_artists": [
+          {"artist": "Common", "weight": 0.9},
+          {"artist": "Nas", "weight": 0.85},
+          {"artist": "2Pac", "weight": 0.8}
+        ],
+        "similarity": {
+          "metaphor": 0.8,
+          "simile": 0.7,
+          "allusion": 0.6,
+          "allegory": 0.7
+        }
+      }
+    },
+    {
+      "irony": {
+        "description": "The expression of one's meaning by using language that normally signifies the opposite, typically for humorous or emphatic effect.",
+        "common_genres": [
+          {"genre": "Alternative Hip-Hop", "weight": 0.85},
+          {"genre": "Comedy Rap", "weight": 0.8},
+          {"genre": "Conscious Hip-Hop", "weight": 0.75},
+          {"genre": "Satirical Rap", "weight": 0.9}
+        ],
+        "example_artists": [
+          {"artist": "Childish Gambino", "weight": 0.9},
+          {"artist": "Vince Staples", "weight": 0.85},
+          {"artist": "Tyler, the Creator", "weight": 0.8}
+        ],
+        "similarity": {
+          "sarcasm": 0.9,
+          "understatement": 0.7,
+          "hyperbole": 0.6,
+          "antithesis": 0.6
+        }
+      }
+    },
+    {
+      "sarcasm": {
+        "description": "The use of irony to mock or convey contempt.",
+        "common_genres": [
+          {"genre": "Battle Rap", "weight": 0.9},
+          {"genre": "Horrorcore", "weight": 0.85},
+          {"genre": "Comedy Rap", "weight": 0.8},
+          {"genre": "Hardcore Hip-Hop", "weight": 0.75}
+        ],
+        "example_artists": [
+          {"artist": "Eminem", "weight": 1.0},
+          {"artist": "Tyler, the Creator", "weight": 0.9},
+          {"artist": "Necro", "weight": 0.8}
+        ],
+        "similarity": {
+          "irony": 0.9,
+          "hyperbole": 0.7,
+          "understatement": 0.6
+        }
+      }
+    },
+    {
+      "hyperbole": {
+        "description": "Exaggerated statements or claims not meant to be taken literally.",
+        "common_genres": [
+          {"genre": "Battle Rap", "weight": 0.95},
+          {"genre": "Trap", "weight": 0.9},
+          {"genre": "Gangsta Rap", "weight": 0.85},
+          {"genre": "Comedy Rap", "weight": 0.8}
+        ],
+        "example_artists": [
+          {"artist": "Lil Wayne", "weight": 0.95},
+          {"artist": "Eminem", "weight": 0.9},
+          {"artist": "Big Sean", "weight": 0.85}
+        ],
+        "similarity": {
+          "simile": 0.7,
+          "sarcasm": 0.6,
+          "understatement": 0.8
+        }
+      }
+    },
+    {
+      "understatement": {
+        "description": "The presentation of something as being smaller, worse, or less important than it actually is.",
+        "common_genres": [
+          {"genre": "Alternative Hip-Hop", "weight": 0.8},
+          {"genre": "Lo-fi Hip-Hop", "weight": 0.75},
+          {"genre": "Cloud Rap", "weight": 0.7},
+          {"genre": "UK Hip-Hop", "weight": 0.85}
+        ],
+        "example_artists": [
+          {"artist": "The Streets", "weight": 0.9},
+          {"artist": "Earl Sweatshirt", "weight": 0.85},
+          {"artist": "King Krule", "weight": 0.8}
+        ],
+        "similarity": {
+          "irony": 0.8,
+          "sarcasm": 0.7,
+          "hyperbole": 0.9
+        }
+      }
+    },
+    {
+      "allusion": {
+        "description": "An expression designed to call something to mind without mentioning it explicitly; an indirect or passing reference.",
+        "common_genres": [
+          {"genre": "Conscious Hip-Hop", "weight": 0.95},
+          {"genre": "Lyrical Hip-Hop", "weight": 0.9},
+          {"genre": "Nerdcore", "weight": 0.85},
+          {"genre": "Alternative Hip-Hop", "weight": 0.8}
+        ],
+        "example_artists": [
+          {"artist": "Jay-Z", "weight": 0.9},
+          {"artist": "Lupe Fiasco", "weight": 0.95},
+          {"artist": "Kendrick Lamar", "weight": 0.85}
+        ],
+        "similarity": {
+          "metaphor": 0.7,
+          "personification": 0.6,
+          "portmanteau": 0.5,
+          "allegory": 0.75
+        }
+      }
+    },
+    {
+      "antithesis": {
+        "description": "The juxtaposition of contrasting ideas in a balanced phrase or structure to create a striking effect.",
+        "common_genres": [
+            {"genre": "Conscious Hip-Hop", "weight": 0.9},
+            {"genre": "Political Rap", "weight": 0.85},
+            {"genre": "Lyrical Hip-Hop", "weight": 0.8},
+            {"genre": "Storytelling Rap", "weight": 0.75}
+        ],
+        "example_artists": [
+            {"artist": "2Pac", "weight": 0.95},
+            {"artist": "Kendrick Lamar", "weight": 0.9},
+            {"artist": "Immortal Technique", "weight": 0.85}
+        ],
+        "similarity": {
+            "parallelism": 0.8,
+            "irony": 0.7,
+            "metaphor": 0.6
+        }
+      }
+    },
+    {
+      "imagery": {
+        "description": "The use of vivid, sensory language to create detailed mental pictures and sensations for the listener.",
+        "common_genres": [
+            {"genre": "Storytelling Rap", "weight": 1.0},
+            {"genre": "Conscious Hip-Hop", "weight": 0.95},
+            {"genre": "G-Funk", "weight": 0.9},
+            {"genre": "Lyrical Hip-Hop", "weight": 0.9}
+        ],
+        "example_artists": [
+            {"artist": "Slick Rick", "weight": 1.0},
+            {"artist": "Nas", "weight": 0.95},
+            {"artist": "Kendrick Lamar", "weight": 0.9}
+        ],
+        "similarity": {
+            "metaphor": 0.7,
+            "personification": 0.7,
+            "simile": 0.6,
+            "onomatopoeia": 0.6
+        }
+      }
+    },
+    {
+      "allegory": {
+        "description": "A narrative in which characters, events, and settings represent abstract ideas or real-world issues, conveying a deeper meaning.",
+        "common_genres": [
+            {"genre": "Conscious Hip-Hop", "weight": 1.0},
+            {"genre": "Storytelling Rap", "weight": 0.9},
+            {"genre": "Lyrical Hip-Hop", "weight": 0.85},
+            {"genre": "Political Rap", "weight": 0.8}
+        ],
+        "example_artists": [
+            {"artist": "Lupe Fiasco", "weight": 0.95},
+            {"artist": "Kendrick Lamar", "weight": 0.9},
+            {"artist": "Common", "weight": 0.9}
+        ],
+        "similarity": {
+            "metaphor": 0.8,
+            "personification": 0.7,
+            "allusion": 0.75
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+"""
+NiceGUI user interface
+"""
