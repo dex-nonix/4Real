@@ -41,3 +41,25 @@ class Header:
     def _show_settings(self):
         """Show settings dialog"""
         ui.notify("Settings clicked")
+
+    def add_help_buttons(self, help_system, performance_monitor):
+        """Add help and monitoring buttons to the header"""
+        # Find the user info and actions row
+        if hasattr(self, 'title_label'):
+            # Get the parent row and add buttons after the title
+            with ui.row().classes('items-center gap-2'):
+                ui.button('❓ Help', on_click=help_system.show_help_dialog).classes(
+                    'px-3 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg text-sm'
+                )
+                ui.button('⌨️ Shortcuts', on_click=help_system.show_keyboard_shortcuts).classes(
+                    'px-3 py-2 bg-gray-100 text-gray-700 hover:bg-gray-300 rounded-lg text-sm'
+                )
+                ui.button('💡 Tips', on_click=help_system.show_quick_tips).classes(
+                    'px-3 py-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg text-sm'
+                )
+                ui.button('📊 Performance', on_click=performance_monitor.show_performance_dashboard).classes(
+                    'px-3 py-2 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg text-sm'
+                )
+                
+                # Health indicator
+                performance_monitor.show_health_indicator()

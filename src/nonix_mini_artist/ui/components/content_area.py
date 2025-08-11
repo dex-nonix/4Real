@@ -17,21 +17,11 @@ class ContentArea:
         # Use flex-1 to take remaining space and proper flexbox layout
         with ui.column().classes('flex-1 p-6 bg-gray-100 overflow-auto flex flex-col') as container:
             self.content_container = container
-            # Default welcome content
-            self._create_welcome_content()
+            # Don't create default content - let the app handle it
     
     def _create_welcome_content(self):
-        """Create default welcome content"""
-        # Use proper flexbox layout for the welcome content
-        with ui.column().classes('max-w-4xl mx-auto flex flex-col items-center'):
-            ui.label('🎵 Welcome to Nonix Mini Artist Manager').classes('text-3xl font-bold mb-4 text-center')
-            ui.label('Manage your music collection with ease').classes('text-lg text-gray-600 mb-6 text-center')
-            
-            # Use flexbox for button layout
-            with ui.row().classes('gap-4 flex flex-wrap justify-center'):
-                ui.button('🎤 Artists', on_click=lambda: self._show_artists()).classes('px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600')
-                ui.button('💿 Albums', on_click=lambda: self._show_albums()).classes('px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600')
-                ui.button('🎵 Tracks', on_click=lambda: self._show_tracks()).classes('px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600')
+        """Create default welcome content - removed to avoid duplication"""
+        pass
     
     def set_content(self, content):
         """Set the main content"""
@@ -51,8 +41,7 @@ class ContentArea:
         """Clear the content area"""
         if self.content_container:
             self.content_container.clear()
-            with self.content_container:
-                self._create_welcome_content()
+            # Don't recreate welcome content - let the app handle it
     
     def _show_artists(self):
         """Show artists view"""

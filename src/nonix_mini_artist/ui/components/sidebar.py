@@ -37,10 +37,12 @@ class Sidebar:
     def set_items(self, items: List[Dict]):
         """Set navigation items"""
         self.items = items
-        # Rebuild sidebar with new items
+        # Clear existing navigation items
         if hasattr(self, 'nav_items'):
             for nav_item in self.nav_items:
-                nav_item.delete()
+                if hasattr(nav_item, 'delete'):
+                    nav_item.delete()
+        # Rebuild sidebar with new items
         self._build_sidebar()
     
     def add_item(self, item: Dict):

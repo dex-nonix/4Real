@@ -24,6 +24,8 @@ class MusicManagerApp:
         """Initialize the application"""
         self.music_service = MusicService()
         self.ai_service = AIService()
+        self.chat_service = None  # Will be initialized when needed
+        self.persona_service = None  # Will be initialized when needed
         self.layout = None
         self.current_view = None
         
@@ -44,6 +46,19 @@ class MusicManagerApp:
         except Exception as e:
             print(f"Failed to initialize AI providers: {e}")
     
+    def _init_chat_services(self):
+        """Initialize chat and persona services when first accessed"""
+        try:
+            from ..services.chat_service import ChatService
+            from ..services.persona_service import AIPersonaService
+            
+            if self.chat_service is None:
+                self.chat_service = ChatService()
+            if self.persona_service is None:
+                self.persona_service = AIPersonaService()
+        except Exception as e:
+            print(f"Failed to initialize chat services: {e}")
+    
     async def _init_ai(self):
         """Initialize AI providers (kept for compatibility)"""
         try:
@@ -56,8 +71,8 @@ class MusicManagerApp:
         # Configure app
         ui.page_title('Nonix Mini Artist Manager')
         
-        # Create master layout
-        self.layout = MasterLayout()
+        # Create the main layout structure ONCE
+        self._create_main_layout()
         
         # Set up sidebar navigation
         sidebar_items = [
@@ -70,7 +85,7 @@ class MusicManagerApp:
             {"title": "Personas", "icon": "🎭", "route": "/personas"},
             {"title": "Chat", "icon": "💬", "route": "/chat"}
         ]
-        self.layout.set_sidebar_items(sidebar_items)
+        self.sidebar.set_items(sidebar_items)
         
         # Help system
         self.help_system = HelpSystem()
@@ -79,25 +94,28 @@ class MusicManagerApp:
         self.performance_monitor = PerformanceMonitor()
         
         # Add help and monitoring buttons to header
-        with ui.row().classes('items-center gap-2'):
-            ui.button('❓ Help', on_click=self.help_system.show_help_dialog).classes(
-                'px-3 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg text-sm'
-            )
-            ui.button('⌨️ Shortcuts', on_click=self.help_system.show_keyboard_shortcuts).classes(
-                'px-3 py-2 bg-gray-100 text-gray-700 hover:bg-gray-300 rounded-lg text-sm'
-            )
-            ui.button('💡 Tips', on_click=self.help_system.show_quick_tips).classes(
-                'px-3 py-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg text-sm'
-            )
-            ui.button('📊 Performance', on_click=self.performance_monitor.show_performance_dashboard).classes(
-                'px-3 py-2 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg text-sm'
-            )
-            
-            # Health indicator
-            self.performance_monitor.show_health_indicator()
+        self.header.add_help_buttons(
+            help_system=self.help_system,
+            performance_monitor=self.performance_monitor
+        )
         
         # Set initial content - show dashboard
         self._show_dashboard()
+    
+    def _create_main_layout(self):
+        """Create the main layout structure - called only once"""
+        # Main container
+        with ui.row().classes('w-full h-screen flex') as main_container:
+            # Sidebar - fixed width, full height
+            self.sidebar = Sidebar()
+            
+            # Main content area - flexible width, full height
+            with ui.column().classes('flex-1 h-full flex flex-col'):
+                # Header
+                self.header = Header()
+                
+                # Content area - flexible, scrollable
+                self.content = ContentArea()
     
     def _show_dashboard(self):
         """Show the dashboard view"""
@@ -227,6 +245,8 @@ class MusicManagerApp:
     def _show_chat(self):
         """Show the chat view"""
         self.layout.set_title('Chat')
+        # Initialize services if needed
+        self._init_chat_services()
         chat_view = ChatView(self.chat_service, self.persona_service)
         self.layout.set_content(chat_view)
         self.current_view = 'chat'
@@ -234,6 +254,8 @@ class MusicManagerApp:
     def _show_personas(self):
         """Show the personas view"""
         self.layout.set_title('Personas')
+        # Initialize services if needed
+        self._init_chat_services()
         persona_view = PersonaManagementView()
         self.layout.set_content(persona_view)
         self.current_view = 'personas'
