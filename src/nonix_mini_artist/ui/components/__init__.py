@@ -8,6 +8,7 @@ from .content_area import ContentArea
 from .generic_table import GenericTable
 from .generic_form import GenericForm
 from .generic_dialog import GenericDialog
+from .generic_crud_view import GenericCRUDView
 from .search_bar import SearchBar
 from .chat_sidebar import ChatSidebar
 from .chat_interface import ChatInterface
@@ -20,6 +21,9 @@ __all__ = [
     'GenericTable',
     'GenericForm',
     'GenericDialog',
+    'ModalDialog',
+    'ModalFormDialog',
+    'GenericCRUDView',
     'SearchBar',
     'ChatSidebar',
     'ChatInterface',

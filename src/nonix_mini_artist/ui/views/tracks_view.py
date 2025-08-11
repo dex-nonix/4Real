@@ -1,67 +1,46 @@
 """
-Tracks view using reusable components
+Tracks view using generic CRUD base class with AI functionality
 """
+import asyncio
 from nicegui import ui
-from ..components.generic_table import GenericTable
-from ..components.generic_form import GenericForm
-from ..components.search_bar import EntitySearchBar
+from ..components.generic_crud_view import GenericCRUDView
+from ..components.generic_dialog import GenericDialog
 from ...services.music_service import MusicService
 from ...ai.service import AIService
 from ...ai.models import AIAnalysisRequest
 from ...core.models import Track, Album, Artist
 
-class TracksView:
-    """Tracks view using reusable components"""
+class TracksView(GenericCRUDView):
+    """Tracks view using generic CRUD base class with AI functionality"""
     
     def __init__(self, music_service: MusicService, ai_service: AIService = None):
-        """Initialize tracks view"""
-        self.music_service = music_service
+        """Initialize tracks view with generic configuration and AI service"""
+        entity_config = {
+            'name': 'Track',
+            'model': Track,
+            'fields': ['track_number', 'name', 'album', 'duration'],
+            'columns': ['track_number', 'name', 'album', 'duration', 'created_at'],
+            'crud': music_service.track_crud,
+            'icon': '🎵',
+            'search_placeholder': 'Search tracks by name...'
+        }
+        super().__init__(music_service, entity_config)
+        
+        # AI service for analysis
         self.ai_service = ai_service
-        self.tracks = []
-        self.filtered_tracks = []
         self.albums = []
         self.artists = []
-        self._build_view()
+        
+        # Add AI Analysis button after the base view is built
+        self._add_ai_button()
+        
         # Load data after view is built
         self._load_data()
     
-    def _build_view(self):
-        """Build the tracks view"""
-        with ui.column().classes('w-full') as container:
-            self.container = container
-            # Header
-            ui.label('🎵 Tracks').classes('text-3xl font-bold mb-6')
-            
-            # Search bar
-            self.search_bar = EntitySearchBar(
-                entity_type="tracks",
-                on_search=self._handle_search,
-                placeholder="Search tracks by name..."
-            )
-            
-            # Action buttons
-            ui.button('➕ Add New Track', on_click=self._show_add_form).classes('mb-6')
-            ui.button('🤖 AI Analysis', on_click=self._show_ai_analysis).classes('mb-6')
-            
-            # Tracks table - full width
-            self.table = GenericTable(
-                data=self.filtered_tracks,
-                columns=['track_number', 'name', 'album', 'duration', 'created_at'],
-                actions=['view', 'edit', 'delete'],
-                crud_operations=self.music_service.track_crud
-            )
-            
-            # Add track form (hidden by default) - full width
-            self.add_form = GenericForm(
-                model_class=Track,
-                fields=['track_number', 'name', 'album', 'duration'],
-                submit_action=self._create_track
-            )
-            self.add_form.visible = False
-            
-            # AI analysis form (hidden by default) - full width
-            self.ai_form = self._create_ai_analysis_form()
-            self.ai_form.visible = False
+    def _add_ai_button(self):
+        """Add AI Analysis button to the view"""
+        # Add AI Analysis button after the Add New Track button
+        ui.button('🤖 AI Analysis', on_click=self._show_ai_analysis).classes('mb-6')
     
     def _create_ai_analysis_form(self):
         """Create the AI analysis form"""
@@ -112,11 +91,11 @@ class TracksView:
         """Load tracks, albums, and artists data"""
         try:
             # Use synchronous database operations
-            self.tracks = list(self.music_service.track_crud.model.select())
-            self.filtered_tracks = self.tracks.copy()
+            self.items = list(self.music_service.track_crud.model.select())
+            self.filtered_items = self.items.copy()
             self.albums = list(self.music_service.album_crud.model.select())
             self.artists = list(self.music_service.artist_crud.model.select())
-            self.table.update_data(self.filtered_tracks)
+            self.table.update_data(self.filtered_items)
             # Update AI form options if it exists
             self._update_ai_form_options()
         except Exception as e:
@@ -126,10 +105,10 @@ class TracksView:
         """Update AI form options when data changes"""
         if hasattr(self, 'track_select') and self.track_select:
             # Update the track select options directly
-            self.track_select.options = [f"{t.track_number}. {t.name}" for t in self.tracks] if self.tracks else ['No tracks available']
+            self.track_select.options = [f"{t.track_number}. {t.name}" for t in self.items] if self.items else ['No tracks available']
     
-    async def _create_track(self, **kwargs):
-        """Create a new track"""
+    async def _create_entity(self, **kwargs):
+        """Override to handle album selection logic"""
         try:
             # Handle album selection
             if 'album' in kwargs and isinstance(kwargs['album'], str):
@@ -143,23 +122,27 @@ class TracksView:
                     ui.notify('Album not found. Please select a valid album.', type='negative')
                     return
             
-            track = await self.music_service.create_track(**kwargs)
-            self.tracks.append(track)
-            self.filtered_tracks.append(track)
-            self.table.add_row(track)
-            self.add_form.visible = False
-            ui.notify('Track created successfully!', type='positive')
+            # Call parent method
+            await super()._create_entity(**kwargs)
+            
         except Exception as e:
             ui.notify(f'Error creating track: {str(e)}', type='negative')
     
-    def _show_add_form(self):
-        """Show the add track form"""
-        self.add_form.visible = True
-    
     def _show_ai_analysis(self):
-        """Show the AI analysis form"""
-        if self.ai_form:
-            self.ai_form.visible = True
+        """Show the AI analysis form in a dialog"""
+        # Create AI analysis form
+        ai_form = self._create_ai_analysis_form()
+        
+        # Create dialog with the form
+        dialog = GenericDialog(
+            title="AI Analysis",
+            content=ai_form,
+            confirm_text="Close",
+            on_confirm=lambda: None,
+            width="700px"
+        )
+        
+        dialog.show()
     
     async def _run_track_analysis(self, track_info: str, preset_name: str):
         """Run AI analysis on a specific track"""
@@ -178,7 +161,7 @@ class TracksView:
             
             # Parse track info to get track number
             track_number = int(track_info.split('.')[0])
-            track = next((t for t in self.tracks if t.track_number == track_number), None)
+            track = next((t for t in self.items if t.track_number == track_number), None)
             
             if not track:
                 ui.notify('Track not found', type='negative')
@@ -249,17 +232,12 @@ class TracksView:
     async def refresh_data(self):
         """Refresh tracks data"""
         try:
-            self.tracks = await self.music_service.list_tracks()
-            self.filtered_tracks = self.tracks.copy()
+            self.items = await self.music_service.list_tracks()
+            self.filtered_items = self.items.copy()
             self.albums = await self.music_service.list_albums()
             self.artists = await self.music_service.list_artists()
-            self.table.update_data(self.filtered_tracks)
+            self.table.update_data(self.filtered_items)
             # Update AI form options
             self._update_ai_form_options()
         except Exception as e:
             ui.notify(f'Error loading data: {str(e)}', type='negative')
-
-    def clear(self):
-        """Clear the view content"""
-        if hasattr(self, 'container'):
-            self.container.clear()

@@ -12,26 +12,32 @@ class GenericForm:
                  model_class: type = None,
                  fields: List[str] = None,
                  submit_action: Callable = None,
-                 initial_data: Dict = None):
+                 initial_data: Dict = None,
+                 embedded: bool = False):
         """Initialize generic form"""
         self.model_class = model_class
         self.fields = fields or []
         self.submit_action = submit_action
         self.initial_data = initial_data or {}
+        self.embedded = embedded  # True when used in dialog, False when standalone
         self.form_data = {}
         self._build_form()
     
     def _build_form(self):
         """Build the form structure"""
-        with ui.card():
-            ui.label('Add New Item').classes('text-2xl font-bold mb-6')
-            
-            # Form fields
+        if not self.embedded:
+            # Standalone form with card and submit button
+            with ui.card():
+                # Form fields
+                for field in self.fields:
+                    self._add_field(field)
+                
+                # Submit button
+                ui.button('Submit', on_click=self._handle_submit).classes('w-full mt-6')
+        else:
+            # Embedded form (no card, no submit button - handled by dialog)
             for field in self.fields:
                 self._add_field(field)
-            
-            # Submit button
-            ui.button('Submit', on_click=self._handle_submit).classes('w-full mt-6')
     
     def _add_field(self, field_name: str):
         """Add a form field"""

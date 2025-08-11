@@ -29,26 +29,26 @@ class GenericDialog:
     def _build_dialog(self):
         """Build the dialog structure"""
         with ui.dialog() as self.dialog:
-            with ui.card().classes(f'w-{self.width} p-6'):
+            with ui.card().classes(f'w-full max-w-2xl p-6 bg-white shadow-2xl rounded-lg'):
                 # Header
-                ui.label(self.title).classes('text-xl font-bold mb-4')
+                ui.label(self.title).classes('text-xl font-bold mb-4 text-center text-gray-800')
                 
                 # Content
                 if self.content:
                     if isinstance(self.content, str):
-                        ui.label(self.content).classes('mb-4')
+                        ui.label(self.content).classes('mb-4 text-gray-700')
                     else:
                         ui.add(self.content)
                 
                 # Actions
-                with ui.row().classes('justify-end gap-2 mt-4'):
+                with ui.row().classes('justify-end gap-3 mt-6'):
                     if self.on_cancel:
-                        ui.button(self.cancel_text, on_click=self._handle_cancel)
+                        ui.button(self.cancel_text, on_click=self._handle_cancel).classes('px-4 py-2 bg-gray-300 text-gray-700 hover:bg-gray-400 rounded')
                     
                     if self.on_confirm:
-                        ui.button(self.confirm_text, on_click=self._handle_confirm).classes('px-4 py-2 bg-blue-500 text-white hover:bg-blue-600')
+                        ui.button(self.confirm_text, on_click=self._handle_confirm).classes('px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 rounded')
                     else:
-                        ui.button(self.confirm_text, on_click=self._handle_confirm).classes('px-4 py-2 bg-blue-500 text-white hover:bg-blue-600')
+                        ui.button(self.confirm_text, on_click=self._handle_confirm).classes('px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 rounded')
     
     def _handle_confirm(self):
         """Handle confirm button click"""
