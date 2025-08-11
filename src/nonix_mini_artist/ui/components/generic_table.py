@@ -23,20 +23,28 @@ class GenericTable:
     
     def _build_table(self):
         """Build the table structure"""
-        with ui.table().classes('w-full') as self.table:
-            # Add columns
-            for col in self.columns:
-                self.table.add_column(col, col)
-            
-            # Add action column if actions specified
-            if self.actions:
-                self.table.add_column('Actions', 'actions')
-            
-            # Add rows
-            self._add_rows()
+        # Initialize table with empty rows and columns
+        columns = []
+        for col in self.columns:
+            columns.append({'name': col, 'label': col, 'field': col})
+        
+        # Add action column if actions specified
+        if self.actions:
+            columns.append({'name': 'actions', 'label': 'Actions', 'field': 'actions'})
+        
+        # Create table with proper structure
+        self.table = ui.table(
+            columns=columns,
+            rows=[],
+            title=''
+        ).classes('w-full')
+        
+        # Add rows
+        self._add_rows()
     
     def _add_rows(self):
         """Add data rows to the table"""
+        rows = []
         for item in self.data:
             row_data = {}
             
@@ -57,7 +65,10 @@ class GenericTable:
                 actions_html = self._create_actions_html(item)
                 row_data['actions'] = actions_html
             
-            self.table.add_rows([row_data])
+            rows.append(row_data)
+        
+        # Update table rows
+        self.table.rows = rows
     
     def _create_actions_html(self, item: Any) -> str:
         """Create HTML for action buttons"""
@@ -156,30 +167,14 @@ class GenericTable:
     def update_data(self, new_data: List[Any]):
         """Update table data"""
         self.data = new_data
-        self.table.clear()
         self._add_rows()
     
     def add_row(self, item: Any):
         """Add a single row"""
         self.data.append(item)
-        row_data = {}
-        
-        for col in self.columns:
-            if hasattr(item, col):
-                value = getattr(item, col)
-                if hasattr(value, 'strftime'):
-                    value = value.strftime('%Y-%m-%d %H:%M')
-                elif hasattr(value, 'name'):
-                    value = value.name
-                row_data[col] = str(value) if value is not None else ''
-        
-        if self.actions:
-            actions_html = self._create_actions_html(item)
-            row_data['actions'] = actions_html
-        
-        self.table.add_rows([row_data])
+        self._add_rows()
     
     def clear(self):
         """Clear the table"""
-        self.table.clear()
         self.data = []
+        self.table.rows = []
