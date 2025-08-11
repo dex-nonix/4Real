@@ -17,7 +17,6 @@ class StylesView:
         self.styles = []
         self.filtered_styles = []
         self._build_view()
-        self._load_data()
     
     def _build_view(self):
         """Build the styles view"""
@@ -72,12 +71,11 @@ class StylesView:
         
         self.table.update_data(self.filtered_styles)
     
-    async def _load_data(self):
+    def _load_data(self):
         """Load styles data"""
         try:
-            self.styles = await self.music_service.list_styles()
-            self.filtered_styles = self.styles.copy()
-            self.table.update_data(self.filtered_styles)
+            data = self.music_service.list_styles()
+            self.table.update_data(data)
         except Exception as e:
             ui.notify(f'Error loading data: {str(e)}', type='negative')
     

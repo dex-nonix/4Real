@@ -17,7 +17,6 @@ class AISettingsView:
         self.providers = []
         self.presets = []
         self._build_view()
-        self._load_data()
     
     def _build_view(self):
         """Build the AI settings view"""
@@ -74,7 +73,7 @@ class AISettingsView:
                             ui.label('Select Analysis Preset:').classes('font-bold mb-2')
                             self.preset_select = ui.select(
                                 options=[], 
-                                value='',
+                                value=None,
                                 label='Preset'
                             ).classes('w-full mb-4')
                             
@@ -206,23 +205,19 @@ class AISettingsView:
             
             return form
     
-    async def _load_data(self):
+    def _load_data(self):
         """Load AI service data"""
         try:
             # Get providers and presets
-            self.providers = self.ai_service.get_providers()
-            self.presets = self.ai_service.get_presets()
+            data = self.ai_service.get_providers()
+            self.providers_table.update_data(data)
             
-            # Update tables
-            if hasattr(self, 'providers_table'):
-                self.providers_table.update_data(self.providers)
-            
-            if hasattr(self, 'presets_table'):
-                self.presets_table.update_data(self.presets)
+            data = self.ai_service.get_presets()
+            self.presets_table.update_data(data)
             
             # Update preset select options
             if hasattr(self, 'preset_select'):
-                preset_options = [preset.name for preset in self.presets]
+                preset_options = [preset.name for preset in data]
                 self.preset_select.options = preset_options
             
         except Exception as e:

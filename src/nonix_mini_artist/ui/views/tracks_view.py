@@ -22,6 +22,7 @@ class TracksView:
         self.albums = []
         self.artists = []
         self._build_view()
+        # Load data after view is built
         self._load_data()
     
     def _build_view(self):
@@ -70,8 +71,8 @@ class TracksView:
             # Track selection
             ui.label('Select Track:').classes('font-bold mb-2')
             track_select = ui.select(
-                options=[f"{t.track_number}. {t.name}" for t in self.tracks],
-                value='',
+                options=[f"{t.track_number}. {t.name}" for t in self.tracks] if self.tracks else ['No tracks available'],
+                value=None,
                 label='Track'
             ).classes('w-full mb-4')
             
@@ -79,7 +80,7 @@ class TracksView:
             ui.label('Analysis Type:').classes('font-bold mb-2')
             preset_select = ui.select(
                 options=['lyrics_analyzer', 'style_classifier', 'content_generator'],
-                value='',
+                value=None,
                 label='Analysis Preset'
             ).classes('w-full mb-4')
             
@@ -109,16 +110,28 @@ class TracksView:
         
         self.table.update_data(self.filtered_tracks)
     
-    async def _load_data(self):
+    def _load_data(self):
         """Load tracks, albums, and artists data"""
         try:
-            self.tracks = await self.music_service.list_tracks()
+            # Use synchronous database operations
+            self.tracks = list(self.music_service.track_crud.model.select())
             self.filtered_tracks = self.tracks.copy()
-            self.albums = await self.music_service.list_albums()
-            self.artists = await self.music_service.list_artists()
+            self.albums = list(self.music_service.album_crud.model.select())
+            self.artists = list(self.music_service.artist_crud.model.select())
             self.table.update_data(self.filtered_tracks)
+            # Update AI form options if it exists
+            self._update_ai_form_options()
         except Exception as e:
             ui.notify(f'Error loading data: {str(e)}', type='negative')
+    
+    def _update_ai_form_options(self):
+        """Update AI form options when data changes"""
+        if hasattr(self, 'ai_form') and self.ai_form:
+            # Find the track select element and update its options
+            for child in self.ai_form.children:
+                if hasattr(child, 'options') and hasattr(child, 'label') and child.label == 'Track':
+                    child.options = [f"{t.track_number}. {t.name}" for t in self.tracks] if self.tracks else ['No tracks available']
+                    break
     
     async def _create_track(self, **kwargs):
         """Create a new track"""
@@ -246,6 +259,8 @@ class TracksView:
             self.albums = await self.music_service.list_albums()
             self.artists = await self.music_service.list_artists()
             self.table.update_data(self.filtered_tracks)
+            # Update AI form options
+            self._update_ai_form_options()
         except Exception as e:
             ui.notify(f'Error loading data: {str(e)}', type='negative')
 

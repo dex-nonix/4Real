@@ -18,7 +18,6 @@ class AlbumsView:
         self.filtered_albums = []
         self.artists = []
         self._build_view()
-        self._load_data()
     
     def _build_view(self):
         """Build the albums view"""
@@ -67,13 +66,11 @@ class AlbumsView:
         
         self.table.update_data(self.filtered_albums)
     
-    async def _load_data(self):
+    def _load_data(self):
         """Load albums and artists data"""
         try:
-            self.albums = await self.music_service.list_albums()
-            self.filtered_albums = self.albums.copy()
-            self.artists = await self.music_service.list_artists()
-            self.table.update_data(self.filtered_albums)
+            data = self.music_service.list_albums()
+            self.table.update_data(data)
         except Exception as e:
             ui.notify(f'Error loading data: {str(e)}', type='negative')
     

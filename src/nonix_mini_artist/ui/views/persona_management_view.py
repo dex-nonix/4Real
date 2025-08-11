@@ -25,9 +25,6 @@ class PersonaManagementView:
         
         # Build the view
         self._build_view()
-        
-        # Load initial data
-        self._load_data()
     
     def _build_view(self):
         """Build the persona management view"""
@@ -81,7 +78,7 @@ class PersonaManagementView:
                             ui.label('Link to Artist').classes('text-sm font-medium mb-1')
                             self.artist_select = ui.select(
                                 options=[],
-                                value='',
+                                value=None,
                                 placeholder='Select an artist (optional)'
                             ).classes('w-full')
                 
@@ -190,33 +187,19 @@ class PersonaManagementView:
             self.tool_checkboxes = {}
         self.tool_checkboxes[tool_name] = checkbox
     
-    async def _load_data(self):
+    def _load_data(self):
         """Load personas, artists, and tools data"""
         try:
             # Load personas
-            self.personas = []
-            personas = await self.persona_service.list_personas()
-            for persona in personas:
-                persona_data = await self.persona_service.get_persona_with_artist(persona.id)
-                if persona_data:
-                    self.personas.append(persona_data)
+            data = self.persona_service.list_personas()
+            self._render_personas()
             
             # Load artists
-            self.artists = []
-            artists = await self.music_service.artist_crud.list_all()
-            for artist in artists:
-                self.artists.append({
-                    'id': artist.id,
-                    'name': artist.name,
-                    'abbreviation': artist.abbreviation
-                })
+            data = self.music_service.artist_crud.list_all()
+            self._update_artist_select()
             
             # Load available tools
             self.available_tools = self.tool_registry.get_available_tools()
-            
-            # Update UI
-            self._render_personas()
-            self._update_artist_select()
             
         except Exception as e:
             ui.notify(f'Failed to load data: {e}', type='error')
@@ -611,7 +594,7 @@ class PersonaManagementView:
                     ui.label('Select Artist *').classes('text-sm font-medium mb-1')
                     self.template_artist_select = ui.select(
                         options=[],
-                        value='',
+                        value=None,
                         placeholder='Choose an artist for the persona'
                     ).classes('w-full')
                 
