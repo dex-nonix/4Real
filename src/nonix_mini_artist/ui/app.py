@@ -71,6 +71,35 @@ class MusicManagerApp:
         # Configure app
         ui.page_title('Nonix Mini Artist Manager')
         
+        # Add global CSS to disable scrollbars
+        ui.add_head_html('''
+            <style>
+                /* Disable scrollbars globally */
+                ::-webkit-scrollbar {
+                    display: none;
+                }
+                * {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+                /* Ensure no height constraints cause scrollbars */
+                body, html {
+                    overflow-x: hidden;
+                    overflow-y: auto;
+                }
+                /* Responsive layout */
+                .responsive-container {
+                    max-width: 100%;
+                    padding: 0 1rem;
+                }
+                @media (max-width: 768px) {
+                    .responsive-container {
+                        padding: 0 0.5rem;
+                    }
+                }
+            </style>
+        ''')
+        
         # Create the main layout structure ONCE
         self._create_main_layout()
         
@@ -102,17 +131,17 @@ class MusicManagerApp:
     
     def _create_main_layout(self):
         """Create the main layout structure"""
-        # Create main container with proper responsive layout
-        with ui.row().classes('w-full h-screen') as main_container:
-            # Sidebar - fixed width
+        # Create main container with proper responsive layout - NO height constraints
+        with ui.row().classes('w-full') as main_container:
+            # Sidebar - fixed width, no height constraint
             self.sidebar = Sidebar()
             
-            # Main content area - take full remaining width
-            with ui.column().classes('flex-1 h-full') as content_container:
+            # Main content area - take full remaining width, no height constraint
+            with ui.column().classes('flex-1') as content_container:
                 # Header
                 self.header = Header()
                 
-                # Content area - full width
+                # Content area - full width, no height constraint
                 self.content = ContentArea()
         
         # Store references
@@ -199,7 +228,7 @@ class DashboardView:
     
     def _build_view(self):
         """Build the dashboard view"""
-        with ui.column().classes('w-full h-full') as container:
+        with ui.column().classes('w-full') as container:
             self.container = container
             
             ui.label('🎵 Welcome to Nonix Mini Artist Manager').classes('text-3xl font-bold mb-4 text-center')

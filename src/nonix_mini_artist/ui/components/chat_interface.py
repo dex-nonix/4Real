@@ -31,7 +31,7 @@ class ChatInterface:
     
     def _build_interface(self):
         """Build the chat interface structure"""
-        with ui.column().classes('flex-1 h-full flex flex-col'):
+        with ui.column().classes('flex-1 flex flex-col'):
             # Chat header
             self.chat_header = ui.row().classes('p-4 border-b border-gray-200 bg-white')
             with self.chat_header:

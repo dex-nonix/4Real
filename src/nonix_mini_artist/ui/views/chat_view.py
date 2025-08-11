@@ -29,7 +29,7 @@ class ChatView:
     
     def _build_view(self):
         """Build the chat view"""
-        with ui.row().classes('w-full h-full') as container:
+        with ui.row().classes('w-full') as container:
             self.container = container
             # Chat sidebar
             self.chat_sidebar = ChatSidebar(

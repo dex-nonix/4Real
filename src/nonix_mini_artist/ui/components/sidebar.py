@@ -20,8 +20,8 @@ class Sidebar:
     
     def _build_sidebar(self):
         """Build the sidebar structure"""
-        # Let NiceGUI handle all styling and layout
-        with ui.column().classes('w-64 h-full flex-shrink-0') as sidebar_container:
+        # Let NiceGUI handle all styling and layout - NO height constraint
+        with ui.column().classes('w-64 flex-shrink-0') as sidebar_container:
             self.sidebar_container = sidebar_container
             # Logo/Title
             self.title_label = ui.label('🎵 Music Manager').classes('text-xl font-bold mb-8 text-center')

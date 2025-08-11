@@ -33,7 +33,7 @@ class ChatSidebar:
     
     def _build_sidebar(self):
         """Build the chat sidebar structure"""
-        with ui.column().classes('w-80 h-full bg-gray-50 border-r border-gray-200 p-4'):
+        with ui.column().classes('w-80 bg-gray-50 border-r border-gray-200 p-4'):
             # Header
             with ui.row().classes('items-center justify-between mb-4'):
                 ui.label('💬 Chat').classes('text-xl font-bold text-gray-800')

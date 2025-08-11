@@ -197,7 +197,7 @@ class HelpSystem:
                 )
             
             # Navigation and content
-            with ui.row().classes('h-full'):
+            with ui.row():
                 # Navigation sidebar
                 with ui.column().classes('w-64 border-r border-gray-200 pr-4'):
                     ui.label('Contents').classes('text-lg font-semibold text-gray-700 mb-3')

@@ -28,7 +28,7 @@ class PersonaManagementView:
     
     def _build_view(self):
         """Build the persona management view"""
-        with ui.column().classes('w-full h-full p-6') as container:
+        with ui.column().classes('w-full p-6') as container:
             self.container = container
             # Header with action buttons
             with ui.row().classes('items-center justify-between mb-6'):

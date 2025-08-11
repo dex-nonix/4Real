@@ -20,7 +20,7 @@ class AISettingsView:
     
     def _build_view(self):
         """Build the AI settings view"""
-        with ui.column().classes('w-full h-full') as container:
+        with ui.column().classes('w-full') as container:
             self.container = container
             # Header
             ui.label('🤖 AI Settings').classes('text-3xl font-bold mb-6')

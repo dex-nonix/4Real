@@ -24,7 +24,7 @@ class MasterLayout:
             self.sidebar = Sidebar()
             
             # Main content area - flexible width, full height
-            with ui.column().classes('flex-1 h-full flex flex-col'):
+            with ui.column().classes('flex-1 flex flex-col'):
                 # Header
                 self.header = Header()
                 
