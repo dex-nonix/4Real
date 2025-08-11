@@ -21,8 +21,6 @@ __all__ = [
     'GenericTable',
     'GenericForm',
     'GenericDialog',
-    'ModalDialog',
-    'ModalFormDialog',
     'GenericCRUDView',
     'SearchBar',
     'ChatSidebar',
