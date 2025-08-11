@@ -19,7 +19,9 @@ def init_database():
     database.create_tables([
         Artist, Album, Track, Style, 
         TrackStyle, RhymeTechnique, TrackRhymeTechnique,
-        RhymeTechniqueGenre, RhymeTechniqueArtist
+        RhymeTechniqueGenre, RhymeTechniqueArtist,
+        # Chat system models
+        AIPersona, ChatSession, ChatMessage
     ], safe=True)
     database.close()
 
@@ -28,4 +30,9 @@ def get_database():
     return database
 
 # Import models here to avoid circular imports
-from .models import Artist, Album, Track, Style, TrackStyle, RhymeTechnique, TrackRhymeTechnique, RhymeTechniqueGenre, RhymeTechniqueArtist
+from .models import (
+    Artist, Album, Track, Style, TrackStyle, 
+    RhymeTechnique, TrackRhymeTechnique, RhymeTechniqueGenre, RhymeTechniqueArtist,
+    # Chat system models
+    AIPersona, ChatSession, ChatMessage
+)

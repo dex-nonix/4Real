@@ -2,9 +2,9 @@
 Tracks view using reusable components
 """
 from nicegui import ui
-from ...components.generic_table import GenericTable
-from ...components.generic_form import GenericForm
-from ...components.search_bar import EntitySearchBar
+from ..components.generic_table import GenericTable
+from ..components.generic_form import GenericForm
+from ..components.search_bar import EntitySearchBar
 from ...services.music_service import MusicService
 from ...ai.service import AIService
 from ...ai.models import AIAnalysisRequest

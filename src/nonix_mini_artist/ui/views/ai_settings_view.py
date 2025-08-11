@@ -2,9 +2,9 @@
 AI Settings view for managing Google AI providers and presets
 """
 from nicegui import ui
-from ...components.generic_table import GenericTable
-from ...components.generic_form import GenericForm
-from ...components.search_bar import EntitySearchBar
+from ..components.generic_table import GenericTable
+from ..components.generic_form import GenericForm
+from ..components.search_bar import EntitySearchBar
 from ...ai.service import AIService
 from ...ai.models import AIPreset, AIProviderConfig
 

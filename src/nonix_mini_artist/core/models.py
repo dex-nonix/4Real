@@ -100,3 +100,67 @@ class RhymeTechniqueArtist(BaseModel):
         indexes = (
             (('rhyme_technique', 'artist'), True),  # Unique constraint
         )
+
+# ============================================================================
+# CHAT SYSTEM MODELS
+# ============================================================================
+
+class AIPersona(BaseModel):
+    """AI persona that can optionally be an artist"""
+    name = CharField(max_length=255)
+    is_artist = BooleanField(default=False)
+    artist = ForeignKeyField(Artist, backref='personas', null=True)
+    
+    # Core personality
+    system_prompt = TextField()
+    personality_traits = TextField(null=True)  # JSON array
+    speaking_style = TextField(null=True)
+    
+    # Knowledge and capabilities
+    knowledge_base = TextField(null=True)
+    tool_permissions = TextField()  # JSON array of allowed tools
+    
+    # Optional AI configuration overrides
+    ai_overrides = TextField(null=True)  # JSON with any AI settings to override
+    
+    # Status
+    is_active = BooleanField(default=True)
+    created_at = DateTimeField(default=datetime.now)
+    
+    def __str__(self):
+        return f"{self.name} ({'Artist' if self.is_artist else 'Assistant'})"
+
+class ChatSession(BaseModel):
+    """Individual chat session with a persona"""
+    persona = ForeignKeyField(AIPersona, backref='chat_sessions', on_delete='CASCADE')
+    title = CharField(max_length=255)
+    created_at = DateTimeField(default=datetime.now)
+    updated_at = DateTimeField(default=datetime.now)
+    is_active = BooleanField(default=True)
+    
+    # Chat metadata
+    total_messages = IntegerField(default=0)
+    last_user_message = TextField(null=True)
+    last_persona_response = TextField(null=True)
+    
+    def __str__(self):
+        return f"Chat: {self.title} with {self.persona.name}"
+
+class ChatMessage(BaseModel):
+    """Individual message in a chat session"""
+    session = ForeignKeyField(ChatSession, backref='messages', on_delete='CASCADE')
+    sender_type = CharField(max_length=50)  # 'user', 'persona', 'tool_result'
+    content = TextField()
+    timestamp = DateTimeField(default=datetime.now)
+    
+    # Tool execution info
+    tool_used = CharField(max_length=100, null=True)
+    tool_result = TextField(null=True)
+    tool_status = CharField(max_length=50, null=True)  # 'success', 'error', 'pending'
+    
+    # Message metadata
+    message_type = CharField(max_length=50)  # 'text', 'tool_result', 'system'
+    metadata = TextField(null=True)  # JSON for additional data
+    
+    def __str__(self):
+        return f"{self.sender_type}: {self.content[:50]}..."

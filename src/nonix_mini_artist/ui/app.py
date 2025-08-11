@@ -9,6 +9,10 @@ from .views.albums_view import AlbumsView
 from .views.tracks_view import TracksView
 from .views.styles_view import StylesView
 from .views.ai_settings_view import AISettingsView
+from .views.chat_view import ChatView
+from .views.persona_management_view import PersonaManagementView
+from .components.help_system import HelpSystem
+from .components.performance_monitor import PerformanceMonitor
 from ..services.music_service import MusicService
 from ..ai.service import AIService
 from ..core.database import init_database
@@ -54,9 +58,35 @@ class MusicManagerApp:
             {"title": "Albums", "icon": "💿", "route": "/albums"},
             {"title": "Tracks", "icon": "🎵", "route": "/tracks"},
             {"title": "Styles", "icon": "🏷️", "route": "/styles"},
-            {"title": "AI Settings", "icon": "🤖", "route": "/ai"}  # NEW AI SETTINGS
+            {"title": "AI Settings", "icon": "🤖", "route": "/ai"},
+            {"title": "Personas", "icon": "🎭", "route": "/personas"},  # NEW PERSONA MANAGEMENT
+            {"title": "Chat", "icon": "💬", "route": "/chat"}
         ]
         self.layout.set_sidebar_items(sidebar_items)
+        
+        # Help system
+        self.help_system = HelpSystem()
+        
+        # Performance monitor
+        self.performance_monitor = PerformanceMonitor()
+        
+        # Add help and monitoring buttons to header
+        with ui.row().classes('items-center gap-2'):
+            ui.button('❓ Help', on_click=self.help_system.show_help_dialog).classes(
+                'px-3 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg text-sm'
+            )
+            ui.button('⌨️ Shortcuts', on_click=self.help_system.show_keyboard_shortcuts).classes(
+                'px-3 py-2 bg-gray-100 text-gray-700 hover:bg-gray-300 rounded-lg text-sm'
+            )
+            ui.button('💡 Tips', on_click=self.help_system.show_quick_tips).classes(
+                'px-3 py-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg text-sm'
+            )
+            ui.button('📊 Performance', on_click=self.performance_monitor.show_performance_dashboard).classes(
+                'px-3 py-2 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg text-sm'
+            )
+            
+            # Health indicator
+            self.performance_monitor.show_health_indicator()
         
         # Set initial content
         self._show_dashboard()
@@ -72,7 +102,9 @@ class MusicManagerApp:
                 ui.button('💿 Albums', on_click=lambda: self._show_albums()).classes('px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600')
                 ui.button('🎵 Tracks', on_click=lambda: self._show_tracks()).classes('px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600')
                 ui.button('🏷️ Styles', on_click=lambda: self._show_styles()).classes('px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600')
-                ui.button('🤖 AI Settings', on_click=lambda: self._show_ai_settings()).classes('px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600')  # NEW AI BUTTON
+                ui.button('🤖 AI Settings', on_click=lambda: self._show_ai_settings()).classes('px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600')
+                ui.button('🎭 Personas', on_click=lambda: self._show_personas()).classes('px-6 py-3 bg-pink-500 text-white rounded-lg hover:bg-pink-600')  # NEW PERSONA BUTTON
+                ui.button('💬 Chat', on_click=lambda: self._show_chat()).classes('px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600')  # NEW CHAT BUTTON
             
             # Quick stats
             ui.separator().classes('my-6')
@@ -179,6 +211,18 @@ class MusicManagerApp:
         ai_settings_view = AISettingsView(self.ai_service)
         self.layout.set_content(ai_settings_view)
         self.current_view = 'ai_settings'
+    
+    def _show_chat(self):
+        """Show the chat view"""
+        self.layout.set_title('💬 AI Chat')
+        chat_view = ChatView()
+        self.layout.set_content(chat_view)
+        self.current_view = 'chat'
+
+    def _show_personas(self):
+        """Show the persona management view"""
+        self.layout.set_content(PersonaManagementView())
+        self.current_view = 'personas'
 
 def main():
     """Main application entry point"""
