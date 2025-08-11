@@ -31,16 +31,12 @@ class MusicManagerApp:
         self.sidebar = None
         self.header = None
         self.content = None
-        self.current_view = None
         
         # Initialize database
         init_database()
         
         # Set up the app
         self._setup_app()
-        
-        # Initialize AI providers (will be done when needed)
-        # Removed asyncio.create_task as it's not compatible with NiceGUI's event loop
     
     def _init_ai_sync(self):
         """Initialize AI providers synchronously"""
@@ -71,7 +67,7 @@ class MusicManagerApp:
             print(f"Failed to initialize AI providers: {e}")
     
     def _setup_app(self):
-        """Set up the NiceGUI application"""
+        """Set up the NiceGUI application with proper page routing"""
         # Configure app
         ui.page_title('Nonix Mini Artist Manager')
         
@@ -101,95 +97,95 @@ class MusicManagerApp:
         self.sidebar.set_navigation_callback("/personas", self._show_personas)
         self.sidebar.set_navigation_callback("/chat", self._show_chat)
         
-        # Help system
-        self.help_system = HelpSystem()
-        
-        # Performance monitor
-        self.performance_monitor = PerformanceMonitor()
-        
-        # Add help and monitoring buttons to header
-        self.header.add_help_buttons(
-            help_system=self.help_system,
-            performance_monitor=self.performance_monitor
-        )
-        
-        # Set initial content - show dashboard
+        # Set initial view
         self._show_dashboard()
     
     def _create_main_layout(self):
-        """Create the main layout structure - called only once"""
-        # Main container
-        with ui.row().classes('w-full h-screen flex') as main_container:
-            # Sidebar - fixed width, full height
+        """Create the main layout structure"""
+        # Create main container
+        with ui.column().classes('w-full h-screen flex') as main_container:
+            # Sidebar
             self.sidebar = Sidebar()
             
-            # Main content area - flexible width, full height
-            with ui.column().classes('flex-1 h-full flex flex-col'):
+            # Main content area
+            with ui.column().classes('flex-1 h-full flex flex-col') as content_container:
                 # Header
                 self.header = Header()
                 
-                # Content area - flexible, scrollable
+                # Content area
                 self.content = ContentArea()
+        
+        # Store references
+        self.main_container = main_container
+        self.content_container = content_container
     
     def _show_dashboard(self):
         """Show the dashboard view"""
-        # Create dashboard view and set it as content
-        dashboard_view = DashboardView(self.music_service, self.ai_service, self)
-        self.content.set_content(dashboard_view)
-        self.current_view = 'dashboard'
+        self.header.set_title('Dashboard')
+        # Clear content and show dashboard
+        self.content.container.clear()
+        with self.content.container:
+            DashboardView(self.music_service, self.ai_service, self)
     
     def _show_artists(self):
         """Show the artists view"""
         self.header.set_title('Artists')
-        artists_view = ArtistsView(self.music_service)
-        self.content.set_content(artists_view)
-        self.current_view = 'artists'
+        # Clear content and show artists
+        self.content.container.clear()
+        with self.content.container:
+            ArtistsView(self.music_service)
     
     def _show_albums(self):
         """Show the albums view"""
         self.header.set_title('Albums')
-        albums_view = AlbumsView(self.music_service)
-        self.content.set_content(albums_view)
-        self.current_view = 'albums'
+        # Clear content and show albums
+        self.content.container.clear()
+        with self.content.container:
+            AlbumsView(self.music_service)
     
     def _show_tracks(self):
         """Show the tracks view"""
         self.header.set_title('Tracks')
-        tracks_view = TracksView(self.music_service, self.ai_service)
-        self.content.set_content(tracks_view)
-        self.current_view = 'tracks'
+        # Clear content and show tracks
+        self.content.container.clear()
+        with self.content.container:
+            TracksView(self.music_service, self.ai_service)
     
     def _show_styles(self):
         """Show the styles view"""
         self.header.set_title('Styles')
-        styles_view = StylesView(self.music_service)
-        self.content.set_content(styles_view)
-        self.current_view = 'styles'
+        # Clear content and show styles
+        self.content.container.clear()
+        with self.content.container:
+            StylesView(self.music_service)
     
     def _show_ai_settings(self):
         """Show the AI settings view"""
         self.header.set_title('AI Settings')
-        ai_settings_view = AISettingsView(self.ai_service)
-        self.content.set_content(ai_settings_view)
-        self.current_view = 'ai_settings'
+        # Clear content and show AI settings
+        self.content.container.clear()
+        with self.content.container:
+            AISettingsView(self.ai_service)
     
     def _show_chat(self):
         """Show the chat view"""
         self.header.set_title('Chat')
         # Initialize services if needed
         self._init_chat_services()
-        chat_view = ChatView(self.chat_service, self.persona_service)
-        self.content.set_content(chat_view)
-        self.current_view = 'chat'
+        # Clear content and show chat
+        self.content.container.clear()
+        with self.content.container:
+            ChatView(self.chat_service, self.persona_service)
     
     def _show_personas(self):
         """Show the personas view"""
         self.header.set_title('Personas')
         # Initialize services if needed
         self._init_chat_services()
-        persona_view = PersonaManagementView()
-        self.content.set_content(persona_view)
-        self.current_view = 'personas'
+        # Clear content and show personas
+        self.content.container.clear()
+        with self.content.container:
+            PersonaManagementView()
 
 class DashboardView:
     """Dashboard view component"""
