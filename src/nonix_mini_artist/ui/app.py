@@ -8,7 +8,9 @@ from .views.artists_view import ArtistsView
 from .views.albums_view import AlbumsView
 from .views.tracks_view import TracksView
 from .views.styles_view import StylesView
+from .views.ai_settings_view import AISettingsView
 from ..services.music_service import MusicService
+from ..ai.service import AIService
 from ..core.database import init_database
 
 class MusicManagerApp:
@@ -17,6 +19,7 @@ class MusicManagerApp:
     def __init__(self):
         """Initialize the application"""
         self.music_service = MusicService()
+        self.ai_service = AIService()
         self.layout = None
         self.current_view = None
         
@@ -25,6 +28,16 @@ class MusicManagerApp:
         
         # Set up the app
         self._setup_app()
+        
+        # Initialize AI providers
+        asyncio.create_task(self._init_ai())
+    
+    async def _init_ai(self):
+        """Initialize AI providers"""
+        try:
+            await self.ai_service.initialize_providers()
+        except Exception as e:
+            print(f"Failed to initialize AI providers: {e}")
     
     def _setup_app(self):
         """Set up the NiceGUI application"""
@@ -40,7 +53,8 @@ class MusicManagerApp:
             {"title": "Artists", "icon": "🎤", "route": "/artists"},
             {"title": "Albums", "icon": "💿", "route": "/albums"},
             {"title": "Tracks", "icon": "🎵", "route": "/tracks"},
-            {"title": "Styles", "icon": "🏷️", "route": "/styles"}
+            {"title": "Styles", "icon": "🏷️", "route": "/styles"},
+            {"title": "AI Settings", "icon": "🤖", "route": "/ai"}  # NEW AI SETTINGS
         ]
         self.layout.set_sidebar_items(sidebar_items)
         
@@ -58,6 +72,7 @@ class MusicManagerApp:
                 ui.button('💿 Albums', on_click=lambda: self._show_albums()).classes('px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600')
                 ui.button('🎵 Tracks', on_click=lambda: self._show_tracks()).classes('px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600')
                 ui.button('🏷️ Styles', on_click=lambda: self._show_styles()).classes('px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600')
+                ui.button('🤖 AI Settings', on_click=lambda: self._show_ai_settings()).classes('px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600')  # NEW AI BUTTON
             
             # Quick stats
             ui.separator().classes('my-6')
@@ -75,6 +90,11 @@ class MusicManagerApp:
             tracks_count = await self.music_service.track_crud.count()
             styles_count = await self.music_service.style_crud.count()
             
+            # Get AI service status
+            ai_providers = self.ai_service.get_providers()
+            ai_presets = self.ai_service.get_presets()
+            ai_enabled = any(provider['enabled'] for provider in ai_providers)
+            
             with ui.row().classes('gap-6'):
                 ui.card().classes('p-4 text-center').with_html(f'''
                     <div class="text-2xl font-bold text-blue-500">{artists_count}</div>
@@ -91,6 +111,11 @@ class MusicManagerApp:
                 ui.card().classes('p-4 text-center').with_html(f'''
                     <div class="text-2xl font-bold text-orange-500">{styles_count}</div>
                     <div class="text-sm text-gray-600">Styles</div>
+                ''')
+                ui.card().classes('p-4 text-center').with_html(f'''
+                    <div class="text-2xl font-bold text-red-500">{len(ai_presets)}</div>
+                    <div class="text-sm text-gray-600">AI Presets</div>
+                    <div class="text-xs text-gray-500">{'🟢' if ai_enabled else '🔴'} AI {'Active' if ai_enabled else 'Inactive'}</div>
                 ''')
         except Exception as e:
             # Fallback to zeros if there's an error
@@ -110,6 +135,11 @@ class MusicManagerApp:
                 ui.card().classes('p-4 text-center').with_html(f'''
                     <div class="text-2xl font-bold text-orange-500">0</div>
                     <div class="text-sm text-gray-600">Styles</div>
+                ''')
+                ui.card().classes('p-4 text-center').with_html(f'''
+                    <div class="text-2xl font-bold text-red-500">0</div>
+                    <div class="text-sm text-gray-600">AI Presets</div>
+                    <div class="text-xs text-gray-500">🔴 AI Inactive</div>
                 ''')
         
         self.layout.set_content(dashboard)
@@ -132,7 +162,7 @@ class MusicManagerApp:
     def _show_tracks(self):
         """Show the tracks view"""
         self.layout.set_title('Tracks')
-        tracks_view = TracksView(self.music_service)
+        tracks_view = TracksView(self.music_service, self.ai_service)
         self.layout.set_content(tracks_view)
         self.current_view = 'tracks'
     
@@ -142,6 +172,13 @@ class MusicManagerApp:
         styles_view = StylesView(self.music_service)
         self.layout.set_content(styles_view)
         self.current_view = 'styles'
+    
+    def _show_ai_settings(self):
+        """Show the AI settings view"""
+        self.layout.set_title('AI Settings')
+        ai_settings_view = AISettingsView(self.ai_service)
+        self.layout.set_content(ai_settings_view)
+        self.current_view = 'ai_settings'
 
 def main():
     """Main application entry point"""
