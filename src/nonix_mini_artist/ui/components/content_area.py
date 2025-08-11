@@ -34,6 +34,10 @@ class ContentArea:
                 if hasattr(content, '_build_view'):
                     content._build_view()
                     self.current_content = content
+                elif callable(content):
+                    # If content is a callable (function), call it within the container context
+                    content()
+                    self.current_content = content
                 else:
                     # Otherwise, just use the content as is
                     self.current_content = content
