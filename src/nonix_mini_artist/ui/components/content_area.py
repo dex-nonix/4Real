@@ -28,6 +28,7 @@ class ContentArea:
         # Clear current content and set new content
         if self.content_container:
             self.content_container.clear()
+            # Create new content INSIDE the container
             with self.content_container:
                 # If content is a view object with a _build_view method, call it
                 if hasattr(content, '_build_view'):

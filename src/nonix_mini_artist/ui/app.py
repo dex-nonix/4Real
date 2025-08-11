@@ -3,7 +3,9 @@ Main NiceGUI application
 """
 import asyncio
 from nicegui import ui, app
-from .layout.master import MasterLayout
+from .components.sidebar import Sidebar
+from .components.header import Header
+from .components.content_area import ContentArea
 from .views.artists_view import ArtistsView
 from .views.albums_view import AlbumsView
 from .views.tracks_view import TracksView
@@ -26,7 +28,9 @@ class MusicManagerApp:
         self.ai_service = AIService()
         self.chat_service = None  # Will be initialized when needed
         self.persona_service = None  # Will be initialized when needed
-        self.layout = None
+        self.sidebar = None
+        self.header = None
+        self.content = None
         self.current_view = None
         
         # Initialize database
@@ -87,6 +91,16 @@ class MusicManagerApp:
         ]
         self.sidebar.set_items(sidebar_items)
         
+        # Set up navigation callbacks
+        self.sidebar.set_navigation_callback("/", self._show_dashboard)
+        self.sidebar.set_navigation_callback("/artists", self._show_artists)
+        self.sidebar.set_navigation_callback("/albums", self._show_albums)
+        self.sidebar.set_navigation_callback("/tracks", self._show_tracks)
+        self.sidebar.set_navigation_callback("/styles", self._show_styles)
+        self.sidebar.set_navigation_callback("/ai", self._show_ai_settings)
+        self.sidebar.set_navigation_callback("/personas", self._show_personas)
+        self.sidebar.set_navigation_callback("/chat", self._show_chat)
+        
         # Help system
         self.help_system = HelpSystem()
         
@@ -119,6 +133,12 @@ class MusicManagerApp:
     
     def _show_dashboard(self):
         """Show the dashboard view"""
+        # Create dashboard content INSIDE the content area
+        self.content.set_content(self._create_dashboard_content())
+        self.current_view = 'dashboard'
+    
+    def _create_dashboard_content(self):
+        """Create the dashboard content"""
         # Create dashboard content
         with ui.column().classes('w-full flex flex-col items-center') as dashboard:
             ui.label('🎵 Welcome to Nonix Mini Artist Manager').classes('text-3xl font-bold mb-4 text-center')
@@ -141,9 +161,7 @@ class MusicManagerApp:
             # Load real data for stats - make it synchronous
             self._load_dashboard_stats_sync(dashboard)
         
-        # Set the content properly
-        self.layout.set_content(dashboard)
-        self.current_view = 'dashboard'
+        return dashboard
     
     def _load_dashboard_stats_sync(self, dashboard):
         """Load real statistics for the dashboard synchronously"""
@@ -209,55 +227,55 @@ class MusicManagerApp:
     
     def _show_artists(self):
         """Show the artists view"""
-        self.layout.set_title('Artists')
+        self.header.set_title('Artists')
         artists_view = ArtistsView(self.music_service)
-        self.layout.set_content(artists_view)
+        self.content.set_content(artists_view)
         self.current_view = 'artists'
     
     def _show_albums(self):
         """Show the albums view"""
-        self.layout.set_title('Albums')
+        self.header.set_title('Albums')
         albums_view = AlbumsView(self.music_service)
-        self.layout.set_content(albums_view)
+        self.content.set_content(albums_view)
         self.current_view = 'albums'
     
     def _show_tracks(self):
         """Show the tracks view"""
-        self.layout.set_title('Tracks')
+        self.header.set_title('Tracks')
         tracks_view = TracksView(self.music_service, self.ai_service)
-        self.layout.set_content(tracks_view)
+        self.content.set_content(tracks_view)
         self.current_view = 'tracks'
     
     def _show_styles(self):
         """Show the styles view"""
-        self.layout.set_title('Styles')
+        self.header.set_title('Styles')
         styles_view = StylesView(self.music_service)
-        self.layout.set_content(styles_view)
+        self.content.set_content(styles_view)
         self.current_view = 'styles'
     
     def _show_ai_settings(self):
         """Show the AI settings view"""
-        self.layout.set_title('AI Settings')
+        self.header.set_title('AI Settings')
         ai_settings_view = AISettingsView(self.ai_service)
-        self.layout.set_content(ai_settings_view)
+        self.content.set_content(ai_settings_view)
         self.current_view = 'ai_settings'
     
     def _show_chat(self):
         """Show the chat view"""
-        self.layout.set_title('Chat')
+        self.header.set_title('Chat')
         # Initialize services if needed
         self._init_chat_services()
         chat_view = ChatView(self.chat_service, self.persona_service)
-        self.layout.set_content(chat_view)
+        self.content.set_content(chat_view)
         self.current_view = 'chat'
     
     def _show_personas(self):
         """Show the personas view"""
-        self.layout.set_title('Personas')
+        self.header.set_title('Personas')
         # Initialize services if needed
         self._init_chat_services()
         persona_view = PersonaManagementView()
-        self.layout.set_content(persona_view)
+        self.content.set_content(persona_view)
         self.current_view = 'personas'
 
 def main():
