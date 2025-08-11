@@ -12,6 +12,6 @@ class ContentArea:
     
     def _build_content_area(self):
         """Build the content area structure"""
-        # Remove excessive margins and make it properly responsive
-        with ui.column().classes('flex-1 p-2 bg-gray-100 overflow-auto') as container:
+        # Full width, no flex constraints, let content expand naturally
+        with ui.column().classes('w-full h-full') as container:
             self.container = container

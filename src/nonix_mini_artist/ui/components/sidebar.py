@@ -20,8 +20,8 @@ class Sidebar:
     
     def _build_sidebar(self):
         """Build the sidebar structure"""
-        # Use flex-shrink-0 to prevent sidebar from shrinking
-        with ui.column().classes('w-64 h-full bg-gray-800 text-white p-4 flex-shrink-0') as sidebar_container:
+        # Let NiceGUI handle all styling and layout
+        with ui.column().classes('w-64 h-full flex-shrink-0') as sidebar_container:
             self.sidebar_container = sidebar_container
             # Logo/Title
             self.title_label = ui.label('🎵 Music Manager').classes('text-xl font-bold mb-8 text-center')
@@ -45,7 +45,7 @@ class Sidebar:
                 nav_item = ui.button(
                     f"{item.get('icon', '📁')} {item.get('title', 'Item')}",
                     on_click=lambda i=item: self._handle_navigation(i)
-                ).classes('w-full text-left p-3 mb-2 hover:bg-gray-700 rounded')
+                ).classes('w-full text-left mb-2')
                 self.nav_items.append(nav_item)
     
     def _handle_navigation(self, item: Dict):

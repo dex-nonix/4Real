@@ -43,7 +43,7 @@ class GenericDialog:
                 # Actions
                 with ui.row().classes('justify-end gap-2 mt-4'):
                     if self.on_cancel:
-                        ui.button(self.cancel_text, on_click=self._handle_cancel).classes('px-4 py-2 bg-gray-300 text-gray-700 hover:bg-gray-400')
+                        ui.button(self.cancel_text, on_click=self._handle_cancel)
                     
                     if self.on_confirm:
                         ui.button(self.confirm_text, on_click=self._handle_confirm).classes('px-4 py-2 bg-blue-500 text-white hover:bg-blue-600')

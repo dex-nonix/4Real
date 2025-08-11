@@ -27,7 +27,7 @@ class TracksView:
     
     def _build_view(self):
         """Build the tracks view"""
-        with ui.column().classes('w-full') as container:
+        with ui.column().classes('w-full h-full') as container:
             self.container = container
             # Header
             ui.label('🎵 Tracks').classes('text-3xl font-bold mb-6')
@@ -40,10 +40,10 @@ class TracksView:
             )
             
             # Action buttons
-            ui.button('➕ Add New Track', on_click=self._show_add_form).classes('mb-6 bg-green-500 text-white hover:bg-green-600')
-            ui.button('🤖 AI Analysis', on_click=self._show_ai_analysis).classes('mb-6 bg-purple-500 text-white hover:bg-purple-600')
+            ui.button('➕ Add New Track', on_click=self._show_add_form).classes('mb-6')
+            ui.button('🤖 AI Analysis', on_click=self._show_ai_analysis).classes('mb-6')
             
-            # Tracks table
+            # Tracks table - full width
             self.table = GenericTable(
                 data=self.filtered_tracks,
                 columns=['track_number', 'name', 'album', 'duration', 'created_at'],
@@ -51,7 +51,7 @@ class TracksView:
                 crud_operations=self.music_service.track_crud
             )
             
-            # Add track form (hidden by default)
+            # Add track form (hidden by default) - full width
             self.add_form = GenericForm(
                 model_class=Track,
                 fields=['track_number', 'name', 'album', 'duration'],
@@ -59,13 +59,13 @@ class TracksView:
             )
             self.add_form.visible = False
             
-            # AI analysis form (hidden by default)
+            # AI analysis form (hidden by default) - full width
             self.ai_form = self._create_ai_analysis_form()
             self.ai_form.visible = False
     
     def _create_ai_analysis_form(self):
         """Create the AI analysis form"""
-        with ui.card().classes('w-full p-4') as form:
+        with ui.card():
             ui.label('🤖 AI Analysis').classes('text-2xl font-bold mb-6')
             
             # Track selection
@@ -87,12 +87,12 @@ class TracksView:
             # Analyze button
             ui.button('🔍 Analyze with AI', on_click=lambda: self._run_track_analysis(
                 track_select.value, preset_select.value
-            )).classes('w-full bg-purple-500 text-white hover:bg-purple-600')
+            )).classes('w-full')
             
             # Results area
             ui.separator().classes('my-4')
             ui.label('Analysis Results:').classes('font-bold mb-2')
-            self.ai_results_area = ui.markdown('').classes('w-full p-4 bg-gray-100 rounded')
+            self.ai_results_area = ui.markdown('')
             
             return form
     

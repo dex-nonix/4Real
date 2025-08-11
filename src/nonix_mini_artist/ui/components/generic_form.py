@@ -23,7 +23,7 @@ class GenericForm:
     
     def _build_form(self):
         """Build the form structure"""
-        with ui.card().classes('w-full p-4'):
+        with ui.card():
             ui.label('Add New Item').classes('text-2xl font-bold mb-6')
             
             # Form fields
@@ -31,7 +31,7 @@ class GenericForm:
                 self._add_field(field)
             
             # Submit button
-            ui.button('Submit', on_click=self._handle_submit).classes('w-full mt-6 bg-blue-500 text-white hover:bg-blue-600')
+            ui.button('Submit', on_click=self._handle_submit).classes('w-full mt-6')
     
     def _add_field(self, field_name: str):
         """Add a form field"""

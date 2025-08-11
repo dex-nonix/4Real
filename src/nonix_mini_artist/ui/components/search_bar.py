@@ -39,7 +39,7 @@ class SearchBar:
             ).classes('flex-1')
             
             # Search button
-            ui.button('🔍', on_click=self._handle_search).classes('px-3 py-2 bg-blue-500 text-white hover:bg-blue-600')
+            ui.button('🔍', on_click=self._handle_search)
     
     def _handle_search(self, event=None):
         """Handle search input or button click"""

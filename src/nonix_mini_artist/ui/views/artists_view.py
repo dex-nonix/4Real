@@ -20,7 +20,7 @@ class ArtistsView:
     
     def _build_view(self):
         """Build the artists view"""
-        with ui.column().classes('w-full') as container:
+        with ui.column().classes('w-full h-full') as container:
             self.container = container
             # Header
             ui.label('🎤 Artists').classes('text-3xl font-bold mb-6')
@@ -33,9 +33,9 @@ class ArtistsView:
             )
             
             # Add new artist button
-            ui.button('➕ Add New Artist', on_click=self._show_add_form).classes('mb-6 bg-green-500 text-white hover:bg-green-600')
+            ui.button('➕ Add New Artist', on_click=self._show_add_form).classes('mb-6')
             
-            # Artists table
+            # Artists table - full width
             self.table = GenericTable(
                 data=self.filtered_artists,
                 columns=['name', 'abbreviation', 'created_at'],
@@ -43,7 +43,7 @@ class ArtistsView:
                 crud_operations=self.music_service.artist_crud
             )
             
-            # Add artist form (hidden by default)
+            # Add artist form (hidden by default) - full width
             self.add_form = GenericForm(
                 model_class=Artist,
                 fields=['name', 'abbreviation', 'persona'],

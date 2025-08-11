@@ -103,16 +103,16 @@ class MusicManagerApp:
     def _create_main_layout(self):
         """Create the main layout structure"""
         # Create main container with proper responsive layout
-        with ui.row().classes('w-full h-screen flex overflow-hidden') as main_container:
-            # Sidebar
+        with ui.row().classes('w-full h-screen') as main_container:
+            # Sidebar - fixed width
             self.sidebar = Sidebar()
             
-            # Main content area - ensure it takes full remaining width
-            with ui.column().classes('flex-1 h-full flex flex-col min-w-0 overflow-hidden') as content_container:
+            # Main content area - take full remaining width
+            with ui.column().classes('flex-1 h-full') as content_container:
                 # Header
                 self.header = Header()
                 
-                # Content area
+                # Content area - full width
                 self.content = ContentArea()
         
         # Store references
@@ -199,7 +199,7 @@ class DashboardView:
     
     def _build_view(self):
         """Build the dashboard view"""
-        with ui.column().classes('w-full flex flex-col items-center') as container:
+        with ui.column().classes('w-full h-full') as container:
             self.container = container
             
             ui.label('🎵 Welcome to Nonix Mini Artist Manager').classes('text-3xl font-bold mb-4 text-center')
@@ -207,13 +207,13 @@ class DashboardView:
             
             # Navigation buttons in a proper flexbox row
             with ui.row().classes('gap-4 flex flex-wrap justify-center mb-8'):
-                ui.button('🎤 Artists', on_click=lambda: self.app._show_artists()).classes('px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600')
-                ui.button('💿 Albums', on_click=lambda: self.app._show_albums()).classes('px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-blue-600')
-                ui.button('🎵 Tracks', on_click=lambda: self.app._show_tracks()).classes('px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-blue-600')
-                ui.button('🏷️ Styles', on_click=lambda: self.app._show_styles()).classes('px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-blue-600')
-                ui.button('🤖 AI Settings', on_click=lambda: self.app._show_ai_settings()).classes('px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-blue-600')
-                ui.button('🎭 Personas', on_click=lambda: self.app._show_personas()).classes('px-6 py-3 bg-pink-500 text-white rounded-lg hover:bg-blue-600')
-                ui.button('💬 Chat', on_click=lambda: self.app._show_chat()).classes('px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-blue-600')
+                ui.button('🎤 Artists', on_click=lambda: self.app._show_artists())
+                ui.button('💿 Albums', on_click=lambda: self.app._show_albums())
+                ui.button('🎵 Tracks', on_click=lambda: self.app._show_tracks())
+                ui.button('🏷️ Styles', on_click=lambda: self.app._show_styles())
+                ui.button('🤖 AI Settings', on_click=lambda: self.app._show_ai_settings())
+                ui.button('🎭 Personas', on_click=lambda: self.app._show_personas())
+                ui.button('💬 Chat', on_click=lambda: self.app._show_chat())
             
             # Quick stats
             ui.separator().classes('my-6 w-full')
@@ -237,49 +237,49 @@ class DashboardView:
             
             # Stats cards in a proper grid layout
             with ui.row().classes('gap-6 w-full flex flex-wrap justify-center'):
-                with ui.card().classes('p-4 text-center min-w-[120px]'):
-                    ui.label('0').classes('text-2xl font-bold text-blue-500')
-                    ui.label('Artists').classes('text-sm text-gray-600')
+                with ui.card():
+                    ui.label('0').classes('text-2xl font-bold')
+                    ui.label('Artists')
                 
-                with ui.card().classes('p-4 text-center min-w-[120px]'):
-                    ui.label('0').classes('text-2xl font-bold text-green-500')
-                    ui.label('Albums').classes('text-sm text-gray-600')
+                with ui.card():
+                    ui.label('0').classes('text-2xl font-bold')
+                    ui.label('Albums')
                 
-                with ui.card().classes('p-4 text-center min-w-[120px]'):
-                    ui.label('0').classes('text-2xl font-bold text-purple-500')
-                    ui.label('Tracks').classes('text-sm text-gray-600')
+                with ui.card():
+                    ui.label('0').classes('text-2xl font-bold')
+                    ui.label('Tracks')
                 
-                with ui.card().classes('p-4 text-center min-w-[120px]'):
-                    ui.label('0').classes('text-2xl font-bold text-orange-500')
-                    ui.label('Styles').classes('text-sm text-gray-600')
+                with ui.card():
+                    ui.label('0').classes('text-2xl font-bold')
+                    ui.label('Styles')
                 
-                with ui.card().classes('p-4 text-center min-w-[120px]'):
-                    ui.label(str(len(ai_presets))).classes('text-2xl font-bold text-red-500')
-                    ui.label('AI Presets').classes('text-sm text-gray-600')
-                    ui.label(f"{'🟢' if ai_ready else '🔴'} AI {'Active' if ai_ready else 'Inactive'}").classes('text-xs text-gray-500')
+                with ui.card():
+                    ui.label(str(len(ai_presets))).classes('text-2xl font-bold')
+                    ui.label('AI Presets')
+                    ui.label(f"{'🟢' if ai_ready else '🔴'} AI {'Active' if ai_ready else 'Inactive'}")
         except Exception as e:
             # Fallback to zeros if there's an error
             with ui.row().classes('gap-6 w-full flex flex-wrap justify-center'):
-                with ui.card().classes('p-4 text-center min-w-[120px]'):
-                    ui.label('0').classes('text-2xl font-bold text-blue-500')
-                    ui.label('Artists').classes('text-sm text-gray-600')
+                with ui.card():
+                    ui.label('0').classes('text-2xl font-bold')
+                    ui.label('Artists')
                 
-                with ui.card().classes('p-4 text-center min-w-[120px]'):
-                    ui.label('0').classes('text-2xl font-bold text-green-500')
-                    ui.label('Albums').classes('text-sm text-gray-600')
+                with ui.card():
+                    ui.label('0').classes('text-2xl font-bold')
+                    ui.label('Albums')
                 
-                with ui.card().classes('p-4 text-center min-w-[120px]'):
-                    ui.label('0').classes('text-2xl font-bold text-purple-500')
-                    ui.label('Tracks').classes('text-sm text-gray-600')
+                with ui.card():
+                    ui.label('0').classes('text-2xl font-bold')
+                    ui.label('Tracks')
                 
-                with ui.card().classes('p-4 text-center min-w-[120px]'):
-                    ui.label('0').classes('text-2xl font-bold text-orange-500')
-                    ui.label('Styles').classes('text-sm text-gray-600')
+                with ui.card():
+                    ui.label('0').classes('text-2xl font-bold')
+                    ui.label('Styles')
                 
-                with ui.card().classes('p-4 text-center min-w-[120px]'):
-                    ui.label('0').classes('text-2xl font-bold text-red-500')
-                    ui.label('AI Presets').classes('text-sm text-gray-600')
-                    ui.label('🔴 AI Inactive').classes('text-xs text-gray-500')
+                with ui.card():
+                    ui.label('0').classes('text-2xl font-bold')
+                    ui.label('AI Presets')
+                    ui.label('🔴 AI Inactive')
     
     # Note: Navigation methods are handled by the parent MusicManagerApp class
 

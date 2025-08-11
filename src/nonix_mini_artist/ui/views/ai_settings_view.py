@@ -20,55 +20,67 @@ class AISettingsView:
     
     def _build_view(self):
         """Build the AI settings view"""
-        with ui.column().classes('w-full') as container:
+        with ui.column().classes('w-full h-full') as container:
             self.container = container
             # Header
             ui.label('🤖 AI Settings').classes('text-3xl font-bold mb-6')
-            ui.label('Manage Google AI providers and analysis presets').classes('text-lg text-gray-600 mb-6')
             
-            # Tabbed interface
-            with ui.tabs().classes('w-full mb-6') as tabs:
-                ui.tab('Providers', icon='🔧')
-                ui.tab('Presets', icon='⚙️')
-                ui.tab('Analysis', icon='🔍')
+            # Tabs for different sections
+            with ui.tabs().classes('w-full') as tabs:
+                ui.tab('Providers')
+                ui.tab('Presets')
+                ui.tab('Test')
             
             # Tab panels
             with ui.tab_panels(tabs, value='Providers').classes('w-full'):
-                # Providers panel
+                # Providers tab
                 with ui.tab_panel('Providers'):
                     with ui.column().classes('w-full'):
-                        # Providers table
-                        self.providers_table = GenericTable(
-                            data=[],
-                            columns=['name', 'enabled', 'config'],
-                            actions=['view', 'edit', 'delete'],
-                            crud_operations=None  # AI providers use custom CRUD
-                        )
+                        # Providers list
+                        ui.label('AI Providers').classes('text-xl font-bold mb-4')
+                        self.providers_table = ui.table(
+                            columns=[
+                                {'name': 'type', 'label': 'Type', 'field': 'type'},
+                                {'name': 'status', 'label': 'Status', 'field': 'status'},
+                                {'name': 'actions', 'label': 'Actions', 'field': 'actions'}
+                            ],
+                            rows=[]
+                        ).classes('w-full')
+                        
+                        # Add provider button
+                        ui.button('➕ Add Provider', on_click=self._show_add_provider_form).classes('mt-4')
                         
                         # Add provider form (hidden by default)
                         self.add_provider_form = self._create_provider_form()
                         self.add_provider_form.visible = False
                 
-                # Presets panel
+                # Presets tab
                 with ui.tab_panel('Presets'):
                     with ui.column().classes('w-full'):
-                        # Presets table
-                        self.presets_table = GenericTable(
-                            data=[],
-                            columns=['name', 'provider', 'model', 'enabled'],
-                            actions=['view', 'edit', 'delete'],
-                            crud_operations=None  # AI presets use custom CRUD
-                        )
+                        # Presets list
+                        ui.label('AI Presets').classes('text-xl font-bold mb-4')
+                        self.presets_table = ui.table(
+                            columns=[
+                                {'name': 'name', 'label': 'Name', 'field': 'name'},
+                                {'name': 'provider', 'label': 'Provider', 'field': 'provider'},
+                                {'name': 'model', 'label': 'Model', 'field': 'model'},
+                                {'name': 'actions', 'label': 'Actions', 'field': 'actions'}
+                            ],
+                            rows=[]
+                        ).classes('w-full')
+                        
+                        # Add preset button
+                        ui.button('➕ Add Preset', on_click=self._show_add_preset_form).classes('mt-4')
                         
                         # Add preset form (hidden by default)
                         self.add_preset_form = self._create_preset_form()
                         self.add_preset_form.visible = False
                 
-                # Analysis panel
-                with ui.tab_panel('Analysis'):
+                # Test tab
+                with ui.tab_panel('Test'):
                     with ui.column().classes('w-full'):
                         # Analysis test form
-                        with ui.card().classes('w-full p-4'):
+                        with ui.card():
                             # Preset selection
                             ui.label('Select Analysis Preset:').classes('font-bold mb-2')
                             self.preset_select = ui.select(
@@ -94,16 +106,16 @@ class AISettingsView:
                             ).classes('w-full mb-4')
                             
                             # Analyze button
-                            ui.button('🔍 Analyze with AI', on_click=self._run_analysis).classes('w-full bg-purple-500 text-white hover:bg-purple-600')
+                            ui.button('🔍 Analyze with AI', on_click=self._run_analysis).classes('w-full')
                             
                             # Results area
                             ui.separator().classes('my-4')
                             ui.label('Analysis Results:').classes('font-bold mb-2')
-                            self.results_area = ui.markdown('').classes('w-full p-4 bg-gray-100 rounded')
+                            self.results_area = ui.markdown('')
     
     def _create_provider_form(self):
         """Create the add provider form"""
-        with ui.card().classes('w-full p-4') as form:
+        with ui.card():
             ui.label('Add New AI Provider').classes('text-2xl font-bold mb-6')
             
             # Provider type selection
@@ -142,13 +154,13 @@ class AISettingsView:
                 api_key.value,
                 project_id.value,
                 location.value
-            )).classes('w-full mt-6 bg-blue-500 text-white hover:bg-blue-600')
+            )).classes('w-full mt-6')
             
             return form
     
     def _create_preset_form(self):
         """Create the add preset form"""
-        with ui.card().classes('w-full p-4') as form:
+        with ui.card():
             ui.label('Add New AI Preset').classes('text-2xl font-bold mb-6')
             
             # Preset name
@@ -201,7 +213,7 @@ class AISettingsView:
                 system_prompt.value,
                 temperature.value,
                 max_tokens.value
-            )).classes('w-full mt-6 bg-blue-500 text-white hover:bg-blue-600')
+            )).classes('w-full mt-6')
             
             return form
     

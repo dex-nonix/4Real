@@ -21,7 +21,7 @@ class AlbumsView:
     
     def _build_view(self):
         """Build the albums view"""
-        with ui.column().classes('w-full') as container:
+        with ui.column().classes('w-full h-full') as container:
             self.container = container
             # Header
             ui.label('💿 Albums').classes('text-3xl font-bold mb-6')
@@ -34,20 +34,20 @@ class AlbumsView:
             )
             
             # Add new album button
-            ui.button('➕ Add New Album', on_click=self._show_add_form).classes('mb-6 bg-green-500 text-white hover:bg-green-600')
+            ui.button('➕ Add New Album', on_click=self._show_add_form).classes('mb-6')
             
-            # Albums table
+            # Albums table - full width
             self.table = GenericTable(
                 data=self.filtered_albums,
-                columns=['title', 'album_number', 'artist', 'release_date', 'created_at'],
+                columns=['album_number', 'title', 'artist', 'release_date', 'created_at'],
                 actions=['view', 'edit', 'delete'],
                 crud_operations=self.music_service.album_crud
             )
             
-            # Add album form (hidden by default)
+            # Add album form (hidden by default) - full width
             self.add_form = GenericForm(
                 model_class=Album,
-                fields=['title', 'album_number', 'artist', 'release_date'],
+                fields=['album_number', 'title', 'artist', 'release_date'],
                 submit_action=self._create_album
             )
             self.add_form.visible = False

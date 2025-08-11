@@ -20,7 +20,7 @@ class StylesView:
     
     def _build_view(self):
         """Build the styles view"""
-        with ui.column().classes('w-full') as container:
+        with ui.column().classes('w-full h-full') as container:
             self.container = container
             # Header
             ui.label('🏷️ Styles').classes('text-3xl font-bold mb-6')
@@ -33,9 +33,9 @@ class StylesView:
             )
             
             # Add new style button
-            ui.button('➕ Add New Style', on_click=self._show_add_form).classes('mb-6 bg-green-500 text-white hover:bg-green-600')
+            ui.button('➕ Add New Style', on_click=self._show_add_form).classes('mb-6')
             
-            # Styles table
+            # Styles table - full width
             self.table = GenericTable(
                 data=self.filtered_styles,
                 columns=['name', 'category', 'description', 'created_at'],
@@ -43,7 +43,7 @@ class StylesView:
                 crud_operations=self.music_service.style_crud
             )
             
-            # Add style form (hidden by default)
+            # Add style form (hidden by default) - full width
             self.add_form = GenericForm(
                 model_class=Style,
                 fields=['name', 'category', 'description'],
