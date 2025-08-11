@@ -42,28 +42,28 @@ class GenericForm:
             # Text area for long text fields
             ui.textarea(
                 label=label,
-                value=initial_value,
+                value=initial_value or '',
                 on_change=lambda e: self._update_field(field_name, e.value)
             ).classes('w-full mb-4')
         elif field_name in ['created_at', 'release_date']:
             # Date picker for date fields
             ui.date(
                 label=label,
-                value=initial_value,
+                value=initial_value or None,
                 on_change=lambda e: self._update_field(field_name, e.value)
             ).classes('w-full mb-4')
         elif field_name in ['album_number', 'track_number', 'duration']:
             # Number input for numeric fields
             ui.number(
                 label=label,
-                value=initial_value,
+                value=initial_value or 0,
                 on_change=lambda e: self._update_field(field_name, e.value)
             ).classes('w-full mb-4')
         else:
             # Regular text input
             ui.input(
                 label=label,
-                value=initial_value,
+                value=initial_value or '',
                 on_change=lambda e: self._update_field(field_name, e.value)
             ).classes('w-full mb-4')
     

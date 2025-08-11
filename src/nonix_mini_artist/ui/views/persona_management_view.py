@@ -72,13 +72,14 @@ class PersonaManagementView:
                         # Name
                         with ui.column().classes('flex-1'):
                             ui.label('Persona Name *').classes('text-sm font-medium mb-1')
-                            self.name_input = ui.input(placeholder='Enter persona name').classes('w-full')
+                            self.name_input = ui.input(value='', placeholder='Enter persona name').classes('w-full')
                         
                         # Artist Link
                         with ui.column().classes('flex-1'):
                             ui.label('Link to Artist').classes('text-sm font-medium mb-1')
                             self.artist_select = ui.select(
                                 options=[],
+                                value='',
                                 placeholder='Select an artist (optional)'
                             ).classes('w-full')
                 
@@ -89,6 +90,7 @@ class PersonaManagementView:
                     # System Prompt
                     ui.label('System Prompt *').classes('text-sm font-medium mb-1')
                     self.system_prompt_input = ui.textarea(
+                        value='',
                         placeholder='Describe how this persona should behave and respond...'
                     ).classes('w-full').style('height: 100px')
                     
@@ -97,6 +99,7 @@ class PersonaManagementView:
                         with ui.column().classes('flex-1'):
                             ui.label('Personality Traits').classes('text-sm font-medium mb-1')
                             self.traits_input = ui.textarea(
+                                value='',
                                 placeholder='Enter traits separated by commas...'
                             ).classes('w-full').style('height: 80px')
                         
@@ -104,12 +107,14 @@ class PersonaManagementView:
                         with ui.column().classes('flex-1'):
                             ui.label('Speaking Style').classes('text-sm font-medium mb-1')
                             self.speaking_style_input = ui.textarea(
+                                value='',
                                 placeholder='Describe the speaking style...'
                             ).classes('w-full').style('height: 80px')
                     
                     # Knowledge Base
                     ui.label('Knowledge Base').classes('text-sm font-medium mb-1')
                     self.knowledge_input = ui.textarea(
+                        value='',
                         placeholder='What should this persona know about?'
                     ).classes('w-full').style('height: 80px')
                 
@@ -147,6 +152,7 @@ class PersonaManagementView:
                         with ui.column().classes('flex-1'):
                             ui.label('Model').classes('text-sm font-medium mb-1')
                             self.ai_model_input = ui.input(
+                                value='',
                                 placeholder='e.g., gemini-1.5-pro'
                             ).classes('w-full')
                     
@@ -603,6 +609,7 @@ class PersonaManagementView:
                     ui.label('Select Artist *').classes('text-sm font-medium mb-1')
                     self.template_artist_select = ui.select(
                         options=[],
+                        value='',
                         placeholder='Choose an artist for the persona'
                     ).classes('w-full')
                 
@@ -636,10 +643,11 @@ class PersonaManagementView:
                     ui.label('Customization (Optional)').classes('text-lg font-semibold mb-3')
                     
                     ui.label('Custom Name (leave blank for default)').classes('text-sm font-medium mb-1')
-                    self.template_custom_name = ui.input(placeholder='e.g., TRC Street Persona').classes('w-full')
+                    self.template_custom_name = ui.input(value='', placeholder='e.g., TRC Street Persona').classes('w-full')
                     
                     ui.label('Additional Personality Traits').classes('text-sm font-medium mb-1')
                     self.template_additional_traits = ui.textarea(
+                        value='',
                         placeholder='Add extra traits separated by commas...'
                     ).classes('w-full').style('height: 60px')
                 

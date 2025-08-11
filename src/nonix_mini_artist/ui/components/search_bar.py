@@ -33,6 +33,7 @@ class SearchBar:
             
             # Search input
             self.search_input = ui.input(
+                value='',
                 placeholder=self.placeholder,
                 on_change=self._handle_search
             ).classes('flex-1')

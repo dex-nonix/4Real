@@ -51,6 +51,7 @@ class ChatInterface:
             with self.input_container:
                 # Message input with enhanced features
                 self.message_input = ui.textarea(
+                    value='',
                     placeholder='Type your message... (Ctrl+Enter to send)'
                 ).classes('flex-1 mr-2 resize-none')
                 self.message_input.style('height: 60px')  # Set height instead of rows
@@ -659,8 +660,8 @@ class ChatInterface:
                 ui.label('Rename Session').classes('text-lg font-bold mb-3')
                 
                 new_title = ui.input(
-                    placeholder='Enter new session title',
-                    value=self.chat_service.get_session(self.current_session_id).title if self.current_session_id else ''
+                    value='',
+                    placeholder='Enter new session title'
                 ).classes('w-full mb-3')
                 
                 with ui.row().classes('justify-end gap-2'):

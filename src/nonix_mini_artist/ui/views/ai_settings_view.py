@@ -93,6 +93,7 @@ class AISettingsView:
                 ui.label('Select Analysis Preset:').classes('font-bold mb-2')
                 self.preset_select = ui.select(
                     options=[], 
+                    value='',
                     label='Preset'
                 ).classes('w-full mb-4')
                 
@@ -100,6 +101,7 @@ class AISettingsView:
                 ui.label('Content to Analyze:').classes('font-bold mb-2')
                 self.content_input = ui.textarea(
                     label='Content',
+                    value='',
                     placeholder='Enter lyrics, description, or other content to analyze...'
                 ).classes('w-full mb-4')
                 
@@ -107,6 +109,7 @@ class AISettingsView:
                 ui.label('Additional Context (Optional):').classes('font-bold mb-2')
                 self.context_input = ui.textarea(
                     label='Context',
+                    value='',
                     placeholder='Genre, artist, mood, etc.'
                 ).classes('w-full mb-4')
                 
@@ -127,6 +130,7 @@ class AISettingsView:
             ui.label('Provider Type:').classes('font-bold mb-2')
             provider_type = ui.select(
                 options=['gemini', 'vertex'],
+                value='gemini',
                 label='Provider'
             ).classes('w-full mb-4')
             
@@ -134,13 +138,15 @@ class AISettingsView:
             ui.label('API Key:').classes('font-bold mb-2')
             api_key = ui.input(
                 label='API Key',
+                value='',
                 password=True
             ).classes('w-full mb-4')
             
             # Project ID (for Vertex AI)
             ui.label('Project ID (Vertex AI only):').classes('font-bold mb-2')
             project_id = ui.input(
-                label='Project ID'
+                label='Project ID',
+                value=''
             ).classes('w-full mb-4')
             
             # Location (for Vertex AI)
@@ -168,13 +174,15 @@ class AISettingsView:
             # Preset name
             ui.label('Preset Name:').classes('font-bold mb-2')
             name = ui.input(
-                label='Name'
+                label='Name',
+                value=''
             ).classes('w-full mb-4')
             
             # Provider selection
             ui.label('AI Provider:').classes('font-bold mb-2')
             provider = ui.select(
                 options=['gemini', 'vertex'],
+                value='gemini',
                 label='Provider'
             ).classes('w-full mb-4')
             
@@ -188,7 +196,8 @@ class AISettingsView:
             # System prompt
             ui.label('System Prompt:').classes('font-bold mb-2')
             system_prompt = ui.textarea(
-                label='System Prompt'
+                label='System Prompt',
+                value=''
             ).classes('w-full mb-4')
             
             # Temperature

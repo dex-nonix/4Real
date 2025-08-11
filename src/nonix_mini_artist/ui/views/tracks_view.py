@@ -74,6 +74,7 @@ class TracksView:
             ui.label('Select Track:').classes('font-bold mb-2')
             track_select = ui.select(
                 options=[f"{t.track_number}. {t.name}" for t in self.tracks],
+                value='',
                 label='Track'
             ).classes('w-full mb-4')
             
@@ -81,6 +82,7 @@ class TracksView:
             ui.label('Analysis Type:').classes('font-bold mb-2')
             preset_select = ui.select(
                 options=['lyrics_analyzer', 'style_classifier', 'content_generator'],
+                value='',
                 label='Analysis Preset'
             ).classes('w-full mb-4')
             
