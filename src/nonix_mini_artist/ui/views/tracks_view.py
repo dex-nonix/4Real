@@ -65,23 +65,21 @@ class TracksView:
     
     def _create_ai_analysis_form(self):
         """Create the AI analysis form"""
-        with ui.card():
+        with ui.card() as form:
             ui.label('🤖 AI Analysis').classes('text-2xl font-bold mb-6')
             
             # Track selection
             ui.label('Select Track:').classes('font-bold mb-2')
             track_select = ui.select(
                 options=[f"{t.track_number}. {t.name}" for t in self.tracks] if self.tracks else ['No tracks available'],
-                value=None,
-                label='Track'
+                value=None
             ).classes('w-full mb-4')
             
             # Analysis preset selection
             ui.label('Analysis Type:').classes('font-bold mb-2')
             preset_select = ui.select(
                 options=['lyrics_analyzer', 'style_classifier', 'content_generator'],
-                value=None,
-                label='Analysis Preset'
+                value=None
             ).classes('w-full mb-4')
             
             # Analyze button

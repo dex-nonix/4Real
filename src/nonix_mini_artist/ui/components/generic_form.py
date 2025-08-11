@@ -40,29 +40,29 @@ class GenericForm:
         
         if field_name in ['description', 'persona', 'raw_lyrics', 'formatted_lyrics']:
             # Text area for long text fields
+            ui.label(label).classes('text-sm font-medium mb-1')
             ui.textarea(
-                label=label,
                 value=initial_value or '',
                 on_change=lambda e: self._update_field(field_name, e.value)
             ).classes('w-full mb-4')
         elif field_name in ['created_at', 'release_date']:
             # Date picker for date fields
+            ui.label(label).classes('text-sm font-medium mb-1')
             ui.date(
-                label=label,
                 value=initial_value or None,
                 on_change=lambda e: self._update_field(field_name, e.value)
             ).classes('w-full mb-4')
         elif field_name in ['album_number', 'track_number', 'duration']:
             # Number input for numeric fields
+            ui.label(label).classes('text-sm font-medium mb-1')
             ui.number(
-                label=label,
                 value=initial_value or 0,
                 on_change=lambda e: self._update_field(field_name, e.value)
             ).classes('w-full mb-4')
         else:
             # Regular text input
+            ui.label(label).classes('text-sm font-medium mb-1')
             ui.input(
-                label=label,
                 value=initial_value or '',
                 on_change=lambda e: self._update_field(field_name, e.value)
             ).classes('w-full mb-4')

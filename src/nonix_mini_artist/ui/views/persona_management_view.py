@@ -78,8 +78,7 @@ class PersonaManagementView:
                             ui.label('Link to Artist').classes('text-sm font-medium mb-1')
                             self.artist_select = ui.select(
                                 options=[],
-                                value=None,
-                                placeholder='Select an artist (optional)'
+                                value=None
                             ).classes('w-full')
                 
                 # Personality Configuration
@@ -594,8 +593,7 @@ class PersonaManagementView:
                     ui.label('Select Artist *').classes('text-sm font-medium mb-1')
                     self.template_artist_select = ui.select(
                         options=[],
-                        value=None,
-                        placeholder='Choose an artist for the persona'
+                        value=None
                     ).classes('w-full')
                 
                 # Template Type

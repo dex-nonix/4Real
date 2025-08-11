@@ -85,8 +85,7 @@ class AISettingsView:
                             ui.label('Select Analysis Preset:').classes('font-bold mb-2')
                             self.preset_select = ui.select(
                                 options=[], 
-                                value=None,
-                                label='Preset'
+                                value=None
                             ).classes('w-full mb-4')
                             
                             # Content input
@@ -122,8 +121,7 @@ class AISettingsView:
             ui.label('Provider Type:').classes('font-bold mb-2')
             provider_type = ui.select(
                 options=['gemini', 'vertex'],
-                value='gemini',
-                label='Provider'
+                value='gemini'
             ).classes('w-full mb-4')
             
             # API Key input
@@ -174,8 +172,7 @@ class AISettingsView:
             ui.label('AI Provider:').classes('font-bold mb-2')
             provider = ui.select(
                 options=['gemini', 'vertex'],
-                value='gemini',
-                label='Provider'
+                value='gemini'
             ).classes('w-full mb-4')
             
             # Model selection
