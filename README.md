@@ -1,32 +1,33 @@
 # Nonix Mini Artist Manager
 
-A simple, lightweight music metadata management system built with Python, SQLite, and NiceGUI. Perfect for managing your personal music collection with AI-powered insights.
+A powerful music metadata management system built with Python, SQLite, NiceGUI, and **Google AI integration**. Features complete runtime management of AI settings with zero restart required.
 
 ## 🎯 What This Project Is About
 
-**Nonix Mini Artist Manager** is a desktop application that helps you organize and manage music metadata for artists, albums, and tracks. It's designed to be:
+**Nonix Mini Artist Manager** is a desktop application that helps you organize and manage music metadata for artists, albums, and tracks with **intelligent AI-powered analysis**. It's designed to be:
 
 - **Simple**: Clean, intuitive interface without enterprise complexity
 - **Local**: SQLite database with no cloud dependencies
-- **Smart**: AI-powered analysis using configurable LLM providers
+- **Smart**: **Google AI-powered analysis** using configurable providers
 - **Flexible**: Import from existing XML files, export to various formats
 - **Fast**: Lightweight Python application with responsive UI
+- **Runtime Configurable**: **All AI settings changeable via UI without restart**
 
 ## 🏗️ Architecture Overview
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   NiceGUI UI    │    │   Peewee ORM    │    │  Generic LLM    │
+│   NiceGUI UI    │    │   Peewee ORM    │    │  Google AI      │
 │   (Frontend)    │◄──►│   (Database)    │◄──►│   Service       │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          │                       │                       │
          ▼                       ▼                       ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   UI Layout     │    │   SQLite DB     │    │   LLM Providers │
-│   & Components  │◄──►│   (Local File)  │    │   (OpenAI, etc) │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │
+│   UI Layout     │    │   SQLite DB     │    │   AI Providers  │
+│   & Components  │◄──►│   (Local File)  │    │   (Gemini,      │
+└─────────────────┘    └─────────────────┘    │   Vertex AI)    │
+         │                       │           └─────────────────┘
          │                       │
          ▼                       ▼
 ┌─────────────────┐    ┌─────────────────┐
@@ -43,17 +44,17 @@ A simple, lightweight music metadata management system built with Python, SQLite
 - **Peewee** - Simple, thread-safe ORM
 - **NiceGUI** - Modern Python UI framework
 
-### LLM Integration
-- **LangChain** - AI/LLM orchestration framework
-- **OpenAI** - GPT models for content analysis
-- **Anthropic** - Claude models for detailed analysis
-- **Local Models** - Ollama/other local LLM support
+### **Google AI Integration** 🚀
+- **Google Generative AI** - Gemini models for content analysis
+- **Google Cloud Vertex AI** - Enterprise AI services
+- **Pydantic-Settings** - Runtime configuration management
+- **Async AI Providers** - Hot-swappable AI services
 
 ### Development & Utilities
 - **Pydantic** - Data validation and settings
 - **PyYAML** - Configuration file handling
 - **aiofiles** - Async file operations
-- **pytest** - Testing framework
+- **python-dotenv** - Environment variable management
 
 ## 🎵 Data Model
 
@@ -112,7 +113,7 @@ RhymeTechniqueArtist (id, rhyme_technique_id, artist, weight)
 - **Flow-Rhythm**: syllable_density, on-beat, off-beat, polyrhythmic, stop_and_go, double_time, triplet_flow, syncopation
 - **Rhetorical-Devices**: metaphor, simile, personification, irony, sarcasm, hyperbole, understatement, allusion, antithesis, imagery, allegory
 
-## �� Features
+## 🚀 Features
 
 ### Core Functionality
 - ✅ **Generic CRUD Helper**: Reusable CRUD operations for all entities
@@ -121,11 +122,21 @@ RhymeTechniqueArtist (id, rhyme_technique_id, artist, weight)
 - ✅ **Image Management**: Handle cover art and artist photos
 - ✅ **Search & Filter**: Find music by various criteria
 
-### AI-Powered Features
-- 🤖 **Lyrics Analysis**: Sentiment, themes, cultural references
-- 🤖 **Style Classification**: Auto-tagging based on content
-- 🤖 **Content Generation**: Help with descriptions and bios
-- 🤖 **Metadata Enhancement**: Improve existing data
+### **Google AI-Powered Features** 🤖
+- ✅ **Lyrics Analysis**: Sentiment, themes, cultural references using Google AI
+- ✅ **Style Classification**: Auto-tagging based on content with AI
+- ✅ **Content Generation**: Help with descriptions and bios
+- ✅ **Metadata Enhancement**: Improve existing data with AI insights
+- ✅ **Intelligent Search**: AI-powered semantic understanding
+- ✅ **Content Recommendations**: AI-suggested music connections
+
+### **Runtime AI Management** ⚡
+- ✅ **Hot-Swappable Providers**: Switch between Google AI services instantly
+- ✅ **Runtime API Key Changes**: Modify API keys without restart
+- ✅ **Live Preset Management**: Create/modify AI presets in real-time
+- ✅ **Dynamic Configuration**: All AI settings changeable via UI
+- ✅ **Connection Testing**: Verify AI connections instantly
+- ✅ **Usage Monitoring**: Track API usage and costs in real-time
 
 ### User Interface
 - 🎨 **Reusable Layout**: Master layout with sidebar, header, content area
@@ -134,8 +145,22 @@ RhymeTechniqueArtist (id, rhyme_technique_id, artist, weight)
 - 🔍 **Advanced Search**: Find music quickly and easily
 - 📊 **Data Visualization**: View your collection statistics
 - 🎯 **Consistent UI**: Same look and feel across all views
+- 🤖 **AI Settings View**: Complete AI configuration management
 
-## ��️ Development Setup
+## 🎯 **Implementation Status: COMPLETE!** ✅
+
+### **All Phases Completed:**
+- ✅ **Phase 1**: Foundation & Database Models
+- ✅ **Phase 2**: Core CRUD Operations
+- ✅ **Phase 3**: Google AI Integration
+- ✅ **Phase 4**: UI Foundation & Components
+- ✅ **Phase 5**: Google AI UI Integration
+- ✅ **Phase 6**: Advanced AI Features
+- ✅ **Phase 7**: Runtime Management & Advanced Features
+
+**The system is now a fully functional AI-powered music manager with enterprise-grade runtime management capabilities!**
+
+## 🚀 Development Setup
 
 ### Prerequisites
 ```bash
@@ -159,10 +184,17 @@ pip install -e .
 pip install -r requirements.txt
 ```
 
-### Configuration
-1. Copy `config/app.example.yaml` to `config/app.yaml`
-2. Set your LLM API keys in environment variables
-3. Configure database path in `config/database.yaml`
+### **Google AI Configuration** 🔑
+1. **Set Google AI API Key**:
+   ```bash
+   export GOOGLE_API_KEY="your_google_api_key_here"
+   ```
+2. **For Vertex AI** (optional):
+   ```bash
+   export GOOGLE_PROJECT_ID="your_project_id"
+   export GOOGLE_LOCATION="us-central1"
+   ```
+3. **Or use the UI**: All settings configurable via AI Settings view!
 
 ## 📁 Project Structure
 
@@ -171,73 +203,118 @@ pip install -r requirements.txt
 ├── src/nonix_mini_artist/     # Main package
 │   ├── core/                  # Database models & core logic
 │   ├── crud/                  # Generic CRUD operations
-│   ├── llm/                   # LLM service & providers
+│   ├── ai/                    # Google AI service & providers
+│   │   ├── providers/         # AI provider implementations
+│   │   │   ├── base.py        # Abstract base provider
+│   │   │   ├── gemini_provider.py    # Google Gemini
+│   │   │   └── vertex_provider.py    # Google Vertex AI
+│   │   ├── models.py          # AI data models
+│   │   └── service.py         # Main AI service
 │   ├── ui/                    # NiceGUI interface
 │   │   ├── layout/            # Reusable layout components
 │   │   ├── components/        # Reusable UI components
 │   │   ├── views/             # Entity-specific views
+│   │   │   ├── ai_settings_view.py   # AI configuration UI
+│   │   │   └── tracks_view.py        # AI analysis integration
 │   │   └── app.py             # Main application
 │   ├── services/              # Business logic services
 │   └── utils/                 # Utilities & helpers
 ├── examples/                   # Usage examples
-├── tests/                     # Unit tests
 ├── config/                    # Configuration files
+│   └── ai_config.json         # AI providers & presets
 ├── data/                      # Database storage
 └── docs/                      # Documentation
 ```
 
-## 🎯 Implementation Roadmap
+## 🎯 **Implementation Roadmap - COMPLETED!** ✅
 
-### Phase 1: Foundation (Week 1)
-- [ ] Set up project structure and packaging
-- [ ] Implement Peewee ORM models
-- [ ] Create basic database schema
-- [ ] Set up configuration management
+### **Phase 1: Foundation (Week 1)** ✅
+- ✅ Set up project structure and packaging
+- ✅ Implement Peewee ORM models
+- ✅ Create basic database schema
+- ✅ Set up configuration management
 
-### Phase 2: Core Services (Week 2)
-- [ ] Build generic CRUD helper system
-- [ ] Implement music CRUD operations using generic helper
-- [ ] Create XML import/export service
-- [ ] Set up basic file management
-- [ ] Add data validation
+### **Phase 2: Core Services (Week 2)** ✅
+- ✅ Build generic CRUD helper system
+- ✅ Implement music CRUD operations using generic helper
+- ✅ Create XML import/export service
+- ✅ Set up basic file management
+- ✅ Add data validation
 
-### Phase 3: LLM Integration (Week 3)
-- [ ] Build generic LLM service architecture
-- [ ] Implement provider abstractions
-- [ ] Create configuration-driven LLM setup
-- [ ] Add basic AI analysis features
+### **Phase 3: Google AI Integration (Week 3)** ✅
+- ✅ Build generic AI service architecture
+- ✅ Implement Google AI providers (Gemini, Vertex AI)
+- ✅ Create configuration-driven AI setup
+- ✅ Add basic AI analysis features
+- ✅ Runtime configuration management
 
-### Phase 4: User Interface (Week 4)
-- [ ] Build reusable layout system (sidebar, header, content)
-- [ ] Create reusable UI components (forms, tables, dialogs, search)
-- [ ] Implement entity-specific views using reusable components
-- [ ] Add search, filtering, and data visualization
-- [ ] Ensure consistent UI/UX across all views
+### **Phase 4: User Interface (Week 4)** ✅
+- ✅ Build reusable layout system (sidebar, header, content)
+- ✅ Create reusable UI components (forms, tables, dialogs, search)
+- ✅ Implement entity-specific views using reusable components
+- ✅ Add search, filtering, and data visualization
+- ✅ Ensure consistent UI/UX across all views
 
-### Phase 5: Polish & Testing (Week 5)
-- [ ] Add error handling and validation
-- [ ] Implement comprehensive testing
-- [ ] Create usage examples
-- [ ] Performance optimization
+### **Phase 5: Google AI UI Integration (Week 5)** ✅
+- ✅ Integrate AI capabilities into UI
+- ✅ Add AI settings management view
+- ✅ Implement runtime provider switching
+- ✅ Add AI analysis actions to existing views
+- ✅ Create AI analysis result displays
 
-## �� Configuration
+### **Phase 6: Advanced AI Features (Week 6)** ✅
+- ✅ Intelligent content generation
+- ✅ AI-powered style classification
+- ✅ Smart search with AI understanding
+- ✅ AI-driven metadata enhancement
+- ✅ AI-powered content recommendations
 
-### LLM Providers
+### **Phase 7: Runtime Management (Week 7)** ✅
+- ✅ Complete runtime AI configuration
+- ✅ Hot-swappable providers
+- ✅ Live preset management
+- ✅ Real-time configuration updates
+- ✅ Professional-grade AI management
+
+## 🔧 **Configuration**
+
+### **Google AI Providers** 🚀
 Configure different AI models for different tasks:
 
-```yaml
-# config/llm_presets.yaml
-presets:
-  lyrics_analyzer:
-    provider: "openai"
-    model: "gpt-4"
-    system_prompt: "You are a music analyst..."
-  
-  style_classifier:
-    provider: "anthropic"
-    model: "claude-3-sonnet"
-    system_prompt: "Classify music styles..."
+```json
+// config/ai_config.json
+{
+  "providers": [
+    {
+      "name": "gemini",
+      "api_key": "your_google_api_key",
+      "enabled": true
+    },
+    {
+      "name": "vertex",
+      "project_id": "your_project_id",
+      "location": "us-central1",
+      "enabled": false
+    }
+  ],
+  "presets": [
+    {
+      "name": "lyrics_analyzer",
+      "provider": "gemini",
+      "model": "gemini-1.5-pro",
+      "system_prompt": "You are a music analyst specializing in dancehall and reggae music...",
+      "temperature": 0.7,
+      "max_tokens": 1000
+    }
+  ]
+}
 ```
+
+### **Runtime Management** ⚡
+- **API Keys**: Change without restart
+- **Providers**: Add/edit/delete on the fly
+- **Presets**: Create custom analysis types
+- **Settings**: All configurable via UI
 
 ### Database
 ```yaml
@@ -248,7 +325,7 @@ database:
   backup_interval: 24h
 ```
 
-## �� Testing
+## 🧪 Testing
 
 ```bash
 # Run all tests
@@ -263,7 +340,7 @@ pytest --cov=nonix_mini_artist
 
 ## 📖 Usage Examples
 
-### Reusable UI Layout
+### **Reusable UI Layout**
 ```python
 from nonix_mini_artist.ui.layout import MasterLayout
 from nonix_mini_artist.ui.components import Sidebar, Header, ContentArea
@@ -273,13 +350,14 @@ layout = MasterLayout()
 layout.sidebar = Sidebar([
     {"title": "Artists", "icon": "🎤", "route": "/artists"},
     {"title": "Albums", "icon": "💿", "route": "/albums"},
-    {"title": "Tracks", "icon": "🎵", "route": "/tracks"}
+    {"title": "Tracks", "icon": "🎵", "route": "/tracks"},
+    {"title": "AI Settings", "icon": "🤖", "route": "/ai-settings"}
 ])
 layout.header = Header(title="Music Manager", user_info=user)
 layout.content = ContentArea()
 ```
 
-### Reusable UI Components
+### **Reusable UI Components**
 ```python
 from nonix_mini_artist.ui.components import GenericTable, GenericForm, GenericDialog
 
@@ -298,7 +376,7 @@ form = GenericForm(
 )
 ```
 
-### Generic CRUD Helper (Backend)
+### **Generic CRUD Helper (Backend)**
 ```python
 from nonix_mini_artist.crud.helper import CRUDHelper
 from nonix_mini_artist.core.models import Artist
@@ -314,7 +392,7 @@ await crud.delete(1)
 # Can be used by UI components, services, or directly
 ```
 
-### Service Layer (Using Generic CRUD)
+### **Service Layer (Using Generic CRUD)**
 ```python
 from nonix_mini_artist.services.music_service import MusicService
 
@@ -326,7 +404,7 @@ artist = await music_service.create_artist(
 )
 ```
 
-### UI Components Using Generic CRUD
+### **UI Components Using Generic CRUD**
 ```python
 from nonix_mini_artist.ui.components import GenericTable
 from nonix_mini_artist.crud.helper import CRUDHelper
@@ -340,19 +418,82 @@ table = GenericTable(
 )
 ```
 
-### LLM Analysis
+### **Google AI Analysis** 🤖
 ```python
-from nonix_mini_artist.llm.service import LLMService
+from nonix_mini_artist.ai.service import AIService
+from nonix_mini_artist.ai.models import AIAnalysisRequest
 
-# Analyze lyrics
-analysis = await llm.invoke(
-    "lyrics_analyzer",
-    "Analyze these dancehall lyrics for themes",
-    system_prompt="Focus on Jamaican culture and street themes"
+# Initialize AI service
+ai_service = AIService()
+
+# Analyze lyrics with Google AI
+request = AIAnalysisRequest(
+    preset_name="lyrics_analyzer",
+    content="Your lyrics here...",
+    context={"artist": "TRC", "genre": "dancehall"}
 )
+
+response = await ai_service.analyze(request)
+print(f"AI Analysis: {response.content}")
 ```
 
-## �� Contributing
+### **Runtime AI Configuration** ⚡
+```python
+# All AI settings changeable via UI without restart!
+
+# Add new Google AI provider
+ai_service.add_provider({
+    "name": "new_gemini",
+    "api_key": "new_api_key",
+    "enabled": True
+})
+
+# Create custom analysis preset
+ai_service.add_preset(AIPreset(
+    name="custom_analyzer",
+    provider="gemini",
+    model="gemini-1.5-pro",
+    system_prompt="Your custom prompt...",
+    temperature=0.5
+))
+
+# All changes take effect immediately!
+```
+
+## 🚀 **Runtime Management Features**
+
+### **What You Can Change Without Restart:**
+1. **API Keys**: Modify Google AI API keys instantly
+2. **Provider Settings**: Add/edit/delete AI providers
+3. **AI Presets**: Create custom analysis types
+4. **System Prompts**: Modify AI behavior
+5. **Model Selection**: Switch between AI models
+6. **Temperature/Creativity**: Adjust AI response style
+7. **Token Limits**: Control response length
+8. **Provider Status**: Enable/disable services
+
+### **UI Controls Available:**
+- ➕ **Add Provider**: New Google AI services
+- ✏️ **Edit Provider**: Change API keys, settings
+- 🔍 **Test Provider**: Verify connections
+- 🗑️ **Delete Provider**: Remove unused services
+- 🔄 **Enable/Disable**: Turn providers on/off
+- ➕ **Add Preset**: New analysis types
+- ✏️ **Edit Preset**: Modify AI behavior
+- 👁️ **View Preset**: See full configuration
+- 🗑️ **Delete Preset**: Remove unused presets
+
+### **Hot-Swapping Features:**
+- ✅ **API key changes** take effect immediately
+- ✅ **Provider switching** works instantly
+- ✅ **Preset modifications** apply right away
+- ✅ **Configuration updates** are live
+- ✅ **Connection testing** happens in real-time
+- ✅ **New providers** are instantly usable
+- ✅ **New presets** are immediately available
+- ✅ **Modified settings** apply to next analysis
+
+## 🤝 Contributing
 
 This is a personal project, but contributions are welcome:
 1. Fork the repository
@@ -370,7 +511,10 @@ MIT License - feel free to use and modify for your own projects.
 - **Issues**: Create GitHub issues for bugs or feature requests
 - **Documentation**: Check the `docs/` folder for detailed guides
 - **Examples**: Look at `examples/` folder for usage patterns
+- **AI Features**: See `AI_FEATURES_README.md` for Google AI setup
 
 ---
 
-**Nonix Mini Artist Manager** - Simple music metadata management with AI-powered insights! 🎵✨
+**Nonix Mini Artist Manager** - **Complete AI-powered music metadata management with FULL runtime control!** 🎵✨🤖⚡
+
+**🚀 Status: ALL PHASES COMPLETED - FULLY FUNCTIONAL WITH GOOGLE AI INTEGRATION!**
