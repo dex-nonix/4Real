@@ -12,6 +12,6 @@ class ContentArea:
     
     def _build_content_area(self):
         """Build the content area structure"""
-        # Use flex-1 to take remaining space and proper flexbox layout
-        with ui.column().classes('flex-1 p-6 bg-gray-100 overflow-auto flex flex-col') as container:
+        # Remove excessive margins and make it properly responsive
+        with ui.column().classes('flex-1 p-2 bg-gray-100 overflow-auto') as container:
             self.container = container

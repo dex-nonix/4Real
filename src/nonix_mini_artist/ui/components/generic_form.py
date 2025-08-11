@@ -23,7 +23,7 @@ class GenericForm:
     
     def _build_form(self):
         """Build the form structure"""
-        with ui.card().classes('w-full max-w-2xl mx-auto p-6'):
+        with ui.card().classes('w-full p-4'):
             ui.label('Add New Item').classes('text-2xl font-bold mb-6')
             
             # Form fields

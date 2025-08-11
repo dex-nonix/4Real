@@ -102,13 +102,13 @@ class MusicManagerApp:
     
     def _create_main_layout(self):
         """Create the main layout structure"""
-        # Create main container
-        with ui.column().classes('w-full h-screen flex') as main_container:
+        # Create main container with proper responsive layout
+        with ui.row().classes('w-full h-screen flex overflow-hidden') as main_container:
             # Sidebar
             self.sidebar = Sidebar()
             
-            # Main content area
-            with ui.column().classes('flex-1 h-full flex flex-col') as content_container:
+            # Main content area - ensure it takes full remaining width
+            with ui.column().classes('flex-1 h-full flex flex-col min-w-0 overflow-hidden') as content_container:
                 # Header
                 self.header = Header()
                 
@@ -208,12 +208,12 @@ class DashboardView:
             # Navigation buttons in a proper flexbox row
             with ui.row().classes('gap-4 flex flex-wrap justify-center mb-8'):
                 ui.button('🎤 Artists', on_click=lambda: self.app._show_artists()).classes('px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600')
-                ui.button('💿 Albums', on_click=lambda: self.app._show_albums()).classes('px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600')
-                ui.button('🎵 Tracks', on_click=lambda: self.app._show_tracks()).classes('px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600')
-                ui.button('🏷️ Styles', on_click=lambda: self.app._show_styles()).classes('px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600')
-                ui.button('🤖 AI Settings', on_click=lambda: self.app._show_ai_settings()).classes('px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600')
-                ui.button('🎭 Personas', on_click=lambda: self.app._show_personas()).classes('px-6 py-3 bg-pink-500 text-white rounded-lg hover:bg-pink-600')
-                ui.button('💬 Chat', on_click=lambda: self.app._show_chat()).classes('px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600')
+                ui.button('💿 Albums', on_click=lambda: self.app._show_albums()).classes('px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-blue-600')
+                ui.button('🎵 Tracks', on_click=lambda: self.app._show_tracks()).classes('px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-blue-600')
+                ui.button('🏷️ Styles', on_click=lambda: self.app._show_styles()).classes('px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-blue-600')
+                ui.button('🤖 AI Settings', on_click=lambda: self.app._show_ai_settings()).classes('px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-blue-600')
+                ui.button('🎭 Personas', on_click=lambda: self.app._show_personas()).classes('px-6 py-3 bg-pink-500 text-white rounded-lg hover:bg-blue-600')
+                ui.button('💬 Chat', on_click=lambda: self.app._show_chat()).classes('px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-blue-600')
             
             # Quick stats
             ui.separator().classes('my-6 w-full')

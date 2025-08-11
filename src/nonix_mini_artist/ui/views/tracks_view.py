@@ -65,7 +65,7 @@ class TracksView:
     
     def _create_ai_analysis_form(self):
         """Create the AI analysis form"""
-        with ui.card().classes('w-full max-w-2xl mx-auto p-6') as form:
+        with ui.card().classes('w-full p-4') as form:
             ui.label('🤖 AI Analysis').classes('text-2xl font-bold mb-6')
             
             # Track selection

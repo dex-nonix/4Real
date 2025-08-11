@@ -68,7 +68,7 @@ class AISettingsView:
                 with ui.tab_panel('Analysis'):
                     with ui.column().classes('w-full'):
                         # Analysis test form
-                        with ui.card().classes('w-full max-w-2xl p-6'):
+                        with ui.card().classes('w-full p-4'):
                             # Preset selection
                             ui.label('Select Analysis Preset:').classes('font-bold mb-2')
                             self.preset_select = ui.select(
@@ -103,7 +103,7 @@ class AISettingsView:
     
     def _create_provider_form(self):
         """Create the add provider form"""
-        with ui.card().classes('w-full max-w-2xl mx-auto p-6') as form:
+        with ui.card().classes('w-full p-4') as form:
             ui.label('Add New AI Provider').classes('text-2xl font-bold mb-6')
             
             # Provider type selection
@@ -148,7 +148,7 @@ class AISettingsView:
     
     def _create_preset_form(self):
         """Create the add preset form"""
-        with ui.card().classes('w-full max-w-2xl mx-auto p-6') as form:
+        with ui.card().classes('w-full p-4') as form:
             ui.label('Add New AI Preset').classes('text-2xl font-bold mb-6')
             
             # Preset name
