@@ -13,7 +13,7 @@
 
 ## 🔧 **IMPLEMENTATION:**
 
-### **1. CrudService Base Class:**
+### **1. CrudService Base Class (relative paths only):**
 ```python
 # services/crud_service.py
 from flask import request, jsonify
@@ -30,16 +30,15 @@ class CrudService:
     def _get_default_config(self):
         """Default CRUD configuration"""
         return {
-            'path': '/',  # Base path for this service
             'operations': {
-                'create': True,      # Enable POST /{path}
-                'read': True,        # Enable GET /{path} and GET /{path}/{id}
-                'update': True,      # Enable PUT /{path}/{id}
-                'delete': True,      # Enable DELETE /{path}/{id}
-                'list': True,        # Enable GET /{path} (list all)
-                'search': True,      # Enable GET /{path}/search
-                'bulk': True,        # Enable POST /{path}/bulk
-                'selector': True     # Enable GET /{path}/selector (optimized for dropdowns)
+                'create': True,      # Enable POST /
+                'read': True,        # Enable GET / and GET /{id}
+                'update': True,      # Enable PUT /{id}
+                'delete': True,      # Enable DELETE /{id}
+                'list': True,        # Enable GET / (list all)
+                'search': True,      # Enable GET /search
+                'bulk': True,        # Enable POST /bulk
+                'selector': True     # Enable GET /selector and /selector/{id} (optimized for dropdowns)
             },
             'filters': {
                 'enabled': True,     # Enable filtering
@@ -72,60 +71,59 @@ class CrudService:
         }
     
     def register_routes(self):
-        """Auto-register all CRUD routes based on config"""
-        base_path = self.config['path']
+        """Auto-register CRUD routes with RELATIVE paths (APIRouter provides base)."""
         ops = self.config['operations']
         
         # CREATE - POST /{path}
         if ops.get('create'):
-            @expose(base_path, methods=['POST'])
+            @expose('/', methods=['POST'])
             def create(self, request):
                 return self._handle_create(request)
         
         # READ ALL - GET /{path}
         if ops.get('list'):
-            @expose(base_path)
+            @expose('/')
             def list_all(self, request):
                 return self._handle_list(request)
         
         # READ ONE - GET /{path}/{id}
         if ops.get('read'):
-            @expose(f'{base_path}/{{id}}')
+            @expose('/{id}')
             def read_one(self, request, id):
                 return self._handle_read(request, id)
         
         # UPDATE - PUT /{path}/{id}
         if ops.get('update'):
-            @expose(f'{base_path}/{{id}}', methods=['PUT'])
+            @expose('/{id}', methods=['PUT'])
             def update(self, request, id):
                 return self._handle_update(request, id)
         
         # DELETE - DELETE /{path}/{id}
         if ops.get('delete'):
-            @expose(f'{base_path}/{{id}}', methods=['DELETE'])
+            @expose('/{id}', methods=['DELETE'])
             def delete(self, request, id):
                 return self._handle_delete(request, id)
         
         # SEARCH - GET /{path}/search
         if ops.get('search'):
-            @expose(f'{base_path}/search')
+            @expose('/search')
             def search(self, request):
                 return self._handle_search(request)
         
         # BULK OPERATIONS - POST /{path}/bulk
         if ops.get('bulk'):
-            @expose(f'{base_path}/bulk', methods=['POST'])
+            @expose('/bulk', methods=['POST'])
             def bulk_operations(self, request):
                 return self._handle_bulk(request)
         
         # SELECTOR - GET /{path}/selector (optimized for dropdowns)
         if ops.get('selector'):
-            @expose(f'{base_path}/selector')
+            @expose('/selector')
             def selector(self, request):
                 return self._handle_selector(request)
             
             # SINGLE SELECTOR - GET /{path}/selector/{id} (single item for ID references)
-            @expose(f'{base_path}/selector/{{id}}')
+            @expose('/selector/{id}')
             def single_selector(self, request, id):
                 return self._handle_single_selector(request, id)
     

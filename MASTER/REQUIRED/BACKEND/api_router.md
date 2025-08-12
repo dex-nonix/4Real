@@ -30,7 +30,7 @@ def expose(path, methods=None):
     return decorator
 ```
 
-### **2. APIRouter Blueprint:**
+### **2. APIRouter Blueprint (services expose RELATIVE paths):**
 ```python
 # services/api_router.py
 from flask import Blueprint
@@ -66,6 +66,7 @@ class APIRouter:
     
     def _create_route(self, service, method, service_name):
         """Create Flask route from decorator info"""
+        # Service methods must expose RELATIVE paths like '/', '/{id}', '/search'
         full_path = f"/{service_name}{method._path}"
         
         @self.blueprint.route(full_path, methods=method._methods)
@@ -193,22 +194,22 @@ class HealthService:
         return {"message": "pong"}
 ```
 
-### **2. Basic Service with Dependencies:**
+### **2. Basic Service with Dependencies (relative paths in decorators):**
 ```python
 class AlbumService:
     def __init__(self, db, storage_path):
         self.db = db
         self.storage_path = storage_path
     
-    @expose('/albums')
+    @expose('/')
     def get_all(self, request):
         return self.db.query(Album).all()
     
-    @expose('/albums/{id}')
+    @expose('/{id}')
     def get_by_id(self, request, id):
         return self.db.query(Album).filter_by(id=id).first()
     
-    @expose('/albums', methods=['POST'])
+    @expose('/', methods=['POST'])
     def create(self, request):
         data = request.get_json()
         album = Album(**data)
