@@ -18,7 +18,6 @@ class CrudService:
 
     def _get_default_config(self) -> Dict[str, Any]:
         return {
-            'path': '/',
             'operations': {
                 'create': True,
                 'read': True,
@@ -60,67 +59,68 @@ class CrudService:
         }
 
     def register_routes(self) -> None:
-        base_path = self.config['path']
+        # Use RELATIVE paths only. APIRouter will prefix with the service name
+        base_path = ''
         ops = self.config['operations']
 
         # Create dynamic, decorated, bound methods that APIRouter can discover
         if ops.get('create'):
-            @expose(base_path, methods=['POST'])
+            @expose('/', methods=['POST'])
             def _route_create(this: 'CrudService', req: Request):
                 return this._handle_create(req)
 
             setattr(self, '_route_create', MethodType(_route_create, self))
 
         if ops.get('list'):
-            @expose(base_path, methods=['GET'])
+            @expose('/', methods=['GET'])
             def _route_list(this: 'CrudService', req: Request):
                 return this._handle_list(req)
 
             setattr(self, '_route_list', MethodType(_route_list, self))
 
         if ops.get('read'):
-            @expose(f'{base_path}/{{id}}', methods=['GET'])
+            @expose('/{id}', methods=['GET'])
             def _route_read(this: 'CrudService', req: Request, id: int):
                 return this._handle_read(req, id)
 
             setattr(self, '_route_read', MethodType(_route_read, self))
 
         if ops.get('update'):
-            @expose(f'{base_path}/{{id}}', methods=['PUT'])
+            @expose('/{id}', methods=['PUT'])
             def _route_update(this: 'CrudService', req: Request, id: int):
                 return this._handle_update(req, id)
 
             setattr(self, '_route_update', MethodType(_route_update, self))
 
         if ops.get('delete'):
-            @expose(f'{base_path}/{{id}}', methods=['DELETE'])
+            @expose('/{id}', methods=['DELETE'])
             def _route_delete(this: 'CrudService', req: Request, id: int):
                 return this._handle_delete(req, id)
 
             setattr(self, '_route_delete', MethodType(_route_delete, self))
 
         if ops.get('search'):
-            @expose(f'{base_path}/search', methods=['GET'])
+            @expose('/search', methods=['GET'])
             def _route_search(this: 'CrudService', req: Request):
                 return this._handle_search(req)
 
             setattr(self, '_route_search', MethodType(_route_search, self))
 
         if ops.get('bulk'):
-            @expose(f'{base_path}/bulk', methods=['POST'])
+            @expose('/bulk', methods=['POST'])
             def _route_bulk(this: 'CrudService', req: Request):
                 return this._handle_bulk(req)
 
             setattr(self, '_route_bulk', MethodType(_route_bulk, self))
 
         if ops.get('selector'):
-            @expose(f'{base_path}/selector', methods=['GET'])
+            @expose('/selector', methods=['GET'])
             def _route_selector(this: 'CrudService', req: Request):
                 return this._handle_selector(req)
 
             setattr(self, '_route_selector', MethodType(_route_selector, self))
 
-            @expose(f'{base_path}/selector/{{id}}', methods=['GET'])
+            @expose('/selector/{id}', methods=['GET'])
             def _route_single_selector(this: 'CrudService', req: Request, id: int):
                 return this._handle_single_selector(req, id)
 

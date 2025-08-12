@@ -7,7 +7,6 @@ from ..models.artist import Artist
 class ArtistService(CrudService):
     def __init__(self) -> None:
         config = {
-            'path': '/artists',
             'operations': {
                 'create': True,
                 'read': True,
