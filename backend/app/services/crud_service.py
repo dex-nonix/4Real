@@ -50,7 +50,7 @@ class CrudService:
             },
             'selector': {
                 'enabled': True,
-                'fields': ['id', 'name'],
+                'fields': ['name'],  # Extra fields; 'id' is always included
                 'display_format': None,
                 'search_fields': ['name'],
                 'limit': 100,

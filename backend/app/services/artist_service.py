@@ -20,7 +20,7 @@ class ArtistService(CrudService):
                 'unique_fields': ['name'],
             },
             'selector': {
-                'fields': ['id', 'name', 'abbreviation'],
+                'fields': ['name', 'abbreviation'],  # 'id' is always included
                 'display_format': 'name',
                 'search_fields': ['name', 'abbreviation']
             },

@@ -62,11 +62,11 @@ class CrudService:
             },
             'selector': {
                 'enabled': True,     # Enable selector optimization
-                'fields': ['id', 'name'],  # Fields to return (id is always included)
+                'fields': ['name'],  # Extra fields to return. NOTE: 'id' is ALWAYS included automatically
                 'display_format': None,    # Custom display format (e.g., 'firstName + " " + lastName')
                 'search_fields': ['name'], # Fields to search in for selector
-                'limit': 100,             # Max items for selector (performance)
-                'order_by': 'name'        # How to order selector items
+                'limit': 100,              # Max items for selector (performance)
+                'order_by': 'name'         # How to order selector items
             }
         }
     
@@ -415,12 +415,12 @@ class CrudService:
             # Get results
             items = query.all()
             
-            # Format for selector (dropdown/select)
+             # Format for selector (dropdown/select)
             selector_data = []
             for item in items:
                 selector_item = {
-                    'id': getattr(item, 'id'),
-                    'value': getattr(item, 'id'),  # For form submission
+                    'id': getattr(item, 'id'),      # ALWAYS included
+                    'value': getattr(item, 'id'),   # ALWAYS maps to id
                     'label': self._format_selector_label(item)  # For display
                 }
                 
@@ -449,8 +449,8 @@ class CrudService:
             
             # Format for selector (same format as list, but single item)
             selector_item = {
-                'id': getattr(instance, 'id'),
-                'value': getattr(instance, 'id'),  # For form submission
+                'id': getattr(instance, 'id'),     # ALWAYS included
+                'value': getattr(instance, 'id'),  # ALWAYS maps to id
                 'label': self._format_selector_label(instance)  # For display
             }
             
@@ -635,7 +635,7 @@ class ArtistService(CrudService):
             },
             'selector': {
                 'enabled': True,
-                'fields': ['id', 'name', 'genre', 'country'],
+                'fields': ['name', 'genre', 'country'],  # 'id' always included
                 'display_format': 'name + " (" + genre + ")"',
                 'search_fields': ['name', 'genre'],
                 'limit': 50,
