@@ -271,7 +271,22 @@ export default {
     handleRowAction(action, rowData) {
       this.$emit('row-action', { action, rowData })
     },
-    
+
+    // Cell widget action passthrough (for widgets that emit 'action')
+    handleCellAction(payloadOrAction, maybeRowData) {
+      if (typeof payloadOrAction === 'string') {
+        this.$emit('row-action', { action: payloadOrAction, rowData: maybeRowData })
+        return
+      }
+      if (payloadOrAction && typeof payloadOrAction === 'object') {
+        const { action, rowData } = payloadOrAction
+        if (action) {
+          this.$emit('row-action', { action, rowData })
+          return
+        }
+      }
+    },
+
     // Bulk actions
     handleBulkAction(action) {
       this.$emit('bulk-action', { action, selectedRows: this.selectedRows })
