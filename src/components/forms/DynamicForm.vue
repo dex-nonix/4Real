@@ -1,11 +1,11 @@
 <template>
-  <div class="dynamic-form" :class="formClasses">
+  <div class="dynamic-form p-fluid" :class="formClasses">
     <form @submit.prevent="handleSubmit">
-      <div class="form-fields" :class="fieldsLayout">
+      <div class="form-fields formgrid grid" :class="fieldsLayout">
         <div
           v-for="(item, idx) in effectiveItems"
           :key="item.key ? item.key : `__ui_${idx}`"
-          class="form-field"
+          class="form-field field col-12"
         >
           <!-- Field Label (always render to preserve spacing) -->
           <label :for="item.key || `__ui_${idx}`" class="field-label" :class="labelClasses">
@@ -225,23 +225,7 @@ export default {
   width: 100%;
 }
 
-/* Base spacing to ensure sane defaults regardless of layout */
-.form-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.field-label {
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-}
+/* PrimeFlex handles base spacing; keep only minimal overrides if needed */
 
 /* Vertical Layout (default) */
 .layout-vertical .form-fields {
