@@ -61,7 +61,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import DynamicTable from '../components/tables/DynamicTable.vue'
+import DynamicTable from '@/components/tables/DynamicTable.vue'
 
 // Loading state
 const loading = ref(false)

@@ -1,5 +1,5 @@
 // TableCellWidgetManager - for table cell rendering!
-import BaseWidgetManager from '../../widgets/BaseWidgetManager.js'
+import BaseWidgetManager from '@/widgets/BaseWidgetManager.js'
 import { TABLE_WIDGETS } from './table-widgets.js'
 
 class TableCellWidgetManager extends BaseWidgetManager {
