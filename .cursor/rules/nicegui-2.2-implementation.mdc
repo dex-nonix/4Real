@@ -1,0 +1,104 @@
+# NiceGUI 2.2+ Implementation Style
+
+## Core Principles
+
+**ONLY use standard NiceGUI 2.2+ patterns - NO fancy overengineering, NO async complications, NO AI bullshit.**
+
+## Database Operations
+
+- **ALWAYS synchronous** - use direct database calls, no async/await
+- **NO** `asyncio.create_task()` 
+- **NO** `ui.background_tasks.create()`
+- **NO** `ui.run_in_thread()`
+- **NO** complex async patterns
+
+## UI Component Pattern
+
+```python
+def _handle_form_submit(self, dialog):
+    """Generic form submission handling"""
+    if hasattr(self, '_form_data') and self._form_data:
+        # Synchronous entity creation - NO async bullshit
+        self._create_entity(**self._form_data)
+        # Clear form data and close dialog
+        self._form_data = {}
+        dialog.close()
+
+def _create_entity(self, **kwargs):
+    """Generic entity creation - override in subclasses for custom logic"""
+    try:
+        # Use the CRUD operations to create the entity
+        if hasattr(self.crud_operations, 'create'):
+            entity = self.crud_operations.create(**kwargs)
+        else:
+            # Fallback to direct model creation
+            entity = self.model_class(**kwargs)
+            entity.save()
+        
+        # Add to local lists
+        self.items.append(entity)
+        self.filtered_items.append(entity)
+        self.table.add_row(entity)
+        
+        ui.notify(f'{self.entity_name} created successfully!', type='positive')
+        
+    except Exception as e:
+        ui.notify(f'Error creating {self.entity_name.lower()}: {str(e)}', type='negative')
+```
+
+## Button Event Handlers
+
+```python
+# CORRECT - Direct synchronous call
+ui.button('Save', on_click=lambda: self._save_data())
+
+# WRONG - No async tasks
+ui.button('Save', on_click=lambda: asyncio.create_task(self._save_data()))
+ui.button('Save', on_click=lambda: ui.background_tasks.create(self._save_data()))
+ui.button('Save', on_click=lambda: ui.run_in_thread(self._save_data()))
+```
+
+## Data Loading
+
+```python
+# CORRECT - Synchronous data loading
+def load_initial_data(self):
+    if hasattr(self, '_load_data'):
+        self._load_data()
+
+def _load_data(self):
+    try:
+        self.items = list(self.model_class.select())
+        self.filtered_items = self.items.copy()
+        self.table.update_data(self.filtered_items)
+    except Exception as e:
+        ui.notify(f'Error loading data: {str(e)}', type='negative')
+```
+
+## Dialog Confirmations
+
+```python
+# CORRECT - Simple synchronous callback
+def _handle_confirm(self):
+    if self.on_confirm:
+        self.on_confirm()
+    self.dialog.close()
+```
+
+## What This Achieves
+
+- **Simple, standard NiceGUI 2.2+** - no fancy async complications
+- **DRY component system** - reusable dialogs, forms, and CRUD views  
+- **Synchronous database operations** - save data, update UI, done
+- **No "slot stack for this task is empty" errors**
+- **Clean, straightforward code** that works out of the box
+
+## Remember
+
+**You want a normal, DRY NiceGUI 2.2+ project with reusable components that save data to the database without any async complications. It should work exactly like any other standard NiceGUI app - simple, standard, and functional.**
+
+**NO overengineering, NO async bullshit, NO fancy AI crap - just standard NiceGUI 2.2+ patterns that work out of the box.**
+description:
+globs:
+alwaysApply: false
+---

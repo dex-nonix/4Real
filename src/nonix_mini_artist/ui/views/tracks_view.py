@@ -34,8 +34,8 @@ class TracksView(GenericCRUDView):
         # Add AI Analysis button after the base view is built
         self._add_ai_button()
         
-        # Load data after view is built using proper async handling
-        asyncio.create_task(self._load_data())
+        # Load data after view is built synchronously
+        self._load_data()
     
     def _add_ai_button(self):
         """Add AI Analysis button to the view"""
@@ -62,7 +62,7 @@ class TracksView(GenericCRUDView):
             ).classes('w-full mb-4')
             
             # Analyze button
-            ui.button('🔍 Analyze with AI', on_click=lambda: asyncio.create_task(self._run_track_analysis(self.track_select.value, self.preset_select.value))).classes('w-full')
+            ui.button('🔍 Analyze with AI', on_click=lambda: self._run_track_analysis(self.track_select.value, self.preset_select.value)).classes('w-full')
             
             # Results area
             ui.separator().classes('my-4')
@@ -71,7 +71,7 @@ class TracksView(GenericCRUDView):
             
             return form
     
-    async def _load_data(self):
+    def _load_data(self):
         """Load tracks, albums, and artists data"""
         try:
             # Use synchronous database operations
@@ -91,7 +91,7 @@ class TracksView(GenericCRUDView):
             # Update the track select options directly
             self.track_select.options = [f"{t.track_number}. {t.name}" for t in self.items] if self.items else ['No tracks available']
     
-    async def _create_entity(self, **kwargs):
+    def _create_entity(self, **kwargs):
         """Override to handle album selection logic"""
         try:
             # Handle album selection
@@ -103,11 +103,11 @@ class TracksView(GenericCRUDView):
                     kwargs['album_id'] = album.id
                     del kwargs['album']
                 else:
-                    ui.notify('Album not found. Please select a valid album.', type='negative')
+                    ui.notify('Error creating track: {str(e)}', type='negative')
                     return
             
             # Call parent method
-            await super()._create_entity(**kwargs)
+            super()._create_entity(**kwargs)
             
         except Exception as e:
             ui.notify(f'Error creating track: {str(e)}', type='negative')
@@ -128,7 +128,7 @@ class TracksView(GenericCRUDView):
         
         dialog.show()
     
-    async def _run_track_analysis(self, track_info: str, preset_name: str):
+    def _run_track_analysis(self, track_info: str, preset_name: str):
         """Run AI analysis on a specific track"""
         if not self.ai_service:
             ui.notify('AI service not available', type='warning')
@@ -179,7 +179,7 @@ class TracksView(GenericCRUDView):
             )
             
             # Run analysis
-            response = await self.ai_service.analyze(request)
+            response = self.ai_service.analyze(request)
             
             if response.success:
                 # Display results

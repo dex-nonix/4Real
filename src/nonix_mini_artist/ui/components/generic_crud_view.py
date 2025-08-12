@@ -140,22 +140,22 @@ class GenericCRUDView:
     def _handle_form_submit(self, dialog):
         """Generic form submission handling"""
         if hasattr(self, '_form_data') and self._form_data:
-            # For NiceGUI 2.2+, use proper async handling
-            asyncio.create_task(self._create_entity(**self._form_data))
+            # Synchronous entity creation
+            self._create_entity(**self._form_data)
             # Clear form data and close dialog
             self._form_data = {}
             dialog.close()
     
-    async def _create_entity(self, **kwargs):
+    def _create_entity(self, **kwargs):
         """Generic entity creation - override in subclasses for custom logic"""
         try:
             # Use the CRUD operations to create the entity
             if hasattr(self.crud_operations, 'create'):
-                entity = await self.crud_operations.create(**kwargs)
+                entity = self.crud_operations.create(**kwargs)
             else:
                 # Fallback to direct model creation
                 entity = self.model_class(**kwargs)
-                await entity.save()
+                entity.save()
             
             # Add to local lists
             self.items.append(entity)
@@ -175,14 +175,14 @@ class GenericCRUDView:
     def load_initial_data(self):
         """Load initial data - can be called when view is displayed"""
         if hasattr(self, '_load_data'):
-            # For NiceGUI 2.2+, use proper async handling
-            asyncio.create_task(self._load_data())
+            # Synchronous data loading
+            self._load_data()
     
-    async def refresh_data(self):
+    def refresh_data(self):
         """Generic data refresh - override in subclasses for custom logic"""
         try:
             if hasattr(self.crud_operations, 'list_all'):
-                self.items = await self.crud_operations.list_all()
+                self.items = self.crud_operations.list_all()
             else:
                 # Fallback to direct model query
                 self.items = list(self.model_class.select())

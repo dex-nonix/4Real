@@ -530,7 +530,7 @@ class PersonaManagementView:
                     ui.button('Cancel', on_click=confirm_dialog.close).classes(
                         'px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded'
                     )
-                    ui.button('Delete', on_click=lambda: asyncio.create_task(self._execute_delete_persona(persona, confirm_dialog))).classes(
+                    ui.button('Delete', on_click=lambda: self._execute_delete_persona(persona, confirm_dialog)).classes(
                         'px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded'
                     )
                 
@@ -539,7 +539,7 @@ class PersonaManagementView:
         except Exception as e:
             ui.notify(f'Failed to show confirmation dialog: {e}', type='error')
     
-    async def _execute_delete_persona(self, persona: Dict[str, Any], dialog):
+    def _execute_delete_persona(self, persona: Dict[str, Any], dialog):
         """Execute the actual persona deletion"""
         try:
             # Show deletion progress
@@ -553,12 +553,12 @@ class PersonaManagementView:
                 progress_dialog.open()
             
             # Delete persona
-            success = await self.persona_service.delete_persona(persona['id'])
+            success = self.persona_service.delete_persona(persona['id'])
             
             if success:
                 progress_dialog.close()
                 ui.notify(f'Persona "{persona["name"]}" deleted successfully!', type='positive')
-                await self._load_data()
+                self._load_data()
             else:
                 progress_dialog.close()
                 ui.notify('Failed to delete persona', type='error')

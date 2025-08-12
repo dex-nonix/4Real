@@ -444,7 +444,7 @@ class ChatInterface:
                         with ui.expansion(category.replace('_', ' ').title(), icon='settings').classes('mb-2'):
                             for tool in tools:
                                 with ui.row().classes('items-center mb-1'):
-                                    ui.button('▶️', on_click=lambda t=tool: asyncio.create_task(self._execute_tool(t))).classes(
+                                    ui.button('▶️', on_click=lambda t=tool: self._execute_tool(t)).classes(
                                         'w-6 h-6 text-xs bg-blue-100 hover:bg-blue-200 rounded mr-2'
                                     )
                                     ui.label(tool.replace('_', ' ').title()).classes('text-sm')
@@ -474,7 +474,7 @@ class ChatInterface:
         # Show a notification
         ui.notify('Conversation starter loaded! Click Send when ready.', type='info')
     
-    async def _execute_tool(self, tool_name: str):
+    def _execute_tool(self, tool_name: str):
         """Execute a tool with enhanced error handling and user feedback"""
         if not self.current_session_id:
             ui.notify('Please select a chat session first', type='warning')
@@ -485,7 +485,7 @@ class ChatInterface:
             self._show_tool_execution_indicator(tool_name)
             
             # Execute tool with persona context
-            result = await self.tool_registry.execute_tool(
+            result = self.tool_registry.execute_tool(
                 tool_name, 
                 persona_id=self.current_persona_id
             )
@@ -498,7 +498,7 @@ class ChatInterface:
                 status = 'error'
             
             # Add the result message
-            await self.chat_service.add_message(
+            self.chat_service.add_message(
                 session_id=self.current_session_id,
                 sender_type='tool_result',
                 content=content,
@@ -511,7 +511,7 @@ class ChatInterface:
             )
             
             # Reload messages to show the new ones
-            await self._load_messages()
+            self._load_messages()
             
             # Show success notification
             if status == 'success':
@@ -521,7 +521,7 @@ class ChatInterface:
             ui.notify(f'Failed to execute tool {tool_name}: {e}', type='error')
             
             # Add error message to chat
-            await self.chat_service.add_message(
+            self.chat_service.add_message(
                 session_id=self.current_session_id,
                 sender_type='tool_result',
                 content=f"Tool execution failed: {str(e)}",
@@ -534,7 +534,7 @@ class ChatInterface:
             )
             
             # Reload messages
-            await self._load_messages()
+            self._load_messages()
         finally:
             # Hide tool execution indicator
             self._hide_tool_execution_indicator()
@@ -635,7 +635,7 @@ class ChatInterface:
                             for tool in category_tools:
                                 ui.button(
                                     tool.replace('_', ' ').title(),
-                                    on_click=lambda t=tool: asyncio.create_task(self._execute_tool(t))
+                                    on_click=lambda t=tool: self._execute_tool(t)
                                 ).classes('px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded text-sm')
     
     def _scroll_to_bottom(self):
@@ -711,7 +711,7 @@ class ChatInterface:
                     ui.button('Cancel', on_click=delete_dialog.close).classes(
                         'px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded'
                     )
-                    ui.button('Delete', on_click=lambda: asyncio.create_task(self._perform_delete(delete_dialog))).classes(
+                    ui.button('Delete', on_click=lambda: self._perform_delete(delete_dialog)).classes(
                         'px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded'
                     )
                 
@@ -720,11 +720,11 @@ class ChatInterface:
         except Exception as e:
             ui.notify(f'Failed to open delete dialog: {e}', type='error')
     
-    async def _perform_delete(self, dialog):
+    def _perform_delete(self, dialog):
         """Perform the actual session deletion"""
         try:
             # Delete the session
-            success = await self.chat_service.delete_session(self.current_session_id)
+            success = self.chat_service.delete_session(self.current_session_id)
             
             if success:
                 ui.notify('Session deleted successfully!', type='positive')
@@ -763,7 +763,7 @@ class ChatInterface:
                     ui.button('Cancel', on_click=export_dialog.close).classes(
                         'px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded'
                     )
-                ui.button('Export', on_click=lambda: asyncio.create_task(self._perform_export(export_format.value, export_dialog))).classes(
+                ui.button('Export', on_click=lambda: self._perform_export(export_format.value, export_dialog)).classes(
                     'px-4 py-2 bg-green-500 text-white hover:bg-green-600 rounded'
                 )
                 
@@ -772,11 +772,11 @@ class ChatInterface:
         except Exception as e:
             ui.notify(f'Failed to open export dialog: {e}', type='error')
     
-    async def _perform_export(self, export_format: str, dialog):
+    def _perform_export(self, export_format: str, dialog):
         """Perform the actual session export"""
         try:
             # Export the session
-            export_data = await self.chat_service.export_session(self.current_session_id, export_format)
+            export_data = self.chat_service.export_session(self.current_session_id, export_format)
             
             if export_data:
                 # Create download link

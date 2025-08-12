@@ -51,11 +51,8 @@ class GenericDialog:
     def _handle_confirm(self):
         """Handle confirm button click"""
         if self.on_confirm:
-            # Check if the callback is async and handle it properly
-            if asyncio.iscoroutinefunction(self.on_confirm):
-                asyncio.create_task(self.on_confirm())
-            else:
-                self.on_confirm()
+            # Execute the callback synchronously
+            self.on_confirm()
         self.dialog.close()
     
     def _handle_cancel(self):
