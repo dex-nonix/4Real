@@ -33,13 +33,9 @@ class GenericDialog:
                 # Header
                 ui.label(self.title).classes('text-xl font-bold mb-4 text-center text-gray-800')
                 
-                # Content
-                if self.content:
-                    if isinstance(self.content, str):
-                        ui.label(self.content).classes('mb-4 text-gray-700')
-                    else:
-                        # Build the content within the dialog context
-                        self.content._build_form()
+                # Content area - will be populated when dialog is shown
+                with ui.column().classes('w-full') as self.content_area:
+                    pass
                 
                 # Actions
                 with ui.row().classes('justify-end gap-3 mt-6'):
@@ -65,11 +61,21 @@ class GenericDialog:
     
     def show(self):
         """Show the dialog"""
+        # Build content in the content area
+        if self.content:
+            self.content_area.clear()
+            with self.content_area:
+                with self.content:
+                    pass
         self.dialog.open()
     
     def close(self):
         """Close the dialog"""
         self.dialog.close()
+    
+
+    
+
 
 class ConfirmationDialog(GenericDialog):
     """Specialized dialog for confirmations"""

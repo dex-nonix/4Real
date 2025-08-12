@@ -86,10 +86,13 @@ class GenericCRUDView:
     
     def _show_add_form(self):
         """Generic add form dialog - works for any entity"""
-        # Create dialog with form fields built directly
+        # Create form content
+        form_content = self._build_form_content()
+        
+        # Create dialog with the form content
         dialog = GenericDialog(
             title=f"Add New {self.entity_name}",
-            content=self._build_form_fields(),
+            content=form_content,
             confirm_text=f"Create {self.entity_name}",
             on_confirm=lambda: self._handle_form_submit(dialog),
             width="600px"
@@ -97,44 +100,40 @@ class GenericCRUDView:
         
         dialog.show()
     
-    def _build_form_fields(self):
-        """Build form fields for the dialog"""
-        form_data = {}
+    def _build_form_content(self):
+        """Build the form content to pass to dialog"""
+        form_container = ui.column().classes('w-full')
         
-        with ui.column().classes('w-full'):
+        with form_container:
             for field in self.fields:
                 label = field.replace('_', ' ').title()
                 
                 if field in ['description', 'persona', 'raw_lyrics', 'formatted_lyrics']:
-                    # Text area for long text fields
                     ui.label(label).classes('text-sm font-medium mb-1')
-                    textarea = ui.textarea(
+                    ui.textarea(
                         value='',
                         on_change=lambda e, f=field: self._update_form_data(f, e.value)
                     ).classes('w-full mb-4')
                 elif field in ['created_at', 'release_date']:
-                    # Date picker for date fields
                     ui.label(label).classes('text-sm font-medium mb-1')
-                    date_input = ui.date(
+                    ui.date(
                         value=None,
                         on_change=lambda e, f=field: self._update_form_data(f, e.value)
                     ).classes('w-full mb-4')
                 elif field in ['album_number', 'track_number', 'duration']:
-                    # Number input for numeric fields
                     ui.label(label).classes('text-sm font-medium mb-1')
-                    number_input = ui.number(
+                    ui.number(
                         value=0,
                         on_change=lambda e, f=field: self._update_form_data(f, e.value)
                     ).classes('w-full mb-4')
                 else:
-                    # Regular text input
                     ui.label(label).classes('text-sm font-medium mb-1')
-                    text_input = ui.input(
+                    ui.input(
                         value='',
                         on_change=lambda e, f=field: self._update_form_data(f, e.value)
                     ).classes('w-full mb-4')
         
-        return form_data
+        return form_container
     
     def _update_form_data(self, field_name: str, value: Any):
         """Update form data when field changes"""
