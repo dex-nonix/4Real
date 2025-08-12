@@ -12,6 +12,113 @@
 - **Flexible layouts** - vertical (default), horizontal, compact for filters
 - **Reusable across all entities** - artists, albums, tracks, etc.
 
+### **FormWidgetManager Integration:**
+The DynamicForm component uses the **FormWidgetManager** class to resolve and render form field widgets. The FormWidgetManager:
+
+- **Extends BaseWidgetManager** - inherits generic widget management capabilities
+- **Manages form-specific widgets** - text inputs, selects, multi-selects, etc.
+- **Handles default props** - provides sensible defaults for each widget type
+- **Allows prop overrides** - user props can override default widget behavior
+- **Co-located with form component** - lives in the same `components/forms/` folder
+
+#### **How FormWidgetManager Works:**
+```javascript
+// In DynamicForm.vue
+data() {
+  return {
+    formManager: new FormWidgetManager(), // Creates form widget manager
+    // ... other data
+  }
+},
+
+methods: {
+  // Resolve widget using FormWidgetManager
+  resolveWidget(type) {
+    return this.formManager.getWidget(type, {}, null) // Gets widget with default props
+  }
+}
+```
+
+The FormWidgetManager automatically resolves widget types like `'text'`, `'select'`, `'multi_select'` to their corresponding Vue components (TextInput, SelectInput, MultiSelect) and applies default styling and behavior.
+
+### **Form Widget Registry (form-widgets.js):**
+The FormWidgetManager uses a registry file that maps widget types to actual Vue components:
+
+```javascript
+// components/forms/form-widgets.js
+import TextInput from '@/components/inputs/TextInput.vue'
+import SelectInput from '@/components/inputs/SelectInput.vue'
+import MultiSelect from '@/components/inputs/MultiSelect.vue'
+import Autocomplete from '@/components/inputs/Autocomplete.vue'
+import Slider from '@/components/inputs/Slider.vue'
+import DateInput from '@/components/inputs/DateInput.vue'
+import FileUpload from '@/components/inputs/FileUpload.vue'
+import JsonEditor from '@/components/inputs/JsonEditor.vue'
+
+export const FORM_WIDGETS = {
+  'text': {
+    component: TextInput,             // Actual Vue component import
+    defaultProps: { 
+      placeholder: 'Enter text',
+      class: 'w-full'
+    }
+  },
+  'select': {
+    component: SelectInput,           // Actual Vue component import
+    defaultProps: { 
+      placeholder: 'Select option',
+      class: 'w-full'
+    }
+  },
+  'multi_select': {
+    component: MultiSelect,           // Actual Vue component import
+    defaultProps: { 
+      placeholder: 'Select options',
+      class: 'w-full'
+    }
+  },
+  'autocomplete': {
+    component: Autocomplete,          // Actual Vue component import
+    defaultProps: { 
+      placeholder: 'Type to search',
+      minLength: 2,
+      delay: 300
+    }
+  },
+  'slider': {
+    component: Slider,                // Actual Vue component import
+    defaultProps: { 
+      min: 0,
+      max: 100,
+      step: 1
+    }
+  },
+  'date': {
+    component: DateInput,             // Actual Vue component import
+    defaultProps: { 
+      dateFormat: 'yy-mm-dd',
+      class: 'w-full'
+    }
+  },
+  'file': {
+    component: FileUpload,            // Actual Vue component import
+    defaultProps: { 
+      multiple: false,
+      accept: '*'
+    }
+  },
+  'json': {
+    component: JsonEditor,            // Actual Vue component import
+    defaultProps: { 
+      height: '200px',
+      readOnly: false
+    }
+  }
+}
+```
+
+This registry file lives in the same `components/forms/` folder as the DynamicForm component and FormWidgetManager.
+
 ## 🔧 **IMPLEMENTATION:**
 
 ### **1. DynamicForm.vue Component:**
@@ -58,7 +165,7 @@
 </template>
 
 <script>
-import { FormWidgetManager } from '@/widgets/FormWidgetManager.js'
+import { FormWidgetManager } from './FormWidgetManager.js'
 import { Button } from 'primevue/button'
 
 export default {

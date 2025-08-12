@@ -41,138 +41,28 @@ class BaseWidgetManager {
 }
 ```
 
-### **2. Widget Mappings (Separate Config Files)**
+### **2. Widget Registry Pattern**
+The BaseWidgetManager expects a widget map structure like this:
+
 ```javascript
-// widget-mappings/form-widgets.js
-import TextInput from '@/components/inputs/TextInput.vue'
-import SelectInput from '@/components/inputs/SelectInput.vue'
-import MultiSelect from '@/components/inputs/MultiSelect.vue'
-import Autocomplete from '@/components/inputs/Autocomplete.vue'
-import Slider from '@/components/inputs/Slider.vue'
-import DateInput from '@/components/inputs/DateInput.vue'
-import FileUpload from '@/components/inputs/FileUpload.vue'
-import JsonEditor from '@/components/inputs/JsonEditor.vue'
-
-export const FORM_WIDGETS = {
-  'text': {
-    component: TextInput,             // Actual Vue component import
+// Generic widget map structure (example)
+export const WIDGET_MAP = {
+  'widget_type': {
+    component: ActualComponent,        // Vue component or HTML element
     defaultProps: { 
-      placeholder: 'Enter text',
-      class: 'w-full'
-    }
-  },
-  'select': {
-    component: SelectInput,           // Actual Vue component import
-    defaultProps: { 
-      placeholder: 'Select option',
-      class: 'w-full'
-    }
-  },
-  'multi_select': {
-    component: MultiSelect,           // Actual Vue component import
-    defaultProps: { 
-      placeholder: 'Select options',
-      class: 'w-full'
-    }
-  },
-  'autocomplete': {
-    component: Autocomplete,          // Actual Vue component import
-    defaultProps: { 
-      placeholder: 'Type to search',
-      minLength: 2,
-      delay: 300
-    }
-  },
-  'slider': {
-    component: Slider,                // Actual Vue component import
-    defaultProps: { 
-      min: 0,
-      max: 100,
-      step: 1
-    }
-  },
-  'date': {
-    component: DateInput,             // Actual Vue component import
-    defaultProps: { 
-      dateFormat: 'yy-mm-dd',
-      class: 'w-full'
-    }
-  },
-  'file': {
-    component: FileUpload,            // Actual Vue component import
-    defaultProps: { 
-      multiple: false,
-      accept: '*'
-    }
-  },
-  'json': {
-    component: JsonEditor,            // Actual Vue component import
-    defaultProps: { 
-      height: '200px',
-      readOnly: false
-    }
-  }
-}
-
-// widget-mappings/table-widgets.js  
-import { Tag } from 'primevue/tag'
-import { Button } from 'primevue/button'
-import { Avatar } from 'primevue/avatar'
-
-export const TABLE_WIDGETS = {
-  'text': {
-    component: 'span',                // Simple span for text (HTML element)
-    defaultProps: { 
-      class: 'text-sm'
-    }
-  },
-  'number': {
-    component: 'span',                // Formatted number display (HTML element)
-    defaultProps: { 
-      class: 'text-sm font-mono'
-    }
-  },
-  'date': {
-    component: 'span',                // Formatted date display (HTML element)
-    defaultProps: { 
-      class: 'text-sm text-gray-600'
-    }
-  },
-  'status': {
-    component: Tag,                   // PrimeVue Tag component import
-    defaultProps: { 
-      severity: 'info'
-    }
-  },
-  'actions': {
-    component: Button,                // PrimeVue Button component import
-    defaultProps: { 
-      size: 'small',
-      severity: 'secondary'
-    }
-  },
-  'image': {
-    component: Avatar,                // PrimeVue Avatar component import
-    defaultProps: { 
-      size: 'normal',
-      shape: 'circle'
-    }
-  },
-  'boolean': {
-    component: 'i',                   // Icon for boolean values (HTML element)
-    defaultProps: { 
-      class: 'pi',
-      style: 'font-size: 1.2rem;'
+      // Default properties for this widget
+      class: 'default-class',
+      placeholder: 'Default text'
     }
   }
 }
 ```
 
 ### **3. Specific Widget Managers (Extend Base Class)**
-```javascript
-// FormWidgetManager - for form inputs!
-import { FORM_WIDGETS } from '@/widget-mappings/form-widgets.js'
+Specific contexts create their own managers by extending BaseWidgetManager:
 
+```javascript
+// Example: FormWidgetManager extends BaseWidgetManager
 class FormWidgetManager extends BaseWidgetManager {
   constructor() {
     super(FORM_WIDGETS) // Pass the imported mapping!
@@ -183,9 +73,7 @@ class FormWidgetManager extends BaseWidgetManager {
   }
 }
 
-// TableCellWidgetManager - for table cell rendering!
-import { TABLE_WIDGETS } from '@/widget-mappings/table-widgets.js'
-
+// Example: TableCellWidgetManager extends BaseWidgetManager  
 class TableCellWidgetManager extends BaseWidgetManager {
   constructor() {
     super(TABLE_WIDGETS) // Pass the imported mapping!
@@ -195,43 +83,6 @@ class TableCellWidgetManager extends BaseWidgetManager {
     return { component: 'span', props: { class: 'text-sm' } }
   }
 }
-```
-
-## 🔧 **USAGE PATTERNS:**
-
-### **1. Form Widgets (DynamicForm.vue)**
-```javascript
-// In DynamicForm.vue
-import { FormWidgetManager } from '@/components/forms/FormWidgetManager.js'
-
-const formManager = new FormWidgetManager()
-
-// Get widget with user props
-const { component, props } = formManager.getWidget('multi_select', { 
-  options: [], 
-  placeholder: 'Choose albums' 
-})
-
-// User props override defaults
-// Default: { placeholder: 'Select options', class: 'w-full' }
-// Result: { placeholder: 'Choose albums', class: 'w-full', options: [] }
-```
-
-### **2. Table Cell Widgets (DynamicTable.vue)**
-```javascript
-// In DynamicTable.vue
-import { TableCellWidgetManager } from '@/components/tables/TableCellWidgetManager.js'
-
-const tableManager = new TableCellWidgetManager()
-
-// Get cell widget
-const { component, props } = tableManager.getWidget('date', { 
-  format: 'MM/DD/YYYY' 
-})
-
-// User format overrides default
-// Default: { class: 'text-sm text-gray-600' }
-// Result: { class: 'text-sm text-gray-600', format: 'MM/DD/YYYY' }
 ```
 
 ## 📁 **FILE STRUCTURE:**
@@ -305,8 +156,8 @@ src/
 
 ## 📚 **RELATED DOCUMENTATION:**
 
-- **DynamicForm.md** - Form component using FormWidgetManager
-- **DynamicTable.md** - Table component using TableCellWidgetManager  
+- **DynamicForm.md** - Form component using FormWidgetManager + form-widgets.js registry
+- **DynamicTable.md** - Table component using TableCellWidgetManager + table-widgets.js registry
 - **CrudManager.md** - CRUD component using both managers
 
 **This gives us ONE generic system that handles ALL widget management needs without over-engineering!**

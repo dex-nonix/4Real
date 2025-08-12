@@ -13,6 +13,95 @@
 - **Flexible layouts** - vertical (default), horizontal, compact for different use cases
 - **Responsive support** - hide columns based on screen size
 
+### **TableCellWidgetManager Integration:**
+The DynamicTable component uses the **TableCellWidgetManager** class to resolve and render table cell widgets. The TableCellWidgetManager:
+
+- **Extends BaseWidgetManager** - inherits generic widget management capabilities
+- **Manages table-specific widgets** - text displays, status tags, action buttons, etc.
+- **Handles default props** - provides sensible defaults for each cell type
+- **Allows prop overrides** - user props can override default cell behavior
+- **Co-located with table component** - lives in the same `components/tables/` folder
+
+#### **How TableCellWidgetManager Works:**
+```javascript
+// In DynamicTable.vue
+data() {
+  return {
+    tableManager: new TableCellWidgetManager(), // Creates table cell widget manager
+    // ... other data
+  }
+},
+
+methods: {
+  // Resolve cell widget using TableCellWidgetManager
+  resolveCellWidget(type) {
+    return this.tableManager.getWidget(type, {}, null) // Gets widget with default props
+  }
+}
+```
+
+The TableCellWidgetManager automatically resolves cell types like `'text'`, `'status'`, `'actions'`, `'date'` to their corresponding components (span, Tag, Button, etc.) and applies default styling and behavior for consistent table cell rendering.
+
+### **Table Cell Widget Registry (table-widgets.js):**
+The TableCellWidgetManager uses a registry file that maps cell types to actual components:
+
+```javascript
+// components/tables/table-widgets.js
+import { Tag } from 'primevue/tag'
+import { Button } from 'primevue/button'
+import { Avatar } from 'primevue/avatar'
+
+export const TABLE_WIDGETS = {
+  'text': {
+    component: 'span',                // Simple span for text (HTML element)
+    defaultProps: { 
+      class: 'text-sm'
+    }
+  },
+  'number': {
+    component: 'span',                // Formatted number display (HTML element)
+    defaultProps: { 
+      class: 'text-sm font-mono'
+    }
+  },
+  'date': {
+    component: 'span',                // Formatted date display (HTML element)
+    defaultProps: { 
+      class: 'text-sm text-gray-600'
+    }
+  },
+  'status': {
+    component: Tag,                   // PrimeVue Tag component import
+    defaultProps: { 
+      severity: 'info'
+    }
+  },
+  'actions': {
+    component: Button,                // PrimeVue Button component import
+    defaultProps: { 
+      size: 'small',
+      severity: 'secondary'
+    }
+  },
+  'image': {
+    component: Avatar,                // PrimeVue Avatar component import
+    defaultProps: { 
+      size: 'normal',
+      shape: 'circle'
+    }
+  },
+  'boolean': {
+    component: 'i',                   // Icon for boolean values (HTML element)
+    defaultProps: { 
+      class: 'pi',
+      style: 'font-size: 1.2rem;'
+    }
+  }
+}
+```
+
+This registry file lives in the same `components/tables/` folder as the DynamicTable component and TableCellWidgetManager.
+
 ## 🔧 **IMPLEMENTATION:**
 
 ### **1. DynamicTable.vue Component:**
@@ -102,7 +191,7 @@
 
 <script>
 import { DataTable, Column } from 'primevue/datatable'
-import { TableCellWidgetManager } from '@/widgets/TableCellWidgetManager.js'
+import { TableCellWidgetManager } from './TableCellWidgetManager.js'
 import SearchFilter from '@/components/filters/SearchFilter.vue'
 import DateRangeFilter from '@/components/filters/DateRangeFilter.vue'
 import ActionButtons from '@/components/actions/ActionButtons.vue'
