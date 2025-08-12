@@ -1,7 +1,7 @@
 # 📝 DynamicForm Component
 
 ## 🎯 **PURPOSE:**
-**Generic form builder that uses the widget manager system to render any form based on configuration**
+**Generic form builder that uses the widget manager system to render any form based on configuration - works for forms, filters, search, settings, etc.**
 
 ## 🏗️ **ARCHITECTURE:**
 
@@ -9,6 +9,7 @@
 - **Configuration-driven forms** - no hardcoded form layouts
 - **Widget manager integration** - uses FormWidgetManager for field rendering
 - **Generic value handling** - works with any PrimeVue input component
+- **Flexible layouts** - vertical (default), horizontal, compact for filters
 - **Reusable across all entities** - artists, albums, tracks, etc.
 
 ## 🔧 **IMPLEMENTATION:**
@@ -16,33 +17,35 @@
 ### **1. DynamicForm.vue Component:**
 ```vue
 <template>
-  <div class="dynamic-form">
+  <div class="dynamic-form" :class="formClasses">
     <form @submit.prevent="handleSubmit">
-      <div v-for="(field, key) in config.fields" :key="key" class="form-field">
-        <!-- Field Label -->
-        <label :for="key" class="field-label">
-          {{ field.label }}
-          <span v-if="field.required" class="required">*</span>
-        </label>
-        
-        <!-- Dynamic Widget Rendering -->
-        <component 
-          :is="resolveWidget(field.type).component"
-          :id="key"
-          v-bind="resolveWidget(field.type).props"
-          :model-value="formData[key]"
-          @update:model-value="updateField(key, $event)"
-          :class="{ 'error': fieldErrors[key] }"
-        />
-        
-        <!-- Field Error Display -->
-        <small v-if="fieldErrors[key]" class="error-message">
-          {{ fieldErrors[key] }}
-        </small>
+      <div class="form-fields" :class="fieldsLayout">
+        <div v-for="(field, key) in config.fields" :key="key" class="form-field">
+          <!-- Field Label -->
+          <label :for="key" class="field-label" :class="labelClasses">
+            {{ field.label }}
+            <span v-if="field.required" class="required">*</span>
+          </label>
+          
+          <!-- Dynamic Widget Rendering -->
+          <component 
+            :is="resolveWidget(field.type).component"
+            :id="key"
+            v-bind="resolveWidget(field.type).props"
+            :model-value="formData[key]"
+            @update:model-value="updateField(key, $event)"
+            :class="{ 'error': fieldErrors[key] }"
+          />
+          
+          <!-- Field Error Display -->
+          <small v-if="fieldErrors[key]" class="error-message">
+            {{ fieldErrors[key] }}
+          </small>
+        </div>
       </div>
       
-      <!-- Form Actions -->
-      <div class="form-actions">
+      <!-- Form Actions (hidden for compact mode) -->
+      <div v-if="!compact" class="form-actions">
         <Button type="submit" :loading="isSubmitting">
           {{ submitLabel }}
         </Button>
@@ -74,6 +77,38 @@ export default {
     submitLabel: {
       type: String,
       default: 'Save'
+    },
+    layout: {
+      type: String,
+      default: 'vertical',
+      validator: value => ['vertical', 'horizontal'].includes(value)
+    },
+    compact: {
+      type: Boolean,
+      default: false
+    }
+  },
+  
+  computed: {
+    formClasses() {
+      return {
+        'compact': this.compact,
+        [`layout-${this.layout}`]: true
+      }
+    },
+    
+    fieldsLayout() {
+      return {
+        'fields-vertical': this.layout === 'vertical',
+        'fields-horizontal': this.layout === 'horizontal'
+      }
+    },
+    
+    labelClasses() {
+      return {
+        'label-compact': this.compact,
+        'label-horizontal': this.layout === 'horizontal'
+      }
     }
   },
   
@@ -153,119 +188,224 @@ export default {
 
 <style scoped>
 .dynamic-form {
-  max-width: 600px;
-  margin: 0 auto;
+  width: 100%;
 }
 
-.form-field {
-  margin-bottom: 1.5rem;
+/* Vertical Layout (default) */
+.layout-vertical .form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.field-label {
-  display: block;
+.layout-vertical .form-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.layout-vertical .field-label {
   margin-bottom: 0.5rem;
   font-weight: 500;
 }
 
-.required {
-  color: #ef4444;
+/* Horizontal Layout */
+.layout-horizontal .form-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: end;
 }
 
-.error-message {
-  color: #ef4444;
+.layout-horizontal .form-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+}
+
+.layout-horizontal .field-label {
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Compact Mode */
+.compact .form-fields {
+  gap: 0.75rem;
+}
+
+.compact .form-field {
+  margin-bottom: 0;
+}
+
+.compact .field-label {
+  margin-bottom: 0.25rem;
   font-size: 0.875rem;
-  margin-top: 0.25rem;
 }
 
+.compact .error-message {
+  font-size: 0.75rem;
+  margin-top: 0.125rem;
+}
+
+/* Form Actions */
 .form-actions {
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
   margin-top: 2rem;
 }
+
+/* Error Styling */
+.error-message {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.required {
+  color: #ef4444;
+}
 </style>
+
+## 📋 **LAYOUT CONFIGURATION:**
+
+### **1. Vertical Layout (Default - for CRUD forms):**
+```vue
+<DynamicForm
+  :config="artistFormConfig"
+  layout="vertical"
+  :compact="false"
+  @submit="handleSubmit"
+/>
 ```
 
-## 📋 **CRUD CONFIG INTEGRATION:**
+### **2. Horizontal Layout (for filters, search):**
+```vue
+<DynamicForm
+  :config="filterConfig"
+  layout="horizontal"
+  :compact="true"
+  @field-change="handleFilterChange"
+/>
+```
 
-### **Artist Form Configuration:**
+### **3. Compact Mode (for inline forms, filters):**
+```vue
+<DynamicForm
+  :config="searchConfig"
+  layout="horizontal"
+  :compact="true"
+  @field-change="handleSearch"
+/>
+```
+
+## 📋 **CONFIGURATION EXAMPLES:**
+
+### **Artist Form (Vertical, Full):**
 ```javascript
 // crud-configs/artist.js
-export const artistCrudConfig = {
-  entity: 'artist',
-  form: {
-    fields: {
-      name: {
-        type: 'text',                    // Maps to PrimeVue InputText
-        label: 'Artist Name',
-        required: true,
-        props: {                         // PROPS PROPERTY!
-          placeholder: 'Enter artist name',
-          maxLength: 100
-        }
-      },
-      abbreviation: {
-        type: 'text',                    // Maps to PrimeVue InputText
-        label: 'Abbreviation',
-        required: true,
-        props: {                         // PROPS PROPERTY!
-          placeholder: 'Enter abbreviation',
-          maxLength: 10
-        }
-      },
-      persona: {
-        type: 'rich_text',               // Maps to PrimeVue Editor
-        label: 'Artist Persona',
-        props: {                         // PROPS PROPERTY!
-          height: '200px',
-          toolbar: ['bold', 'italic', 'underline']
-        }
-      },
-      albums: {
-        type: 'multi_select',            // Maps to PrimeVue MultiSelect
-        label: 'Albums',
-        props: {                         // PROPS PROPERTY!
-          options: [],                   // Will be populated from API
-          placeholder: 'Choose albums',
-          filter: true
-        }
-      },
-      birth_date: {
-        type: 'date',                    // Maps to PrimeVue Calendar
-        label: 'Birth Date',
-        props: {                         // PROPS PROPERTY!
-          dateFormat: 'yy-mm-dd',
-          showIcon: true
-        }
+export const artistFormConfig = {
+  fields: {
+    name: {
+      type: 'text',
+      label: 'Artist Name',
+      required: true,
+      props: { 
+        placeholder: 'Enter artist name',
+        class: 'w-full'
+      }
+    },
+    abbreviation: {
+      type: 'text',
+      label: 'Abbreviation',
+      required: true,
+      props: { 
+        placeholder: 'Enter abbreviation',
+        class: 'w-full'
+      }
+    },
+    persona: {
+      type: 'rich_text',
+      label: 'Artist Persona',
+      props: { 
+        height: '200px',
+        toolbar: ['bold', 'italic', 'underline']
       }
     }
   }
 }
 ```
 
-## 🔄 **VALUE HANDLING:**
+### **Artist Filter (Horizontal, Compact):**
+```javascript
+// filter-configs/artist-filters.js
+export const artistFilterConfig = {
+  fields: {
+    search: {
+      type: 'text',
+      label: 'Search',
+      props: { 
+        placeholder: 'Search artists...',
+        class: 'w-64'
+      }
+    },
+    status: {
+      type: 'select',
+      label: 'Status',
+      props: { 
+        options: ['active', 'inactive'],
+        placeholder: 'All statuses',
+        class: 'w-32'
+      }
+    },
+    dateRange: {
+      type: 'date_range',
+      label: 'Date Range',
+      props: { 
+        class: 'w-48'
+      }
+    }
+  }
+}
+```
 
-### **PrimeVue Integration:**
-- **`modelValue`** - Standard PrimeVue v-model binding
-- **`@update:model-value`** - Generic value change handler
-- **`value` prop** - For non-input components (display only)
+### **Search Form (Horizontal, Compact):**
+```javascript
+// search-configs/global-search.js
+export const globalSearchConfig = {
+  fields: {
+    query: {
+      type: 'text',
+      label: 'Search',
+      props: { 
+        placeholder: 'Search everything...',
+        class: 'w-80'
+      }
+    },
+    entity: {
+      type: 'select',
+      label: 'Entity',
+      props: { 
+        options: ['all', 'artists', 'albums', 'tracks'],
+        class: 'w-32'
+      }
+    }
+  }
+}
+```
 
-### **Form Data Flow:**
-1. **Initial data** passed via `initialData` prop
-2. **Field changes** emit `field-change` event with new value
-3. **Form submission** emits `submit` event with complete form data
-4. **Validation** happens before submission
+## 📁 **USAGE EXAMPLES:**
 
-## 📁 **USAGE:**
-
-### **In Artist Management View:**
+### **1. CRUD Form (Vertical, Full):**
 ```vue
 <template>
   <div class="artist-form">
     <h2>{{ isEditing ? 'Edit Artist' : 'Create Artist' }}</h2>
     
     <DynamicForm
-      :config="artistCrudConfig.form"
+      :config="artistFormConfig"
+      layout="vertical"
+      :compact="false"
       :initial-data="artistData"
       :submit-label="isEditing ? 'Update Artist' : 'Create Artist'"
       @submit="handleSubmit"
@@ -273,53 +413,61 @@ export const artistCrudConfig = {
     />
   </div>
 </template>
+```
 
-<script>
-import DynamicForm from '@/components/core/DynamicForm.vue'
-import { artistCrudConfig } from '@/configs/crud/artist.js'
+### **2. Filter Form (Horizontal, Compact):**
+```vue
+<template>
+  <div class="artists-view">
+    <!-- Filter Form -->
+    <DynamicForm
+      :config="artistFilterConfig"
+      layout="horizontal"
+      :compact="true"
+      @field-change="handleFilterChange"
+    />
+    
+    <!-- Data Table -->
+    <DynamicTable :config="artistTableConfig" :data="filteredArtists" />
+  </div>
+</template>
+```
 
-export default {
-  components: { DynamicForm },
-  data() {
-    return {
-      artistCrudConfig,
-      artistData: {},
-      isEditing: false
-    }
-  },
-  methods: {
-    async handleSubmit(formData) {
-      if (this.isEditing) {
-        await this.updateArtist(formData)
-      } else {
-        await this.createArtist(formData)
-      }
-    }
-  }
-}
-</script>
+### **3. Search Form (Horizontal, Compact):**
+```vue
+<template>
+  <div class="search-bar">
+    <DynamicForm
+      :config="globalSearchConfig"
+      layout="horizontal"
+      :compact="true"
+      @field-change="handleSearch"
+    />
+  </div>
+</template>
 ```
 
 ## 🎯 **KEY FEATURES:**
 
-### **✅ Generic Form Building:**
-- **Any entity type** - artists, albums, tracks, etc.
-- **Dynamic field rendering** - based on widget manager
-- **Flexible layouts** - vertical, horizontal, grid
+### **✅ Flexible Layouts:**
+- **Vertical layout** - traditional form layout (default)
+- **Horizontal layout** - side-by-side fields for filters/search
+- **Compact mode** - tight spacing for inline forms
+
+### **✅ Universal Usage:**
+- **CRUD forms** - vertical, full layout with buttons
+- **Filter forms** - horizontal, compact, no buttons
+- **Search forms** - horizontal, compact, no buttons
+- **Settings forms** - vertical, full layout
+
+### **✅ Simple Configuration:**
+- **`layout="horizontal"`** - side-by-side fields
+- **`:compact="true"`** - tight spacing
+- **No over-engineering** - just layout props
 
 ### **✅ Widget Manager Integration:**
-- **FormWidgetManager** - handles all form input widgets
-- **Default props** - sensible defaults for each widget type
-- **User props** - override defaults when needed
+- **Same input widgets** - work in any layout
+- **Consistent behavior** - same validation, same events
+- **Reusable system** - one component, many use cases
 
-### **✅ PrimeVue Compatibility:**
-- **All PrimeVue components** - InputText, Dropdown, MultiSelect, etc.
-- **Standard v-model** - works with any PrimeVue input
-- **Consistent styling** - PrimeVue design system
-
-### **✅ Form Validation:**
-- **Required field validation** - automatic error display
-- **Custom validation** - extendable validation system
-- **Error handling** - user-friendly error messages
-
-**This gives you a completely generic form system that works with any entity and any widget type!** 
+**This gives you ONE form component that handles ALL form scenarios - just change the layout props!** 
