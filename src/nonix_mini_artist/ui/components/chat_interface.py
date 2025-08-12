@@ -444,7 +444,7 @@ class ChatInterface:
                         with ui.expansion(category.replace('_', ' ').title(), icon='settings').classes('mb-2'):
                             for tool in tools:
                                 with ui.row().classes('items-center mb-1'):
-                                    ui.button('▶️', on_click=lambda t=tool: self._execute_tool(t)).classes(
+                                    ui.button('▶️', on_click=lambda t=tool: asyncio.create_task(self._execute_tool(t))).classes(
                                         'w-6 h-6 text-xs bg-blue-100 hover:bg-blue-200 rounded mr-2'
                                     )
                                     ui.label(tool.replace('_', ' ').title()).classes('text-sm')
@@ -635,7 +635,7 @@ class ChatInterface:
                             for tool in category_tools:
                                 ui.button(
                                     tool.replace('_', ' ').title(),
-                                    on_click=lambda t=tool: self._execute_tool(t)
+                                    on_click=lambda t=tool: asyncio.create_task(self._execute_tool(t))
                                 ).classes('px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded text-sm')
     
     def _scroll_to_bottom(self):
@@ -711,7 +711,7 @@ class ChatInterface:
                     ui.button('Cancel', on_click=delete_dialog.close).classes(
                         'px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded'
                     )
-                    ui.button('Delete', on_click=lambda: self._perform_delete(delete_dialog)).classes(
+                    ui.button('Delete', on_click=lambda: asyncio.create_task(self._perform_delete(delete_dialog))).classes(
                         'px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded'
                     )
                 
@@ -763,9 +763,9 @@ class ChatInterface:
                     ui.button('Cancel', on_click=export_dialog.close).classes(
                         'px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded'
                     )
-                    ui.button('Export', on_click=lambda: self._perform_export(export_format.value, export_dialog)).classes(
-                        'px-4 py-2 bg-green-500 text-white hover:bg-green-600 rounded'
-                    )
+                ui.button('Export', on_click=lambda: asyncio.create_task(self._perform_export(export_format.value, export_dialog))).classes(
+                    'px-4 py-2 bg-green-500 text-white hover:bg-green-600 rounded'
+                )
                 
                 export_dialog.open()
                 

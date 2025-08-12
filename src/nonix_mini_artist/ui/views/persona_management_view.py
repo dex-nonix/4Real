@@ -530,7 +530,7 @@ class PersonaManagementView:
                     ui.button('Cancel', on_click=confirm_dialog.close).classes(
                         'px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded'
                     )
-                    ui.button('Delete', on_click=lambda: self._execute_delete_persona(persona, confirm_dialog)).classes(
+                    ui.button('Delete', on_click=lambda: asyncio.create_task(self._execute_delete_persona(persona, confirm_dialog))).classes(
                         'px-4 py-2 bg-red-500 text-white hover:bg-red-600 rounded'
                     )
                 

@@ -140,7 +140,7 @@ class GenericCRUDView:
     def _handle_form_submit(self, dialog):
         """Generic form submission handling"""
         if hasattr(self, '_form_data') and self._form_data:
-            # Call the create method
+            # For NiceGUI 2.2+, use proper async handling
             asyncio.create_task(self._create_entity(**self._form_data))
             # Clear form data and close dialog
             self._form_data = {}
@@ -175,7 +175,7 @@ class GenericCRUDView:
     def load_initial_data(self):
         """Load initial data - can be called when view is displayed"""
         if hasattr(self, '_load_data'):
-            # Schedule async data loading
+            # For NiceGUI 2.2+, use proper async handling
             asyncio.create_task(self._load_data())
     
     async def refresh_data(self):

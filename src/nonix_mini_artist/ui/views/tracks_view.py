@@ -34,7 +34,7 @@ class TracksView(GenericCRUDView):
         # Add AI Analysis button after the base view is built
         self._add_ai_button()
         
-        # Load data after view is built
+        # Load data after view is built using proper async handling
         asyncio.create_task(self._load_data())
     
     def _add_ai_button(self):
@@ -62,9 +62,7 @@ class TracksView(GenericCRUDView):
             ).classes('w-full mb-4')
             
             # Analyze button
-            ui.button('🔍 Analyze with AI', on_click=lambda: self._run_track_analysis(
-                self.track_select.value, self.preset_select.value
-            )).classes('w-full')
+            ui.button('🔍 Analyze with AI', on_click=lambda: asyncio.create_task(self._run_track_analysis(self.track_select.value, self.preset_select.value))).classes('w-full')
             
             # Results area
             ui.separator().classes('my-4')
