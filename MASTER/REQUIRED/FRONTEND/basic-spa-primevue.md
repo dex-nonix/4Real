@@ -7,9 +7,9 @@ Goal: A minimal, working SPA baseline that proves the routing, reusable layouts,
 - **Vue Router**
 - **PrimeVue** + **PrimeIcons** (minimal usage: a single Button)
 
-### Folder Layout (frontend/)
+### Folder Layout (root level)
 ```
-frontend/
+4Real/
   ├─ index.html
   ├─ package.json
   ├─ vite.config.js
@@ -25,23 +25,32 @@ frontend/
         ├─ Home.vue              # Route: /
         ├─ About.vue             # Route: /about
         └─ NotFound.vue          # Route: 404 catch-all
+  ├─ backend/                    # Flask backend (unchanged)
+  └─ .venv/                      # Python virtualenv (unchanged)
 ```
 
 ### Dependencies
-```
-vue@^3
-vue-router@^4
-primevue@^3
-primeicons@^6
-vite (dev)
+```json
+{
+  "dependencies": {
+    "vue": "^3.4.38",
+    "vue-router": "^4.4.5",
+    "primevue": "^3.52.0",
+    "primeicons": "^6.0.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.1.2",
+    "concurrently": "^9.0.0",
+    "vite": "^5.4.2"
+  }
+}
 ```
 
-### Create App (one-time)
+### Setup (one-time)
 ```bash
-npm create vite@latest frontend -- --template vue
-cd frontend
-npm i
-npm i primevue primeicons vue-router
+# From repo root
+cd /home/dex/Desktop/shadewalk/4Real
+npm install
 ```
 
 ### Minimal Files — Content
@@ -209,37 +218,49 @@ src/views/NotFound.vue
   </template>
 ```
 
-vite.config.js (default from Vite is fine; include if needed)
+vite.config.js (with API proxy)
 ```js
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   plugins: [vue()],
+  server: {
+    proxy: {
+      '/api': 'http://localhost:5000'
+    }
+  }
 })
 ```
 
-package.json (scripts excerpt)
+### npm Scripts
 ```json
 {
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -n api,ui -c blue,green \"npm:dev:api\" \"npm:dev:ui\"",
+    "dev:api": "./.venv/bin/python backend/cli.py run --host 0.0.0.0 --port 5000 --debug",
+    "dev:ui": "vite --host 0.0.0.0 --port 5173",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview --host 0.0.0.0 --port 5174"
   }
 }
 ```
 
 ### Acceptance Criteria
-- App runs with `npm run dev` and serves at the default Vite URL.
+- App runs with `npm run dev` from repo root and starts both backend and frontend.
+- Backend serves at http://localhost:5000
+- Frontend serves at http://localhost:5173
 - Visiting `/` renders Home view inside `MasterLayout` and shows a PrimeVue Button.
 - Visiting `/about` renders About view inside `AltLayout`.
 - Visiting any unknown path shows `NotFound` in a layout.
 - Nav links switch routes without reload.
+- Backend and frontend run concurrently via npm scripts.
 
 ### Notes
 - Keep global PrimeVue config minimal. Import individual components locally until we add more widgets.
-- No styling frameworks beyond what’s essential for PrimeVue icons.
+- No styling frameworks beyond what's essential for PrimeVue icons.
 - This doc defines only the baseline. Widgets/CRUD come later.
+- npm-first project structure with UI at root level, backend in `backend/` subdirectory.
+- Uses concurrently to run both servers from single npm command.
 
 

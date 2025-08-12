@@ -40,25 +40,27 @@
 ### **📁 File Structure:**
 ```
 4Real/
-├── backend/                    # Flask application
-│   ├── app/                   # Main Flask app
-│   ├── models/                # SQLAlchemy models
-│   ├── services/              # Business logic + APIRouter
-│   └── MASTER/REQUIRED/BACKEND/  # Backend architecture docs
-│       ├── api_router.md      # Generic service router
-│       └── api_crud_service.md # Configuration-driven CRUD
-│   ├── wsgi.py                # WSGI entrypoint (app = create_app())
-│   ├── cli.py                 # Minimal CLI (init-db, run)
-│   ├── requirements.txt       # Backend dependencies
-├── frontend/                  # Vue application
-│   ├── src/                   # Vue source code
-│   ├── components/            # PrimeVue components
-│   └── views/                 # Page views
-├── database/                  # Database files
-├── config/                    # Configuration files
-└── docs/                      # Documentation
-├── start_dev.sh               # Start dev server (no install)
-├── install.sh                 # One-time setup: venv + deps + init DB
+├── package.json                  # Root npm config with dev scripts
+├── index.html                    # Vite entry point
+├── vite.config.js                # Vite config with API proxy
+├── src/                          # Vue application (root level)
+│   ├── main.js                   # Vue entry point
+│   ├── App.vue                   # Main app component
+│   ├── components/               # PrimeVue components
+│   ├── layouts/                  # Reusable layouts
+│   ├── views/                    # Page views
+│   └── router/                   # Vue Router config
+├── backend/                      # Flask application
+│   ├── app/                      # Main Flask app
+│   ├── models/                   # SQLAlchemy models
+│   ├── services/                 # Business logic + APIRouter
+│   ├── wsgi.py                   # WSGI entrypoint (app = create_app())
+│   ├── cli.py                    # Minimal CLI (init-db, run)
+│   └── requirements.txt          # Backend dependencies
+├── .venv/                        # Python virtualenv (unchanged)
+├── database/                     # Database files
+├── config/                       # Configuration files
+└── docs/                         # Documentation
 ```
 
 ### **🎯 Development Approach:**
@@ -170,44 +172,43 @@ backend/
 
 ### **📁 FRONTEND FILE STRUCTURE:**
 ```
-frontend/
-├── src/
-│   ├── router/                 # Centralized routing
-│   │   └── index.js           # All routes defined here
-│   ├── layouts/                # Reusable layouts
-│   │   └── MasterLayout.vue   # Main layout component
-│   ├── components/             # Reusable components
-│   │   ├── forms/              # Form system components
-│   │   │   └── DynamicForm.vue    # Generic form (forms, filters, search)
-│   │   ├── tables/              # Table system components
-│   │   │   └── DynamicTable.vue   # Generic table (works everywhere!)
-│   │   ├── crud/               # CRUD system components
-│   │   │   └── CrudManager.vue    # Complete CRUD component
-│   │   ├── inputs/              # ALL form input widgets
-│   │   │   ├── TextInput.vue      # Text input
-│   │   │   ├── SelectInput.vue    # Select/dropdown
-│   │   │   ├── MultiSelect.vue    # Multi-selection
-│   │   │   ├── Autocomplete.vue   # Autocomplete
-│   │   │   ├── Slider.vue         # Range slider
-│   │   │   ├── DateInput.vue      # Date picker
-│   │   │   ├── FileUpload.vue     # File upload
-│   │   │   ├── TagInput.vue       # Tag input
-│   │   │   ├── JsonEditor.vue     # JSON editor
-│   │   │   └── RichText.vue       # Rich text editor
-│   │   ├── actions/               # Action components
-│   │   │   ├── ActionButtons.vue  # Generic action buttons
-│   │   │   └── BulkActions.vue    # Bulk operations
-│   │   └── dialogs/               # Dialog components
-│   │       └── DynamicDialog.vue  # Generic dialog
-│   ├── views/                  # Page views
-│   │   ├── Artists.vue        # Artist management
-│   │   ├── Albums.vue         # Album management
-│   │   └── Tracks.vue         # Track management
-│   ├── services/               # API services
-│   │   ├── BaseApiService.js  # Base API service class
-│   │   ├── CrudService.js     # CRUD operations service
-│   │   └── MusicService.js    # Music-specific service
-│   └── utils/                  # Utility functions
+src/
+├── router/                 # Centralized routing
+│   └── index.js           # All routes defined here
+├── layouts/                # Reusable layouts
+│   └── MasterLayout.vue   # Main layout component
+├── components/             # Reusable components
+│   ├── forms/              # Form system components
+│   │   └── DynamicForm.vue    # Generic form (forms, filters, search)
+│   ├── tables/              # Table system components
+│   │   └── DynamicTable.vue   # Generic table (works everywhere!)
+│   ├── crud/               # CRUD system components
+│   │   └── CrudManager.vue    # Complete CRUD component
+│   ├── inputs/              # ALL form input widgets
+│   │   ├── TextInput.vue      # Text input
+│   │   ├── SelectInput.vue    # Select/dropdown
+│   │   ├── MultiSelect.vue    # Multi-selection
+│   │   ├── Autocomplete.vue   # Autocomplete
+│   │   ├── Slider.vue         # Range slider
+│   │   ├── DateInput.vue      # Date picker
+│   │   ├── FileUpload.vue     # File upload
+│   │   ├── TagInput.vue       # Tag input
+│   │   ├── JsonEditor.vue     # JSON editor
+│   │   └── RichText.vue       # Rich text editor
+│   ├── actions/               # Action components
+│   │   ├── ActionButtons.vue  # Generic action buttons
+│   │   └── BulkActions.vue    # Bulk operations
+│   └── dialogs/               # Dialog components
+│       └── DynamicDialog.vue  # Generic dialog
+├── views/                  # Page views
+│   ├── Artists.vue        # Artist management
+│   ├── Albums.vue         # Album management
+│   └── Tracks.vue         # Track management
+├── services/               # API services
+│   ├── BaseApiService.js  # Base API service class
+│   ├── CrudService.js     # CRUD operations service
+│   └── MusicService.js    # Music-specific service
+└── utils/                  # Utility functions
 ```
 
 ### **🎯 CRUD SYSTEM DESIGN:**
@@ -231,7 +232,7 @@ frontend/
 ### **📁 COMPONENT FOLDER STRUCTURE:**
 
 ```
-frontend/src/components/
+src/components/
 ├── forms/                        # Form-related components
 │   └── DynamicForm.vue          # Generic form (forms, filters, search, settings)
 ├── tables/                       # Table-related components
@@ -470,7 +471,7 @@ export default {
 
 #### **5. Complete File Structure with Configs:**
 ```
-frontend/src/
+src/
 ├── components/                     # All components
 │   ├── forms/                      # Form components
 │   ├── tables/                     # Table components
