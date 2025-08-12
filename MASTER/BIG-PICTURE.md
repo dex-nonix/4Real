@@ -3,6 +3,9 @@
 ## 🚫 **WHAT WE DON'T WANT (SCRAPPED):**
 - ❌ Complex phase-based development timelines
 - ❌ Fancy bullshit that doesn't work
+- ❌ Over-engineered widget systems
+- ❌ Redundant components (InlineTable vs DynamicTable)
+- ❌ Meaningless folder categorizations ("core")
 
 ## ✅ **WHAT WE WANT (REQUIREMENTS):**
 
@@ -85,6 +88,7 @@
 - **Default Vue way** - no fancy inventions
 - **Standard Vue patterns** - routing, components, services
 - **Simple file structure** - split into manageable files, no god files
+- **Unified components** - one component handles multiple use cases
 
 ### **🛣️ ROUTING SYSTEM:**
 - **Centralized routing** - defined in one file, used everywhere
@@ -99,7 +103,7 @@
 ### **🔧 CRUD SYSTEM COMPONENTS:**
 - **Dynamic Form Generator** - creates forms based on data models
 - **Dynamic Table Generator** - creates tables based on data models
-- **Widget Registry System** - register custom form widgets
+- **Widget Manager System** - simple, unified widget management
 - **Extensible Components** - inline JSON editor, custom selectors
 
 ### **📋 FORM BUILDER FEATURES:**
@@ -107,6 +111,7 @@
 - **Reference Selectors** - select related entities (FK relationships)
 - **Inline Tables** - show/edit related items with filtering
 - **Rich Form Elements** - JSON editors, custom inputs, etc.
+- **Flexible Layouts** - vertical (forms), horizontal (filters), compact (inline)
 
 ### **🔌 BACKEND API STRUCTURE:**
 - **Simple REST API** - straightforward endpoints
@@ -125,11 +130,28 @@ frontend/
 │   ├── layouts/                # Reusable layouts
 │   │   └── MasterLayout.vue   # Main layout component
 │   ├── components/             # Reusable components
-│   │   ├── crud/              # CRUD system components
-│   │   │   ├── DynamicForm.vue    # Form generator
-│   │   │   ├── DynamicTable.vue   # Table generator
-│   │   │   └── WidgetRegistry.js  # Widget registration
-│   │   └── common/            # Common UI components
+│   │   ├── forms/              # Form system components
+│   │   │   └── DynamicForm.vue    # Generic form (forms, filters, search)
+│   │   ├── tables/              # Table system components
+│   │   │   └── DynamicTable.vue   # Generic table (works everywhere!)
+│   │   ├── crud/               # CRUD system components
+│   │   │   └── CrudManager.vue    # Complete CRUD component
+│   │   ├── inputs/              # ALL form input widgets
+│   │   │   ├── TextInput.vue      # Text input
+│   │   │   ├── SelectInput.vue    # Select/dropdown
+│   │   │   ├── MultiSelect.vue    # Multi-selection
+│   │   │   ├── Autocomplete.vue   # Autocomplete
+│   │   │   ├── Slider.vue         # Range slider
+│   │   │   ├── DateInput.vue      # Date picker
+│   │   │   ├── FileUpload.vue     # File upload
+│   │   │   ├── TagInput.vue       # Tag input
+│   │   │   ├── JsonEditor.vue     # JSON editor
+│   │   │   └── RichText.vue       # Rich text editor
+│   │   ├── actions/               # Action components
+│   │   │   ├── ActionButtons.vue  # Generic action buttons
+│   │   │   └── BulkActions.vue    # Bulk operations
+│   │   └── dialogs/               # Dialog components
+│   │       └── DynamicDialog.vue  # Generic dialog
 │   ├── views/                  # Page views
 │   │   ├── Artists.vue        # Artist management
 │   │   ├── Albums.vue         # Album management
@@ -144,7 +166,7 @@ frontend/
 ### **🎯 CRUD SYSTEM DESIGN:**
 - **Generic Components** - work with any entity type
 - **Dynamic Configuration** - forms/tables adapt to data models
-- **Widget System** - extensible form elements
+- **Widget Manager System** - simple, unified widget management
 - **Relationship Handling** - FK references, inline editing
 - **No Hardcoding** - everything configurable via data
 
@@ -157,93 +179,68 @@ frontend/
 
 ---
 
-## 🧩 **COMPLETE COMPONENT ARCHITECTURE:**
+## 🧩 **OPTIMIZED COMPONENT ARCHITECTURE:**
 
 ### **📁 COMPONENT FOLDER STRUCTURE:**
 
 ```
 frontend/src/components/
-├── core/                           # STANDALONE COMPONENTS
-│   ├── DynamicTable.vue            # Generic table for ANY data
-│   ├── DynamicForm.vue             # Generic form for ANY data
-│   ├── DynamicDialog.vue           # Generic dialog for ANY purpose
-│   └── InlineTable.vue             # Table that works ANYWHERE
-├── widgets/                         # Form Widget Registry
-│   ├── base/                       # Base widget classes
-│   │   ├── BaseWidget.vue          # Abstract widget base
-│   │   └── WidgetTypes.js          # Widget type definitions
-│   ├── inputs/                      # Input widgets
-│   │   ├── TextInput.vue           # Text input widget
-│   │   ├── SelectInput.vue         # Select/dropdown widget
-│   │   ├── NumberInput.vue         # Number input widget
-│   │   ├── DateInput.vue           # Date picker widget
-│   │   ├── TextArea.vue            # Multi-line text widget
-│   │   ├── Checkbox.vue            # Checkbox widget
-│   │   ├── RadioGroup.vue          # Radio button group
-│   │   └── Switch.vue              # Toggle switch
-│   ├── editors/                     # Editor widgets
-│   │   ├── JsonEditor.vue          # JSON editor widget
-│   │   ├── RichText.vue            # Rich text editor
-│   │   ├── MarkdownEditor.vue      # Markdown editor
-│   │   └── CodeEditor.vue          # Code editor
-│   ├── files/                       # File handling widgets
-│   │   ├── FileUpload.vue          # File upload widget
-│   │   ├── ImageUpload.vue         # Image upload widget
-│   │   ├── FileBrowser.vue         # File browser widget
-│   │   └── FilePreview.vue         # File preview widget
-│   ├── data/                        # Data input widgets
-│   │   ├── TagInput.vue            # Tag input widget
-│   │   ├── MultiSelect.vue         # Multi-selection widget
-│   │   ├── Autocomplete.vue        # Autocomplete input
-│   │   └── Slider.vue              # Range slider widget
-│   ├── relationships/                # Relationship widgets
-│   │   ├── EntitySelector.vue      # Select related entity
-│   │   ├── InlineTable.vue         # Show/edit related items
-│   │   ├── MultiSelector.vue       # Multi-entity selection
-│   │   └── RelationshipManager.vue # Manage relationships
-│   └── registry/                    # Widget registration system
-│       ├── WidgetRegistry.js        # Main registry class
-│       ├── widgetConfigs.js         # Widget configurations
-│       └── widgetFactory.js         # Widget creation factory
-├── crud/                           # CRUD COMPONENT (built from standalone)
-│   └── CrudManager.vue             # CRUD component using standalone components
-├── actions/                         # Action Components
-│   ├── ActionButtons.vue            # Generic action buttons
-│   ├── BulkActions.vue              # Bulk operations
-│   ├── ExportActions.vue            # Export functionality
-│   └── ImportActions.vue            # Import functionality
-└── filters/                         # Filter Components
-    ├── SearchFilter.vue             # Global search
-    ├── ColumnFilter.vue             # Column-specific filters
-    ├── DateRangeFilter.vue          # Date range filtering
-    └── AdvancedFilters.vue          # Complex filter combinations
+├── forms/                        # Form-related components
+│   └── DynamicForm.vue          # Generic form (forms, filters, search, settings)
+├── tables/                       # Table-related components
+│   └── DynamicTable.vue         # Generic table (CRUD, dashboards, inline, anywhere!)
+├── crud/                         # CRUD operations
+│   └── CrudManager.vue          # Complete CRUD component
+├── inputs/                       # ALL form input widgets (no subcategories!)
+│   ├── TextInput.vue            # Text input
+│   ├── SelectInput.vue          # Select/dropdown
+│   ├── NumberInput.vue          # Number input
+│   ├── DateInput.vue            # Date picker
+│   ├── TextArea.vue             # Multi-line text
+│   ├── Checkbox.vue             # Checkbox
+│   ├── RadioGroup.vue           # Radio button group
+│   ├── Switch.vue               # Toggle switch
+│   ├── MultiSelect.vue          # Multi-selection
+│   ├── Autocomplete.vue         # Autocomplete
+│   ├── Slider.vue               # Range slider
+│   ├── FileUpload.vue           # File upload
+│   ├── ImageUpload.vue          # Image upload
+│   ├── TagInput.vue             # Tag input
+│   ├── JsonEditor.vue           # JSON editor
+│   ├── RichText.vue             # Rich text editor
+│   ├── MarkdownEditor.vue       # Markdown editor
+│   └── CodeEditor.vue           # Code editor
+├── actions/                      # Action components
+│   ├── ActionButtons.vue        # Generic action buttons
+│   └── BulkActions.vue          # Bulk operations
+└── dialogs/                      # Dialog components
+    └── DynamicDialog.vue        # Generic dialog
 ```
 
-### **🎯 DRY ARCHITECTURE - BUILD CRUD FROM STANDALONE COMPONENTS:**
+### **🎯 UNIFIED COMPONENT APPROACH - NO REDUNDANCY:**
 
-#### **1. Standalone Components (Reusable):**
-- **DynamicTable** - used in CRUD, dashboards, reports, anywhere
-- **DynamicForm** - used in CRUD, settings, search, anywhere  
-- **Widgets** - used in any form, any context
+#### **1. DynamicForm - Universal Form Component:**
+- **CRUD forms** - vertical layout, full features, with buttons
+- **Filter forms** - horizontal layout, compact, no buttons
+- **Search forms** - horizontal layout, compact, no buttons
+- **Settings forms** - vertical layout, full features
+- **Layout props**: `layout="horizontal"`, `:compact="true"`
+- **Responsive support**: hide fields based on screen size
 
-#### **2. CRUD Component (Built from standalone):**
-- **CrudManager** - combines standalone components for CRUD functionality
-- **Reuses** all the standalone components
-- **No duplication** - uses what's already built
+#### **2. DynamicTable - Universal Table Component:**
+- **CRUD tables** - vertical layout, full features, responsive
+- **Dashboard widgets** - horizontal layout, compact, minimal
+- **Inline tables** - compact, dense, minimal, responsive
+- **Layout props**: `layout="horizontal"`, `:compact="true"`, `:dense="true"`, `:minimal="true"`
+- **Responsive support**: hide columns based on screen size
 
-#### **3. Usage (Maximum DRY):**
-```vue
-<!-- Artist CRUD - uses the CRUD component -->
-<CrudManager :config="artistCrudConfig" />
+#### **3. CrudManager - Orchestrates Everything:**
+- **Combines DynamicForm + DynamicTable**
+- **Handles CRUD operations** - create, read, update, delete
+- **Modal-based editing** - inline form editing with dialogs
+- **Configuration-driven** - different behavior per entity
 
-<!-- Album CRUD - uses the SAME CRUD component -->
-<CrudManager :config="albumCrudConfig" />
-
-<!-- Track CRUD - uses the SAME CRUD component -->
-<CrudManager :config="trackCrudConfig" />
-```
-
-### **📋 CRUD CONFIG SYSTEM - NO DAMN MANY ARGUMENTS!:**
+### **📋 ENHANCED CRUD CONFIG SYSTEM:**
 
 #### **1. CRUD Config Structure:**
 ```javascript
@@ -254,21 +251,64 @@ export const artistCrudConfig = {
   // Table configuration
   table: {
     columns: [
-      { field: 'name', header: 'Artist Name', sortable: true },
-      { field: 'abbreviation', header: 'Abbr', sortable: true },
-      { field: 'created_at', header: 'Created', sortable: true }
+      { 
+        field: 'name', 
+        header: 'Artist Name', 
+        sortable: true,
+        type: 'text',
+        responsive: {
+          hide: ['xs'],              // Hide on extra small screens
+          show: ['sm', 'md', 'lg', 'xl']
+        },
+        props: {
+          truncate: true,
+          maxLength: 30
+        }
+      },
+      { 
+        field: 'abbreviation', 
+        header: 'Abbr', 
+        sortable: true,
+        type: 'text',
+        responsive: {
+          hide: ['xs', 'sm'],        // Hide on small screens
+          show: ['md', 'lg', 'xl']
+        },
+        props: {
+          class: 'font-mono text-sm'
+        }
+      },
+      { 
+        field: 'albums_count', 
+        header: 'Albums', 
+        sortable: true,
+        type: 'number',
+        responsive: {
+          hide: ['xs', 'sm', 'md'],  // Hide on small/medium screens
+          show: ['lg', 'xl']
+        },
+        props: {
+          format: '0,0'
+        }
+      }
     ],
-    actions: ['create', 'edit', 'delete', 'view'],
+    actions: ['view', 'edit', 'delete'],
+    bulkActions: ['delete', 'export'],
+    filters: ['search', 'date_range'],
     sortable: true,
     paginated: true,
-    filters: ['search', 'date_range']
+    pageSize: 20,
+    selectionMode: 'multiple',
+    resizable: true,
+    striped: true,
+    hover: true
   },
   
   // Form configuration
   form: {
     fields: {
       name: {
-        type: 'text',                    // String - resolves to TextInput
+        type: 'text',                    // Maps to TextInput
         label: 'Artist Name',
         required: true,
         props: {                         // PROPS PROPERTY!
@@ -277,7 +317,7 @@ export const artistCrudConfig = {
         }
       },
       abbreviation: {
-        type: 'text',                    // String - resolves to TextInput
+        type: 'text',                    // Maps to TextInput
         label: 'Abbreviation',
         required: true,
         props: {                         // PROPS PROPERTY!
@@ -286,7 +326,7 @@ export const artistCrudConfig = {
         }
       },
       persona: {
-        type: 'rich_text',               // String - resolves to RichText
+        type: 'rich_text',               // Maps to RichText
         label: 'Artist Persona',
         props: {                         // PROPS PROPERTY!
           height: '200px',
@@ -294,27 +334,18 @@ export const artistCrudConfig = {
         }
       },
       albums: {
-        type: 'InlineTable',             // String - resolves to InlineTable
+        type: 'inline_table',            // Maps to DynamicTable (not InlineTable!)
         label: 'Albums',
         props: {                         // PROPS PROPERTY!
           entity: 'album',
           columns: ['title', 'release_date'],
-          editable: true
-        }
-      },
-      // OPTIONAL: Direct component passing
-      customField: {
-        type: CustomArtistWidget,        // Direct component - no resolution needed!
-        label: 'Custom Artist Field',
-        required: false,
-        props: {                         // PROPS PROPERTY!
-          artistId: 123,
-          customConfig: 'value'
+          editable: true,
+          layout: 'horizontal',
+          compact: true,
+          minimal: true
         }
       }
-    },
-    layout: 'vertical',
-    validation: true
+    }
   },
   
   // API configuration
@@ -330,17 +361,24 @@ export const artistCrudConfig = {
 }
 ```
 
-#### **2. Enhanced CRUD Config Features:**
+#### **2. Enhanced Config Features:**
 
 ##### **Type Property - Handles Both Strings AND Components:**
-- **String type** - resolves to widget via WidgetRegistry (e.g., `'text'`, `'rich_text'`, `'InlineTable'`)
+- **String type** - resolves to widget via WidgetManager (e.g., `'text'`, `'rich_text'`, `'inline_table'`)
 - **Component type** - direct component usage (e.g., `CustomArtistWidget`, `SpecialInputComponent`)
 - **No redundant "widget" property** - "type" does everything!
 
 ##### **Props Property - All Widget Configuration:**
 - **Widget-specific settings** - height, toolbar, entity, columns, etc.
+- **Layout settings** - layout, compact, dense, minimal for tables
+- **Responsive settings** - hide/show based on screen size
 - **Component props** - passed directly to the widget/component
-- **Organized configuration** - not flat, structured
+
+##### **Responsive Configuration:**
+- **Column hiding** - hide table columns on small screens
+- **Field hiding** - hide form fields on small screens
+- **Breakpoint system** - customizable (xs, sm, md, lg, xl)
+- **Progressive enhancement** - more features on larger screens
 
 #### **3. Component Resolution Logic:**
 ```javascript
@@ -358,7 +396,7 @@ export default {
       
       // Default: String resolution
       if (typeof field.type === 'string') {
-        return WidgetRegistry.get(field.type);
+        return WidgetManager.get(field.type);
       }
     }
   }
@@ -387,12 +425,13 @@ export default {
 ```
 frontend/src/
 ├── components/                     # All components
-│   ├── core/                       # Standalone components
-│   ├── widgets/                     # Widget system
-│   ├── crud/                        # CRUD component
+│   ├── forms/                      # Form components
+│   ├── tables/                     # Table components
+│   ├── crud/                       # CRUD component
 │   │   └── CrudManager.vue         # ONE ARGUMENT - config!
-│   ├── actions/                     # Action components
-│   └── filters/                     # Filter components
+│   ├── inputs/                     # Input widgets
+│   ├── actions/                    # Action components
+│   └── dialogs/                    # Dialog components
 ├── configs/                         # Configuration files
 │   ├── crud/                        # CRUD configs
 │   │   ├── artist.js               # Artist CRUD config
@@ -411,20 +450,24 @@ frontend/src/
 - **String types** - quick development with standard widgets
 - **Direct components** - custom, specialized widgets when needed
 - **Mixed usage** - combine both approaches in same config
+- **Layout options** - vertical, horizontal, compact for any use case
 
 ##### **✅ Clean Architecture:**
 - **Only "type" property** - handles both strings AND components
 - **"props" property** - organized widget configuration
 - **No redundancy** - clean, simple structure
+- **Unified approach** - same pattern across all components
 
 ##### **✅ Easy Development:**
 - **Start with strings** - quick setup with standard widgets
 - **Replace with components** - when you need custom behavior
 - **No breaking changes** - both approaches work seamlessly
+- **Layout flexibility** - adapt to any use case
 
 ##### **✅ Performance Benefits:**
 - **Direct components** - no resolution overhead
 - **String resolution** - lazy loading when needed
+- **Responsive support** - hide/show based on screen size
 - **Best of both worlds** - flexibility + performance
 
 ### **✅ WHAT YOU GET (DRY!):**
@@ -438,11 +481,13 @@ frontend/src/
 - **Standalone components** - work anywhere, not just CRUD
 - **CRUD component** - built from standalone, works for all entities
 - **Widgets** - work in any form, any context
+- **Layout flexibility** - adapt to any use case
 
 #### **3. Clean Architecture:**
 - **Standalone components** - do one thing well
 - **CRUD component** - orchestrates standalone components
 - **No coupling** - components don't know about each other
+- **Unified API** - consistent props across all components
 
 ---
 
