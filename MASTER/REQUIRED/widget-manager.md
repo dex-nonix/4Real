@@ -46,56 +46,111 @@ class BaseWidgetManager {
 // widget-mappings/form-widgets.js
 export const FORM_WIDGETS = {
   'text': {
-    component: TextInput,
-    defaultProps: { placeholder: 'Enter text', maxLength: 255 }
+    component: 'InputText',           // PrimeVue component
+    defaultProps: { 
+      placeholder: 'Enter text',
+      class: 'w-full'
+    }
   },
   'select': {
-    component: SelectInput,
-    defaultProps: { placeholder: 'Select option', clearable: true }
+    component: 'Dropdown',            // PrimeVue component
+    defaultProps: { 
+      placeholder: 'Select option',
+      class: 'w-full'
+    }
   },
   'multi_select': {
-    component: MultiSelect,
-    defaultProps: { placeholder: 'Select options', multiple: true }
+    component: 'MultiSelect',         // PrimeVue component
+    defaultProps: { 
+      placeholder: 'Select options',
+      class: 'w-full'
+    }
   },
   'autocomplete': {
-    component: Autocomplete,
-    defaultProps: { placeholder: 'Type to search', minLength: 2, delay: 300 }
+    component: 'AutoComplete',        // PrimeVue component
+    defaultProps: { 
+      placeholder: 'Type to search',
+      minLength: 2,
+      delay: 300
+    }
   },
   'slider': {
-    component: Slider,
-    defaultProps: { min: 0, max: 100, step: 1 }
+    component: 'Slider',              // PrimeVue component
+    defaultProps: { 
+      min: 0,
+      max: 100,
+      step: 1
+    }
   },
   'date': {
-    component: DateInput,
-    defaultProps: { placeholder: 'Select date', format: 'YYYY-MM-DD' }
+    component: 'Calendar',            // PrimeVue component
+    defaultProps: { 
+      dateFormat: 'yy-mm-dd',
+      class: 'w-full'
+    }
   },
   'file': {
-    component: FileUpload,
-    defaultProps: { multiple: false, accept: '*' }
+    component: 'FileUpload',          // PrimeVue component
+    defaultProps: { 
+      multiple: false,
+      accept: '*'
+    }
   },
   'json': {
-    component: JsonEditor,
-    defaultProps: { height: '200px', readOnly: false }
+    component: 'Editor',              // PrimeVue component
+    defaultProps: { 
+      height: '200px',
+      readOnly: false
+    }
   }
 }
 
 // widget-mappings/table-widgets.js  
 export const TABLE_WIDGETS = {
   'text': {
-    component: TextCell,
-    defaultProps: { truncate: true, maxLength: 50 }
+    component: 'span',                // Simple span for text
+    defaultProps: { 
+      class: 'text-sm'
+    }
+  },
+  'number': {
+    component: 'span',                // Formatted number display
+    defaultProps: { 
+      class: 'text-sm font-mono'
+    }
   },
   'date': {
-    component: DateCell,
-    defaultProps: { format: 'YYYY-MM-DD' }
+    component: 'span',                // Formatted date display
+    defaultProps: { 
+      class: 'text-sm text-gray-600'
+    }
   },
   'status': {
-    component: StatusCell,
-    defaultProps: { showIcon: true }
+    component: 'Tag',                 // PrimeVue Tag component
+    defaultProps: { 
+      severity: 'info'
+    }
   },
   'actions': {
-    component: ActionCell,
-    defaultProps: { showEdit: true, showDelete: true }
+    component: 'Button',              // PrimeVue Button
+    defaultProps: { 
+      size: 'small',
+      severity: 'secondary'
+    }
+  },
+  'image': {
+    component: 'Avatar',              // PrimeVue Avatar
+    defaultProps: { 
+      size: 'normal',
+      shape: 'circle'
+    }
+  },
+  'boolean': {
+    component: 'i',                   // Icon for boolean values
+    defaultProps: { 
+      class: 'pi',
+      style: 'font-size: 1.2rem;'
+    }
   }
 }
 ```
@@ -111,7 +166,7 @@ class FormWidgetManager extends BaseWidgetManager {
   }
 
   getDefaultWidget() {
-    return { component: TextInput, props: { placeholder: 'Enter text' } }
+    return { component: 'InputText', props: { placeholder: 'Enter text' } }
   }
 }
 
@@ -124,7 +179,7 @@ class TableCellWidgetManager extends BaseWidgetManager {
   }
 
   getDefaultWidget() {
-    return { component: TextCell, props: { truncate: true } }
+    return { component: 'span', props: { class: 'text-sm' } }
   }
 }
 ```
@@ -145,8 +200,8 @@ const { component, props } = formManager.getWidget('multi_select', {
 })
 
 // User props override defaults
-// Default: { placeholder: 'Select options', multiple: true }
-// Result: { placeholder: 'Choose albums', multiple: true, options: [] }
+// Default: { placeholder: 'Select options', class: 'w-full' }
+// Result: { placeholder: 'Choose albums', class: 'w-full', options: [] }
 ```
 
 ### **2. Table Cell Widgets (DynamicTable.vue)**
@@ -162,37 +217,8 @@ const { component, props } = tableManager.getWidget('date', {
 })
 
 // User format overrides default
-// Default: { format: 'YYYY-MM-DD' }
-// Result: { format: 'MM/DD/YYYY' }
-```
-
-### **3. CRUD Config Integration**
-```javascript
-// artist-crud-config.js
-export const artistCrudConfig = {
-  entity: 'artist',
-  form: {
-    fields: {
-      name: {
-        type: 'text',                    // Maps to TextInput
-        label: 'Artist Name',
-        required: true,
-        props: {                         // PROPS PROPERTY!
-          placeholder: 'Enter artist name',
-          maxLength: 100
-        }
-      },
-      albums: {
-        type: 'multi_select',            // Maps to MultiSelect
-        label: 'Albums',
-        props: {                         // PROPS PROPERTY!
-          options: [],                   // Will be populated from API
-          placeholder: 'Choose albums'   // Override default placeholder
-        }
-      }
-    }
-  }
-}
+// Default: { class: 'text-sm text-gray-600' }
+// Result: { class: 'text-sm text-gray-600', format: 'MM/DD/YYYY' }
 ```
 
 ## 📁 **FILE STRUCTURE:**
@@ -210,10 +236,8 @@ frontend/src/
 │   ├── core/
 │   │   ├── DynamicForm.vue            # Uses FormWidgetManager
 │   │   └── DynamicTable.vue           # Uses TableCellWidgetManager
-│   └── inputs/                        # Actual widget components
-│       ├── TextInput.vue
-│       ├── MultiSelect.vue
-│       └── ...
+│   └── crud/
+│       └── CrudManager.vue            # Uses both managers
 ```
 
 ## 🎯 **KEY BENEFITS:**
@@ -262,5 +286,11 @@ frontend/src/
 3. **Pass mappings** to managers via constructor
 4. **Use managers** in components to resolve widgets
 5. **Merge default props** with user props for final configuration
+
+## 📚 **RELATED DOCUMENTATION:**
+
+- **DynamicForm.md** - Form component using FormWidgetManager
+- **DynamicTable.md** - Table component using TableCellWidgetManager  
+- **CrudManager.md** - CRUD component using both managers
 
 **This gives us ONE generic system that handles ALL widget management needs without over-engineering!**
