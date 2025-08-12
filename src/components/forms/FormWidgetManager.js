@@ -1,5 +1,5 @@
 // FormWidgetManager - for form inputs!
-import BaseWidgetManager from '@/widgets/BaseWidgetManager.js'
+import BaseWidgetManager from '../../widgets/BaseWidgetManager.js'
 import { FORM_WIDGETS } from './form-widgets.js'
 
 class FormWidgetManager extends BaseWidgetManager {
