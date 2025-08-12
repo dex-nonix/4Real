@@ -86,54 +86,50 @@ class GenericCRUDView:
     
     def _show_add_form(self):
         """Generic add form dialog - works for any entity"""
-        # Create form content
-        form_content = self._build_form_content()
-        
-        # Create dialog with the form content
-        dialog = GenericDialog(
-            title=f"Add New {self.entity_name}",
-            content=form_content,
-            confirm_text=f"Create {self.entity_name}",
-            on_confirm=lambda: self._handle_form_submit(dialog),
-            width="600px"
-        )
-        
-        dialog.show()
-    
-    def _build_form_content(self):
-        """Build the form content to pass to dialog"""
-        form_container = ui.column().classes('w-full')
-        
-        with form_container:
+        # Create a function that will render form fields inside the dialog
+        def render_form_fields():
             for field in self.fields:
                 label = field.replace('_', ' ').title()
                 
                 if field in ['description', 'persona', 'raw_lyrics', 'formatted_lyrics']:
+                    # Text area for long text fields
                     ui.label(label).classes('text-sm font-medium mb-1')
                     ui.textarea(
                         value='',
                         on_change=lambda e, f=field: self._update_form_data(f, e.value)
                     ).classes('w-full mb-4')
                 elif field in ['created_at', 'release_date']:
+                    # Date picker for date fields
                     ui.label(label).classes('text-sm font-medium mb-1')
                     ui.date(
                         value=None,
                         on_change=lambda e, f=field: self._update_form_data(f, e.value)
                     ).classes('w-full mb-4')
                 elif field in ['album_number', 'track_number', 'duration']:
+                    # Number input for numeric fields
                     ui.label(label).classes('text-sm font-medium mb-1')
                     ui.number(
                         value=0,
                         on_change=lambda e, f=field: self._update_form_data(f, e.value)
                     ).classes('w-full mb-4')
                 else:
+                    # Regular text input
                     ui.label(label).classes('text-sm font-medium mb-1')
                     ui.input(
                         value='',
                         on_change=lambda e, f=field: self._update_form_data(f, e.value)
                     ).classes('w-full mb-4')
         
-        return form_container
+        # Create dialog with the render function
+        dialog = GenericDialog(
+            title=f"Add New {self.entity_name}",
+            content=render_form_fields,  # Pass the function, not the rendered content
+            confirm_text=f"Create {self.entity_name}",
+            on_confirm=lambda: self._handle_form_submit(dialog),
+            width="600px"
+        )
+        
+        dialog.show()
     
     def _update_form_data(self, field_name: str, value: Any):
         """Update form data when field changes"""

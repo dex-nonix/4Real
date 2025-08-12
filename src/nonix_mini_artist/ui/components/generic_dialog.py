@@ -65,7 +65,14 @@ class GenericDialog:
         if self.content:
             self.content_area.clear()
             with self.content_area:
-                with self.content:
+                if callable(self.content):
+                    # Call the content function to render it
+                    self.content()
+                elif isinstance(self.content, str):
+                    # Render string content
+                    ui.label(self.content).classes('mb-4 text-gray-700')
+                else:
+                    # For UI components, they should already be built
                     pass
         self.dialog.open()
     
