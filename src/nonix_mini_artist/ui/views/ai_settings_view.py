@@ -242,7 +242,7 @@ class AISettingsView:
                 config['location'] = location
             
             self.ai_service.add_provider(config)
-            await self._load_data()
+            self._load_data()
             self.add_provider_form.visible = False
             ui.notify('Provider created successfully!', type='positive')
             
@@ -262,7 +262,7 @@ class AISettingsView:
             )
             
             self.ai_service.add_preset(preset)
-            await self._load_data()
+            self._load_data()
             self.add_preset_form.visible = False
             ui.notify('Preset created successfully!', type='positive')
             

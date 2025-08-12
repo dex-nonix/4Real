@@ -32,10 +32,10 @@ class ArtistsView(GenericCRUDView):
             from nicegui import ui
             ui.notify(f'Error loading artists: {str(e)}', type='negative')
     
-    async def refresh_data(self):
+    def refresh_data(self):
         """Refresh artists data"""
         try:
-            self.items = await self.music_service.list_artists()
+            self.items = self.music_service.list_artists()
             self.filtered_items = self.items.copy()
             self.table.update_data(self.filtered_items)
         except Exception as e:

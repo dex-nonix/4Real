@@ -169,7 +169,11 @@ class GenericCRUDView:
             ui.notify(f'{self.entity_name} created successfully!', type='positive')
             
         except Exception as e:
-            ui.notify(f'Error creating {self.entity_name.lower()}: {str(e)}', type='negative')
+            error_msg = str(e)
+            if 'UNIQUE constraint failed' in error_msg:
+                ui.notify(f'Error: A {self.entity_name.lower()} with this name already exists!', type='negative')
+            else:
+                ui.notify(f'Error creating {self.entity_name.lower()}: {error_msg}', type='negative')
     
     def clear(self):
         """Clear the view content"""

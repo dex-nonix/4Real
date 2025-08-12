@@ -213,13 +213,13 @@ class TracksView(GenericCRUDView):
             """
             ui.notify(f'Error running AI analysis: {str(e)}', type='negative')
     
-    async def refresh_data(self):
+    def refresh_data(self):
         """Refresh tracks data"""
         try:
-            self.items = await self.music_service.list_tracks()
+            self.items = self.music_service.list_tracks()
             self.filtered_items = self.items.copy()
-            self.albums = await self.music_service.list_albums()
-            self.artists = await self.music_service.list_artists()
+            self.albums = self.music_service.list_albums()
+            self.artists = self.music_service.list_albums()
             self.table.update_data(self.filtered_items)
             # Update AI form options
             self._update_ai_form_options()

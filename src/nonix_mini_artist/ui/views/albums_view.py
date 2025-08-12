@@ -22,10 +22,10 @@ class AlbumsView(GenericCRUDView):
         super().__init__(music_service, entity_config)
         self.artists = []
     
-    async def _load_data(self):
+    def _load_data(self):
         """Load albums and artists data"""
         try:
-            data = await self.music_service.list_albums()
+            data = self.music_service.list_albums()
             self.items = data
             self.filtered_items = data.copy()
             self.table.update_data(data)
@@ -33,7 +33,7 @@ class AlbumsView(GenericCRUDView):
             from nicegui import ui
             ui.notify(f'Error loading data: {str(e)}', type='negative')
     
-    async def _create_entity(self, **kwargs):
+    def _create_entity(self, **kwargs):
         """Override to handle artist selection logic"""
         try:
             # Handle artist selection
@@ -50,16 +50,16 @@ class AlbumsView(GenericCRUDView):
                     return
             
             # Call parent method
-            await super()._create_entity(**kwargs)
+            super()._create_entity(**kwargs)
             
         except Exception as e:
             from nicegui import ui
             ui.notify(f'Error creating album: {str(e)}', type='negative')
     
-    async def refresh_data(self):
+    def refresh_data(self):
         """Refresh albums data"""
         try:
-            self.items = await self.music_service.list_albums()
+            self.items = self.music_service.list_albums()
             self.filtered_items = self.items.copy()
             self.table.update_data(self.filtered_items)
         except Exception as e:

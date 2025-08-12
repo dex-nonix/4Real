@@ -21,10 +21,10 @@ class StylesView(GenericCRUDView):
         }
         super().__init__(music_service, entity_config)
     
-    async def _load_data(self):
+    def _load_data(self):
         """Load styles data"""
         try:
-            data = await self.music_service.list_styles()
+            data = self.music_service.list_styles()
             self.items = data
             self.filtered_items = data.copy()
             self.table.update_data(data)
@@ -32,10 +32,10 @@ class StylesView(GenericCRUDView):
             from nicegui import ui
             ui.notify(f'Error loading data: {str(e)}', type='negative')
     
-    async def refresh_data(self):
+    def refresh_data(self):
         """Refresh styles data"""
         try:
-            self.items = await self.music_service.list_styles()
+            self.items = self.music_service.list_styles()
             self.filtered_items = self.items.copy()
             self.table.update_data(self.filtered_items)
         except Exception as e:
