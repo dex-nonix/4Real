@@ -40,7 +40,7 @@ class GenericDialog:
                 
                 # Actions
                 with ui.row().classes('justify-end gap-3 mt-6'):
-                    if self.on_cancel:
+                    if self.cancel_text and self.on_cancel is not None:
                         ui.button(self.cancel_text, on_click=self._handle_cancel).classes('px-4 py-2 bg-gray-300 text-gray-700 hover:bg-gray-400 rounded')
                     
                     if self.on_confirm:
@@ -102,8 +102,11 @@ class ConfirmationDialog(GenericDialog):
             confirm_text=confirm_text,
             cancel_text=cancel_text,
             on_confirm=on_confirm,
-            on_cancel=None
+            on_cancel=lambda: None
         )
+        
+        # Set the on_cancel callback to close the dialog
+        self.on_cancel = lambda: self.dialog.close()
 
 class DetailDialog(GenericDialog):
     """Specialized dialog for showing details"""

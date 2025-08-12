@@ -147,11 +147,12 @@ class GenericTable:
         
         return content
     
-    async def _perform_delete(self, item: Any):
+    def _perform_delete(self, item: Any):
         """Perform the actual delete operation"""
         if self.crud_operations:
             try:
-                success = await self.crud_operations.delete(item.id)
+                # Synchronous delete operation
+                success = self.crud_operations.delete(item.id)
                 if success:
                     ui.notify(f'{item.__class__.__name__} deleted successfully!', type='positive')
                     # Remove from data and refresh table

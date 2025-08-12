@@ -514,7 +514,7 @@ class PersonaManagementView:
         except Exception as e:
             ui.notify(f'Failed to check persona sessions: {e}', type='error')
     
-    async def _confirm_delete_persona(self, persona: Dict[str, Any], warning_dialog=None):
+    def _confirm_delete_persona(self, persona: Dict[str, Any], warning_dialog=None):
         """Confirm and execute persona deletion"""
         try:
             # Close warning dialog if open
