@@ -13,7 +13,7 @@
 
 ## 🔧 **IMPLEMENTATION:**
 
-### **1. CrudService Base Class (relative paths only):**
+### **1. CrudService Base Class (relative paths only, explicit methods):**
 ```python
 # services/crud_service.py
 from flask import request, jsonify
@@ -70,62 +70,51 @@ class CrudService:
             }
         }
     
-    def register_routes(self):
-        """Auto-register CRUD routes with RELATIVE paths (APIRouter provides base)."""
-        ops = self.config['operations']
-        
-        # CREATE - POST /{path}
-        if ops.get('create'):
-            @expose('/', methods=['POST'])
-            def create(self, request):
-                return self._handle_create(request)
-        
-        # READ ALL - GET /{path}
-        if ops.get('list'):
-            @expose('/')
-            def list_all(self, request):
-                return self._handle_list(request)
-        
-        # READ ONE - GET /{path}/{id}
-        if ops.get('read'):
-            @expose('/{id}')
-            def read_one(self, request, id):
-                return self._handle_read(request, id)
-        
-        # UPDATE - PUT /{path}/{id}
-        if ops.get('update'):
-            @expose('/{id}', methods=['PUT'])
-            def update(self, request, id):
-                return self._handle_update(request, id)
-        
-        # DELETE - DELETE /{path}/{id}
-        if ops.get('delete'):
-            @expose('/{id}', methods=['DELETE'])
-            def delete(self, request, id):
-                return self._handle_delete(request, id)
-        
-        # SEARCH - GET /{path}/search
-        if ops.get('search'):
-            @expose('/search')
-            def search(self, request):
-                return self._handle_search(request)
-        
-        # BULK OPERATIONS - POST /{path}/bulk
-        if ops.get('bulk'):
-            @expose('/bulk', methods=['POST'])
-            def bulk_operations(self, request):
-                return self._handle_bulk(request)
-        
-        # SELECTOR - GET /{path}/selector (optimized for dropdowns)
-        if ops.get('selector'):
-            @expose('/selector')
-            def selector(self, request):
-                return self._handle_selector(request)
-            
-            # SINGLE SELECTOR - GET /{path}/selector/{id} (single item for ID references)
-            @expose('/selector/{id}')
-            def single_selector(self, request, id):
-                return self._handle_single_selector(request, id)
+    # Explicit decorated methods; disabled ops return 405
+    def _is_enabled(self, op: str) -> bool:
+        return bool(self.config.get('operations', {}).get(op, False))
+
+    def _call_if_enabled(self, op: str, handler, *args, **kwargs):
+        """Guard: return 405 if disabled, otherwise call the given handler."""
+        if not self._is_enabled(op):
+            return jsonify({'error': 'Operation disabled'}), 405
+        return handler(*args, **kwargs)
+
+    @expose('/', methods=['POST'])
+    def create(self, request):
+        return self._call_if_enabled('create', self._handle_create, request)
+
+    @expose('/')
+    def list_all(self, request):
+        return self._call_if_enabled('list', self._handle_list, request)
+
+    @expose('/{id}')
+    def read_one(self, request, id):
+        return self._call_if_enabled('read', self._handle_read, request, id)
+
+    @expose('/{id}', methods=['PUT'])
+    def update(self, request, id):
+        return self._call_if_enabled('update', self._handle_update, request, id)
+
+    @expose('/{id}', methods=['DELETE'])
+    def delete(self, request, id):
+        return self._call_if_enabled('delete', self._handle_delete, request, id)
+
+    @expose('/search')
+    def search(self, request):
+        return self._call_if_enabled('search', self._handle_search, request)
+
+    @expose('/bulk', methods=['POST'])
+    def bulk_operations(self, request):
+        return self._call_if_enabled('bulk', self._handle_bulk, request)
+
+    @expose('/selector')
+    def selector(self, request):
+        return self._call_if_enabled('selector', self._handle_selector, request)
+
+    @expose('/selector/{id}')
+    def single_selector(self, request, id):
+        return self._call_if_enabled('selector', self._handle_single_selector, request, id)
     
     def _handle_create(self, request):
         """Handle POST /{path} - Create new record"""
