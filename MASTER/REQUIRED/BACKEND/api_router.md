@@ -92,7 +92,7 @@ from flask import Flask
 from services.api_router import APIRouter
 from services.artist_service import ArtistService
 from services.album_service import AlbumService
-from services.search_service import SearchService
+ 
 
 app = Flask(__name__)
 api_router = APIRouter()
@@ -101,12 +101,7 @@ api_router = APIRouter()
 api_router.register_service('artists', ArtistService, db=db, config=config)
 api_router.register_service('albums', AlbumService, db=db, storage_path='/uploads')
 
-# Register complex service using factory
-api_router.register_service_factory('search', lambda: SearchService(
-    db=db, 
-    elasticsearch_client=es_client,
-    cache=redis_cache
-))
+# (example for complex service using factory intentionally omitted)
 
 # Register APIRouter blueprint to /api
 app.register_blueprint(api_router.blueprint, url_prefix='/api')
@@ -223,29 +218,7 @@ class AlbumService:
 
 ### **3. Complex Service with Multiple Dependencies:**
 ```python
-class SearchService:
-    def __init__(self, db, elasticsearch_client, cache):
-        self.db = db
-        self.es = elasticsearch_client
-        self.cache = cache
-    
-    @expose('/search')
-    def search(self, request):
-        query = request.args.get('q', '')
-        # Check cache first
-        cached = self.cache.get(f"search:{query}")
-        if cached:
-            return cached
-        
-        # Perform search
-        results = self.es.search(query)
-        self.cache.set(f"search:{query}", results, ttl=300)
-        return results
-    
-    @expose('/search/advanced', methods=['POST'])
-    def advanced_search(self, request):
-        filters = request.get_json()
-        return self.es.advanced_search(filters)
+# Example intentionally removed
 ```
 
 ### **4. Service Registration Examples:**
@@ -256,13 +229,7 @@ api_router.register_service('health', HealthService)
 # Service with dependencies
 api_router.register_service('artists', ArtistService, db=db, config=config)
 
-# Service with complex instantiation using factory
-api_router.register_service_factory('search', lambda: SearchService(
-    db=db,
-    elasticsearch_client=es_client,
-    cache=redis_cache,
-    config=search_config
-))
+# Service with complex instantiation using factory (example intentionally removed)
 ```
 
 ## 🎯 **BENEFITS:**
