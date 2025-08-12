@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from flask import jsonify, Request
 from sqlalchemy import or_, func as sa_func
-from types import MethodType
 
 from .. import db
 from ..decorators import expose
@@ -58,73 +57,50 @@ class CrudService:
             },
         }
 
-    def register_routes(self) -> None:
-        # Use RELATIVE paths only. APIRouter will prefix with the service name
-        base_path = ''
-        ops = self.config['operations']
+    # Explicit decorated methods; disabled ops return 405
+    def _is_enabled(self, op: str) -> bool:
+        return bool(self.config.get('operations', {}).get(op, False))
 
-        # Create dynamic, decorated, bound methods that APIRouter can discover
-        if ops.get('create'):
-            @expose('/', methods=['POST'])
-            def _route_create(this: 'CrudService', req: Request):
-                return this._handle_create(req)
+    def _call_if_enabled(self, op: str, handler, *args, **kwargs):
+        if not self._is_enabled(op):
+            return jsonify({'error': 'Operation disabled'}), 405
+        return handler(*args, **kwargs)
 
-            setattr(self, '_route_create', MethodType(_route_create, self))
+    @expose('/', methods=['POST'])
+    def create(self, req: Request):
+        return self._call_if_enabled('create', self._handle_create, req)
 
-        if ops.get('list'):
-            @expose('/', methods=['GET'])
-            def _route_list(this: 'CrudService', req: Request):
-                return this._handle_list(req)
+    @expose('/', methods=['GET'])
+    def list_all(self, req: Request):
+        return self._call_if_enabled('list', self._handle_list, req)
 
-            setattr(self, '_route_list', MethodType(_route_list, self))
+    @expose('/{id}', methods=['GET'])
+    def read_one(self, req: Request, id: int):  # noqa: A002 - id is API param name
+        return self._call_if_enabled('read', self._handle_read, req, id)
 
-        if ops.get('read'):
-            @expose('/{id}', methods=['GET'])
-            def _route_read(this: 'CrudService', req: Request, id: int):
-                return this._handle_read(req, id)
+    @expose('/{id}', methods=['PUT'])
+    def update(self, req: Request, id: int):  # noqa: A002
+        return self._call_if_enabled('update', self._handle_update, req, id)
 
-            setattr(self, '_route_read', MethodType(_route_read, self))
+    @expose('/{id}', methods=['DELETE'])
+    def delete(self, req: Request, id: int):  # noqa: A002
+        return self._call_if_enabled('delete', self._handle_delete, req, id)
 
-        if ops.get('update'):
-            @expose('/{id}', methods=['PUT'])
-            def _route_update(this: 'CrudService', req: Request, id: int):
-                return this._handle_update(req, id)
+    @expose('/search', methods=['GET'])
+    def search(self, req: Request):
+        return self._call_if_enabled('search', self._handle_search, req)
 
-            setattr(self, '_route_update', MethodType(_route_update, self))
+    @expose('/bulk', methods=['POST'])
+    def bulk_operations(self, req: Request):
+        return self._call_if_enabled('bulk', self._handle_bulk, req)
 
-        if ops.get('delete'):
-            @expose('/{id}', methods=['DELETE'])
-            def _route_delete(this: 'CrudService', req: Request, id: int):
-                return this._handle_delete(req, id)
+    @expose('/selector', methods=['GET'])
+    def selector(self, req: Request):
+        return self._call_if_enabled('selector', self._handle_selector, req)
 
-            setattr(self, '_route_delete', MethodType(_route_delete, self))
-
-        if ops.get('search'):
-            @expose('/search', methods=['GET'])
-            def _route_search(this: 'CrudService', req: Request):
-                return this._handle_search(req)
-
-            setattr(self, '_route_search', MethodType(_route_search, self))
-
-        if ops.get('bulk'):
-            @expose('/bulk', methods=['POST'])
-            def _route_bulk(this: 'CrudService', req: Request):
-                return this._handle_bulk(req)
-
-            setattr(self, '_route_bulk', MethodType(_route_bulk, self))
-
-        if ops.get('selector'):
-            @expose('/selector', methods=['GET'])
-            def _route_selector(this: 'CrudService', req: Request):
-                return this._handle_selector(req)
-
-            setattr(self, '_route_selector', MethodType(_route_selector, self))
-
-            @expose('/selector/{id}', methods=['GET'])
-            def _route_single_selector(this: 'CrudService', req: Request, id: int):
-                return this._handle_single_selector(req, id)
-
-            setattr(self, '_route_single_selector', MethodType(_route_single_selector, self))
+    @expose('/selector/{id}', methods=['GET'])
+    def single_selector(self, req: Request, id: int):  # noqa: A002
+        return self._call_if_enabled('selector', self._handle_single_selector, req, id)
 
     # Handlers
     def _handle_create(self, req: Request):

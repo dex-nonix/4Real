@@ -25,5 +25,4 @@ class AIAnalysisResultService(CrudService):
             },
         }
         super().__init__(AIAnalysisResult, config)
-        self.register_routes()
 

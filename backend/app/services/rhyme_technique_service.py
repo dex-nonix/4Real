@@ -25,5 +25,4 @@ class RhymeTechniqueService(CrudService):
             },
         }
         super().__init__(RhymeTechnique, config)
-        self.register_routes()
 

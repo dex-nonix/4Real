@@ -25,5 +25,4 @@ class AIProviderService(CrudService):
             },
         }
         super().__init__(AIProvider, config)
-        self.register_routes()
 

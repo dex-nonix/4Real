@@ -26,5 +26,4 @@ class ArtistService(CrudService):
             },
         }
         super().__init__(Artist, config)
-        self.register_routes()
 

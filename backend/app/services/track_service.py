@@ -25,5 +25,4 @@ class TrackService(CrudService):
             },
         }
         super().__init__(Track, config)
-        self.register_routes()
 

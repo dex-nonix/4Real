@@ -25,5 +25,4 @@ class AIModelMappingService(CrudService):
             },
         }
         super().__init__(AIModelMapping, config)
-        self.register_routes()
 

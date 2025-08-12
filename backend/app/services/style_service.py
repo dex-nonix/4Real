@@ -25,5 +25,4 @@ class StyleService(CrudService):
             },
         }
         super().__init__(Style, config)
-        self.register_routes()
 

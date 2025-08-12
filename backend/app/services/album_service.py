@@ -25,5 +25,4 @@ class AlbumService(CrudService):
             },
         }
         super().__init__(Album, config)
-        self.register_routes()
 
