@@ -122,13 +122,6 @@ RhymeTechniqueArtist (id, rhyme_technique_id, artist, weight)
 - ✅ **Image Management**: Handle cover art and artist photos
 - ✅ **Search & Filter**: Find music by various criteria
 
-### **Google AI-Powered Features** 🤖
-- ✅ **Lyrics Analysis**: Sentiment, themes, cultural references using Google AI
-- ✅ **Style Classification**: Auto-tagging based on content with AI
-- ✅ **Content Generation**: Help with descriptions and bios
-- ✅ **Metadata Enhancement**: Improve existing data with AI insights
-- ✅ **Intelligent Search**: AI-powered semantic understanding
-- ✅ **Content Recommendations**: AI-suggested music connections
 
 ### **Runtime AI Management** ⚡
 - ✅ **Hot-Swappable Providers**: Switch between Google AI services instantly
