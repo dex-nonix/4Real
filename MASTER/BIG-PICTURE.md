@@ -10,7 +10,7 @@
 ## ✅ **WHAT WE WANT (REQUIREMENTS):**
 
 ### **🏗️ Architecture:**
-- **Backend**: Flask (straightforward, no fancy crap)
+- **Backend**: Flask + APIRouter + CrudService (straightforward, no fancy crap)
 - **Frontend**: Vue + PrimeVue (normal, working components)
 - **Database**: SQLAlchemy (professional ORM)
 - **AI**: LangChain (not Google-only, multiple providers)
@@ -29,16 +29,17 @@
 - **Flexibility**: Easy to extend with new entities and relationships
 
 ### **🔧 Technical Stack:**
-- **Backend**: Flask + SQLAlchemy + LangChain
+- **Backend**: Flask + SQLAlchemy + LangChain + APIRouter + CrudService
 - **Frontend**: Vue 3 + PrimeVue
 - **Database**: PostgreSQL/MySQL (flexible, production-ready)
 - **AI**: LangChain with Google + OpenAI providers
-- **API**: RESTful endpoints for all CRUD operations
+- **API**: Auto-generated REST endpoints via decorators and configuration
 
 ### **🎵 Core Functionality:**
 - **Music Management**: Artists, albums, tracks with metadata
 - **AI Analysis**: Lyrics analysis, style classification, content generation
-- **Generic CRUD**: Reusable operations for all entities
+- **Generic CRUD**: Configuration-driven CRUD via CrudService
+- **API Routing**: Auto-registration via APIRouter and @expose decorators
 - **Provider Management**: Hot-swappable AI providers via UI
 - **Data Import/Export**: XML, JSON, CSV support
 
@@ -48,9 +49,11 @@
 ├── backend/                    # Flask application
 │   ├── app/                   # Main Flask app
 │   ├── models/                # SQLAlchemy models
-│   ├── services/              # Business logic
+│   ├── services/              # Business logic + APIRouter
 │   ├── ai/                    # LangChain integration
-│   └── api/                   # REST endpoints
+│   └── MASTER/REQUIRED/BACKEND/  # Backend architecture docs
+│       ├── api_router.md      # Generic service router
+│       └── api_crud_service.md # Configuration-driven CRUD
 ├── frontend/                  # Vue application
 │   ├── src/                   # Vue source code
 │   ├── components/            # PrimeVue components
@@ -67,11 +70,11 @@
 - **Professional**: Production-ready architecture from start
 
 ### **🚀 Priority Order:**
-1. **Core Backend**: Flask + SQLAlchemy + basic models
+1. **Core Backend**: Flask + SQLAlchemy + APIRouter + CrudService + basic models
 2. **AI Foundation**: LangChain + Google + OpenAI providers
 3. **Frontend**: Vue + PrimeVue basic interface
 4. **AI Integration**: Provider management and analysis features
-5. **Advanced Features**: Generic CRUD, data import/export
+5. **Advanced Features**: Configuration-driven CRUD, data import/export
 
 ### **💡 Key Principles:**
 - **Simple**: No unnecessary complexity
@@ -79,6 +82,54 @@
 - **Extensible**: Easy to add new AI providers and features
 - **Professional**: Enterprise-grade architecture
 - **Fast**: Quick development and deployment
+
+---
+
+## 🏗️ **BACKEND ARCHITECTURE:**
+
+### **🚀 APIRouter System:**
+- **Generic service router** - auto-registers any service with @expose decorators
+- **Blueprint-based** - clean Flask integration
+- **Dependency injection** - supports services with constructors
+- **Factory support** - complex service instantiation when needed
+- **Auto-route creation** - no manual endpoint definition
+
+### **🔧 CrudService System:**
+- **Configuration-driven CRUD** - JSON config defines operations
+- **Automatic endpoints** - create, read, update, delete, search, bulk, selector
+- **Advanced features** - filtering, pagination, sorting, validation
+- **Selector optimization** - lightweight responses for dropdowns/selects
+- **Inheritance-based** - extend for custom behavior
+
+### **📁 Backend File Structure:**
+```
+backend/
+├── app/
+│   ├── __init__.py
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── api_router.py        # Generic service router
+│   │   ├── crud_service.py      # Configuration-driven CRUD
+│   │   ├── artist_service.py    # Artist service with config
+│   │   └── album_service.py     # Album service with config
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── artist.py            # Artist model
+│   │   └── album.py             # Album model
+│   └── decorators.py            # @expose decorator
+├── MASTER/REQUIRED/BACKEND/     # Backend architecture docs
+│   ├── api_router.md            # Generic service router
+│   └── api_crud_service.md      # Configuration-driven CRUD
+├── config.py                     # Configuration
+└── requirements.txt              # Dependencies
+```
+
+### **🎯 Backend Benefits:**
+- **No manual routing** - decorators auto-create endpoints
+- **Configuration-driven** - JSON config drives CRUD behavior
+- **Dependency support** - services get what they need
+- **Generic approach** - works with any entity type
+- **Production-ready** - enterprise-grade architecture
 
 ---
 
@@ -114,12 +165,11 @@
 - **Flexible Layouts** - vertical (forms), horizontal (filters), compact (inline)
 
 ### **🔌 BACKEND API STRUCTURE:**
-- **Simple REST API** - straightforward endpoints
-- **Service Layer** - normalized services (classes) for reuse
-- **Base Service Classes** - inheritance hierarchy for common functionality
-- **API Service** - base class for all API operations
-- **CRUD Service** - inherits from API Service
-- **Less Code** - reuse instead of reinvention
+- **APIRouter** - Generic service router with auto-registration
+- **CrudService** - Configuration-driven CRUD operations
+- **Decorator-based routing** - @expose decorators mark API methods
+- **Automatic route creation** - no manual endpoint definition
+- **Service instantiation support** - handles dependencies and factories
 
 ### **📁 FRONTEND FILE STRUCTURE:**
 ```
