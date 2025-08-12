@@ -1,37 +1,37 @@
 // components/forms/form-widgets.js
-import TextInput from '@/components/inputs/TextInput.vue'
-import SelectInput from '@/components/inputs/SelectInput.vue'
-import MultiSelect from '@/components/inputs/MultiSelect.vue'
-import Autocomplete from '@/components/inputs/Autocomplete.vue'
-import Slider from '@/components/inputs/Slider.vue'
-import DateInput from '@/components/inputs/DateInput.vue'
-import FileUpload from '@/components/inputs/FileUpload.vue'
-import JsonEditor from '@/components/inputs/JsonEditor.vue'
+import { InputText } from 'primevue/inputtext'
+import { Dropdown } from 'primevue/dropdown'
+import { MultiSelect } from 'primevue/multiselect'
+import { AutoComplete } from 'primevue/autocomplete'
+import { Slider } from 'primevue/slider'
+import { Calendar } from 'primevue/calendar'
+import { FileUpload } from 'primevue/fileupload'
+import { Editor } from 'primevue/editor'
 
 export const FORM_WIDGETS = {
   'text': {
-    component: TextInput,             // Actual Vue component import
+    component: InputText,             // PrimeVue InputText component
     defaultProps: { 
       placeholder: 'Enter text',
       class: 'w-full'
     }
   },
   'select': {
-    component: SelectInput,           // Actual Vue component import
+    component: Dropdown,              // PrimeVue Dropdown component
     defaultProps: { 
       placeholder: 'Select option',
       class: 'w-full'
     }
   },
   'multi_select': {
-    component: MultiSelect,           // Actual Vue component import
+    component: MultiSelect,           // PrimeVue MultiSelect component
     defaultProps: { 
       placeholder: 'Select options',
       class: 'w-full'
     }
   },
   'autocomplete': {
-    component: Autocomplete,          // Actual Vue component import
+    component: AutoComplete,          // PrimeVue AutoComplete component
     defaultProps: { 
       placeholder: 'Type to search',
       minLength: 2,
@@ -39,7 +39,7 @@ export const FORM_WIDGETS = {
     }
   },
   'slider': {
-    component: Slider,                // Actual Vue component import
+    component: Slider,                // PrimeVue Slider component
     defaultProps: { 
       min: 0,
       max: 100,
@@ -47,21 +47,21 @@ export const FORM_WIDGETS = {
     }
   },
   'date': {
-    component: DateInput,             // Actual Vue component import
+    component: Calendar,              // PrimeVue Calendar component
     defaultProps: { 
       dateFormat: 'yy-mm-dd',
       class: 'w-full'
     }
   },
   'file': {
-    component: FileUpload,            // Actual Vue component import
+    component: FileUpload,            // PrimeVue FileUpload component
     defaultProps: { 
       multiple: false,
       accept: '*'
     }
   },
   'json': {
-    component: JsonEditor,            // Actual Vue component import
+    component: Editor,                // PrimeVue Editor component
     defaultProps: { 
       height: '200px',
       readOnly: false
