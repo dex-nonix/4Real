@@ -1,0 +1,245 @@
+## Basic SPA (Vue 3 + PrimeVue) — Minimal, Reusable, Routed
+
+Goal: A minimal, working SPA baseline that proves the routing, reusable layouts, and a PrimeVue button — nothing fancy. Two routes (`/` and `/about`), each using a different layout. Also include a 404 route. This is the foundation before any widgets or CRUD.
+
+### Stack
+- **Vue 3** (Vite)
+- **Vue Router**
+- **PrimeVue** + **PrimeIcons** (minimal usage: a single Button)
+
+### Folder Layout (frontend/)
+```
+frontend/
+  ├─ index.html
+  ├─ package.json
+  ├─ vite.config.js
+  └─ src/
+     ├─ main.js
+     ├─ App.vue
+     ├─ router/
+     │  └─ index.js
+     ├─ layouts/
+     │  ├─ MasterLayout.vue      # Used by Home
+     │  └─ AltLayout.vue         # Used by About
+     └─ views/
+        ├─ Home.vue              # Route: /
+        ├─ About.vue             # Route: /about
+        └─ NotFound.vue          # Route: 404 catch-all
+```
+
+### Dependencies
+```
+vue@^3
+vue-router@^4
+primevue@^3
+primeicons@^6
+vite (dev)
+```
+
+### Create App (one-time)
+```bash
+npm create vite@latest frontend -- --template vue
+cd frontend
+npm i
+npm i primevue primeicons vue-router
+```
+
+### Minimal Files — Content
+
+index.html
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>4Real</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+  </html>
+```
+
+src/main.js
+```js
+import { createApp, h } from 'vue'
+import App from './App.vue'
+import router from './router'
+
+// PrimeVue minimal setup
+import PrimeVue from 'primevue/config'
+import 'primeicons/primeicons.css'
+// NOTE: PrimeVue components are imported locally in views to keep global minimal
+
+createApp({ render: () => h(App) })
+  .use(router)
+  .use(PrimeVue)
+  .mount('#app')
+```
+
+src/App.vue
+```vue
+<template>
+  <!-- Switch layouts by route meta -->
+  <component :is="layout">
+    <router-view />
+  </component>
+  
+  <!-- Simple nav for demo -->
+  <nav style="margin-top: 1rem;">
+    <router-link to="/">Home</router-link>
+    <span style="margin: 0 0.5rem;">|</span>
+    <router-link to="/about">About</router-link>
+  </nav>
+  <hr />
+  <small>Layout: {{ layoutName }}</small>
+  
+  <!-- The NotFound view also uses layouts via meta -->
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import MasterLayout from './layouts/MasterLayout.vue'
+import AltLayout from './layouts/AltLayout.vue'
+
+const route = useRoute()
+const layouts = { master: MasterLayout, alt: AltLayout }
+
+const layoutName = computed(() => route.meta.layout || 'master')
+const layout = computed(() => layouts[layoutName.value] || MasterLayout)
+</script>
+```
+
+src/router/index.js
+```js
+import { createRouter, createWebHistory } from 'vue-router'
+
+const Home = () => import('../views/Home.vue')
+const About = () => import('../views/About.vue')
+const NotFound = () => import('../views/NotFound.vue')
+
+const routes = [
+  {
+    path: '/',
+    name: 'home',
+    component: Home,
+    meta: { layout: 'master' },
+  },
+  {
+    path: '/about',
+    name: 'about',
+    component: About,
+    meta: { layout: 'alt' },
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: NotFound,
+    meta: { layout: 'alt' },
+  },
+]
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+})
+
+export default router
+```
+
+src/layouts/MasterLayout.vue
+```vue
+<template>
+  <div style="padding: 1rem; border: 2px solid #4caf50;">
+    <header><h2>Master Layout</h2></header>
+    <main>
+      <slot />
+    </main>
+  </div>
+  </template>
+```
+
+src/layouts/AltLayout.vue
+```vue
+<template>
+  <div style="padding: 1rem; border: 2px dashed #1976d2;">
+    <header><h2>Alt Layout</h2></header>
+    <main>
+      <slot />
+    </main>
+  </div>
+  </template>
+```
+
+src/views/Home.vue
+```vue
+<template>
+  <section>
+    <h1>Hello World (Home)</h1>
+    <p>This page uses the Master layout.</p>
+    <Button label="PrimeVue Button" icon="pi pi-check" />
+  </section>
+  </template>
+
+<script setup>
+import Button from 'primevue/button'
+</script>
+```
+
+src/views/About.vue
+```vue
+<template>
+  <section>
+    <h1>About</h1>
+    <p>This page uses the Alt layout.</p>
+  </section>
+  </template>
+```
+
+src/views/NotFound.vue
+```vue
+<template>
+  <section>
+    <h1>404 — Page Not Found</h1>
+    <p>The page you are looking for does not exist.</p>
+  </section>
+  </template>
+```
+
+vite.config.js (default from Vite is fine; include if needed)
+```js
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+
+export default defineConfig({
+  plugins: [vue()],
+})
+```
+
+package.json (scripts excerpt)
+```json
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  }
+}
+```
+
+### Acceptance Criteria
+- App runs with `npm run dev` and serves at the default Vite URL.
+- Visiting `/` renders Home view inside `MasterLayout` and shows a PrimeVue Button.
+- Visiting `/about` renders About view inside `AltLayout`.
+- Visiting any unknown path shows `NotFound` in a layout.
+- Nav links switch routes without reload.
+
+### Notes
+- Keep global PrimeVue config minimal. Import individual components locally until we add more widgets.
+- No styling frameworks beyond what’s essential for PrimeVue icons.
+- This doc defines only the baseline. Widgets/CRUD come later.
+
+
