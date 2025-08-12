@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
+from datetime import datetime, date
 from flask import jsonify, Request
 from sqlalchemy import or_, func as sa_func
 
@@ -168,7 +169,8 @@ class CrudService:
                     self.config['pagination']['max_page_size'],
                 )
 
-                pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+                # Flask-SQLAlchemy 3.x: use db.paginate instead of Query.paginate
+                pagination = db.paginate(query, page=page, per_page=per_page, error_out=False)
                 return jsonify({
                     'data': [self._serialize(item) for item in pagination.items],
                     'pagination': {
@@ -259,7 +261,8 @@ class CrudService:
                     int(req.args.get('per_page', self.config['pagination']['default_page_size'])),
                     self.config['pagination']['max_page_size'],
                 )
-                pagination = base_query.paginate(page=page, per_page=per_page, error_out=False)
+                # Flask-SQLAlchemy 3.x: use db.paginate instead of Query.paginate
+                pagination = db.paginate(base_query, page=page, per_page=per_page, error_out=False)
                 return jsonify({
                     'data': [self._serialize(item) for item in pagination.items],
                     'pagination': {
@@ -384,21 +387,53 @@ class CrudService:
                 if ':' in value:
                     operator, filter_value = value.split(':', 1)
                     if operator == 'eq':
-                        query = query.filter(field == filter_value)
+                        query = query.filter(field == self._coerce_value(field, filter_value))
                     elif operator == 'ne':
-                        query = query.filter(field != filter_value)
+                        query = query.filter(field != self._coerce_value(field, filter_value))
                     elif operator == 'gt':
-                        query = query.filter(field > filter_value)
+                        query = query.filter(field > self._coerce_value(field, filter_value))
                     elif operator == 'lt':
-                        query = query.filter(field < filter_value)
+                        query = query.filter(field < self._coerce_value(field, filter_value))
                     elif operator == 'like':
                         query = query.filter(field.ilike(f'%{filter_value}%'))
                     elif operator == 'in':
-                        values = [v for v in filter_value.split(',') if v]
+                        values = [self._coerce_value(field, v) for v in filter_value.split(',') if v]
                         query = query.filter(field.in_(values))
+                    elif operator == 'between':
+                        parts = [p for p in filter_value.split(',') if p]
+                        if len(parts) >= 2:
+                            low = self._coerce_value(field, parts[0])
+                            high = self._coerce_value(field, parts[1])
+                            query = query.filter(field.between(low, high))
                 else:
-                    query = query.filter(field == value)
+                    query = query.filter(field == self._coerce_value(field, value))
         return query
+
+    def _coerce_value(self, field, raw: str):  # type: ignore[no-untyped-def]
+        """Best-effort coercion of string filter values to the column's python_type."""
+        try:
+            column = field.property.columns[0]
+            py_type = getattr(column.type, 'python_type', None)
+        except Exception:  # noqa: BLE001
+            py_type = None
+
+        if py_type is None or py_type is str:
+            return raw
+
+        # Datetime/date handling
+        try:
+            if py_type is datetime:
+                return datetime.fromisoformat(raw)
+            if py_type is date:
+                return date.fromisoformat(raw)
+        except Exception:  # noqa: BLE001
+            pass
+
+        # Generic cast
+        try:
+            return py_type(raw)  # type: ignore[call-arg]
+        except Exception:  # noqa: BLE001
+            return raw
 
     def _apply_sorting(self, query, args):  # type: ignore[no-untyped-def]
         sort_field = args.get('sort', self.config['sorting']['default_sort'])

@@ -19,15 +19,27 @@ def create_app() -> Flask:
     api_router = APIRouter()
 
     with app.app_context():
-        # Import models so they are registered with SQLAlchemy
-        from .models.artist import Artist  # noqa: F401
-
-        # Create tables on startup for MVP
-        db.create_all()
-
-        # Register services (no dependencies needed for MVP)
+        # Register services with the APIRouter
         from .services.artist_service import ArtistService
+        from .services.album_service import AlbumService
+        from .services.track_service import TrackService
+        from .services.style_service import StyleService
+        from .services.rhyme_technique_service import RhymeTechniqueService
+        from .services.ai_provider_service import AIProviderService
+        from .services.ai_model_mapping_service import AIModelMappingService
+        from .services.ai_analysis_result_service import AIAnalysisResultService
+
         api_router.register_service('artists', ArtistService)
+        api_router.register_service('albums', AlbumService)
+        api_router.register_service('tracks', TrackService)
+        api_router.register_service('styles', StyleService)
+        api_router.register_service('rhyme-techniques', RhymeTechniqueService)
+        api_router.register_service('ai-providers', AIProviderService)
+        api_router.register_service('ai-model-mappings', AIModelMappingService)
+        api_router.register_service('ai-analysis-results', AIAnalysisResultService)
+
+        # Create tables on startup for MVP (after router setup)
+        db.create_all()
 
     app.register_blueprint(api_router.blueprint, url_prefix='/api')
     return app
