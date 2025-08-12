@@ -23,16 +23,20 @@ class CrudService:
     """Generic CRUD service that handles ALL operations automatically"""
     
     def __init__(self, db_session=None, model_class=None, config=None):
-        # Optional args; if not provided, use existing attributes or defaults
+        # Optional args; use existing attributes if not provided
         if model_class is not None:
             self.model = model_class
         elif not hasattr(self, 'model'):
             raise ValueError('model is required')
 
+        # Config must exist (passed or defined on subclass). No generic fallback
         if config is not None:
             self.config = config
         elif not hasattr(self, 'config'):
-            self.config = self._get_default_config()
+            raise ValueError('config is required')
+
+        # Fill only missing keys from defaults
+        self.config = self._apply_default_config_values(self.config)
     
     def _get_default_config(self):
         """Default CRUD configuration"""
@@ -76,6 +80,22 @@ class CrudService:
                 'order_by': 'name'         # How to order selector items
             }
         }
+    
+    def _apply_default_config_values(self, provided_config):
+        """Fill only missing keys from defaults; do not create a config when absent."""
+        defaults = self._get_default_config()
+
+        def merge(dst, src_defaults):
+            for key, def_value in src_defaults.items():
+                if key not in dst:
+                    dst[key] = def_value
+                else:
+                    cur_value = dst[key]
+                    if isinstance(cur_value, dict) and isinstance(def_value, dict):
+                        dst[key] = merge(cur_value, def_value)
+            return dst
+
+        return merge(dict(provided_config), defaults)
     
     # Explicit decorated methods; disabled ops return 405
     def _is_enabled(self, op: str) -> bool:

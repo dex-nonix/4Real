@@ -83,7 +83,7 @@ class APIRouter:
 ```
 
 Note:
-- Services may be instantiated without arguments if they define class attributes like `model` and `config` on the subclass. The parent service constructor can use those when explicit constructor arguments are not provided.
+- Services may be instantiated without arguments if they define class attributes like `model` and `config` on the subclass. The parent requires a `config` to exist (either passed or on the subclass) and will only fill missing keys from defaults; it does not create a generic config when absent.
 
 ### **3. Flask App Integration:**
 ```python
