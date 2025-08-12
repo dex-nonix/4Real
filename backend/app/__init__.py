@@ -11,7 +11,9 @@ def create_app() -> Flask:
     # Load .env before creating the app (no-op if missing)
     load_dotenv()
     app = Flask(__name__)
-    app.config.from_object('backend.config.Config')
+    # When running via python backend/cli.py, the working module root is backend/.
+    # So import config as a top-level module within that root.
+    app.config.from_object('config.Config')
 
     # Extensions
     CORS(app)
