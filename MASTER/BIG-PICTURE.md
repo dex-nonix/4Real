@@ -10,17 +10,13 @@
 ## ✅ **WHAT WE WANT (REQUIREMENTS):**
 
 ### **🏗️ Architecture:**
-- **Backend**: Flask + APIRouter + CrudService (straightforward, no fancy crap)
+- **Backend**: Flask + SQLAlchemy + APIRouter + CrudService (straightforward)
 - **Frontend**: Vue + PrimeVue (normal, working components)
-- **Database**: SQLAlchemy (professional ORM)
-- **AI**: LangChain (not Google-only, multiple providers)
+- **Database**: SQLAlchemy ORM (SQLite dev, Postgres/MySQL prod)
+- **AI (later phase)**: Optional providers added after CRUD + frontend are stable
 
-### **🤖 AI Requirements:**
-- **Primary**: Google AI (Gemini, Vertex AI)
-- **Secondary**: OpenAI (GPT models)
-- **Framework**: LangChain (generic, extensible)
-- **System**: Generic model mapper with dynamic provider assignment
-- **Database**: Store AI provider configurations and mappings
+### **🤖 AI Requirements (deferred):**
+- Placeholder for future phase. Core CRUD and frontend come first.
 
 ### **📊 Database Structure:**
 - **Core Entities**: Artist, Album, Track, Style, RhymeTechnique
@@ -29,19 +25,17 @@
 - **Flexibility**: Easy to extend with new entities and relationships
 
 ### **🔧 Technical Stack:**
-- **Backend**: Flask + SQLAlchemy + LangChain + APIRouter + CrudService
+- **Backend**: Flask + SQLAlchemy + APIRouter + CrudService
 - **Frontend**: Vue 3 + PrimeVue
-- **Database**: PostgreSQL/MySQL (flexible, production-ready)
-- **AI**: LangChain with Google + OpenAI providers
+- **Database**: SQLite for dev; PostgreSQL/MySQL for prod
 - **API**: Auto-generated REST endpoints via decorators and configuration; services can be instantiated without constructor args when subclasses provide class attributes like `model` and `config`. The parent requires `config` to exist (passed or class attribute) and only fills missing keys from defaults.
 
 ### **🎵 Core Functionality:**
 - **Music Management**: Artists, albums, tracks with metadata
-- **AI Analysis**: Lyrics analysis, style classification, content generation
 - **Generic CRUD**: Configuration-driven CRUD via CrudService
 - **API Routing**: Auto-registration via APIRouter and @expose decorators
-- **Provider Management**: Hot-swappable AI providers via UI
-- **Data Import/Export**: XML, JSON, CSV support
+- **Data Import/Export**: XML, JSON, CSV support (later)
+- **AI/Providers**: Future phase (not in scope for initial build)
 
 ### **📁 File Structure:**
 ```
@@ -50,10 +44,12 @@
 │   ├── app/                   # Main Flask app
 │   ├── models/                # SQLAlchemy models
 │   ├── services/              # Business logic + APIRouter
-│   ├── ai/                    # LangChain integration
 │   └── MASTER/REQUIRED/BACKEND/  # Backend architecture docs
 │       ├── api_router.md      # Generic service router
 │       └── api_crud_service.md # Configuration-driven CRUD
+│   ├── wsgi.py                # WSGI entrypoint (app = create_app())
+│   ├── cli.py                 # Minimal CLI (init-db, run)
+│   ├── requirements.txt       # Backend dependencies
 ├── frontend/                  # Vue application
 │   ├── src/                   # Vue source code
 │   ├── components/            # PrimeVue components
@@ -61,6 +57,8 @@
 ├── database/                  # Database files
 ├── config/                    # Configuration files
 └── docs/                      # Documentation
+├── start_dev.sh               # Start dev server (no install)
+├── install.sh                 # One-time setup: venv + deps + init DB
 ```
 
 ### **🎯 Development Approach:**
@@ -70,11 +68,10 @@
 - **Professional**: Production-ready architecture from start
 
 ### **🚀 Priority Order:**
-1. **Core Backend**: Flask + SQLAlchemy + APIRouter + CrudService + basic models
-2. **AI Foundation**: LangChain + Google + OpenAI providers
-3. **Frontend**: Vue + PrimeVue basic interface
-4. **AI Integration**: Provider management and analysis features
-5. **Advanced Features**: Configuration-driven CRUD, data import/export
+1. **Core Backend + Runtime**: Flask + SQLAlchemy + APIRouter + CrudService + basic models + WSGI + CLI + scripts
+2. **Frontend**: Vue + PrimeVue basic interface using the CRUD API
+3. **Advanced CRUD**: M:N relation endpoints (Track↔Style/RhymeTechnique), import/export
+4. **AI (Later Phase)**: Providers, model mappings, analysis features
 
 ### **💡 Key Principles:**
 - **Simple**: No unnecessary complexity
