@@ -22,10 +22,17 @@ from decorators import expose
 class CrudService:
     """Generic CRUD service that handles ALL operations automatically"""
     
-    def __init__(self, db_session, model_class, config=None):
-        self.db = db_session
-        self.model = model_class
-        self.config = config or self._get_default_config()
+    def __init__(self, db_session=None, model_class=None, config=None):
+        # Optional args; if not provided, use existing attributes or defaults
+        if model_class is not None:
+            self.model = model_class
+        elif not hasattr(self, 'model'):
+            raise ValueError('model is required')
+
+        if config is not None:
+            self.config = config
+        elif not hasattr(self, 'config'):
+            self.config = self._get_default_config()
     
     def _get_default_config(self):
         """Default CRUD configuration"""
@@ -580,6 +587,9 @@ class CrudService:
             result[column.name] = getattr(instance, column.name)
         return result
 ```
+
+Note:
+- Subclasses can declare `model` and `config` as class attributes and skip `__init__` entirely. Passing constructor arguments overrides those attributes.
 
 ### **2. Entity Service Implementation:**
 ```python

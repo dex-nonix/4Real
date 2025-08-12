@@ -82,6 +82,9 @@ class APIRouter:
         return self.registered_services.get(service_name)
 ```
 
+Note:
+- Services may be instantiated without arguments if they define class attributes like `model` and `config` on the subclass. The parent service constructor can use those when explicit constructor arguments are not provided.
+
 ### **3. Flask App Integration:**
 ```python
 # app.py

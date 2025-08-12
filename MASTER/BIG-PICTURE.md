@@ -33,7 +33,7 @@
 - **Frontend**: Vue 3 + PrimeVue
 - **Database**: PostgreSQL/MySQL (flexible, production-ready)
 - **AI**: LangChain with Google + OpenAI providers
-- **API**: Auto-generated REST endpoints via decorators and configuration
+- **API**: Auto-generated REST endpoints via decorators and configuration; services can be instantiated without constructor args when subclasses provide class attributes like `model` and `config` (the parent uses these by default)
 
 ### **🎵 Core Functionality:**
 - **Music Management**: Artists, albums, tracks with metadata
