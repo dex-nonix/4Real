@@ -179,11 +179,15 @@ src/
 │   └── MasterLayout.vue   # Main layout component
 ├── components/             # Reusable components
 │   ├── forms/              # Form system components
-│   │   └── DynamicForm.vue    # Generic form (forms, filters, search)
+│   │   ├── DynamicForm.vue        # Generic form (forms, filters, search)
+│   │   ├── FormWidgetManager.js   # Form widget manager (INSIDE forms folder!)
+│   │   └── form-widgets.js        # Form widget registry
 │   ├── tables/              # Table system components
-│   │   └── DynamicTable.vue   # Generic table (works everywhere!)
+│   │   ├── DynamicTable.vue       # Generic table (works everywhere!)
+│   │   ├── TableCellWidgetManager.js # Table widget manager (INSIDE tables folder!)
+│   │   └── table-widgets.js       # Table widget registry
 │   ├── crud/               # CRUD system components
-│   │   └── CrudManager.vue    # Complete CRUD component
+│   │   └── CrudManager.vue        # Complete CRUD component
 │   ├── inputs/              # ALL form input widgets
 │   │   ├── TextInput.vue      # Text input
 │   │   ├── SelectInput.vue    # Select/dropdown
@@ -214,7 +218,7 @@ src/
 ### **🎯 CRUD SYSTEM DESIGN:**
 - **Generic Components** - work with any entity type
 - **Dynamic Configuration** - forms/tables adapt to data models
-- **Widget Manager System** - simple, unified widget management
+- **Widget Manager System** - simple, unified widget management with registry (see [Widget Manager System](#-widget-manager-system) below)
 - **Relationship Handling** - FK references, inline editing
 - **No Hardcoding** - everything configurable via data
 
@@ -224,6 +228,169 @@ src/
 - **Entity Services** - extend CrudService for specific entities
 - **Reusable** - same service pattern across all entities
 - **Simple** - no enterprise complexity, just what's needed
+
+---
+
+## 🧩 **WIDGET MANAGER SYSTEM:**
+
+### **🎯 Core Concept:**
+**ONE generic base class that handles different widget maps for different contexts (forms, table cells, etc.)**
+
+### **🏗️ Widget Manager Architecture:**
+
+#### **1. BaseWidgetManager (Generic Base Class)**
+```javascript
+// BaseWidgetManager.js - Generic base class!
+class BaseWidgetManager {
+  constructor(widgetMap = {}) {
+    this.widgets = widgetMap
+  }
+
+  // Get widget with resolved props
+  getWidget(type, userProps = {}) {
+    const widget = this.widgets[type]
+    if (!widget) return this.getDefaultWidget() // fallback
+    
+    return {
+      component: widget.component,
+      props: { ...widget.defaultProps, ...userProps }
+    }
+  }
+
+  // Register new widget
+  registerWidget(type, component, defaultProps = {}) {
+    this.widgets[type] = { component, defaultProps }
+  }
+
+  // Get available widget types
+  getAvailableTypes() {
+    return Object.keys(this.widgets)
+  }
+
+  // Abstract method - subclasses must implement
+  getDefaultWidget() {
+    throw new Error('Subclasses must implement getDefaultWidget()')
+  }
+}
+```
+
+#### **2. Specific Widget Managers (Extend Base Class)**
+```javascript
+// FormWidgetManager - for form inputs!
+import { FORM_WIDGETS } from './form-widgets.js'
+
+class FormWidgetManager extends BaseWidgetManager {
+  constructor() {
+    super(FORM_WIDGETS) // Pass the imported mapping!
+  }
+
+  getDefaultWidget() {
+    return { component: 'InputText', props: { placeholder: 'Enter text' } }
+  }
+}
+
+// TableCellWidgetManager - for table cell rendering!
+import { TABLE_WIDGETS } from './table-widgets.js'
+
+class TableCellWidgetManager extends BaseWidgetManager {
+  constructor() {
+    super(TABLE_WIDGETS) // Pass the imported mapping!
+  }
+
+  getDefaultWidget() {
+    return { component: 'span', props: { class: 'text-sm' } }
+  }
+}
+```
+
+#### **3. Widget Registry Files**
+```javascript
+// form-widgets.js - Form widget mappings
+import TextInput from '@/components/inputs/TextInput.vue'
+import SelectInput from '@/components/inputs/SelectInput.vue'
+import MultiSelect from '@/components/inputs/MultiSelect.vue'
+
+export const FORM_WIDGETS = {
+  'text': {
+    component: TextInput,             // Actual Vue component import
+    defaultProps: { 
+      placeholder: 'Enter text',
+      class: 'w-full'
+    }
+  },
+  'select': {
+    component: SelectInput,           // Actual Vue component import
+    defaultProps: { 
+      placeholder: 'Select option',
+      class: 'w-full'
+    }
+  }
+}
+
+// table-widgets.js - Table widget mappings
+import { Tag } from 'primevue/tag'
+import { Button } from 'primevue/button'
+
+export const TABLE_WIDGETS = {
+  'status': {
+    component: Tag,                   // Actual PrimeVue component import
+    defaultProps: { 
+      severity: 'info'
+    }
+  },
+  'actions': {
+    component: Button,                // Actual PrimeVue component import
+    defaultProps: { 
+      size: 'small',
+      severity: 'secondary'
+    }
+  }
+}
+```
+
+### **🔧 How Renderer Components Use Widget Managers:**
+
+#### **1. DynamicForm.vue Uses FormWidgetManager:**
+```javascript
+// In DynamicForm.vue
+import { FormWidgetManager } from './FormWidgetManager.js'
+
+const formManager = new FormWidgetManager()
+
+// Get widget with user props
+const { component, props } = formManager.getWidget('multi_select', { 
+  options: [], 
+  placeholder: 'Choose albums' 
+})
+
+// User props override defaults
+// Default: { placeholder: 'Select options', class: 'w-full' }
+// Result: { placeholder: 'Choose albums', class: 'w-full', options: [] }
+```
+
+#### **2. DynamicTable.vue Uses TableCellWidgetManager:**
+```javascript
+// In DynamicTable.vue
+import { TableCellWidgetManager } from './TableCellWidgetManager.js'
+
+const tableManager = new TableCellWidgetManager()
+
+// Get cell widget
+const { component, props } = tableManager.getWidget('date', { 
+  format: 'MM/DD/YYYY' 
+})
+
+// User format overrides default
+// Default: { class: 'text-sm text-gray-600' }
+// Result: { class: 'text-sm text-gray-600', format: 'MM/DD/YYYY' }
+```
+
+### **🎯 Widget Manager Benefits:**
+- **✅ DRY Architecture** - One base class handles all widget management logic
+- **✅ Clean Separation** - Widget mappings in separate config files
+- **✅ Flexible Configuration** - Default props + user props override system
+- **✅ Extensible System** - Easy to add new widget types and contexts
+- **✅ Co-located** - Managers live with their renderer components
 
 ---
 
@@ -474,7 +641,13 @@ export default {
 src/
 ├── components/                     # All components
 │   ├── forms/                      # Form components
+│   │   ├── DynamicForm.vue         # Form renderer
+│   │   ├── FormWidgetManager.js    # Form widget manager
+│   │   └── form-widgets.js         # Form widget registry
 │   ├── tables/                     # Table components
+│   │   ├── DynamicTable.vue        # Table renderer
+│   │   ├── TableCellWidgetManager.js # Table widget manager
+│   │   └── table-widgets.js        # Table widget registry
 │   ├── crud/                       # CRUD component
 │   │   └── CrudManager.vue         # ONE ARGUMENT - config!
 │   ├── inputs/                     # Input widgets

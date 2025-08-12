@@ -44,30 +44,39 @@ class BaseWidgetManager {
 ### **2. Widget Mappings (Separate Config Files)**
 ```javascript
 // widget-mappings/form-widgets.js
+import TextInput from '@/components/inputs/TextInput.vue'
+import SelectInput from '@/components/inputs/SelectInput.vue'
+import MultiSelect from '@/components/inputs/MultiSelect.vue'
+import Autocomplete from '@/components/inputs/Autocomplete.vue'
+import Slider from '@/components/inputs/Slider.vue'
+import DateInput from '@/components/inputs/DateInput.vue'
+import FileUpload from '@/components/inputs/FileUpload.vue'
+import JsonEditor from '@/components/inputs/JsonEditor.vue'
+
 export const FORM_WIDGETS = {
   'text': {
-    component: 'InputText',           // PrimeVue component
+    component: TextInput,             // Actual Vue component import
     defaultProps: { 
       placeholder: 'Enter text',
       class: 'w-full'
     }
   },
   'select': {
-    component: 'Dropdown',            // PrimeVue component
+    component: SelectInput,           // Actual Vue component import
     defaultProps: { 
       placeholder: 'Select option',
       class: 'w-full'
     }
   },
   'multi_select': {
-    component: 'MultiSelect',         // PrimeVue component
+    component: MultiSelect,           // Actual Vue component import
     defaultProps: { 
       placeholder: 'Select options',
       class: 'w-full'
     }
   },
   'autocomplete': {
-    component: 'AutoComplete',        // PrimeVue component
+    component: Autocomplete,          // Actual Vue component import
     defaultProps: { 
       placeholder: 'Type to search',
       minLength: 2,
@@ -75,7 +84,7 @@ export const FORM_WIDGETS = {
     }
   },
   'slider': {
-    component: 'Slider',              // PrimeVue component
+    component: Slider,                // Actual Vue component import
     defaultProps: { 
       min: 0,
       max: 100,
@@ -83,21 +92,21 @@ export const FORM_WIDGETS = {
     }
   },
   'date': {
-    component: 'Calendar',            // PrimeVue component
+    component: DateInput,             // Actual Vue component import
     defaultProps: { 
       dateFormat: 'yy-mm-dd',
       class: 'w-full'
     }
   },
   'file': {
-    component: 'FileUpload',          // PrimeVue component
+    component: FileUpload,            // Actual Vue component import
     defaultProps: { 
       multiple: false,
       accept: '*'
     }
   },
   'json': {
-    component: 'Editor',              // PrimeVue component
+    component: JsonEditor,            // Actual Vue component import
     defaultProps: { 
       height: '200px',
       readOnly: false
@@ -106,47 +115,51 @@ export const FORM_WIDGETS = {
 }
 
 // widget-mappings/table-widgets.js  
+import { Tag } from 'primevue/tag'
+import { Button } from 'primevue/button'
+import { Avatar } from 'primevue/avatar'
+
 export const TABLE_WIDGETS = {
   'text': {
-    component: 'span',                // Simple span for text
+    component: 'span',                // Simple span for text (HTML element)
     defaultProps: { 
       class: 'text-sm'
     }
   },
   'number': {
-    component: 'span',                // Formatted number display
+    component: 'span',                // Formatted number display (HTML element)
     defaultProps: { 
       class: 'text-sm font-mono'
     }
   },
   'date': {
-    component: 'span',                // Formatted date display
+    component: 'span',                // Formatted date display (HTML element)
     defaultProps: { 
       class: 'text-sm text-gray-600'
     }
   },
   'status': {
-    component: 'Tag',                 // PrimeVue Tag component
+    component: Tag,                   // PrimeVue Tag component import
     defaultProps: { 
       severity: 'info'
     }
   },
   'actions': {
-    component: 'Button',              // PrimeVue Button
+    component: Button,                // PrimeVue Button component import
     defaultProps: { 
       size: 'small',
       severity: 'secondary'
     }
   },
   'image': {
-    component: 'Avatar',              // PrimeVue Avatar
+    component: Avatar,                // PrimeVue Avatar component import
     defaultProps: { 
       size: 'normal',
       shape: 'circle'
     }
   },
   'boolean': {
-    component: 'i',                   // Icon for boolean values
+    component: 'i',                   // Icon for boolean values (HTML element)
     defaultProps: { 
       class: 'pi',
       style: 'font-size: 1.2rem;'
@@ -189,7 +202,7 @@ class TableCellWidgetManager extends BaseWidgetManager {
 ### **1. Form Widgets (DynamicForm.vue)**
 ```javascript
 // In DynamicForm.vue
-import { FormWidgetManager } from '@/widgets/FormWidgetManager.js'
+import { FormWidgetManager } from '@/components/forms/FormWidgetManager.js'
 
 const formManager = new FormWidgetManager()
 
@@ -207,7 +220,7 @@ const { component, props } = formManager.getWidget('multi_select', {
 ### **2. Table Cell Widgets (DynamicTable.vue)**
 ```javascript
 // In DynamicTable.vue
-import { TableCellWidgetManager } from '@/widgets/TableCellWidgetManager.js'
+import { TableCellWidgetManager } from '@/components/tables/TableCellWidgetManager.js'
 
 const tableManager = new TableCellWidgetManager()
 
@@ -223,21 +236,24 @@ const { component, props } = tableManager.getWidget('date', {
 
 ## 📁 **FILE STRUCTURE:**
 ```
-frontend/src/
-├── widgets/
-│   ├── BaseWidgetManager.js           # Generic base class
-│   ├── FormWidgetManager.js           # Form-specific manager
-│   ├── TableCellWidgetManager.js      # Table-specific manager
-│   └── widget-mappings/               # Widget configuration files
-│       ├── form-widgets.js            # Form widget mappings
-│       ├── table-widgets.js           # Table widget mappings
-│       └── dashboard-widgets.js       # Dashboard widget mappings (future)
-├── components/
-│   ├── core/
-│   │   ├── DynamicForm.vue            # Uses FormWidgetManager
-│   │   └── DynamicTable.vue           # Uses TableCellWidgetManager
-│   └── crud/
-│       └── CrudManager.vue            # Uses both managers
+src/
+├── components/                     # All components
+│   ├── forms/                      # Form components
+│   │   ├── DynamicForm.vue         # Form renderer
+│   │   ├── FormWidgetManager.js    # Form widget manager (INSIDE forms folder!)
+│   │   └── form-widgets.js         # Form widget registry
+│   ├── tables/                     # Table components
+│   │   ├── DynamicTable.vue        # Table renderer
+│   │   ├── TableCellWidgetManager.js # Table widget manager (INSIDE tables folder!)
+│   │   └── table-widgets.js        # Table widget registry
+│   ├── crud/                       # CRUD operations
+│   │   └── CrudManager.vue         # Complete CRUD component
+│   ├── inputs/                     # Input widgets
+│   ├── actions/                    # Action components
+│   └── dialogs/                    # Dialog components
+├── views/                           # Page views
+├── services/                        # API services
+└── utils/                           # Utility functions
 ```
 
 ## 🎯 **KEY BENEFITS:**
