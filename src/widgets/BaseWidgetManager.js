@@ -1,7 +1,18 @@
 // BaseWidgetManager.js - GENERIC base class!
+import { markRaw } from 'vue'
+
 class BaseWidgetManager {
   constructor(widgetMap = {}) {
-    this.widgets = widgetMap
+    // Mark all components as raw to prevent Vue reactivity
+    this.widgets = Object.fromEntries(
+      Object.entries(widgetMap).map(([key, widget]) => [
+        key, 
+        {
+          ...widget,
+          component: markRaw(widget.component)
+        }
+      ])
+    )
   }
 
   // Get widget with resolved props
@@ -17,7 +28,10 @@ class BaseWidgetManager {
 
   // Register new widget
   registerWidget(type, component, defaultProps = {}) {
-    this.widgets[type] = { component, defaultProps }
+    this.widgets[type] = { 
+      component: markRaw(component), 
+      defaultProps 
+    }
   }
 
   // Get available widget types
