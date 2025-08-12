@@ -1,7 +1,7 @@
 // components/tables/table-widgets.js
-import { Tag } from 'primevue/tag'
-import { Button } from 'primevue/button'
-import { Avatar } from 'primevue/avatar'
+import Tag from 'primevue/tag'
+import Button from 'primevue/button'
+import Avatar from 'primevue/avatar'
 
 export const TABLE_WIDGETS = {
   'text': {

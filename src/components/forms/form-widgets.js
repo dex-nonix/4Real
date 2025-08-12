@@ -1,12 +1,12 @@
 // components/forms/form-widgets.js
-import { InputText } from 'primevue/inputtext'
-import { Dropdown } from 'primevue/dropdown'
-import { MultiSelect } from 'primevue/multiselect'
-import { AutoComplete } from 'primevue/autocomplete'
-import { Slider } from 'primevue/slider'
-import { Calendar } from 'primevue/calendar'
-import { FileUpload } from 'primevue/fileupload'
-import { Editor } from 'primevue/editor'
+import InputText from 'primevue/inputtext'
+import Dropdown from 'primevue/dropdown'
+import MultiSelect from 'primevue/multiselect'
+import AutoComplete from 'primevue/autocomplete'
+import Slider from 'primevue/slider'
+import Calendar from 'primevue/calendar'
+import FileUpload from 'primevue/fileupload'
+import Editor from 'primevue/editor'
 
 export const FORM_WIDGETS = {
   'text': {

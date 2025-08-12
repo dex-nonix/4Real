@@ -40,8 +40,8 @@
 </template>
 
 <script>
-import { FormWidgetManager } from './FormWidgetManager.js'
-import { Button } from 'primevue/button'
+import FormWidgetManager from '@/components/forms/FormWidgetManager.js'
+import Button from 'primevue/button'
 
 export default {
   name: 'DynamicForm',

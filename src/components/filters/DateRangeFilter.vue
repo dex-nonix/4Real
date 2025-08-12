@@ -12,7 +12,7 @@
 </template>
 
 <script>
-import { Calendar } from 'primevue/calendar'
+import Calendar from 'primevue/calendar'
 
 export default {
   name: 'DateRangeFilter',

@@ -9,6 +9,9 @@ export default defineConfig({
       '@': resolve(__dirname, 'src')
     }
   },
+  optimizeDeps: {
+    include: ['quill']
+  },
   server: {
     proxy: {
       '/api': 'http://localhost:5000'

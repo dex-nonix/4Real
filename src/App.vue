@@ -19,8 +19,8 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import MasterLayout from './layouts/MasterLayout.vue'
-import AltLayout from './layouts/AltLayout.vue'
+import MasterLayout from '@/layouts/MasterLayout.vue'
+import AltLayout from '@/layouts/AltLayout.vue'
 
 const route = useRoute()
 const layouts = { master: MasterLayout, alt: AltLayout }

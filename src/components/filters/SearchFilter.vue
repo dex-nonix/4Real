@@ -10,7 +10,7 @@
 </template>
 
 <script>
-import { InputText } from 'primevue/inputtext'
+import InputText from 'primevue/inputtext'
 
 export default {
   name: 'SearchFilter',
