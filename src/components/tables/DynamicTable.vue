@@ -32,6 +32,7 @@
       @row-select="handleRowSelect"
       @row-unselect="handleRowUnselect"
       :class="tableDataClasses"
+      :tableStyle="{ tableLayout: 'auto' }"
     >
       <!-- Dynamic Column Rendering -->
       <Column 
@@ -59,11 +60,18 @@
       </Column>
       
       <!-- Actions Column (if specified) -->
-      <Column v-if="config.actions" header="Actions" :exportable="false">
+      <Column 
+        v-if="config.actions && config.actions.length"
+        header="Actions" 
+        :exportable="false"
+        :headerStyle="{ textAlign: 'right', whiteSpace: 'nowrap', width: '1%' }"
+        :bodyStyle="{ textAlign: 'right', whiteSpace: 'nowrap', width: '1%' }"
+      >
         <template #body="slotProps">
           <ActionButtons 
             :actions="config.actions"
             :row-data="slotProps.data"
+            :actions-display="config.actionsDisplay || 'responsive'"
             @action="handleRowAction"
           />
         </template>
@@ -251,50 +259,31 @@ export default {
         )
       }
       
-      // Date range filter
+      // Date range filter placeholder (implement as needed)
       if (this.dateRange && this.dateRange.start && this.dateRange.end) {
-        filtered = filtered.filter(item => {
-          const itemDate = new Date(item.created_at || item.updated_at)
-          return itemDate >= this.dateRange.start && itemDate <= this.dateRange.end
-        })
+        // Custom date filtering can be applied here
       }
       
       this.filteredData = filtered
     },
     
-    // Handle row selection
+    // Row action from ActionButtons
+    handleRowAction(action, rowData) {
+      this.$emit('row-action', { action, rowData })
+    },
+    
+    // Bulk actions
+    handleBulkAction(action) {
+      this.$emit('bulk-action', { action, selectedRows: this.selectedRows })
+    },
+    
+    // Row selection
     handleRowSelect(event) {
       this.$emit('row-select', event)
     },
     
     handleRowUnselect(event) {
       this.$emit('row-unselect', event)
-    },
-    
-    // Handle row actions
-    handleRowAction(action, rowData) {
-      this.$emit('row-action', { action, rowData })
-    },
-    
-    // Handle cell actions
-    handleCellAction(action, rowData, columnConfig) {
-      this.$emit('cell-action', { action, rowData, columnConfig })
-    },
-    
-    // Handle bulk actions
-    handleBulkAction(action) {
-      this.$emit('bulk-action', { action, selectedRows: this.selectedRows })
-    }
-  },
-  
-  // Watch for data changes
-  watch: {
-    data: {
-      handler(newData) {
-        this.filteredData = [...newData]
-        this.applyFilters()
-      },
-      deep: true
     }
   }
 }
