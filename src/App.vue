@@ -7,6 +7,8 @@
     <router-link to="/">Home</router-link>
     <span style="margin: 0 0.5rem;">|</span>
     <router-link to="/about">About</router-link>
+    <span style="margin: 0 0.5rem;">|</span>
+    <router-link to="/dynamic-form">DynamicForm</router-link>
   </nav>
   <hr />
   <small>Layout: {{ layoutName }}</small>
