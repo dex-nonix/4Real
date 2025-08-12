@@ -6,10 +6,15 @@
     
     <div style="margin-top: 2rem;">
       <h2>Examples</h2>
-      <p>Check out the DynamicForm component in action:</p>
-      <router-link to="/dynamic-form" class="example-link">
-        <Button label="DynamicForm Example" icon="pi pi-form" severity="secondary" />
-      </router-link>
+      <p>Check out the DynamicForm and DynamicTable components in action:</p>
+      <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+        <router-link to="/dynamic-form" class="example-link">
+          <Button label="DynamicForm Example" icon="pi pi-form" severity="secondary" />
+        </router-link>
+        <router-link to="/dynamic-table" class="example-link">
+          <Button label="DynamicTable Example" icon="pi pi-table" severity="secondary" />
+        </router-link>
+      </div>
     </div>
   </section>
 </template>
