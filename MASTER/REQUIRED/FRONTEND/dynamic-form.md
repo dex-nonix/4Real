@@ -121,32 +121,76 @@ This registry file lives in the same `components/forms/` folder as the DynamicFo
 
 ## 🔧 **IMPLEMENTATION:**
 
+### ⚠️ Breaking change: fields are now an ordered ARRAY
+
+- `config.fields` is now an array of field items, rendered in order
+- Each item uses a `key` to bind to `formData[key]`; items without `key` are allowed (UI-only/dataless)
+- Each item may optionally define a `check(formData, index, item)` function that controls visibility and inline expansion
+
+Field item shape:
+
+```ts
+type FieldItem = {
+  key?: string,                // optional; dataless if omitted
+  type: string,                // widget type (see form-widgets.js)
+  label?: string,
+  required?: boolean,
+  props?: Record<string, any>,
+  // Minimal conditional contract:
+  // - false → hide
+  // - true|null|undefined → show as-is
+  // - object → replace this item with the returned one
+  // - array<FieldItem> → inline-extend by inserting returned items after this item
+  check?: (formData: Record<string, any>, index: number, item: FieldItem) =>
+    | boolean
+    | null
+    | FieldItem
+    | FieldItem[]
+}
+```
+
+Notes:
+- Validation only applies to currently visible items that have a `key` and `required: true`.
+- Hidden values are preserved (no clearing) to keep behavior minimal.
+- Inline expansion: when `check` returns an array, those items are inserted immediately after the provider item for that render pass.
+
 ### **1. DynamicForm.vue Component:**
 ```vue
 <template>
   <div class="dynamic-form" :class="formClasses">
     <form @submit.prevent="handleSubmit">
       <div class="form-fields" :class="fieldsLayout">
-        <div v-for="(field, key) in config.fields" :key="key" class="form-field">
-          <!-- Field Label -->
-          <label :for="key" class="field-label" :class="labelClasses">
-            {{ field.label }}
-            <span v-if="field.required" class="required">*</span>
+        <div
+          v-for="(item, idx) in effectiveItems"
+          :key="item.key ? item.key : `__ui_${idx}`"
+          class="form-field"
+        >
+          <!-- Field Label (shown for items that declare a label) -->
+          <label v-if="item.label" :for="item.key" class="field-label" :class="labelClasses">
+            {{ item.label }}
+            <span v-if="item.required" class="required">*</span>
           </label>
-          
+
           <!-- Dynamic Widget Rendering -->
           <component 
-            :is="resolveWidget(field.type).component"
-            :id="key"
-            v-bind="resolveWidget(field.type).props"
-            :model-value="formData[key]"
-            @update:model-value="updateField(key, $event)"
-            :class="{ 'error': fieldErrors[key] }"
+            :is="resolveWidget(item.type).component"
+            :id="item.key || `__ui_${idx}`"
+            v-bind="{ ...resolveWidget(item.type).props, ...(item.props || {}) }"
+            v-if="item.key"
+            :model-value="formData[item.key]"
+            @update:model-value="updateField(item.key, $event)"
+            :class="{ 'error': item.key && fieldErrors[item.key] }"
           />
-          
+          <component
+            v-else
+            :is="resolveWidget(item.type).component"
+            :id="`__ui_${idx}`"
+            v-bind="{ ...resolveWidget(item.type).props, ...(item.props || {}) }"
+          />
+
           <!-- Field Error Display -->
-          <small v-if="fieldErrors[key]" class="error-message">
-            {{ fieldErrors[key] }}
+          <small v-if="item.key && fieldErrors[item.key]" class="error-message">
+            {{ fieldErrors[item.key] }}
           </small>
         </div>
       </div>
@@ -165,8 +209,8 @@ This registry file lives in the same `components/forms/` folder as the DynamicFo
 </template>
 
 <script>
-import { FormWidgetManager } from './FormWidgetManager.js'
-import { Button } from 'primevue/button'
+import FormWidgetManager from '@/components/forms/FormWidgetManager.js'
+import Button from 'primevue/button'
 
 export default {
   name: 'DynamicForm',
@@ -231,7 +275,7 @@ export default {
   methods: {
     // Resolve widget using FormWidgetManager
     resolveWidget(type) {
-      return this.formManager.getWidget(type, {}, null)
+      return this.formManager.getWidget(type, {})
     },
     
     // Update field value
@@ -248,14 +292,48 @@ export default {
       }
     },
     
-    // Validate form
+    // Compute visible/effective items based on `fields` array and `check`
+    computeEffectiveItems() {
+      const input = Array.isArray(this.config.fields) ? this.config.fields : []
+      const output = []
+      for (let i = 0; i < input.length; i += 1) {
+        const item = input[i]
+        const fn = typeof item.check === 'function' ? item.check : null
+        if (!fn) {
+          output.push(item)
+          continue
+        }
+        const res = fn(this.formData, i, item)
+        if (res === false) {
+          continue
+        }
+        if (res == null || res === true) {
+          output.push(item)
+          continue
+        }
+        if (Array.isArray(res)) {
+          output.push(item, ...res)
+          continue
+        }
+        if (typeof res === 'object') {
+          output.push(res)
+          continue
+        }
+        // Fallback: show as-is
+        output.push(item)
+      }
+      return output
+    },
+
+    // Validate form (only visible items with `key`)
     validateForm() {
       this.fieldErrors = {}
       let isValid = true
-      
-      for (const [key, field] of Object.entries(this.config.fields)) {
-        if (field.required && !this.formData[key]) {
-          this.fieldErrors[key] = `${field.label} is required`
+      const items = this.computeEffectiveItems()
+      for (const item of items) {
+        if (!item || !item.key) continue
+        if (item.required && !this.formData[item.key]) {
+          this.fieldErrors[item.key] = `${item.label || item.key} is required`
           isValid = false
         }
       }
@@ -288,6 +366,13 @@ export default {
         this.formData = { ...newData }
       },
       deep: true
+    }
+  },
+
+  computed: {
+    // Existing computed props retained above
+    effectiveItems() {
+      return this.computeEffectiveItems()
     }
   }
 }
@@ -406,40 +491,63 @@ export default {
 />
 ```
 
-## 📋 **CONFIGURATION EXAMPLES:**
+## 📋 **CONFIGURATION EXAMPLES (Array-based fields):**
 
 ### **Artist Form (Vertical, Full):**
 ```javascript
 // crud-configs/artist.js
 export const artistFormConfig = {
-  fields: {
-    name: {
+  fields: [
+    {
+      key: 'name',
       type: 'text',
       label: 'Artist Name',
       required: true,
-      props: { 
-        placeholder: 'Enter artist name',
-        class: 'w-full'
-      }
+      props: { placeholder: 'Enter artist name', class: 'w-full' }
     },
-    abbreviation: {
+    {
+      key: 'abbreviation',
       type: 'text',
       label: 'Abbreviation',
       required: true,
-      props: { 
-        placeholder: 'Enter abbreviation',
+      props: { placeholder: 'Enter abbreviation', class: 'w-full' }
+    },
+    {
+      key: 'status',
+      type: 'select',
+      label: 'Status',
+      props: {
+        options: [
+          { label: 'Active', value: 'active' },
+          { label: 'Inactive', value: 'inactive' },
+          { label: 'Pending', value: 'pending' }
+        ],
         class: 'w-full'
+      },
+      // Inline grow/shrink: add advanced fields when status is 'active'
+      check: (formData) => {
+        if (formData.status === 'active') {
+          return [
+            { key: 'advancedOption', type: 'text', label: 'Advanced Option' },
+            { key: 'tuning', type: 'slider', label: 'Tuning' }
+          ]
+        }
+        return true
       }
     },
-    persona: {
-      type: 'rich_text',
+    {
+      key: 'persona',
+      type: 'json',
       label: 'Artist Persona',
-      props: { 
-        height: '200px',
-        toolbar: ['bold', 'italic', 'underline']
-      }
+      props: { height: '200px', class: 'w-full' }
+    },
+    {
+      // dataless UI-only item (no key)
+      type: 'text',
+      label: 'Note: Advanced fields appear when status is Active',
+      check: (formData, i, item) => (formData.status === 'active' ? item : null)
     }
-  }
+  ]
 }
 ```
 
@@ -447,32 +555,33 @@ export const artistFormConfig = {
 ```javascript
 // filter-configs/artist-filters.js
 export const artistFilterConfig = {
-  fields: {
-    search: {
+  fields: [
+    {
+      key: 'search',
       type: 'text',
       label: 'Search',
-      props: { 
-        placeholder: 'Search artists...',
-        class: 'w-64'
-      }
+      props: { placeholder: 'Search artists...', class: 'w-64' }
     },
-    status: {
+    {
+      key: 'status',
       type: 'select',
       label: 'Status',
-      props: { 
-        options: ['active', 'inactive'],
-        placeholder: 'All statuses',
+      props: {
+        options: [
+          { label: 'All', value: '' },
+          { label: 'Active', value: 'active' },
+          { label: 'Inactive', value: 'inactive' }
+        ],
         class: 'w-32'
       }
     },
-    dateRange: {
-      type: 'date_range',
+    {
+      key: 'dateRange',
+      type: 'date',
       label: 'Date Range',
-      props: { 
-        class: 'w-48'
-      }
+      props: { class: 'w-48' }
     }
-  }
+  ]
 }
 ```
 
@@ -480,24 +589,28 @@ export const artistFilterConfig = {
 ```javascript
 // search-configs/global-search.js
 export const globalSearchConfig = {
-  fields: {
-    query: {
+  fields: [
+    {
+      key: 'query',
       type: 'text',
       label: 'Search',
-      props: { 
-        placeholder: 'Search everything...',
-        class: 'w-80'
-      }
+      props: { placeholder: 'Search everything...', class: 'w-80' }
     },
-    entity: {
+    {
+      key: 'entity',
       type: 'select',
       label: 'Entity',
-      props: { 
-        options: ['all', 'artists', 'albums', 'tracks'],
+      props: {
+        options: [
+          { label: 'All', value: 'all' },
+          { label: 'Artists', value: 'artists' },
+          { label: 'Albums', value: 'albums' },
+          { label: 'Tracks', value: 'tracks' }
+        ],
         class: 'w-32'
       }
     }
-  }
+  ]
 }
 ```
 
@@ -568,9 +681,10 @@ export const globalSearchConfig = {
 - **Settings forms** - vertical, full layout
 
 ### **✅ Simple Configuration:**
+- **Array-based fields** with explicit order and optional `key` for binding
+- **Minimal conditional logic** with `check(formData, index, item)` returning: false | true/null | object | array
 - **`layout="horizontal"`** - side-by-side fields
 - **`:compact="true"`** - tight spacing
-- **No over-engineering** - just layout props
 
 ### **✅ Widget Manager Integration:**
 - **Same input widgets** - work in any layout

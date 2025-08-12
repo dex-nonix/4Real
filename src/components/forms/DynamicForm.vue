@@ -2,26 +2,37 @@
   <div class="dynamic-form" :class="formClasses">
     <form @submit.prevent="handleSubmit">
       <div class="form-fields" :class="fieldsLayout">
-        <div v-for="(field, key) in config.fields" :key="key" class="form-field">
-          <!-- Field Label -->
-          <label :for="key" class="field-label" :class="labelClasses">
-            {{ field.label }}
-            <span v-if="field.required" class="required">*</span>
+        <div
+          v-for="(item, idx) in effectiveItems"
+          :key="item.key ? item.key : `__ui_${idx}`"
+          class="form-field"
+        >
+          <!-- Field Label (always render to preserve spacing) -->
+          <label :for="item.key || `__ui_${idx}`" class="field-label" :class="labelClasses">
+            {{ item.label || '' }}
+            <span v-if="item.required" class="required">*</span>
           </label>
-          
+
           <!-- Dynamic Widget Rendering -->
           <component 
-            :is="resolveWidget(field.type).component"
-            :id="key"
-            v-bind="resolveWidget(field.type).props"
-            :model-value="formData[key]"
-            @update:model-value="updateField(key, $event)"
-            :class="{ 'error': fieldErrors[key] }"
+            :is="resolveWidget(item.type).component"
+            :id="item.key || `__ui_${idx}`"
+            v-bind="{ ...resolveWidget(item.type).props, ...(item.props || {}) }"
+            v-if="item.key"
+            :model-value="formData[item.key]"
+            @update:model-value="updateField(item.key, $event)"
+            :class="{ 'error': item.key && fieldErrors[item.key] }"
           />
-          
+          <component
+            v-else
+            :is="resolveWidget(item.type).component"
+            :id="`__ui_${idx}`"
+            v-bind="{ ...resolveWidget(item.type).props, ...(item.props || {}) }"
+          />
+
           <!-- Field Error Display -->
-          <small v-if="fieldErrors[key]" class="error-message">
-            {{ fieldErrors[key] }}
+          <small v-if="item.key && fieldErrors[item.key]" class="error-message">
+            {{ fieldErrors[item.key] }}
           </small>
         </div>
       </div>
@@ -106,7 +117,7 @@ export default {
   methods: {
     // Resolve widget using FormWidgetManager
     resolveWidget(type) {
-      return this.formManager.getWidget(type, {}, null)
+      return this.formManager.getWidget(type, {})
     },
     
     // Update field value
@@ -123,14 +134,48 @@ export default {
       }
     },
     
-    // Validate form
+    // Build effective items from array-based config and check()
+    computeEffectiveItems() {
+      const fieldsArray = Array.isArray(this.config.fields) ? this.config.fields : []
+      const result = []
+      for (let index = 0; index < fieldsArray.length; index += 1) {
+        const item = fieldsArray[index]
+        const checkFn = typeof item.check === 'function' ? item.check : null
+        if (!checkFn) {
+          result.push(item)
+          continue
+        }
+        const decision = checkFn(this.formData, index, item)
+        if (decision === false) {
+          continue
+        }
+        if (decision == null || decision === true) {
+          result.push(item)
+          continue
+        }
+        if (Array.isArray(decision)) {
+          result.push(item, ...decision)
+          continue
+        }
+        if (typeof decision === 'object') {
+          result.push(decision)
+          continue
+        }
+        // default fallback
+        result.push(item)
+      }
+      return result
+    },
+
+    // Validate form (only visible items with keys)
     validateForm() {
       this.fieldErrors = {}
       let isValid = true
-      
-      for (const [key, field] of Object.entries(this.config.fields)) {
-        if (field.required && !this.formData[key]) {
-          this.fieldErrors[key] = `${field.label} is required`
+      const items = this.computeEffectiveItems()
+      for (const item of items) {
+        if (!item || !item.key) continue
+        if (item.required && !this.formData[item.key]) {
+          this.fieldErrors[item.key] = `${item.label || item.key} is required`
           isValid = false
         }
       }
@@ -164,6 +209,13 @@ export default {
       },
       deep: true
     }
+  },
+
+  computed: {
+    // Existing computed properties retained
+    effectiveItems() {
+      return this.computeEffectiveItems()
+    }
   }
 }
 </script>
@@ -171,6 +223,24 @@ export default {
 <style scoped>
 .dynamic-form {
   width: 100%;
+}
+
+/* Base spacing to ensure sane defaults regardless of layout */
+.form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.field-label {
+  margin-bottom: 0.5rem;
+  font-weight: 500;
 }
 
 /* Vertical Layout (default) */
@@ -183,6 +253,7 @@ export default {
 .layout-vertical .form-field {
   display: flex;
   flex-direction: column;
+  gap: 0.5rem;
 }
 
 .layout-vertical .field-label {
@@ -202,6 +273,7 @@ export default {
   display: flex;
   flex-direction: column;
   min-width: 200px;
+  gap: 0.5rem;
 }
 
 .layout-horizontal .field-label {

@@ -46,10 +46,11 @@ const formData = ref({
   status: 'active'
 })
 
-// Artist form configuration
+// Artist form configuration (array-based)
 const artistFormConfig = {
-  fields: {
-    name: {
+  fields: [
+    {
+      key: 'name',
       type: 'text',
       label: 'Artist Name',
       required: true,
@@ -58,7 +59,8 @@ const artistFormConfig = {
         class: 'w-full'
       }
     },
-    abbreviation: {
+    {
+      key: 'abbreviation',
       type: 'text',
       label: 'Abbreviation',
       required: true,
@@ -67,7 +69,8 @@ const artistFormConfig = {
         class: 'w-full'
       }
     },
-    status: {
+    {
+      key: 'status',
       type: 'select',
       label: 'Status',
       required: true,
@@ -79,23 +82,40 @@ const artistFormConfig = {
         ],
         placeholder: 'Select status',
         class: 'w-full'
+      },
+      check: (formData) => {
+        if (formData.status === 'active') {
+          return [
+            { key: 'advancedOption', type: 'text', label: 'Advanced Option' },
+            { key: 'tuning', type: 'slider', label: 'Tuning' }
+          ]
+        }
+        return true
       }
     },
-    persona: {
+    {
+      key: 'persona',
       type: 'json',
       label: 'Artist Persona',
       props: { 
         height: '200px',
         class: 'w-full'
       }
+    },
+    {
+      // dataless UI-only example item
+      type: 'text',
+      label: 'Advanced options visible when status is Active',
+      check: (formData, i, item) => (formData.status === 'active' ? item : null)
     }
-  }
+  ]
 }
 
-// Filter configuration
+// Filter configuration (array-based)
 const filterConfig = {
-  fields: {
-    search: {
+  fields: [
+    {
+      key: 'search',
       type: 'text',
       label: 'Search',
       props: { 
@@ -103,7 +123,8 @@ const filterConfig = {
         class: 'w-64'
       }
     },
-    status: {
+    {
+      key: 'status',
       type: 'select',
       label: 'Status',
       props: { 
@@ -116,7 +137,7 @@ const filterConfig = {
         class: 'w-32'
       }
     }
-  }
+  ]
 }
 
 // Initial artist data
