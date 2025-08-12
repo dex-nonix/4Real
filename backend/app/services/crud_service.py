@@ -11,9 +11,40 @@ from ..decorators import expose
 class CrudService:
     """Generic CRUD service that handles ALL operations automatically using config."""
 
-    def __init__(self, model_class: Any, config: Optional[Dict[str, Any]] = None) -> None:
-        self.model = model_class
-        self.config = config or self._get_default_config()
+    def __init__(self, model_class: Any | None = None, config: Optional[Dict[str, Any]] = None) -> None:
+        # Model resolution: explicit arg wins; else existing attribute; else error
+        if model_class is not None:
+            self.model = model_class
+        elif not hasattr(self, 'model'):
+            raise ValueError('model is required')
+
+        # Config resolution: explicit arg wins; else existing attribute; else error
+        if config is not None:
+            self.config = config
+        elif not hasattr(self, 'config'):
+            raise ValueError('config is required')
+
+        # Apply default values for any missing config keys (no generic fallback when entirely missing)
+        self.config = self._apply_default_config_values(self.config)
+
+    def _apply_default_config_values(self, provided_config: Dict[str, Any]) -> Dict[str, Any]:
+        """Fill in only missing keys from the default config; keep provided values as-is.
+
+        This does NOT create a config if none was provided; caller must supply one.
+        """
+        defaults = self._get_default_config()
+
+        def merge(dst: Dict[str, Any], src_defaults: Dict[str, Any]) -> Dict[str, Any]:
+            for key, def_value in src_defaults.items():
+                if key not in dst:
+                    dst[key] = def_value
+                else:
+                    cur_value = dst[key]
+                    if isinstance(cur_value, dict) and isinstance(def_value, dict):
+                        dst[key] = merge(cur_value, def_value)
+            return dst
+
+        return merge(dict(provided_config), defaults)
 
     def _get_default_config(self) -> Dict[str, Any]:
         return {

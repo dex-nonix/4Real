@@ -5,25 +5,23 @@ from ..models.artist import Artist
 
 
 class ArtistService(CrudService):
-    def __init__(self) -> None:
-        # Only override defaults where behavior differs
-        config = {
-            'filters': {
-                'fields': ['name', 'abbreviation'],
-            },
-            'sorting': {
-                'default_sort': 'name',
-                'allowed_fields': ['name', 'abbreviation', 'created_at'],
-            },
-            'validation': {
-                'required_fields': ['name'],
-                'unique_fields': ['name'],
-            },
-            'selector': {
-                'fields': ['name', 'abbreviation'],
-                'display_format': 'name',
-                'search_fields': ['name', 'abbreviation']
-            },
-        }
-        super().__init__(Artist, config)
+    model = Artist
+    config = {
+        'filters': {
+            'fields': ['name', 'abbreviation'],
+        },
+        'sorting': {
+            'default_sort': 'name',
+            'allowed_fields': ['name', 'abbreviation', 'created_at'],
+        },
+        'validation': {
+            'required_fields': ['name'],
+            'unique_fields': ['name'],
+        },
+        'selector': {
+            'fields': ['name', 'abbreviation'],
+            'display_format': 'name',
+            'search_fields': ['name', 'abbreviation']
+        },
+    }
 
