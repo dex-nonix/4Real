@@ -18,96 +18,96 @@ class MusicService:
         self.db = get_database()
     
     # Artist operations
-    async def create_artist(self, **kwargs) -> Artist:
+    def create_artist(self, **kwargs) -> Artist:
         """Create a new artist"""
-        return await self.artist_crud.create(**kwargs)
+        return self.artist_crud.create(**kwargs)
     
-    async def get_artist(self, artist_id: int) -> Optional[Artist]:
+    def get_artist(self, artist_id: int) -> Optional[Artist]:
         """Get artist by ID"""
-        return await self.artist_crud.get_by_id(artist_id)
+        return self.artist_crud.get_by_id(artist_id)
     
-    async def list_artists(self) -> List[Artist]:
+    def list_artists(self) -> List[Artist]:
         """List all artists"""
-        return await self.artist_crud.list_all()
+        return self.artist_crud.list_all()
     
-    async def update_artist(self, artist_id: int, **kwargs) -> Optional[Artist]:
+    def update_artist(self, artist_id: int, **kwargs) -> Optional[Artist]:
         """Update artist"""
-        return await self.artist_crud.update(artist_id, **kwargs)
+        return self.artist_crud.update(artist_id, **kwargs)
     
-    async def delete_artist(self, artist_id: int) -> bool:
+    def delete_artist(self, artist_id: int) -> bool:
         """Delete artist"""
-        return await self.artist_crud.delete(artist_id)
+        return self.artist_crud.delete(artist_id)
     
     # Album operations
-    async def create_album(self, **kwargs) -> Album:
+    def create_album(self, **kwargs) -> Album:
         """Create a new album"""
-        return await self.album_crud.create(**kwargs)
+        return self.album_crud.create(**kwargs)
     
-    async def get_album(self, album_id: int) -> Optional[Album]:
+    def get_album(self, album_id: int) -> Optional[Album]:
         """Get album by ID"""
-        return await self.album_crud.get_by_id(album_id)
+        return self.album_crud.get_by_id(album_id)
     
-    async def list_albums(self, artist_id: Optional[int] = None) -> List[Album]:
+    def list_albums(self, artist_id: Optional[int] = None) -> List[Album]:
         """List albums, optionally filtered by artist"""
         if artist_id:
-            return await self.album_crud.search(artist_id=artist_id)
-        return await self.album_crud.list_all()
+            return self.album_crud.search(artist_id=artist_id)
+        return self.album_crud.list_all()
     
-    async def update_album(self, album_id: int, **kwargs) -> Optional[Album]:
+    def update_album(self, album_id: int, **kwargs) -> Optional[Album]:
         """Update album"""
-        return await self.album_crud.update(album_id, **kwargs)
+        return self.album_crud.update(album_id, **kwargs)
     
-    async def delete_album(self, album_id: int) -> bool:
+    def delete_album(self, album_id: int) -> bool:
         """Delete album"""
-        return await self.album_crud.delete(album_id)
+        return self.album_crud.delete(album_id)
     
     # Track operations
-    async def create_track(self, **kwargs) -> Track:
+    def create_track(self, **kwargs) -> Track:
         """Create a new track"""
-        return await self.track_crud.create(**kwargs)
+        return self.track_crud.create(**kwargs)
     
-    async def get_track(self, track_id: int) -> Optional[Track]:
+    def get_track(self, track_id: int) -> Optional[Track]:
         """Get track by ID"""
-        return await self.track_crud.get_by_id(track_id)
+        return self.track_crud.get_by_id(track_id)
     
-    async def list_tracks(self, album_id: Optional[int] = None) -> List[Track]:
+    def list_tracks(self, album_id: Optional[int] = None) -> List[Track]:
         """List tracks, optionally filtered by album"""
         if album_id:
-            return await self.track_crud.search(album_id=album_id)
-        return await self.track_crud.list_all()
+            return self.track_crud.search(album_id=album_id)
+        return self.track_crud.list_all()
     
-    async def update_track(self, track_id: int, **kwargs) -> Optional[Track]:
+    def update_track(self, track_id: int, **kwargs) -> Optional[Track]:
         """Update track"""
-        return await self.track_crud.update(track_id, **kwargs)
+        return self.track_crud.update(track_id, **kwargs)
     
-    async def delete_track(self, track_id: int) -> bool:
+    def delete_track(self, track_id: int) -> bool:
         """Delete track"""
-        return await self.track_crud.delete(track_id)
+        return self.track_crud.delete(track_id)
     
     # Style operations
-    async def create_style(self, **kwargs) -> Style:
+    def create_style(self, **kwargs) -> Style:
         """Create a new style"""
-        return await self.style_crud.create(**kwargs)
+        return self.style_crud.create(**kwargs)
     
-    async def list_styles(self) -> List[Style]:
+    def list_styles(self) -> List[Style]:
         """List all styles"""
-        return await self.style_crud.list_all()
+        return self.style_crud.list_all()
     
     # Utility methods
-    async def get_artist_with_albums(self, artist_id: int) -> Optional[Dict[str, Any]]:
+    def get_artist_with_albums(self, artist_id: int) -> Optional[Dict[str, Any]]:
         """Get artist with all albums and tracks"""
-        artist = await self.get_artist(artist_id)
+        artist = self.get_artist(artist_id)
         if not artist:
             return None
         
-        albums = await self.list_albums(artist_id=artist_id)
+        albums = self.list_albums(artist_id=artist_id)
         result = {
             'artist': artist,
             'albums': []
         }
         
         for album in albums:
-            tracks = await self.list_tracks(album_id=album.id)
+            tracks = self.list_tracks(album_id=album.id)
             result['albums'].append({
                 'album': album,
                 'tracks': tracks
@@ -115,12 +115,12 @@ class MusicService:
         
         return result
     
-    async def search_music(self, query: str) -> Dict[str, List]:
+    def search_music(self, query: str) -> Dict[str, List]:
         """Search across all music entities"""
         # Simple search implementation
-        artists = await self.artist_crud.search(name__icontains=query)
-        albums = await self.album_crud.search(title__icontains=query)
-        tracks = await self.track_crud.search(name__icontains=query)
+        artists = self.artist_crud.search(name__icontains=query)
+        albums = self.album_crud.search(title__icontains=query)
+        tracks = self.track_crud.search(name__icontains=query)
         
         return {
             'artists': artists,

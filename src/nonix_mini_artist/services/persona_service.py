@@ -16,7 +16,7 @@ class AIPersonaService:
         self.artist_crud = CRUDHelper(Artist)
         self.db = get_database()
     
-    async def create_persona(self, **kwargs) -> AIPersona:
+    def create_persona(self, **kwargs) -> AIPersona:
         """Create a new AI persona"""
         # Validate JSON fields
         if 'personality_traits' in kwargs and kwargs['personality_traits']:
@@ -31,23 +31,23 @@ class AIPersonaService:
             if not isinstance(kwargs['ai_overrides'], str):
                 kwargs['ai_overrides'] = json.dumps(kwargs['ai_overrides'])
         
-        return await self.persona_crud.create(**kwargs)
+        return self.persona_crud.create(**kwargs)
     
-    async def get_persona(self, persona_id: int) -> Optional[AIPersona]:
+    def get_persona(self, persona_id: int) -> Optional[AIPersona]:
         """Get persona by ID"""
-        return await self.persona_crud.get_by_id(persona_id)
+        return self.persona_crud.get_by_id(persona_id)
     
-    async def list_personas(self, is_artist: Optional[bool] = None) -> List[AIPersona]:
+    def list_personas(self, is_artist: Optional[bool] = None) -> List[AIPersona]:
         """List all personas, optionally filtered by artist status"""
         if is_artist is not None:
-            return await self.persona_crud.search(is_artist=is_artist)
-        return await self.persona_crud.list_all()
+            return self.persona_crud.search(is_artist=is_artist)
+        return self.persona_crud.list_all()
     
-    async def get_artist_personas(self, artist_id: int) -> List[AIPersona]:
+    def get_artist_personas(self, artist_id: int) -> List[AIPersona]:
         """Get all personas for a specific artist"""
-        return await self.persona_crud.search(artist_id=artist_id)
+        return self.persona_crud.search(artist_id=artist_id)
     
-    async def update_persona(self, persona_id: int, **kwargs) -> Optional[AIPersona]:
+    def update_persona(self, persona_id: int, **kwargs) -> Optional[AIPersona]:
         """Update persona"""
         # Handle JSON fields
         for field in ['personality_traits', 'tool_permissions', 'ai_overrides']:
@@ -55,11 +55,11 @@ class AIPersonaService:
                 if not isinstance(kwargs[field], str):
                     kwargs[field] = json.dumps(kwargs[field])
         
-        return await self.persona_crud.update(persona_id, **kwargs)
+        return self.persona_crud.update(persona_id, **kwargs)
     
-    async def delete_persona(self, persona_id: int) -> bool:
+    def delete_persona(self, persona_id: int) -> bool:
         """Delete persona"""
-        return await self.persona_crud.delete(persona_id)
+        return self.persona_crud.delete(persona_id)
     
     async def get_persona_with_artist(self, persona_id: int) -> Optional[Dict[str, Any]]:
         """Get persona with artist information"""

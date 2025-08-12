@@ -24,7 +24,7 @@ class CRUDHelper:
         if not self.db.is_closed():
             self.db.close()
     
-    async def create(self, **kwargs) -> Model:
+    def create(self, **kwargs) -> Model:
         """Create a new record"""
         try:
             self._ensure_connection()
@@ -33,7 +33,7 @@ class CRUDHelper:
         finally:
             self._close_connection()
     
-    async def get_by_id(self, record_id: int) -> Optional[Model]:
+    def get_by_id(self, record_id: int) -> Optional[Model]:
         """Get record by ID"""
         try:
             self._ensure_connection()
@@ -43,7 +43,7 @@ class CRUDHelper:
         finally:
             self._close_connection()
     
-    async def list_all(self, limit: Optional[int] = None) -> List[Model]:
+    def list_all(self, limit: Optional[int] = None) -> List[Model]:
         """List all records with optional limit"""
         try:
             self._ensure_connection()
@@ -54,7 +54,7 @@ class CRUDHelper:
         finally:
             self._close_connection()
     
-    async def update(self, record_id: int, **kwargs) -> Optional[Model]:
+    def update(self, record_id: int, **kwargs) -> Optional[Model]:
         """Update a record by ID"""
         try:
             self._ensure_connection()
@@ -68,7 +68,7 @@ class CRUDHelper:
         finally:
             self._close_connection()
     
-    async def delete(self, record_id: int) -> bool:
+    def delete(self, record_id: int) -> bool:
         """Delete a record by ID"""
         try:
             self._ensure_connection()
@@ -80,7 +80,7 @@ class CRUDHelper:
         finally:
             self._close_connection()
     
-    async def search(self, **filters) -> List[Model]:
+    def search(self, **filters) -> List[Model]:
         """Search records by filters"""
         try:
             self._ensure_connection()
@@ -92,7 +92,7 @@ class CRUDHelper:
         finally:
             self._close_connection()
     
-    async def count(self) -> int:
+    def count(self) -> int:
         """Count total records"""
         try:
             self._ensure_connection()
@@ -100,7 +100,7 @@ class CRUDHelper:
         finally:
             self._close_connection()
     
-    async def exists(self, **filters) -> bool:
+    def exists(self, **filters) -> bool:
         """Check if record exists with given filters"""
         try:
             self._ensure_connection()
