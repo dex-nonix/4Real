@@ -23,75 +23,75 @@ class GenericTable:
     
     def _build_table(self):
         """Build the table structure"""
-        # Initialize table with empty rows and columns
-        columns = []
-        for col in self.columns:
-            columns.append({'name': col, 'label': col, 'field': col})
-        
-        # Add action column if actions specified
-        if self.actions:
-            columns.append({'name': 'actions', 'label': 'Actions', 'field': 'actions'})
-        
-        # Create table with proper structure
-        self.table = ui.table(
-            columns=columns,
-            rows=[],
-            title=''
-        ).classes('w-full')
+        # Create a simple table using NiceGUI components
+        with ui.column().classes('w-full') as self.table_container:
+            # Table header
+            with ui.row().classes('w-full bg-gray-100 p-3 rounded-t-lg font-bold'):
+                for col in self.columns:
+                    ui.label(col.replace('_', ' ').title()).classes('flex-1 px-2')
+                if self.actions:
+                    ui.label('Actions').classes('w-32 px-2 text-center')
+            
+            # Table body container
+            self.table_body = ui.column().classes('w-full')
         
         # Add rows
         self._add_rows()
     
     def _add_rows(self):
         """Add data rows to the table"""
-        rows = []
+        # Clear existing rows
+        self.table_body.clear()
+        
         for item in self.data:
-            row_data = {}
-            
-            # Add column data
-            for col in self.columns:
-                if hasattr(item, col):
-                    value = getattr(item, col)
-                    # Format datetime objects
-                    if hasattr(value, 'strftime'):
-                        value = value.strftime('%Y-%m-%d %H:%M')
-                    # Handle foreign key relationships
-                    elif hasattr(value, 'name'):
-                        value = value.name
-                    row_data[col] = str(value) if value is not None else ''
-            
-            # Add actions
-            if self.actions:
-                actions_html = self._create_actions_html(item)
-                row_data['actions'] = actions_html
-            
-            rows.append(row_data)
-        
-        # Update table rows
-        self.table.rows = rows
+            with ui.row().classes('w-full p-3 border-b hover:bg-gray-50') as row:
+                # Add column data
+                for col in self.columns:
+                    if hasattr(item, col):
+                        value = getattr(item, col)
+                        # Format datetime objects
+                        if hasattr(value, 'strftime'):
+                            value = value.strftime('%Y-%m-%d %H:%M')
+                        # Handle foreign key relationships
+                        elif hasattr(value, 'name'):
+                            value = value.name
+                        ui.label(str(value) if value is not None else '').classes('flex-1 px-2')
+                    else:
+                        ui.label('').classes('flex-1 px-2')
+                
+                # Add action buttons
+                if self.actions:
+                    with ui.row().classes('w-32 justify-center gap-1'):
+                        if 'view' in self.actions:
+                            ui.button('👁️', on_click=lambda i=item: self._view_item(i)).classes('px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600')
+                        if 'edit' in self.actions:
+                            ui.button('✏️', on_click=lambda i=item: self._edit_item(i)).classes('px-2 py-1 bg-yellow-500 text-white text-xs rounded hover:bg-yellow-600')
+                        if 'delete' in self.actions:
+                            ui.button('🗑️', on_click=lambda i=item: self._delete_item(i)).classes('px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600')
     
-    def _create_actions_html(self, item: Any) -> str:
-        """Create HTML for action buttons"""
-        actions = []
-        
-        if 'view' in self.actions:
-            actions.append(f'<button onclick="view_item_{item.id}()" class="px-2 py-1 bg-blue-500 text-white rounded text-sm">👁️</button>')
-            # Create view function for this item
-            self._create_view_function(item)
-        
-        if 'edit' in self.actions:
-            actions.append(f'<button onclick="edit_item_{item.id}()" class="px-2 py-1 bg-yellow-500 text-white rounded text-sm">✏️</button>')
-            # Create edit function for this item
-            self._create_edit_function(item)
-        
-        if 'delete' in self.actions:
-            actions.append(f'<button onclick="delete_item_{item.id}()" class="px-2 py-1 bg-red-500 text-white rounded text-sm">🗑️</button>')
-            # Create delete function for this item
-            self._create_delete_function(item)
-        
-        return ' '.join(actions)
+    def _view_item(self, item: Any):
+        """View item details"""
+        content = self._create_detail_content(item)
+        dialog = DetailDialog(
+            title=f"View {item.__class__.__name__}",
+            content=content
+        )
+        dialog.show()
     
-    def _create_view_function(self, item: Any):
+    def _edit_item(self, item: Any):
+        """Edit item (placeholder for future implementation)"""
+        ui.notify(f'Edit {item.__class__.__name__} functionality coming soon!', type='info')
+    
+    def _delete_item(self, item: Any):
+        """Delete item with confirmation"""
+        dialog = ConfirmationDialog(
+            message=f"Are you sure you want to delete this {item.__class__.__name__.lower()}?",
+            on_confirm=lambda: self._perform_delete(item),
+            title="Confirm Delete"
+        )
+        dialog.show()
+    
+    # Removed old HTML-based method
         """Create a view function for the item"""
         def view_item():
             # Create detail dialog
@@ -172,9 +172,10 @@ class GenericTable:
     def add_row(self, item: Any):
         """Add a single row"""
         self.data.append(item)
+        # Rebuild the entire table to ensure proper layout
         self._add_rows()
     
     def clear(self):
         """Clear the table"""
         self.data = []
-        self.table.rows = []
+        self.table_body.clear()

@@ -31,6 +31,9 @@ class GenericCRUDView:
         # Build the view
         self._build_view()
         
+        # Load initial data
+        self.load_initial_data()
+        
     
     def _build_view(self):
         """Build the generic CRUD view"""
@@ -160,7 +163,8 @@ class GenericCRUDView:
             # Add to local lists
             self.items.append(entity)
             self.filtered_items.append(entity)
-            self.table.add_row(entity)
+            # Update the entire table to show the new data
+            self.table.update_data(self.filtered_items)
             
             ui.notify(f'{self.entity_name} created successfully!', type='positive')
             
@@ -177,6 +181,23 @@ class GenericCRUDView:
         if hasattr(self, '_load_data'):
             # Synchronous data loading
             self._load_data()
+        else:
+            # Default data loading if no custom method
+            self._load_default_data()
+    
+    def _load_default_data(self):
+        """Default data loading method"""
+        try:
+            if hasattr(self.crud_operations, 'list_all'):
+                self.items = self.crud_operations.list_all()
+            else:
+                # Fallback to direct model query
+                self.items = list(self.model_class.select())
+            
+            self.filtered_items = self.items.copy()
+            self.table.update_data(self.filtered_items)
+        except Exception as e:
+            ui.notify(f'Error loading {self.entity_name.lower()}s: {str(e)}', type='negative')
     
     def refresh_data(self):
         """Generic data refresh - override in subclasses for custom logic"""

@@ -21,10 +21,10 @@ class ArtistsView(GenericCRUDView):
         }
         super().__init__(music_service, entity_config)
     
-    async def _load_data(self):
+    def _load_data(self):
         """Load artists data"""
         try:
-            data = await self.music_service.list_artists()
+            data = self.music_service.list_artists()
             self.items = data
             self.filtered_items = data.copy()
             self.table.update_data(data)
