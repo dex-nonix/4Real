@@ -1,7 +1,7 @@
 # 📊 DynamicTable Component
 
 ## 🎯 **PURPOSE:**
-**Generic table component that uses the widget manager system to render any data table with custom cell widgets**
+**Generic table component that uses the widget manager system to render any data table with custom cell widgets - works for CRUD, dashboards, inline tables, etc.**
 
 ## 🏗️ **ARCHITECTURE:**
 
@@ -10,15 +10,17 @@
 - **Widget manager integration** - uses TableCellWidgetManager for cell rendering
 - **Generic data handling** - works with any data structure
 - **Custom cell widgets** - different rendering for different data types
+- **Flexible layouts** - vertical (default), horizontal, compact for different use cases
+- **Responsive support** - hide columns based on screen size
 
 ## 🔧 **IMPLEMENTATION:**
 
 ### **1. DynamicTable.vue Component:**
 ```vue
 <template>
-  <div class="dynamic-table">
+  <div class="dynamic-table" :class="tableClasses">
     <!-- Search and Filters -->
-    <div v-if="config.filters" class="table-filters">
+    <div v-if="config.filters && !minimal" class="table-filters">
       <SearchFilter 
         v-if="config.filters.includes('search')"
         v-model="searchQuery"
@@ -36,27 +38,28 @@
     <!-- Data Table -->
     <DataTable 
       :value="filteredData" 
-      :columns="config.columns"
-      :paginator="config.paginated"
+      :columns="visibleColumns"
+      :paginator="config.paginated && !minimal"
       :rows="config.pageSize || 10"
       :loading="loading"
       :sortable="config.sortable"
-      :resizable-columns="config.resizable"
+      :resizable-columns="config.resizable && !compact"
       :striped-rows="config.striped"
       :row-hover="config.hover"
-      :selection-mode="config.selectionMode"
+      :selection-mode="config.selectionMode && !minimal ? config.selectionMode : null"
       v-model:selection="selectedRows"
       @row-select="handleRowSelect"
       @row-unselect="handleRowUnselect"
+      :class="tableDataClasses"
     >
       <!-- Dynamic Column Rendering -->
       <Column 
-        v-for="col in config.columns" 
+        v-for="col in visibleColumns" 
         :key="col.field" 
         :field="col.field" 
         :header="col.header"
-        :sortable="col.sortable !== false"
-        :filter="col.filter"
+        :sortable="col.sortable !== false && !minimal"
+        :filter="col.filter && !minimal"
         :filter-placeholder="col.filterPlaceholder"
         :style="col.style"
         :class="col.class"
@@ -74,8 +77,8 @@
         </template>
       </Column>
       
-      <!-- Actions Column (if specified) -->
-      <Column v-if="config.actions" header="Actions" :exportable="false" style="min-width:8rem">
+      <!-- Actions Column (if specified and not minimal) -->
+      <Column v-if="config.actions && !minimal" header="Actions" :exportable="false" style="min-width:8rem">
         <template #body="slotProps">
           <ActionButtons 
             :actions="config.actions"
@@ -86,8 +89,8 @@
       </Column>
     </DataTable>
     
-    <!-- Bulk Actions -->
-    <div v-if="config.bulkActions && selectedRows.length > 0" class="bulk-actions">
+    <!-- Bulk Actions (hidden for minimal mode) -->
+    <div v-if="config.bulkActions && selectedRows.length > 0 && !minimal" class="bulk-actions">
       <BulkActions 
         :actions="config.bulkActions"
         :selected-count="selectedRows.length"
@@ -128,6 +131,58 @@ export default {
     loading: {
       type: Boolean,
       default: false
+    },
+    layout: {
+      type: String,
+      default: 'vertical',
+      validator: value => ['vertical', 'horizontal'].includes(value)
+    },
+    compact: {
+      type: Boolean,
+      default: false
+    },
+    dense: {
+      type: Boolean,
+      default: false
+    },
+    minimal: {
+      type: Boolean,
+      default: false
+    },
+    responsive: {
+      type: Boolean,
+      default: false
+    },
+    breakpoints: {
+      type: Object,
+      default: () => ({
+        xs: 0, sm: 576, md: 768, lg: 992, xl: 1200
+      })
+    }
+  },
+  
+  computed: {
+    tableClasses() {
+      return {
+        'compact': this.compact,
+        'dense': this.dense,
+        'minimal': this.minimal,
+        [`layout-${this.layout}`]: true
+      }
+    },
+    
+    tableDataClasses() {
+      return {
+        'table-compact': this.compact,
+        'table-dense': this.dense,
+        'table-minimal': this.minimal
+      }
+    },
+    
+    visibleColumns() {
+      if (!this.responsive) return this.config.columns
+      
+      return this.config.columns.filter(col => this.shouldShowColumn(col))
     }
   },
   
@@ -137,7 +192,22 @@ export default {
       searchQuery: '',
       dateRange: null,
       selectedRows: [],
-      filteredData: [...this.data]
+      filteredData: [...this.data],
+      currentBreakpoint: 'lg',
+      windowWidth: window.innerWidth
+    }
+  },
+  
+  mounted() {
+    if (this.responsive) {
+      window.addEventListener('resize', this.handleResize)
+      this.updateBreakpoint()
+    }
+  },
+  
+  beforeUnmount() {
+    if (this.responsive) {
+      window.removeEventListener('resize', this.handleResize)
     }
   },
   
@@ -145,6 +215,32 @@ export default {
     // Resolve cell widget using TableCellWidgetManager
     resolveCellWidget(type) {
       return this.tableManager.getWidget(type, {}, null)
+    },
+    
+    // Responsive breakpoint handling
+    updateBreakpoint() {
+      const width = this.windowWidth
+      if (width >= this.breakpoints.xl) this.currentBreakpoint = 'xl'
+      else if (width >= this.breakpoints.lg) this.currentBreakpoint = 'lg'
+      else if (width >= this.breakpoints.md) this.currentBreakpoint = 'md'
+      else if (width >= this.breakpoints.sm) this.currentBreakpoint = 'sm'
+      else this.currentBreakpoint = 'xs'
+    },
+    
+    handleResize() {
+      this.windowWidth = window.innerWidth
+      this.updateBreakpoint()
+    },
+    
+    shouldShowColumn(column) {
+      if (!this.responsive || !column.responsive) return true
+      
+      const { hide = [], show = [] } = column.responsive
+      
+      if (hide.includes(this.currentBreakpoint)) return false
+      if (show.length > 0 && !show.includes(this.currentBreakpoint)) return false
+      
+      return true
     },
     
     // Handle search
@@ -227,6 +323,49 @@ export default {
   width: 100%;
 }
 
+/* Vertical Layout (default) */
+.layout-vertical .p-datatable {
+  /* Normal table layout */
+}
+
+/* Horizontal Layout */
+.layout-horizontal .p-datatable {
+  /* Compact horizontal layout for dashboards */
+}
+
+/* Compact Mode */
+.compact .p-datatable {
+  font-size: 0.875rem;
+}
+
+.compact .p-datatable .p-datatable-thead > tr > th {
+  padding: 0.5rem;
+}
+
+.compact .p-datatable .p-datatable-tbody > tr > td {
+  padding: 0.5rem;
+}
+
+/* Dense Mode */
+.dense .p-datatable .p-datatable-tbody > tr {
+  height: 2.5rem;
+}
+
+.dense .p-datatable .p-datatable-thead > tr {
+  height: 2.5rem;
+}
+
+/* Minimal Mode */
+.minimal .p-paginator,
+.minimal .p-datatable-header {
+  display: none;
+}
+
+.minimal .p-datatable .p-datatable-thead > tr > th {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Table Filters */
 .table-filters {
   display: flex;
   gap: 1rem;
@@ -234,17 +373,64 @@ export default {
   align-items: center;
 }
 
+/* Bulk Actions */
 .bulk-actions {
   margin-top: 1rem;
   padding: 1rem;
   background-color: #f8fafc;
   border-radius: 0.5rem;
 }
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .compact .p-datatable .p-datatable-thead > tr > th,
+  .compact .p-datatable .p-datatable-tbody > tr > td {
+    padding: 0.25rem;
+  }
+}
 </style>
 
-## 📋 **CRUD CONFIG INTEGRATION:**
+## 📋 **LAYOUT CONFIGURATION:**
 
-### **Artist Table Configuration:**
+### **1. Vertical Layout (Default - for CRUD tables):**
+```vue
+<DynamicTable
+  :config="artistTableConfig"
+  layout="vertical"
+  :compact="false"
+  :dense="false"
+  :minimal="false"
+  @row-action="handleRowAction"
+/>
+```
+
+### **2. Horizontal Layout (for dashboards, widgets):**
+```vue
+<DynamicTable
+  :config="dashboardTableConfig"
+  layout="horizontal"
+  :compact="true"
+  :dense="true"
+  :minimal="true"
+  @row-action="handleRowAction"
+/>
+```
+
+### **3. Compact Mode (for inline tables, filters):**
+```vue
+<DynamicTable
+  :config="inlineTableConfig"
+  layout="vertical"
+  :compact="true"
+  :dense="true"
+  :minimal="true"
+  @row-action="handleRowAction"
+/>
+```
+
+## 📋 **RESPONSIVE COLUMN CONFIGURATION:**
+
+### **Artist Table with Responsive Columns:**
 ```javascript
 // crud-configs/artist.js
 export const artistCrudConfig = {
@@ -256,6 +442,10 @@ export const artistCrudConfig = {
         header: 'Artist Name', 
         sortable: true,
         type: 'text',
+        responsive: {
+          hide: ['xs'],              // Hide on extra small screens
+          show: ['sm', 'md', 'lg', 'xl']
+        },
         props: {
           truncate: true,
           maxLength: 30
@@ -266,6 +456,10 @@ export const artistCrudConfig = {
         header: 'Abbr', 
         sortable: true,
         type: 'text',
+        responsive: {
+          hide: ['xs', 'sm'],        // Hide on small screens
+          show: ['md', 'lg', 'xl']
+        },
         props: {
           class: 'font-mono text-sm'
         }
@@ -275,6 +469,10 @@ export const artistCrudConfig = {
         header: 'Albums', 
         sortable: true,
         type: 'number',
+        responsive: {
+          hide: ['xs', 'sm', 'md'],  // Hide on small/medium screens
+          show: ['lg', 'xl']
+        },
         props: {
           format: '0,0'
         }
@@ -284,6 +482,10 @@ export const artistCrudConfig = {
         header: 'Created', 
         sortable: true,
         type: 'date',
+        responsive: {
+          hide: ['xs', 'sm'],        // Hide on small screens
+          show: ['md', 'lg', 'xl']
+        },
         props: {
           format: 'MMM DD, YYYY'
         }
@@ -293,6 +495,10 @@ export const artistCrudConfig = {
         header: 'Status', 
         sortable: true,
         type: 'status',
+        responsive: {
+          hide: [],                  // Always visible
+          show: ['xs', 'sm', 'md', 'lg', 'xl']
+        },
         props: {
           severity: 'info'
         }
@@ -312,63 +518,9 @@ export const artistCrudConfig = {
 }
 ```
 
-## 🔄 **CELL WIDGET TYPES:**
+## 📁 **USAGE EXAMPLES:**
 
-### **Text Cell Widget:**
-```javascript
-// widget-mappings/table-widgets.js
-export const TABLE_WIDGETS = {
-  'text': {
-    component: 'span',                // Simple span for text
-    defaultProps: { 
-      class: 'text-sm'
-    }
-  },
-  'number': {
-    component: 'span',                // Formatted number display
-    defaultProps: { 
-      class: 'text-sm font-mono'
-    }
-  },
-  'date': {
-    component: 'span',                // Formatted date display
-    defaultProps: { 
-      class: 'text-sm text-gray-600'
-    }
-  },
-  'status': {
-    component: 'Tag',                 // PrimeVue Tag component
-    defaultProps: { 
-      severity: 'info'
-    }
-  },
-  'actions': {
-    component: 'Button',              // PrimeVue Button
-    defaultProps: { 
-      size: 'small',
-      severity: 'secondary'
-    }
-  },
-  'image': {
-    component: 'Avatar',              // PrimeVue Avatar
-    defaultProps: { 
-      size: 'normal',
-      shape: 'circle'
-    }
-  },
-  'boolean': {
-    component: 'i',                   // Icon for boolean values
-    defaultProps: { 
-      class: 'pi',
-      style: 'font-size: 1.2rem;'
-    }
-  }
-}
-```
-
-## 📁 **USAGE:**
-
-### **In Artist Management View:**
+### **1. CRUD Table (Vertical, Full Features):**
 ```vue
 <template>
   <div class="artists-view">
@@ -383,73 +535,90 @@ export const TABLE_WIDGETS = {
       :config="artistCrudConfig.table"
       :data="artists"
       :loading="loading"
+      layout="vertical"
+      :compact="false"
+      :dense="false"
+      :minimal="false"
+      :responsive="true"
       @row-action="handleRowAction"
       @bulk-action="handleBulkAction"
     />
   </div>
 </template>
+```
 
-<script>
-import DynamicTable from '@/components/core/DynamicTable.vue'
-import { Button } from 'primevue/button'
-import { artistCrudConfig } from '@/configs/crud/artist.js'
-
-export default {
-  components: { DynamicTable, Button },
-  data() {
-    return {
-      artistCrudConfig,
-      artists: [],
-      loading: false,
-      showCreateForm: false
-    }
-  },
-  methods: {
-    async handleRowAction({ action, rowData }) {
-      switch (action) {
-        case 'view':
-          this.$router.push(`/artists/${rowData.id}`)
-          break
-        case 'edit':
-          this.$router.push(`/artists/${rowData.id}/edit`)
-          break
-        case 'delete':
-          await this.deleteArtist(rowData.id)
-          break
-      }
-    },
+### **2. Dashboard Widget (Horizontal, Compact, Minimal):**
+```vue
+<template>
+  <div class="dashboard-widget">
+    <h3>Recent Artists</h3>
     
-    async handleBulkAction({ action, selectedRows }) {
-      if (action === 'delete') {
-        await this.bulkDeleteArtists(selectedRows.map(row => row.id))
-      }
-    }
-  }
-}
-</script>
+    <DynamicTable
+      :config="dashboardTableConfig"
+      :data="recentArtists"
+      layout="horizontal"
+      :compact="true"
+      :dense="true"
+      :minimal="true"
+      :responsive="true"
+      @row-action="handleRowAction"
+    />
+  </div>
+</template>
+```
+
+### **3. Inline Table (Compact, Dense, Minimal):**
+```vue
+<template>
+  <div class="inline-section">
+    <h4>Related Albums</h4>
+    
+    <DynamicTable
+      :config="inlineTableConfig"
+      :data="relatedAlbums"
+      layout="vertical"
+      :compact="true"
+      :dense="true"
+      :minimal="true"
+      :responsive="true"
+      @row-action="handleRowAction"
+    />
+  </div>
+</template>
 ```
 
 ## 🎯 **KEY FEATURES:**
 
-### **✅ Generic Table Building:**
-- **Any data structure** - artists, albums, tracks, etc.
-- **Dynamic column rendering** - based on widget manager
-- **Custom cell widgets** - different rendering per data type
+### **✅ Flexible Layouts:**
+- **Vertical layout** - traditional table layout (default)
+- **Horizontal layout** - compact horizontal layout for dashboards
+- **Compact mode** - smaller fonts, tighter spacing
+- **Dense mode** - tighter row heights
+- **Minimal mode** - hide pagination, filters, bulk actions
+
+### **✅ Responsive Support:**
+- **Column hiding** - hide columns based on screen size
+- **Breakpoint system** - customizable breakpoints (xs, sm, md, lg, xl)
+- **Mobile-friendly** - automatically adapt to screen size
+- **Progressive enhancement** - more features on larger screens
+
+### **✅ Universal Usage:**
+- **CRUD tables** - vertical, full features, responsive
+- **Dashboard widgets** - horizontal, compact, minimal
+- **Inline tables** - compact, dense, minimal
+- **Filter results** - compact, dense, responsive
+
+### **✅ Simple Configuration:**
+- **`layout="horizontal"`** - horizontal layout
+- **`:compact="true"`** - tight spacing
+- **`:dense="true"`** - tight rows
+- **`:minimal="true"`** - hide features
+- **`:responsive="true"`** - enable responsive behavior
 
 ### **✅ Widget Manager Integration:**
 - **TableCellWidgetManager** - handles all table cell widgets
-- **Default props** - sensible defaults for each widget type
-- **User props** - override defaults when needed
+- **Same input widgets** - work in any layout
+- **Consistent behavior** - same rendering, same events
+- **Reusable system** - one component, many use cases
 
-### **✅ PrimeVue Compatibility:**
-- **DataTable component** - full PrimeVue table functionality
-- **Custom cell rendering** - with any Vue component
-- **Built-in features** - sorting, filtering, pagination, selection
-
-### **✅ Advanced Features:**
-- **Search and filtering** - global search, date ranges
-- **Bulk operations** - multi-select actions
-- **Row actions** - view, edit, delete per row
-- **Responsive design** - resizable columns, mobile friendly
-
-**This gives you a completely generic table system that works with any data and any cell widget type!** 
+**This gives you ONE table component that handles ALL table scenarios - just change the layout props!** 
