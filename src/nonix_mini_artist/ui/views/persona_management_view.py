@@ -364,7 +364,7 @@ class PersonaManagementView:
                 for checkbox in self.tool_checkboxes.values():
                     checkbox.value = False
     
-    async def _save_persona(self):
+    def _save_persona(self):
         """Save the persona (create or update) with enhanced validation"""
         try:
             # Enhanced validation
@@ -419,19 +419,19 @@ class PersonaManagementView:
             
             if self.is_creating:
                 # Create new persona
-                await self.persona_service.create_persona(**persona_data)
+                self.persona_service.create_persona(**persona_data)
                 ui.notify('Persona created successfully!', type='positive')
             else:
                 # Update existing persona
                 if self.editing_persona:
-                    await self.persona_service.update_persona(
+                    self.persona_service.update_persona(
                         self.editing_persona['id'], **persona_data
                     )
                     ui.notify('Persona updated successfully!', type='positive')
             
             # Close dialog and refresh
             self.persona_dialog.close()
-            await self._load_data()
+            self._load_data()
             
         except Exception as e:
             ui.notify(f'Failed to save persona: {e}', type='error')
@@ -483,14 +483,14 @@ class PersonaManagementView:
         
         return overrides
     
-    async def _delete_persona(self, persona: Dict[str, Any]):
+    def _delete_persona(self, persona: Dict[str, Any]):
         """Delete a persona with enhanced confirmation and validation"""
         try:
             # Check if persona has active sessions
             from ...services.chat_service import ChatService
             chat_service = ChatService()
             
-            active_sessions = await chat_service.get_active_sessions(persona['id'])
+            active_sessions = chat_service.get_active_sessions(persona['id'])
             
             if active_sessions:
                 # Show warning about active sessions
@@ -509,7 +509,7 @@ class PersonaManagementView:
                     warning_dialog.open()
             else:
                 # Direct deletion if no active sessions
-                await self._confirm_delete_persona(persona, None)
+                self._confirm_delete_persona(persona, None)
                 
         except Exception as e:
             ui.notify(f'Failed to check persona sessions: {e}', type='error')
@@ -713,7 +713,7 @@ class PersonaManagementView:
             
             # Close dialog and refresh
             self.artist_template_dialog.close()
-            await self._load_data()
+            self._load_data()
             
         except Exception as e:
             ui.notify(f'Failed to create artist template: {e}', type='error')

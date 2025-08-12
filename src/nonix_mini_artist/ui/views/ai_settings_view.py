@@ -228,7 +228,7 @@ class AISettingsView:
         except Exception as e:
             ui.notify(f'Error loading AI data: {str(e)}', type='negative')
     
-    async def _create_provider(self, provider_type: str, api_key: str, project_id: str, location: str):
+    def _create_provider(self, provider_type: str, api_key: str, project_id: str, location: str):
         """Create a new AI provider"""
         try:
             config = {
@@ -249,7 +249,7 @@ class AISettingsView:
         except Exception as e:
             ui.notify(f'Error creating provider: {str(e)}', type='negative')
     
-    async def _create_preset(self, name: str, provider: str, model: str, system_prompt: str, temperature: float, max_tokens: int):
+    def _create_preset(self, name: str, provider: str, model: str, system_prompt: str, temperature: float, max_tokens: int):
         """Create a new AI preset"""
         try:
             preset = AIPreset(
@@ -331,9 +331,9 @@ class AISettingsView:
             """
             ui.notify(f'Error running analysis: {str(e)}', type='negative')
     
-    async def refresh_data(self):
+    def refresh_data(self):
         """Refresh AI settings data"""
-        await self._load_data()
+        self._load_data()
 
     def clear(self):
         """Clear the view content"""
