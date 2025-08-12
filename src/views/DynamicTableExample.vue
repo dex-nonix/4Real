@@ -51,6 +51,51 @@
       />
     </div>
 
+    <!-- Icons Only Example -->
+    <div class="example-section">
+      <h2>Icons Only Actions (Compact, Minimal)</h2>
+      <DynamicTable 
+        :config="iconsOnlyConfig"
+        :data="iconsOnlyData"
+        layout="vertical"
+        :compact="true"
+        :dense="true"
+        :minimal="true"
+        :responsive="true"
+        @row-action="handleRowAction"
+      />
+    </div>
+
+    <!-- Text Only Example -->
+    <div class="example-section">
+      <h2>Text Only Actions (Compact, Minimal)</h2>
+      <DynamicTable 
+        :config="textOnlyConfig"
+        :data="textOnlyData"
+        layout="vertical"
+        :compact="true"
+        :dense="true"
+        :minimal="true"
+        :responsive="true"
+        @row-action="handleRowAction"
+      />
+    </div>
+
+    <!-- Both Icons and Text Example -->
+    <div class="example-section">
+      <h2>Both Icons and Text Actions (Compact, Minimal)</h2>
+      <DynamicTable 
+        :config="bothConfig"
+        :data="bothData"
+        layout="vertical"
+        :compact="true"
+        :dense="true"
+        :minimal="true"
+        :responsive="true"
+        @row-action="handleRowAction"
+      />
+    </div>
+
     <!-- Table Data Display -->
     <div class="example-section">
       <h3>Current Table Data:</h3>
@@ -102,6 +147,25 @@ const relatedAlbums = ref([
   { id: 1, title: 'Rise From Ashes', artist: 'TRC', year: 2023 },
   { id: 2, title: 'Di Streets Talk', artist: 'TRC', year: 2023 },
   { id: 3, title: 'No Mercy', artist: 'TRC', year: 2023 }
+])
+
+// Sample data for new examples
+const iconsOnlyData = ref([
+  { id: 1, name: 'Icon Item 1', type: 'Type A' },
+  { id: 2, name: 'Icon Item 2', type: 'Type B' },
+  { id: 3, name: 'Icon Item 3', type: 'Type C' }
+])
+
+const textOnlyData = ref([
+  { id: 1, title: 'Text Item 1', category: 'Category A' },
+  { id: 2, title: 'Text Item 2', category: 'Category B' },
+  { id: 3, title: 'Text Item 3', category: 'Category C' }
+])
+
+const bothData = ref([
+  { id: 1, name: 'Both Item 1', status: 'active' },
+  { id: 2, name: 'Both Item 2', status: 'inactive' },
+  { id: 3, name: 'Both Item 3', status: 'pending' }
 ])
 
 // Artist CRUD table configuration
@@ -201,8 +265,7 @@ const dashboardConfig = {
   columns: [
     { field: 'name', header: 'Artist', type: 'text' },
     { field: 'status', header: 'Status', type: 'status' },
-    { field: 'albums_count', header: 'Albums', type: 'number' },
-    { field: 'actions', header: 'Actions', type: 'actions' }
+    { field: 'albums_count', header: 'Albums', type: 'number' }
   ],
   actions: ['view'],
   sortable: false,
@@ -216,10 +279,51 @@ const inlineConfig = {
   columns: [
     { field: 'title', header: 'Title', type: 'text' },
     { field: 'artist', header: 'Artist', type: 'text' },
-    { field: 'year', header: 'Year', type: 'number' },
-    { field: 'actions', header: 'Actions', type: 'actions' }
+    { field: 'year', header: 'Year', type: 'number' }
   ],
   actions: ['view', 'edit'],
+  sortable: false,
+  paginated: false,
+  striped: false,
+  hover: false
+}
+
+// Icons only example
+const iconsOnlyConfig = {
+  columns: [
+    { field: 'name', header: 'Name', type: 'text' },
+    { field: 'type', header: 'Type', type: 'text' }
+  ],
+  actions: ['view', 'edit', 'delete'],
+  actionsDisplay: 'icons-only',
+  sortable: false,
+  paginated: false,
+  striped: false,
+  hover: false
+}
+
+// Text only example
+const textOnlyConfig = {
+  columns: [
+    { field: 'title', header: 'Title', type: 'text' },
+    { field: 'category', header: 'Category', type: 'text' }
+  ],
+  actions: ['view', 'edit', 'delete'],
+  actionsDisplay: 'text-only',
+  sortable: false,
+  paginated: false,
+  striped: false,
+  hover: false
+}
+
+// Both icons and text example
+const bothConfig = {
+  columns: [
+    { field: 'name', header: 'Name', type: 'text' },
+    { field: 'status', header: 'Status', type: 'status' }
+  ],
+  actions: ['view', 'edit', 'delete'],
+  actionsDisplay: 'both',
   sortable: false,
   paginated: false,
   striped: false,

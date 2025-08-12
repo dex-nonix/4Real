@@ -58,8 +58,8 @@
         </template>
       </Column>
       
-      <!-- Actions Column (if specified and not minimal) -->
-      <Column v-if="config.actions && !minimal" header="Actions" :exportable="false" style="min-width:8rem">
+      <!-- Actions Column (if specified) -->
+      <Column v-if="config.actions" header="Actions" :exportable="false">
         <template #body="slotProps">
           <ActionButtons 
             :actions="config.actions"
