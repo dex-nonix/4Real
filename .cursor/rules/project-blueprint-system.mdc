@@ -1,0 +1,62 @@
+# Project Blueprint System
+
+## 🚨 SETUP RULES:
+- Create blueprints folder with blueprints.md overview
+- Number blueprints 01, 02, 03... based on dependencies
+- Each blueprint gets: blueprint.md + PHASES.md + PHASE_X/ folders
+- PHASES.md is a FILE (not folder) listing phases
+- Each phase gets: PHASE_X.md + status.md
+- Foundation (01) must be first, dependencies follow
+
+## 📁 Project Structure
+```
+PROJECT_ROOT/
+├── BIG-PICTURE.md                    # Overall vision & requirements
+├── blueprints/                       # Blueprints folder
+│   ├── blueprints.md                 # Overview + dependencies
+│   ├── 01-foundation/                # Blueprint 1: Foundation
+│   │   ├── blueprint.md              # Blueprint details
+│   │   ├── PHASES.md                 # Phases list (FILE!)
+│   │   ├── PHASE_1/                  # Phase 1 folder
+│   │   │   ├── PHASE_1.md            # Phase specs
+│   │   │   └── status.md             # Status tracking
+│   │   └── PHASE_2/                  # Phase 2 folder
+│   │       ├── PHASE_2.md            # Phase specs
+│   │       └── status.md             # Status tracking
+│   ├── 02-core-system/               # Blueprint 2: Core system
+│   ├── 03-[name]/                    # Blueprint 3: [purpose]
+│   ├── 04-[name]/                    # Blueprint 4: [purpose]
+│   └── XX-[name]/                    # More blueprints...
+```
+
+## 🔗 Dependency-Based Build Order
+```
+| Blueprint | Name | Purpose | Dependencies | Why This Order |
+|-----------|------|---------|--------------|----------------|
+| 01 | foundation | Foundation | None | Foundation for everything |
+| 02 | core-system | Core system | 01 | Needs foundation to work |
+| 03 | [name] | [purpose] | 01 | [dependency reason] |
+| 04 | [name] | [purpose] | 02,03 | [dependency reason] |
+| 05 | [name] | [purpose] | 02,04 | [dependency reason] |
+| XX | [name] | [purpose] | [deps] | [dependency reason] |
+```
+
+## ⚡ Development Rules
+- **NO priority bullshit** - dependencies determine order
+- **01 must be first** - foundation for everything
+- **02-03 depend on 01** - need foundation to work
+- **04 depends on 02,03** - combines core systems
+- **05 depends on 02,04** - enhances existing systems
+- **XX follows dependency chain** - can't skip dependencies
+- **PHASES.md is a FILE** - not a folder
+- **One status.md per phase** - no overengineering
+
+## 🎯 How It Works
+1. **BIG-PICTURE.md** → overall vision
+2. **blueprints.md** → dependency-based build order
+3. **XX-[name]/blueprint.md** → component architecture
+4. **XX-[name]/PHASES.md** → phases list
+5. **XX-[name]/PHASE_X/PHASE_X.md** → implementation specs
+6. **XX-[name]/PHASE_X/status.md** → progress tracking
+
+**You can't start with all - you MUST follow the dependency chain!**
