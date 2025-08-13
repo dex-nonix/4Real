@@ -168,6 +168,14 @@ export default {
     refField: { type: String, default: '' },
     refId: { type: [String, Number], default: null }
   },
+  watch: {
+    entityId() {
+      this.loadEntityIfNeeded()
+    },
+    mode() {
+      this.loadEntityIfNeeded()
+    }
+  },
 
   data() {
     return {
@@ -355,12 +363,14 @@ export default {
       if (this.submitting) return
       this.submitting = true
       try {
+        const baseEntity = this.editingEntity || this.currentEntity || null
+        const payload = this.buildEditablePayload(formData, baseEntity)
         if ((this.displayMode === 'dialog' && this.editingEntity?.id != null) || this.isEditMode) {
           const id = this.editingEntity?.id ?? this.entityId
-          await this.service.update(id, formData)
+          await this.service.update(id, payload)
           this.notifySuccess('Updated successfully')
         } else {
-          await this.service.create(formData)
+          await this.service.create(payload)
           this.notifySuccess('Created successfully')
         }
         this.closeFormDialog()
@@ -379,6 +389,27 @@ export default {
       } finally {
         this.submitting = false
       }
+    },
+
+    buildEditablePayload(formData, baseEntity) {
+      const blocked = new Set(['id', 'created_at', 'updated_at', 'createdAt', 'updatedAt'])
+      const fields = Array.isArray(this.formConfig?.fields) ? this.formConfig.fields : []
+      const editableKeys = fields
+        .filter(f => f && f.key && !f.displayOnly)
+        .map(f => f.key)
+      const payload = {}
+      for (const key of editableKeys) {
+        if (blocked.has(key)) continue
+        if (Object.prototype.hasOwnProperty.call(formData, key)) {
+          if (baseEntity && Object.prototype.hasOwnProperty.call(baseEntity, key)) {
+            const prev = baseEntity[key]
+            const next = formData[key]
+            if (prev === next) continue
+          }
+          payload[key] = formData[key]
+        }
+      }
+      return payload
     },
 
     async confirmDelete() {
@@ -447,18 +478,24 @@ export default {
       if (this.$toast && typeof this.$toast.add === 'function') {
         this.$toast.add({ severity: 'error', summary: 'Error', detail, life: 3000 })
       }
+    },
+
+    async loadEntityIfNeeded() {
+      if (!(this.isViewMode || this.isEditMode)) return
+      if (this.entityId == null) return
+      try {
+        const res = await this.service.get(this.entityId)
+        const body = res?.data
+        this.currentEntity = body?.data || body || null
+      } catch (e) {
+        // no-op
+      }
     }
   },
 
   mounted() {
     this.loadEntities()
-    if ((this.isViewMode || this.isEditMode) && this.entityId != null) {
-      // Load current entity for inline modes
-      this.service.get(this.entityId).then(res => {
-        const body = res?.data
-        this.currentEntity = body?.data || body || null
-      }).catch(() => {})
-    }
+    this.loadEntityIfNeeded()
   }
 }
 </script>

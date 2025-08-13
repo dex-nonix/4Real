@@ -36,7 +36,9 @@
             :is="resolveDisplayWidget((item.displayWidget ?? item.editWidget ?? item.type)).component"
             :id="item.key || `__ui_${idx}`"
             v-bind="{ ...resolveDisplayWidget((item.displayWidget ?? item.editWidget ?? item.type)).props, ...(item.displayProps ?? item.editProps ?? item.props ?? {}) }"
-          />
+          >
+            {{ item.key ? formatDisplay(formData[item.key]) : '' }}
+          </component>
 
           <!-- Field Error Display -->
           <small v-if="item.key && fieldErrors[item.key]" class="p-error">
@@ -45,8 +47,8 @@
         </div>
       </div>
       
-      <!-- Form Actions (hidden for compact mode) -->
-      <div v-if="!compact" class="flex gap-3 justify-content-end mt-4">
+      <!-- Form Actions (hidden for compact mode and display mode) -->
+      <div v-if="!compact && mode !== 'display'" class="flex gap-3 justify-content-end mt-4">
         <Button type="submit" :loading="isSubmitting" :disabled="isSubmitting">
           {{ submitLabel }}
         </Button>
@@ -135,6 +137,9 @@ export default {
     },
     resolveDisplayWidget(widget) {
       return typeof widget === 'string' ? this.displayManager.getWidget(widget, {}) : { component: widget, props: {} }
+    },
+    formatDisplay(value) {
+      return value == null ? '' : String(value)
     },
     
     // Update field value
