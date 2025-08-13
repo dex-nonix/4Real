@@ -1,13 +1,13 @@
 <template>
-  <Sidebar ref="sidebarRef" v-model:visible="visible" position="left" modal :dismissable="true" :style="{ width: '90vw', maxWidth: '18rem' }" @hide="onHide">
-    <div class="w-full h-full overflow-y-auto overflow-x-hidden">
-      <PanelMenu :model="leftNavItems" :router="true" :exact="true" class="w-full md:w-18rem" @item-click="onItemClick"/>
+<Sidebar ref="sidebarRef" v-model:visible="visible" position="left" modal :dismissable="true" :style="{ width: '90vw', maxWidth: '18rem' }" @hide="onHide" :aria-modal="true" role="dialog" :baseZIndex="1000">
+    <div class="w-full h-full overflow-y-auto overflow-x-hidden" @mousedown.capture="preBlur">
+      <PanelMenu :model="menuItems" class="w-full md:w-18rem"/>
     </div>
   </Sidebar>
-  <div class="hidden md:block h-full" v-if="!collapsed">
+  <div class="hidden md:block h-full" v-if="!collapsed" aria-hidden="false">
     <div class="border-right-1 surface-border h-full overflow-hidden">
-      <div class="h-full overflow-y-auto">
-        <PanelMenu :model="leftNavItems" :router="true" :exact="true" class="w-18rem p-1" @item-click="onItemClick"/>
+      <div class="h-full overflow-y-auto" @mousedown.capture="preBlur">
+        <PanelMenu :model="menuItems" class="w-18rem p-1"/>
       </div>
     </div>
   </div>
@@ -33,28 +33,49 @@ const visible = computed({
 const collapsed = computed(() => state.leftCollapsed)
 const router = useRouter()
 
-function onItemClick(event) {
-  // Close sidebar after router processes
-  setTimeout(() => {
-    if (state.leftOpen) state.leftOpen = false
-    try { if (document.activeElement) document.activeElement.blur() } catch {}
-  }, 0)
+// Attach explicit router commands to leaf items; close mobile sidebar after nav
+function enhance(items) {
+  return items.map(item => {
+    const copy = { ...item }
+    if (copy.items && copy.items.length) {
+      copy.items = enhance(copy.items)
+    } else if (copy.to) {
+      copy.command = () => {
+        const el = document.activeElement
+        if (el && typeof el.blur === 'function') el.blur()
+        router.push(copy.to)
+        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+          state.leftOpen = false
+        }
+      }
+    }
+    return copy
+  })
 }
+
+const menuItems = computed(() => enhance(leftNavItems))
 
 const sidebarRef = ref()
 function onHide() {
   // Ensure no focused element remains inside aria-hidden container
-  try { if (document.activeElement) document.activeElement.blur() } catch {}
+  const el = document.activeElement
+  if (el && typeof el.blur === 'function') el.blur()
 }
 
 watch(visible, (v) => {
   if (!v) {
     // Defer blur to after DOM updates when closing via state toggle
     setTimeout(() => {
-      try { if (document.activeElement) document.activeElement.blur() } catch {}
+      const el = document.activeElement
+      if (el && typeof el.blur === 'function') el.blur()
     }, 0)
   }
 })
+
+function preBlur() {
+  const el = document.activeElement
+  if (el && typeof el.blur === 'function') el.blur()
+}
 
 // no-op
 </script>

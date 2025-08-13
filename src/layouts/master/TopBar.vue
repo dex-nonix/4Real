@@ -1,7 +1,7 @@
 <template>
   <div class="flex align-items-center justify-content-between px-3 py-2 border-bottom-1 surface-border" role="banner">
     <div class="flex align-items-center gap-2">
-      <Button icon="pi pi-bars" text @click="toggleLeft" aria-label="Toggle navigation" />
+      <Button id="app-burger" icon="pi pi-bars" text @click="toggleLeftAndCloseMobile" aria-label="Toggle navigation" />
       <div id="page-header-left" class="flex align-items-center gap-2">
         <Button v-if="header.back" icon="pi pi-arrow-left" text @click="onBackClick" />
         <h2 v-if="header.title" class="m-0 text-xl">{{ header.title }}</h2>
@@ -24,7 +24,7 @@ import { ref } from 'vue'
 import { useAppShell } from './useAppShell'
 import { usePageHeader } from './usePageHeader'
 
-const { toggleLeft, toggleRight } = useAppShell()
+const { state, toggleLeft, toggleRight } = useAppShell()
 const { state: header } = usePageHeader()
 
 const menu = ref()
@@ -34,6 +34,14 @@ function toggleMenu(event) {
 
 function onBackClick() {
   if (typeof header.onBack === 'function') header.onBack()
+}
+
+function toggleLeftAndCloseMobile() {
+  toggleLeft()
+  // If mobile menu was open, blur after toggle
+  if (state.leftOpen === false) {
+    try { if (document.activeElement) document.activeElement.blur() } catch {}
+  }
 }
 </script>
 
