@@ -13,21 +13,29 @@
             <span v-if="item.required" class="required">*</span>
           </label>
 
-          <!-- Dynamic Widget Rendering -->
-          <component 
-            :is="resolveWidget(item.type).component"
-            :id="item.key || `__ui_${idx}`"
-            v-bind="{ ...resolveWidget(item.type).props, ...(item.props || {}) }"
-            v-if="item.key"
-            :model-value="formData[item.key]"
-            @update:model-value="updateField(item.key, $event)"
-            :class="{ 'error': item.key && fieldErrors[item.key] }"
-          />
+          <!-- Dynamic Widget Rendering (edit vs display) -->
+          <template v-if="(mode !== 'display') && !item.displayOnly">
+            <component 
+              v-if="item.key"
+              :is="resolveEditWidget(item.editWidget ?? item.type).component"
+              :id="item.key || `__ui_${idx}`"
+              v-bind="{ ...resolveEditWidget(item.editWidget ?? item.type).props, ...(item.editProps ?? item.props ?? {}) }"
+              :model-value="formData[item.key]"
+              @update:model-value="updateField(item.key, $event)"
+              :class="{ 'error': item.key && fieldErrors[item.key] }"
+            />
+            <component
+              v-else
+              :is="resolveEditWidget(item.editWidget ?? item.type).component"
+              :id="`__ui_${idx}`"
+              v-bind="{ ...resolveEditWidget(item.editWidget ?? item.type).props, ...(item.editProps ?? item.props ?? {}) }"
+            />
+          </template>
           <component
             v-else
-            :is="resolveWidget(item.type).component"
-            :id="`__ui_${idx}`"
-            v-bind="{ ...resolveWidget(item.type).props, ...(item.props || {}) }"
+            :is="resolveDisplayWidget((item.displayWidget ?? item.editWidget ?? item.type)).component"
+            :id="item.key || `__ui_${idx}`"
+            v-bind="{ ...resolveDisplayWidget((item.displayWidget ?? item.editWidget ?? item.type)).props, ...(item.displayProps ?? item.editProps ?? item.props ?? {}) }"
           />
 
           <!-- Field Error Display -->
@@ -51,7 +59,8 @@
 </template>
 
 <script>
-import FormWidgetManager from '@/components/forms/FormWidgetManager.js'
+import EditWidgetManager from '@/widgets/EditWidgetManager.js'
+import DisplayWidgetManager from '@/widgets/DisplayWidgetManager.js'
 import Button from 'primevue/button'
 
 export default {
@@ -62,6 +71,10 @@ export default {
     config: {
       type: Object,
       required: true
+    },
+    mode: {
+      type: String,
+      default: 'edit' // 'edit' | 'display'
     },
     initialData: {
       type: Object,
@@ -107,7 +120,8 @@ export default {
   
   data() {
     return {
-      formManager: new FormWidgetManager(),
+      editManager: new EditWidgetManager(),
+      displayManager: new DisplayWidgetManager(),
       formData: { ...this.initialData },
       fieldErrors: {},
       isSubmitting: false
@@ -115,9 +129,12 @@ export default {
   },
   
   methods: {
-    // Resolve widget using FormWidgetManager
-    resolveWidget(type) {
-      return this.formManager.getWidget(type, {})
+    // Resolve widgets
+    resolveEditWidget(widget) {
+      return typeof widget === 'string' ? this.editManager.getWidget(widget, {}) : { component: widget, props: {} }
+    },
+    resolveDisplayWidget(widget) {
+      return typeof widget === 'string' ? this.displayManager.getWidget(widget, {}) : { component: widget, props: {} }
     },
     
     // Update field value

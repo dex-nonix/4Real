@@ -43,9 +43,11 @@
 
     <!-- Inline view panel when displayMode is inline -->
     <div v-if="displayMode === 'inline' && isViewMode" class="view-panel mt-3">
-      <div v-for="field in viewFields" :key="field.key" class="mb-2">
-        <strong>{{ field.label || field.key }}</strong>: {{ currentEntity ? currentEntity[field.key] : '' }}
-      </div>
+      <DynamicForm
+        :config="formConfig"
+        :initial-data="currentEntity || {}"
+        mode="display"
+      />
     </div>
 
     <Dialog
@@ -76,14 +78,11 @@
       :style="{ width: '40vw' }"
     >
       <div v-if="viewingEntity" class="view-details flex flex-column gap-3">
-        <div
-          v-for="field in viewFields"
-          :key="field.key"
-          class="flex justify-content-between align-items-start gap-3"
-        >
-          <span class="font-medium">{{ field.label || field.key }}</span>
-          <span class="text-color-secondary">{{ formatValue(field, viewingEntity[field.key]) }}</span>
-        </div>
+        <DynamicForm
+          :config="formConfig"
+          :initial-data="viewingEntity || {}"
+          mode="display"
+        />
       </div>
       <template #footer>
         <Button label="Close" severity="secondary" @click="closeView" />

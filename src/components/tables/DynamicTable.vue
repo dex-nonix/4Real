@@ -94,7 +94,7 @@
 <script>
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-import TableCellWidgetManager from '@/components/tables/TableCellWidgetManager.js'
+import DisplayWidgetManager from '@/widgets/DisplayWidgetManager.js'
 import SearchFilter from '../filters/SearchFilter.vue'
 import DateRangeFilter from '../filters/DateRangeFilter.vue'
 import ActionButtons from '../actions/ActionButtons.vue'
@@ -180,7 +180,7 @@ export default {
   
   data() {
     return {
-      tableManager: new TableCellWidgetManager(),
+      tableManager: new DisplayWidgetManager(),
       searchQuery: '',
       dateRange: null,
       selectedRows: [],
