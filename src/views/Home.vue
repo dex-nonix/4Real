@@ -22,6 +22,17 @@
           </router-link>
         </div>
       </div>
+
+      <div class="grid" style="margin-top: 2rem;">
+        <div class="col-12 md:col-6">
+          <h3 class="m-0 mb-2">ChatWidget A</h3>
+          <ChatWidget instance-id="main" />
+        </div>
+        <div class="col-12 md:col-6">
+          <h3 class="m-0 mb-2">ChatWidget B</h3>
+          <ChatWidget instance-id="side" />
+        </div>
+      </div>
     </section>
   </Page>
 </template>
@@ -29,6 +40,7 @@
 <script setup>
 import Button from 'primevue/button'
 import Page from '@/components/page/Page.vue'
+import ChatWidget from '@/components/chat/ChatWidget.vue'
 </script>
 
 <style scoped>
