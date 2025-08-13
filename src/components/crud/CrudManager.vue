@@ -22,6 +22,7 @@
     </div>
 
     <DynamicTable
+      v-if="isListMode"
       :config="tableConfig"
       :data="entities"
       :loading="loading"
