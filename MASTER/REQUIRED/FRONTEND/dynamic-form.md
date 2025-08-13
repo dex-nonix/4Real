@@ -74,6 +74,8 @@ export const EDIT_WIDGETS = {
 }
 ```
 
+Supported field types include: text, number, date, select, textarea, and json (for `*_json` fields like `metadata_json`, `config_json`).
+
 Registries live under `widgets/`. Because we use PrimeVue components directly, no custom wrappers are required for standard fields.
 
 ## 🔧 **IMPLEMENTATION:**

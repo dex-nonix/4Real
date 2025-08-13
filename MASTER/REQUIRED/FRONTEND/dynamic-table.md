@@ -42,7 +42,7 @@ methods: {
 
  
 
-The DisplayWidgetManager automatically resolves cell types like `'text'`, `'status'`, `'actions'`, `'date'` to their corresponding components (span, Tag, Button, etc.) and applies default styling and behavior for consistent table cell rendering. PrimeVue components are used directly; no custom input wrappers needed.
+The DisplayWidgetManager automatically resolves cell types like `'text'`, `'status'`, `'actions'`, `'date'`, and `'json'` to their corresponding components (span, Tag, Button, etc.) and applies default styling and behavior for consistent table cell rendering. PrimeVue components are used directly; no custom input wrappers needed.
 
 ### **Display Widget Registry (display-widgets.js):**
 The DisplayWidgetManager uses a registry file that maps cell types to actual components:

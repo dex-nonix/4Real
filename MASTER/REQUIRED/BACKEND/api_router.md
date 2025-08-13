@@ -67,7 +67,12 @@ class APIRouter:
     def _create_route(self, service, method, service_name):
         """Create Flask route from decorator info"""
         # Service methods must expose RELATIVE paths like '/', '/{id}', '/search'
-        full_path = f"/{service_name}{method._path}"
+        # Placeholders use `{id}` style and are normalized to `<id>` for Flask
+        path = method._path
+        if not path.startswith('/'):
+            path = '/' + path
+        flask_path = path.replace('{', '<').replace('}', '>')
+        full_path = f"/{service_name}{flask_path}"
         
         @self.blueprint.route(full_path, methods=method._methods)
         def route_handler(*args, **kwargs):
@@ -97,9 +102,10 @@ from services.album_service import AlbumService
 app = Flask(__name__)
 api_router = APIRouter()
 
-# Register services with dependencies
-api_router.register_service('artists', ArtistService, db=db, config=config)
-api_router.register_service('albums', AlbumService, db=db, storage_path='/uploads')
+# Register services (simple per-table services + ChatService)
+api_router.register_service('artists', ArtistService)
+api_router.register_service('albums', AlbumService)
+api_router.register_service('chat', ChatService)
 
 # (example for complex service using factory intentionally omitted)
 
@@ -227,7 +233,16 @@ class AlbumService:
 api_router.register_service('health', HealthService)
 
 # Service with dependencies
-api_router.register_service('artists', ArtistService, db=db, config=config)
+api_router.register_service('artists', ArtistService)
+api_router.register_service('personas', PersonaService)
+api_router.register_service('internal-tools', InternalToolService)
+api_router.register_service('persona-tool-access', PersonaToolAccessService)
+api_router.register_service('mcp-servers', MCPServerService)
+api_router.register_service('persona-mcp-servers', PersonaMCPServerService)
+api_router.register_service('chat-sessions', ChatSessionService)
+api_router.register_service('chat-messages', ChatMessageService)
+api_router.register_service('tool-invocation-logs', ToolInvocationLogService)
+api_router.register_service('chat', ChatService)
 
 # Service with complex instantiation using factory (example intentionally removed)
 ```

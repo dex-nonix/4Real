@@ -399,6 +399,14 @@ export const artistCrudConfig = {
 import ArtistService from '@/services/ArtistService.js'
 import AlbumService from '@/services/AlbumService.js'
 import TrackService from '@/services/TrackService.js'
+import PersonaService from '@/services/PersonaService.js'
+import InternalToolService from '@/services/InternalToolService.js'
+import PersonaToolAccessService from '@/services/PersonaToolAccessService.js'
+import MCPServerService from '@/services/MCPServerService.js'
+import PersonaMCPServerService from '@/services/PersonaMCPServerService.js'
+import ChatSessionService from '@/services/ChatSessionService.js'
+import ChatMessageService from '@/services/ChatMessageService.js'
+import ToolInvocationLogService from '@/services/ToolInvocationLogService.js'
 
 // ... create app, use router/PrimeVue/ToastService
 
@@ -406,6 +414,14 @@ import TrackService from '@/services/TrackService.js'
 app.provide('artists', new ArtistService())
 app.provide('albums', new AlbumService())
 app.provide('tracks', new TrackService())
+app.provide('personas', new PersonaService())
+app.provide('internal-tools', new InternalToolService())
+app.provide('persona-tool-access', new PersonaToolAccessService())
+app.provide('mcp-servers', new MCPServerService())
+app.provide('persona-mcp-servers', new PersonaMCPServerService())
+app.provide('chat-sessions', new ChatSessionService())
+app.provide('chat-messages', new ChatMessageService())
+app.provide('tool-invocation-logs', new ToolInvocationLogService())
 ```
 
 ### DO NOT handcraft CRUD routes manually
@@ -417,7 +433,7 @@ app.provide('tracks', new TrackService())
 // src/router/index.js (excerpt)
 import CrudPage from '@/views/CrudPage.vue'
 
-// Returns an array with: /artists, /artists/new, /artists/:id, /artists/:id/edit
+// Returns an array with standard CRUD routes for the key
 const routes = [
   ...CrudPage.createRoutes('artists', {
     displayMode: 'inline',
@@ -429,8 +445,15 @@ const routes = [
     // formConfigOverride: { fields: [...] },
     // basePath: '/artists' // default is `/${entityKey}`
   }),
-  // Example for albums too
-  ...CrudPage.createRoutes('albums', { displayMode: 'inline' })
+  ...CrudPage.createRoutes('albums', { displayMode: 'inline' }),
+  ...CrudPage.createRoutes('personas'),
+  ...CrudPage.createRoutes('internal-tools'),
+  ...CrudPage.createRoutes('persona-tool-access'),
+  ...CrudPage.createRoutes('mcp-servers'),
+  ...CrudPage.createRoutes('persona-mcp-servers'),
+  ...CrudPage.createRoutes('chat-sessions'),
+  ...CrudPage.createRoutes('chat-messages'),
+  ...CrudPage.createRoutes('tool-invocation-logs'),
 ]
 ```
 

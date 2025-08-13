@@ -54,7 +54,7 @@ Goal: A minimal, working SPA baseline that proves the routing, reusable layouts,
 cd /home/dex/Desktop/shadewalk/4Real
 npm install
 # Dev server proxies /api to http://localhost:5000 by default (see vite.config.js)
-## Environment vars
+# Environment vars
 # Dev: VITE_API_BASE_URL=/api
 # Prod: VITE_API_BASE_URL=https://backend-host:5000/api
 ```

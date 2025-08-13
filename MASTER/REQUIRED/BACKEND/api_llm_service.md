@@ -141,8 +141,8 @@ Implement the following services by extending `CrudService` with model + config:
     1) persist user message
     2) resolve persona, system prompt, and chat model (`AIModelMapping` purpose='chat')
     3) compile available tools = internal allowed by `PersonaToolAccess` + MCP tools from attached servers
-    4) run LLM with tool-calling enabled; execute tool calls within allowlist; log each call in `ToolInvocationLog`
-    5) persist tool messages and assistant final message
+    4) call LLM (placeholder today); future: execute tool calls within allowlist; log each call in `ToolInvocationLog`
+    5) persist assistant final message
     6) return assistant final message
 
 - POST `/api/chat/sessions/{id}/retry` – retry the last assistant turn (re-run with same context)
@@ -176,7 +176,7 @@ Implement the following services by extending `CrudService` with model + config:
 
 ### Model Selection
 - Use `AIModelMapping` to select model parameters for `purpose='chat'`, optionally by `persona_id`.
-- Fallback to a default provider/model if no persona-specific mapping exists.
+- Fallback to a default provider/model if no mapping exists (placeholder used until provider hookup).
 
 ---
 

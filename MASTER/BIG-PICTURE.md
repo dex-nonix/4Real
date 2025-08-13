@@ -753,25 +753,13 @@ External MCP Tools:
 - "any_mcp_server:any_tool" - Whatever external servers provide
 ```
 
-### **📋 Persona Configuration:**
-```json
-{
-  "name": "TRC Persona",
-  "internal_tools": ["artist:*", "file:read_lyrics"],
-  "mcp_servers": [
-    {
-      "name": "file_server",
-      "command": "npx -y @modelcontextprotocol/server-filesystem",
-      "args": ["--root", "/path/to/files"]
-    },
-    {
-      "name": "github_server", 
-      "command": "npx -y @modelcontextprotocol/server-github",
-      "args": ["--token", "ghp_xxx"]
-    }
-  ]
-}
-```
+### **📋 Persona Configuration (DB-managed):**
+- Personas and tool access are stored in DB tables (runtime-editable):
+  - `personas` – name, active flag, optional system prompt, metadata
+  - `internal_tools` – `namespace:name`, description, config, active
+  - `persona_tool_access` – allowlist patterns like `artist:*` or `file:read_lyrics`
+  - `mcp_servers` – server name, command, args/env JSON, active
+  - `persona_mcp_servers` – link personas to MCP servers with optional arg/env overrides
 
 ### **🎨 Chat Interface:**
 - **Permanent sidebar** - toggle chat when needed
@@ -784,7 +772,7 @@ External MCP Tools:
 - **MCP Client** - connects to external MCP servers
 - **Server Discovery** - find available MCP servers
 - **Tool Registration** - external tools appear in persona's tool list
-- **JSON Configuration** - define MCP servers like in Cursor
+- **DB-Managed** - MCP servers and persona links stored in DB (no inline JSON configs)
 
 ### **📊 Chat System Benefits:**
 - **Natural Interface** - manage music through conversation

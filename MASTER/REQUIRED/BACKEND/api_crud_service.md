@@ -15,27 +15,25 @@
 
 ### **1. CrudService Base Class (relative paths only, explicit methods):**
 ```python
-# services/crud_service.py
-from flask import request, jsonify
+# services/crud_service.py (excerpt)
+from flask import jsonify, Request
 from decorators import expose
+from .. import db
 
 class CrudService:
     """Generic CRUD service that handles ALL operations automatically"""
     
-    def __init__(self, db_session=None, model_class=None, config=None):
-        # Optional args; use existing attributes if not provided
+    def __init__(self, model_class=None, config=None):
         if model_class is not None:
             self.model = model_class
         elif not hasattr(self, 'model'):
             raise ValueError('model is required')
 
-        # Config must exist (passed or defined on subclass). No generic fallback
         if config is not None:
             self.config = config
         elif not hasattr(self, 'config'):
             raise ValueError('config is required')
 
-        # Fill only missing keys from defaults
         self.config = self._apply_default_config_values(self.config)
     
     def _get_default_config(self):
@@ -108,45 +106,45 @@ class CrudService:
         return handler(*args, **kwargs)
 
     @expose('/', methods=['POST'])
-    def create(self, request):
+    def create(self, request: Request):
         return self._call_if_enabled('create', self._handle_create, request)
 
     @expose('/')
-    def list_all(self, request):
+    def list_all(self, request: Request):
         return self._call_if_enabled('list', self._handle_list, request)
 
     @expose('/{id}')
-    def read_one(self, request, id):
+    def read_one(self, request: Request, id: int):
         return self._call_if_enabled('read', self._handle_read, request, id)
 
     @expose('/{id}', methods=['PUT'])
-    def update(self, request, id):
+    def update(self, request: Request, id: int):
         return self._call_if_enabled('update', self._handle_update, request, id)
 
     @expose('/{id}', methods=['DELETE'])
-    def delete(self, request, id):
+    def delete(self, request: Request, id: int):
         return self._call_if_enabled('delete', self._handle_delete, request, id)
 
     @expose('/search')
-    def search(self, request):
+    def search(self, request: Request):
         return self._call_if_enabled('search', self._handle_search, request)
 
     @expose('/bulk', methods=['POST'])
-    def bulk_operations(self, request):
+    def bulk_operations(self, request: Request):
         return self._call_if_enabled('bulk', self._handle_bulk, request)
 
     @expose('/selector')
-    def selector(self, request):
+    def selector(self, request: Request):
         return self._call_if_enabled('selector', self._handle_selector, request)
 
     @expose('/selector/{id}')
-    def single_selector(self, request, id):
+    def single_selector(self, request: Request, id: int):
         return self._call_if_enabled('selector', self._handle_single_selector, request, id)
     
     def _handle_create(self, request):
         """Handle POST /{path} - Create new record"""
         try:
-            data = request.get_json()
+            data = request.get_json(silent=True) or {}
             
             # Validation
             if self.config['validation']['enabled']:
@@ -156,8 +154,8 @@ class CrudService:
             
             # Create instance
             instance = self.model(**data)
-            self.db.add(instance)
-            self.db.commit()
+            db.session.add(instance)
+            db.session.commit()
             
             return jsonify({
                 'message': 'Created successfully',
@@ -165,13 +163,13 @@ class CrudService:
             }), 201
             
         except Exception as e:
-            self.db.rollback()
+            db.session.rollback()
             return jsonify({'error': str(e)}), 500
     
     def _handle_list(self, request):
         """Handle GET /{path} - List all records with filtering/pagination/sorting"""
         try:
-            query = self.db.query(self.model)
+            query = self.model.query
             
             # Apply filters
             if self.config['filters']['enabled']:
@@ -189,11 +187,7 @@ class CrudService:
                     self.config['pagination']['max_page_size']
                 )
                 
-                pagination = query.paginate(
-                    page=page, 
-                    per_page=per_page, 
-                    error_out=False
-                )
+                pagination = db.paginate(query, page=page, per_page=per_page, error_out=False)
                 
                 return jsonify({
                     'data': [self._serialize(item) for item in pagination.items],
@@ -220,7 +214,7 @@ class CrudService:
     def _handle_read(self, request, id):
         """Handle GET /{path}/{id} - Read single record"""
         try:
-            instance = self.db.query(self.model).filter_by(id=id).first()
+            instance = self.model.query.filter_by(id=id).first()
             
             if not instance:
                 return jsonify({'error': 'Not found'}), 404
@@ -240,7 +234,7 @@ class CrudService:
             if not instance:
                 return jsonify({'error': 'Not found'}), 404
             
-            data = request.get_json()
+            data = request.get_json(silent=True) or {}
             
             # Validation
             if self.config['validation']['enabled']:
@@ -253,7 +247,7 @@ class CrudService:
                 if hasattr(instance, key):
                     setattr(instance, key, value)
             
-            self.db.commit()
+            db.session.commit()
             
             return jsonify({
                 'message': 'Updated successfully',
@@ -261,39 +255,39 @@ class CrudService:
             })
             
         except Exception as e:
-            self.db.rollback()
+            db.session.rollback()
             return jsonify({'error': str(e)}), 500
     
     def _handle_delete(self, request, id):
         """Handle DELETE /{path}/{id} - Delete record"""
         try:
-            instance = self.db.query(self.model).filter_by(id=id).first()
+            instance = self.model.query.filter_by(id=id).first()
             
             if not instance:
                 return jsonify({'error': 'Not found'}), 404
             
-            self.db.delete(instance)
-            self.db.commit()
+            db.session.delete(instance)
+            db.session.commit()
             
             return jsonify({
                 'message': 'Deleted successfully'
             })
             
         except Exception as e:
-            self.db.rollback()
+            db.session.rollback()
             return jsonify({'error': str(e)}), 500
     
     def _handle_search(self, request):
         """Handle GET /{path}/search - Search records"""
         try:
             query = request.args.get('q', '')
-            fields = request.args.get('fields', '').split(',')
+            fields = request.args.get('fields', '').split(',') if request.args.get('fields') else []
             
             if not query:
                 return jsonify({'error': 'Search query required'}), 400
             
             # Build search query
-            search_query = self.db.query(self.model)
+            search_query = self.model.query
             
             if fields:
                 # Search in specific fields
@@ -311,7 +305,7 @@ class CrudService:
                 from sqlalchemy import or_
                 conditions = []
                 for column in self.model.__table__.columns:
-                    if str(column.type).startswith('VARCHAR') or str(column.type).startswith('TEXT'):
+                    if hasattr(column.type, 'length') or column.type.python_type is str:
                         conditions.append(column.ilike(f'%{query}%'))
                 if conditions:
                     search_query = search_query.filter(or_(*conditions))
@@ -324,11 +318,7 @@ class CrudService:
                     self.config['pagination']['max_page_size']
                 )
                 
-                pagination = search_query.paginate(
-                    page=page, 
-                    per_page=per_page, 
-                    error_out=False
-                )
+                pagination = db.paginate(search_query, page=page, per_page=per_page, error_out=False)
                 
                 return jsonify({
                     'data': [self._serialize(item) for item in pagination.items],
@@ -353,7 +343,7 @@ class CrudService:
     def _handle_bulk(self, request):
         """Handle POST /{path}/bulk - Bulk operations"""
         try:
-            data = request.get_json()
+            data = request.get_json(silent=True) or {}
             operation = data.get('operation')
             ids = data.get('ids', [])
             
@@ -362,14 +352,12 @@ class CrudService:
             
             if operation == 'delete':
                 # Bulk delete
-                instances = self.db.query(self.model).filter(
-                    self.model.id.in_(ids)
-                ).all()
+                instances = self.model.query.filter(self.model.id.in_(ids)).all()
                 
                 for instance in instances:
-                    self.db.delete(instance)
+                    db.session.delete(instance)
                 
-                self.db.commit()
+                db.session.commit()
                 
                 return jsonify({
                     'message': f'Deleted {len(instances)} records successfully'
@@ -379,16 +367,14 @@ class CrudService:
                 # Bulk update
                 update_data = data.get('data', {})
                 
-                instances = self.db.query(self.model).filter(
-                    self.model.id.in_(ids)
-                ).all()
+                instances = self.model.query.filter(self.model.id.in_(ids)).all()
                 
                 for instance in instances:
                     for key, value in update_data.items():
                         if hasattr(instance, key):
                             setattr(instance, key, value)
                 
-                self.db.commit()
+                db.session.commit()
                 
                 return jsonify({
                     'message': f'Updated {len(instances)} records successfully'
@@ -398,13 +384,13 @@ class CrudService:
                 return jsonify({'error': 'Invalid operation'}), 400
                 
         except Exception as e:
-            self.db.rollback()
+            db.session.rollback()
             return jsonify({'error': str(e)}), 500
     
     def _handle_selector(self, request):
         """Handle GET /{path}/selector - Optimized list for dropdowns/selects"""
         try:
-            query = self.db.query(self.model)
+            query = self.model.query
             
             # Apply search if provided
             search_query = request.args.get('q', '')
@@ -421,8 +407,7 @@ class CrudService:
             # Apply ordering
             order_field = self.config['selector']['order_by']
             if hasattr(self.model, order_field):
-                field = getattr(self.model, order_field)
-                query = query.order_by(field.asc())
+                query = query.order_by(getattr(self.model, order_field).asc())
             
             # Apply limit for performance
             limit = self.config['selector']['limit']
