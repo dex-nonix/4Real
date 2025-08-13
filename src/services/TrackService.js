@@ -7,7 +7,7 @@ export default class TrackService extends CrudService {
       table: {
         columns: [
           { field: 'title', header: 'Title', type: 'text', sortable: true },
-          { field: 'album_id', header: 'Album ID', type: 'text', sortable: true },
+          { field: 'album_id', header: 'Album', type: 'fk_display', sortable: true, props: { entity: 'albums' } },
           { field: 'track_number', header: 'Track #', type: 'number', sortable: true },
           { field: 'duration_seconds', header: 'Duration (s)', type: 'number', sortable: true }
         ],
@@ -23,7 +23,7 @@ export default class TrackService extends CrudService {
       },
       form: {
         fields: [
-          { key: 'album_id', type: 'text', label: 'Album ID', required: true, props: { placeholder: 'Enter album ID' } },
+          { key: 'album_id', type: 'fk_select', label: 'Album', required: true, props: { entity: 'albums', search: true } },
           { key: 'title', type: 'text', label: 'Title', required: true, props: { placeholder: 'Enter track title' } },
           { key: 'track_number', type: 'number', label: 'Track Number' },
           { key: 'duration_seconds', type: 'number', label: 'Duration (seconds)' },

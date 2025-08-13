@@ -7,7 +7,7 @@ export default class AlbumService extends CrudService {
       table: {
         columns: [
           { field: 'title', header: 'Title', type: 'text', sortable: true },
-          { field: 'artist_id', header: 'Artist ID', type: 'text', sortable: true },
+          { field: 'artist_id', header: 'Artist', type: 'fk_display', sortable: true, props: { entity: 'artists' } },
           { field: 'release_date', header: 'Release Date', type: 'date', sortable: true }
         ],
         actions: ['view', 'edit', 'delete'],
@@ -22,7 +22,7 @@ export default class AlbumService extends CrudService {
       },
       form: {
         fields: [
-          { key: 'artist_id', type: 'text', label: 'Artist ID', required: true, props: { placeholder: 'Enter artist ID' } },
+          { key: 'artist_id', type: 'fk_select', label: 'Artist', required: true, props: { entity: 'artists', search: true } },
           { key: 'title', type: 'text', label: 'Title', required: true, props: { placeholder: 'Enter album title' } },
           { key: 'release_date', type: 'date', label: 'Release Date', props: { dateFormat: 'yy-mm-dd' } },
           { key: 'description', type: 'text', label: 'Description', props: { placeholder: 'Enter description' } }

@@ -7,13 +7,13 @@ export default class ChatSessionService extends CrudService {
       table: {
         columns: [
           { field: 'title', header: 'Title', type: 'text', sortable: true },
-          { field: 'persona_id', header: 'Persona', type: 'number', sortable: true },
+          { field: 'persona_id', header: 'Persona', type: 'fk_display', sortable: true, props: { entity: 'personas' } },
           { field: 'created_by', header: 'Created By', type: 'text', sortable: true }
         ]
       },
       form: {
         fields: [
-          { key: 'persona_id', type: 'number', label: 'Persona ID', required: true },
+          { key: 'persona_id', type: 'fk_select', label: 'Persona', required: true, props: { entity: 'personas', search: true } },
           { key: 'title', type: 'text', label: 'Title', required: true },
           { key: 'created_by', type: 'text', label: 'Created By' },
           { key: 'metadata_json', type: 'json', label: 'Metadata (JSON)' }

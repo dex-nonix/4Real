@@ -6,8 +6,8 @@ export default class AIAnalysisResultService extends CrudService {
     super('ai-analysis-results', {
       table: {
         columns: [
-          { field: 'track_id', header: 'Track ID', type: 'text', sortable: true },
-          { field: 'provider_id', header: 'Provider ID', type: 'text', sortable: true },
+          { field: 'track_id', header: 'Track', type: 'fk_display', sortable: true, props: { entity: 'tracks' } },
+          { field: 'provider_id', header: 'Provider', type: 'fk_display', sortable: true, props: { entity: 'ai-providers' } },
           { field: 'analysis_type', header: 'Type', type: 'text', sortable: true },
           { field: 'model_name', header: 'Model', type: 'text', sortable: true }
         ],
@@ -23,8 +23,8 @@ export default class AIAnalysisResultService extends CrudService {
       },
       form: {
         fields: [
-          { key: 'track_id', type: 'text', label: 'Track ID', required: true },
-          { key: 'provider_id', type: 'text', label: 'Provider ID', required: true },
+          { key: 'track_id', type: 'fk_select', label: 'Track', required: true, props: { entity: 'tracks', search: true } },
+          { key: 'provider_id', type: 'fk_select', label: 'Provider', required: true, props: { entity: 'ai-providers', search: true } },
           { key: 'analysis_type', type: 'text', label: 'Analysis Type', required: true },
           { key: 'model_name', type: 'text', label: 'Model Name' },
           { key: 'result_json', type: 'json', label: 'Result (JSON)' }

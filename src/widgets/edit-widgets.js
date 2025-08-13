@@ -7,7 +7,7 @@ import Slider from 'primevue/slider'
 import Calendar from 'primevue/calendar'
 import FileUpload from 'primevue/fileupload'
 import Editor from 'primevue/editor'
-import { ref, inject } from 'vue'
+import { ref, inject, h } from 'vue'
 import CrudService from '@/services/CrudService.js'
 
 export const EDIT_WIDGETS = {
@@ -78,14 +78,28 @@ function createFkSelect() {
 
       return { options, selected, onSearch, update }
     },
-    template: `
-      <Dropdown v-if="!multiple" class="w-full" :options="options" :optionLabel="labelKey" :optionValue="valueKey"
-        :placeholder="placeholder" :disabled="disabled" :showClear="clearable" :filter="search" :filterBy="labelKey"
-        :modelValue="modelValue" @update:modelValue="update" @filter="onSearch" />
-      <MultiSelect v-else class="w-full" :options="options" :optionLabel="labelKey" :optionValue="valueKey"
-        :placeholder="placeholder" :disabled="disabled" :showClear="clearable"
-        :modelValue="modelValue" @update:modelValue="update" />
-    `
+    render() {
+      const commonProps = {
+        class: 'w-full',
+        options: this.options,
+        optionLabel: this.labelKey,
+        optionValue: this.valueKey,
+        placeholder: this.placeholder,
+        disabled: this.disabled,
+        showClear: this.clearable,
+        modelValue: this.modelValue,
+        'onUpdate:modelValue': this.update
+      }
+      if (!this.multiple) {
+        return h(Dropdown, {
+          ...commonProps,
+          filter: this.search,
+          filterBy: this.labelKey,
+          onFilter: this.onSearch
+        })
+      }
+      return h(MultiSelect, commonProps)
+    }
   }
 }
 

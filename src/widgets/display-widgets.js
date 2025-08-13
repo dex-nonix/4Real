@@ -2,7 +2,7 @@
 import Tag from 'primevue/tag'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
-import { ref, inject } from 'vue'
+import { ref, inject, h } from 'vue'
 import CrudService from '@/services/CrudService.js'
 
 export const DISPLAY_WIDGETS = {
@@ -27,13 +27,13 @@ export const DISPLAY_WIDGETS = {
         } catch { label.value = '' }
       }
       if (Array.isArray(props.value)) {
-        label.value = '' // could resolve multiple labels if needed
+        label.value = ''
       } else if (props.value != null) {
         resolve(props.value)
       }
       return { label }
     },
-    template: `<span>{{ label }}</span>`
+    render() { return h('span', this.label) }
   }, defaultProps: {} }
 }
 
