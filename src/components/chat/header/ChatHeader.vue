@@ -6,6 +6,8 @@
       <span v-if="personaName" class="text-500">— {{ personaName }}</span>
     </div>
     <div class="flex align-items-center gap-2">
+      <Button class="hidden md:inline-flex" size="small" label="Left" icon="pi pi-bars" @click="$emit('toggle-left')" />
+      <Button class="hidden md:inline-flex" size="small" label="Right" icon="pi pi-arrow-right" @click="$emit('toggle-right')" />
       <Button size="small" label="New Session" icon="pi pi-plus" @click="$emit('new-session')" />
     </div>
   </div>
@@ -19,7 +21,7 @@ defineProps({
   personaName: { type: String, default: '' },
 })
 
-defineEmits(['new-session'])
+defineEmits(['new-session','toggle-left','toggle-right'])
 </script>
 
 

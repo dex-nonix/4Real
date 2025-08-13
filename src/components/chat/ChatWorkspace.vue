@@ -4,10 +4,12 @@
       :title="activeTitle"
       :persona-name="activePersonaName"
       @new-session="$emit('new-session')"
+      @toggle-left="leftVisible = !leftVisible"
+      @toggle-right="rightVisible = !rightVisible"
     />
 
     <div class="grid">
-      <div v-if="enableLeftPanel" class="col-12 md:col-3">
+      <div v-if="enableLeftPanel && leftVisible" class="col-12 md:col-3">
         <LeftPanel
           :personas="personas"
           :selected-persona-id="selectedPersonaId"
@@ -41,8 +43,8 @@
         </div>
       </div>
 
-      <div v-if="enableRightPanel" class="col-12 md:col-3">
-        <RightPanel />
+      <div v-if="enableRightPanel && rightVisible" class="col-12 md:col-3">
+        <RightPanel :tools="tools" :mcp-servers="mcpServers" @refresh-tools="$emit('refresh-tools')" @refresh-mcp="$emit('refresh-mcp')" />
       </div>
     </div>
   </div>
@@ -67,9 +69,14 @@ const props = defineProps({
   activeTabId: { type: [String, null], default: null },
   messagesBySession: { type: Object, default: () => ({}) },
   draftsBySession: { type: Object, default: () => ({}) },
+  tools: { type: Array, default: () => [] },
+  mcpServers: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits(['update:selected-persona-id','open-session','new-session','activate-tab','close-tab','load-messages','update-draft','send','retry'])
+
+const leftVisible = ref(true)
+const rightVisible = ref(true)
 
 const activeTitle = computed(() => {
   const active = props.openTabs.find(t => t.id === props.activeTabId)

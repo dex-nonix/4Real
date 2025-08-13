@@ -10,6 +10,8 @@
       :active-tab-id="activeTabId"
       :messages-by-session="messagesBySession"
       :drafts-by-session="draftsBySession"
+      :tools="effectiveTools"
+      :mcp-servers="mcpServers"
       @send="handleSend"
       @retry="handleRetry"
       @update:selected-persona-id="(v) => { selectedPersonaId = v }"
@@ -19,6 +21,8 @@
       @close-tab="handleCloseTab"
       @load-messages="(sid) => loadMessages(sid)"
       @update-draft="({ sessionId, text }) => setDraft(sessionId, text)"
+      @refresh-tools="refreshTools"
+      @refresh-mcp="refreshMcp"
     />
   </div>
 </template>
@@ -59,6 +63,7 @@ const {
 } = useChatInstance({ instanceId: props.instanceId, persistKey: props.persistKey || `chat:${props.instanceId}`, onError: handleErrorToast })
 
 let selectedPersonaId = ref(props.initialPersonaId)
+const effectiveTools = ref([])
 
 async function handleNewSession() {
   try {
@@ -89,16 +94,30 @@ async function handleRetry() {
   await retryLast(active.sessionId)
 }
 
+async function refreshTools() {
+  const personaId = selectedPersonaId.value || (personas.value[0]?.id ?? personas.value[0]?.value)
+  if (!personaId) { effectiveTools.value = []; return }
+  try {
+    const res = await new (await import('@/services/ChatRuntimeService.js')).default().personaTools(personaId)
+    effectiveTools.value = res.data?.data || res.data || []
+  } catch { effectiveTools.value = [] }
+}
+
+async function refreshMcp() {
+  try {
+    const res = await new (await import('@/services/ChatRuntimeService.js')).default().mcpStatus()
+    mcpServers.value = res.data?.data || res.data || []
+  } catch {}
+}
+
 onMounted(async () => {
   await loadPersonas()
   await loadSessions()
   if (props.initialSessionId) {
     await openSession(props.initialSessionId)
   }
-  // TEMP: demonstrate runtime service calls work
-  try {
-    await loadMcpStatus()
-  } catch {}
+  await refreshTools()
+  await refreshMcp()
 })
 </script>
 
