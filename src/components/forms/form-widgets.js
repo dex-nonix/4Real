@@ -61,7 +61,7 @@ export const FORM_WIDGETS = {
     }
   },
   'json': {
-    component: Editor,                // PrimeVue Editor component
+    component: Editor,                // PrimeVue Editor component (Quill)
     defaultProps: { 
       height: '200px',
       readOnly: false
