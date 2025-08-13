@@ -100,6 +100,16 @@ Public Methods (all paths are relative; BaseApiService scopes them to `/${entity
 - `selectorGet(id: string | number)`
   - GET `'/selector/'+id` (scoped to `/${entity}/selector/{id}`); returns `{ data }`
 
+Defaults (auto-merged into `config.table` unless overridden)
+- `actions`: `['view', 'edit', 'delete']`
+- `bulkActions`: `['delete', 'export']`
+- `paginated`: `true`
+- `pageSize`: `20`
+- `selectionMode`: `'multiple'`
+- `resizable`: `true`
+- `striped`: `true`
+- `hover`: `true`
+
 Notes
 - Pass-through query params let `DynamicTable` control search/pagination/sorting
 - Keep response shape unchanged; presentation components decide how to consume
@@ -141,15 +151,7 @@ export default class ArtistService extends CrudService {
           { field: 'name', header: 'Artist Name', type: 'text', sortable: true },
           { field: 'abbreviation', header: 'Abbr', type: 'text', sortable: true }
         ],
-        actions: ['view', 'edit', 'delete'],
-        bulkActions: ['delete', 'export'],
         filters: ['search', 'date_range'],
-        paginated: true,
-        pageSize: 20,
-        selectionMode: 'multiple',
-        resizable: true,
-        striped: true,
-        hover: true
       },
       form: {
         fields: [
