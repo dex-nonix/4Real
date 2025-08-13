@@ -30,6 +30,13 @@
 - **Database**: SQLite for dev; PostgreSQL/MySQL for prod
 - **API**: Auto-generated REST endpoints via decorators and configuration; services can be instantiated without constructor args when subclasses provide class attributes like `model` and `config`. The parent requires `config` to exist (passed or class attribute) and only fills missing keys from defaults.
 
+### **⚙️ Configuration (Frontend):**
+- **Environment**: `VITE_API_BASE_URL` points to backend host + `/api`
+  - Dev (with Vite proxy): `VITE_API_BASE_URL=/api`
+  - Prod: `VITE_API_BASE_URL=https://backend-host:5000/api`
+- **Config file**: `src/config.js` exports `API_BASE_URL` from env and is used by services
+- **Services**: `src/services/BaseApiService.js` and `src/services/CrudService.js` build endpoints relative to `API_BASE_URL` (e.g., `/${entity}`, `/${entity}/{id}`)
+
 ### **🎵 Core Functionality:**
 - **Music Management**: Artists, albums, tracks with metadata
 - **Generic CRUD**: Configuration-driven CRUD via CrudService
@@ -46,7 +53,9 @@
 ├── src/                          # Vue application (root level)
 │   ├── main.js                   # Vue entry point
 │   ├── App.vue                   # Main app component
-│   ├── components/               # PrimeVue components
+│   ├── config.js                 # Frontend config (API base URL via env)
+│   ├── services/                 # Frontend API services (BaseApiService, CrudService)
+│   ├── components/               # Components (PrimeVue used directly; no custom input wrappers)
 │   ├── layouts/                  # Reusable layouts
 │   ├── views/                    # Page views
 │   └── router/                   # Vue Router config
@@ -188,17 +197,7 @@ src/
 │   │   └── table-widgets.js       # Table widget registry
 │   ├── crud/               # CRUD system components
 │   │   └── CrudManager.vue        # Complete CRUD component
-│   ├── inputs/              # ALL form input widgets
-│   │   ├── TextInput.vue      # Text input
-│   │   ├── SelectInput.vue    # Select/dropdown
-│   │   ├── MultiSelect.vue    # Multi-selection
-│   │   ├── Autocomplete.vue   # Autocomplete
-│   │   ├── Slider.vue         # Range slider
-│   │   ├── DateInput.vue      # Date picker
-│   │   ├── FileUpload.vue     # File upload
-│   │   ├── TagInput.vue       # Tag input
-│   │   ├── JsonEditor.vue     # JSON editor
-│   │   └── RichText.vue       # Rich text editor
+│   ├── inputs/              # Optional custom inputs (PrimeVue components used directly by default)
 │   ├── actions/               # Action components
 │   │   ├── ActionButtons.vue  # Generic action buttons
 │   │   └── BulkActions.vue    # Bulk operations
@@ -305,21 +304,21 @@ class TableCellWidgetManager extends BaseWidgetManager {
 
 #### **3. Widget Registry Files**
 ```javascript
-// form-widgets.js - Form widget mappings
-import TextInput from '@/components/inputs/TextInput.vue'
-import SelectInput from '@/components/inputs/SelectInput.vue'
-import MultiSelect from '@/components/inputs/MultiSelect.vue'
+// form-widgets.js - Form widget mappings (PrimeVue components used directly)
+import InputText from 'primevue/inputtext'
+import Dropdown from 'primevue/dropdown'
+import MultiSelect from 'primevue/multiselect'
 
 export const FORM_WIDGETS = {
   'text': {
-    component: TextInput,             // Actual Vue component import
+    component: InputText,             // PrimeVue component import
     defaultProps: { 
       placeholder: 'Enter text',
       class: 'w-full'
     }
   },
   'select': {
-    component: SelectInput,           // Actual Vue component import
+    component: Dropdown,              // PrimeVue component import
     defaultProps: { 
       placeholder: 'Select option',
       class: 'w-full'

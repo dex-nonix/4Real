@@ -99,7 +99,7 @@ src/
 │   │   └── table-widgets.js        # Table widget registry
 │   ├── crud/                       # CRUD operations
 │   │   └── CrudManager.vue         # Complete CRUD component
-│   ├── inputs/                     # Input widgets
+│   ├── inputs/                     # Input widgets (not required if using PrimeVue components directly)
 │   ├── actions/                    # Action components
 │   └── dialogs/                    # Dialog components
 ├── views/                           # Page views

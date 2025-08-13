@@ -67,7 +67,7 @@ export const FORM_WIDGETS = {
 }
 ```
 
-This registry file lives in the same `components/forms/` folder as the DynamicForm component and FormWidgetManager.
+This registry file lives in the same `components/forms/` folder as the DynamicForm component and FormWidgetManager. Because we use PrimeVue components directly, no custom `inputs/` wrappers are required for standard fields.
 
 ## 🔧 **IMPLEMENTATION:**
 

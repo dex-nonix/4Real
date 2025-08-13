@@ -40,7 +40,7 @@ methods: {
 }
 ```
 
-The TableCellWidgetManager automatically resolves cell types like `'text'`, `'status'`, `'actions'`, `'date'` to their corresponding components (span, Tag, Button, etc.) and applies default styling and behavior for consistent table cell rendering.
+The TableCellWidgetManager automatically resolves cell types like `'text'`, `'status'`, `'actions'`, `'date'` to their corresponding components (span, Tag, Button, etc.) and applies default styling and behavior for consistent table cell rendering. PrimeVue components are used directly; no custom input wrappers needed.
 
 ### **Table Cell Widget Registry (table-widgets.js):**
 The TableCellWidgetManager uses a registry file that maps cell types to actual components:
