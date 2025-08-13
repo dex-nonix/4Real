@@ -2,75 +2,59 @@
 import BaseApiService from './BaseApiService.js'
 
 export default class CrudService extends BaseApiService {
-  constructor(options = {}) {
-    const { entity, endpoints = {}, ...rest } = options
-    super({ ...rest })
-    this.entity = entity
-    this.endpoints = this.#buildEndpoints(entity, endpoints)
-  }
-
-  #buildEndpoints(entity, overrides) {
-    // BaseApiService.baseURL should include /api; endpoints here are relative to it
-    const tpl = (p) => (entity ? `/${entity}${p}` : '')
-    const base = {
-      list: overrides.list || (entity ? tpl('') : ''),
-      get: overrides.get || (entity ? tpl('/{id}') : ''),
-      create: overrides.create || (entity ? tpl('') : ''),
-      update: overrides.update || (entity ? tpl('/{id}') : ''),
-      delete: overrides.delete || (entity ? tpl('/{id}') : ''),
-      bulkDelete: overrides.bulkDelete || (entity ? tpl('/bulk-delete') : '')
+  constructor(entity, uiConfig = {}) {
+    super()
+    if (!entity) {
+      throw new Error('CrudService requires an entity string')
     }
-    return { ...base, ...overrides }
+    this.entity = entity
+    this.config = uiConfig
   }
 
-  resolveEndpoint(template, vars = {}) {
-    return template.replace(/\{(\w+)\}/g, (_, k) => encodeURIComponent(vars[k]))
+  basePath() {
+    return `/${this.entity}`
   }
 
   list(params = {}) {
-    return this.get(this.endpoints.list, { query: params })
+    return super.get(this.basePath(), { query: params })
   }
 
-  getOne(id) {
-    const path = this.resolveEndpoint(this.endpoints.get, { id })
-    return super.get(path)
+  get(id) {
+    return super.get(`${this.basePath()}/${encodeURIComponent(id)}`)
   }
 
   create(payload) {
-    return super.post(this.endpoints.create, payload)
+    return super.post(this.basePath(), payload)
   }
 
   update(id, payload) {
-    const path = this.resolveEndpoint(this.endpoints.update, { id })
-    return super.put(path, payload)
+    return super.put(`${this.basePath()}/${encodeURIComponent(id)}`, payload)
   }
 
-  deleteOne(id) {
-    const path = this.resolveEndpoint(this.endpoints.delete, { id })
-    return super.delete(path)
-  }
-
-  bulkDelete(ids) {
-    return super.post(this.endpoints.bulkDelete, { ids })
+  delete(id) {
+    return super.delete(`${this.basePath()}/${encodeURIComponent(id)}`)
   }
 
   search(params = {}) {
-    const basePath = this.endpoints.list.endsWith('/') ? this.endpoints.list.slice(0, -1) : this.endpoints.list
-    const path = `${basePath}/search`
-    return super.get(path, { query: params })
+    return super.get(`${this.basePath()}/search`, { query: params })
+  }
+
+  bulk(operation, payload = {}) {
+    return super.post(`${this.basePath()}/bulk`, { operation, ...payload })
+  }
+
+  bulkDelete(ids = []) {
+    return this.bulk('delete', { ids })
   }
 
   selectorList(params = {}) {
-    const basePath = this.endpoints.list.endsWith('/') ? this.endpoints.list.slice(0, -1) : this.endpoints.list
-    const path = `${basePath}/selector`
-    return super.get(path, { query: params })
+    return super.get(`${this.basePath()}/selector`, { query: params })
   }
 
   selectorGet(id) {
-    const basePath = this.endpoints.list.endsWith('/') ? this.endpoints.list.slice(0, -1) : this.endpoints.list
-    const path = `${basePath}/selector/${encodeURIComponent(id)}`
-    return super.get(path)
+    return super.get(`${this.basePath()}/selector/${encodeURIComponent(id)}`)
   }
 }
 
 
+ 

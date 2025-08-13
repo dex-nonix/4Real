@@ -7,6 +7,7 @@ Environment-aware base URL
 - Examples:
   - Dev (with Vite proxy): `VITE_API_BASE_URL=/api`
   - Prod: `VITE_API_BASE_URL=https://backend-host:5000/api`
+- `BaseApiService` reads the base URL from the environment internally. No baseURL is passed by callers.
 - `CrudService` builds endpoints RELATIVE to this base (e.g., `/${entity}`, `/${entity}/{id}`), so you never prefix `/api` twice.
 
 ### Files
@@ -32,6 +33,8 @@ Constructor
   - `options.onRequest?: (req) => void | Promise<void>`
   - `options.onResponse?: (res) => void | Promise<void>`
   - `options.onError?: (error) => void | Promise<void>`
+  - `options.fetchImpl?: typeof fetch`
+  - Note: Base URL is sourced from `VITE_API_BASE_URL` internally.
 
 Public Methods
 - `setAuthToken(token: string | null)`
@@ -60,38 +63,34 @@ Notes
 
 ## CrudService (abstract, extends BaseApiService)
 
-Purpose: Generic CRUD wrapper tied to an entity or explicit endpoints; mirrors backend `CrudService` routes.
+Purpose: Generic CRUD wrapper tied to an entity; mirrors backend routes exactly. The service HOLDS the CRUD UI config passed via the constructor. No endpoint overrides.
 
 Constructor
-- `new CrudService(options)`
-  - `options.entity?: string` e.g., `'artists'`
-  - `options.endpoints?: { list?, get?, create?, update?, delete?, bulkDelete? }`
-    - Defaults when `entity` is provided:
-      - `list: `/${entity}` (GET)`
-      - `get: `/${entity}/{id}` (GET)`
-      - `create: `/${entity}` (POST)`
-      - `update: `/${entity}/{id}` (PUT)`
-      - `delete: `/${entity}/{id}` (DELETE)`
-      - `bulkDelete: `/${entity}/bulk-delete` (POST)`
+- `new CrudService(entity: string, uiConfig: { table: any, form: any })`
+  - `entity`: backend route name (e.g., `'artists'`, `'rhyme-techniques'`)
+  - `uiConfig`: UI configuration object for CrudManager (table + form), passed via the base constructor and stored on `this.config`
 
 Public Methods
 - `list(params?: { q?, page?, per_page?, sort?, order?, ...extra })`
-  - GET `endpoints.list` with `params` as query string
-  - Returns `Array<any>` or `{ items, total }` depending on backend. Consumers should handle both; this service returns `data` as received.
+  - GET `/${entity}` with `params` as query string; returns `{ data, pagination? }`
 - `get(id: string | number)`
-  - GET `endpoints.get` replacing `{id}`
+  - GET `/${entity}/{id}`; returns `{ data }`
 - `create(payload: Record<string, any>)`
-  - POST `endpoints.create` with JSON body
+  - POST `/${entity}` with JSON body; returns `{ data }`
 - `update(id: string | number, payload: Record<string, any>)`
-  - PUT `endpoints.update` replacing `{id}` with JSON body
+  - PUT `/${entity}/{id}` with JSON body; returns `{ data }`
 - `delete(id: string | number)`
-  - DELETE `endpoints.delete` replacing `{id}`
+  - DELETE `/${entity}/{id}`; returns `{ message }`
+- `search(params?: Record<string, any>)`
+  - GET `/${entity}/search` with `params`; returns `{ data, pagination? }`
+- `bulk(operation: 'delete' | 'update', payload: Record<string, any>)`
+  - POST `/${entity}/bulk` with `{ operation, ...payload }`; returns `{ message }`
 - `bulkDelete(ids: Array<string | number>)`
-  - POST `endpoints.bulkDelete` with `{ ids }`
-
-Helpers
-- `resolveEndpoint(template: string, vars: Record<string,string|number>)`
-  - Replaces `{id}` etc. in templates
+  - Convenience for `bulk('delete', { ids })`
+- `selectorList(params?: Record<string, any>)`
+  - GET `/${entity}/selector`; returns `{ data }`
+- `selectorGet(id: string | number)`
+  - GET `/${entity}/selector/{id}`; returns `{ data }`
 
 Notes
 - Pass-through query params let `DynamicTable` control search/pagination/sorting
@@ -111,7 +110,7 @@ await service.list({ page: 2, per_page: 20, sort: 'name', order: 'desc', filter_
 await service.search({ q: 'met', fields: 'title,genre', page: 1, per_page: 20 })
 
 // Bulk delete
-await service.bulk({ operation: 'delete', ids: [1,2,3] })
+await service.bulkDelete([1, 2, 3])
 
 // Selector list for dropdown
 await service.selectorList({ q: 'met' })
@@ -121,25 +120,47 @@ await service.selectorList({ q: 'met' })
 
 ## Usage Patterns
 
-Singleton services per entity (recommended)
+Per-entity service subclasses (recommended)
 ```js
 // src/services/ArtistService.js
 import CrudService from './CrudService'
-export const artistService = new CrudService({ entity: 'artists' })
+
+export default class ArtistService extends CrudService {
+  constructor() {
+    super('artists', {
+      table: {
+        columns: [
+          { field: 'name', header: 'Artist Name', type: 'text', sortable: true },
+          { field: 'abbreviation', header: 'Abbr', type: 'text', sortable: true }
+        ],
+        actions: ['view', 'edit', 'delete'],
+        bulkActions: ['delete', 'export'],
+        filters: ['search', 'date_range'],
+        paginated: true,
+        pageSize: 20,
+        selectionMode: 'multiple',
+        resizable: true,
+        striped: true,
+        hover: true
+      },
+      form: {
+        fields: [
+          { key: 'name', type: 'text', label: 'Artist Name', required: true, props: { placeholder: 'Enter artist name' } },
+          { key: 'abbreviation', type: 'text', label: 'Abbreviation', required: true, props: { placeholder: 'Enter abbreviation' } }
+        ]
+      }
+    })
+  }
+}
+
+// Create a singleton instance and export it, or instantiate where used
+// export const artistService = new ArtistService()
 ```
 
-Injection as a plugin (optional)
-- Create a small plugin that registers a map of entity services and injects `$api`
-- Example: `app.config.globalProperties.$api = { artist: artistService, album: albumService, ... }`
-- Alternatively, inject a factory: `getCrudService(entity)` → returns a memoized `CrudService`
-
-With CrudManager
-- CrudManager receives a `config` with:
-  - `entity: string`
-  - `api.endpoints?: overrides`
-  - `table: DynamicTable config`
-  - `form: { fields: FieldItem[] }`
-- CrudManager uses the corresponding `CrudService` to call `list/create/update/delete/bulkDelete`
+With CrudManager (service instance only; no globals)
+- CrudManager receives a single prop: `service` (instance of a CrudService subclass)
+- It reads UI from `service.config.table` and `service.config.form`
+- It calls backend via `service.list/create/update/delete/bulkDelete`
 
 ---
 
@@ -164,9 +185,9 @@ With CrudManager
 
 ## Minimal Example (pseudocode)
 ```js
-// Bootstrapping
-import CrudService from '@/services/CrudService'
-export const artistService = new CrudService({ entity: 'artists' })
+// Service subclass and instance
+import ArtistService from '@/services/ArtistService'
+const artistService = new ArtistService()
 
 // In CrudManager
 await artistService.list({ q: search, page, per_page: pageSize })
