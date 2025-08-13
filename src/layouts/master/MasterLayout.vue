@@ -3,9 +3,9 @@
     <TopBar />
     <div class="flex flex-1 overflow-hidden">
       <LeftNavSidebar :pinned="false" />
-      <div class="flex-1 overflow-auto">
+      <main id="app-main" tabindex="-1" class="flex-1 overflow-auto" aria-label="Main Content">
         <slot />
-      </div>
+      </main>
       <RightToolsSidebar />
     </div>
   </div>
