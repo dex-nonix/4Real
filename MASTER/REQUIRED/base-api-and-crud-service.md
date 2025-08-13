@@ -55,6 +55,14 @@ Public Methods
   - `patch(path, options?)`
   - `delete(path, options?)`
 
+Path Scoping
+- `basePath(): string` — subclasses override to return their base scope (e.g., `'/artists'`)
+- All requests are automatically scoped to `basePath()`:
+  - Passing `'/'` targets `basePath()` itself
+  - Passing `'/id'` becomes `basePath() + '/id'`
+  - Passing `'search'` becomes `basePath() + '/search'`
+  - Passing an empty string or `undefined` behaves like `'/'`
+
 Notes
 - Timeouts can be implemented by callers via `AbortController` and passing `signal`
 - No retry by default (keep minimal)
@@ -70,27 +78,27 @@ Constructor
   - `entity`: backend route name (e.g., `'artists'`, `'rhyme-techniques'`)
   - `uiConfig`: UI configuration object for CrudManager (table + form), passed via the base constructor and stored on `this.config`
 
-Public Methods
+Public Methods (all paths are relative; BaseApiService scopes them to `/${entity}` via `basePath()`)
 - `list(params?: { q?, page?, per_page?, sort?, order?, ...extra })`
-  - GET `/${entity}` with `params` as query string; returns `{ data, pagination? }`
+  - GET `'/'` (scoped to `/${entity}`) with `params`; returns `{ data, pagination? }`
 - `get(id: string | number)`
-  - GET `/${entity}/{id}`; returns `{ data }`
+  - GET `'/'+id` (scoped to `/${entity}/{id}`); returns `{ data }`
 - `create(payload: Record<string, any>)`
-  - POST `/${entity}` with JSON body; returns `{ data }`
+  - POST `'/'` (scoped to `/${entity}`) with JSON body; returns `{ data }`
 - `update(id: string | number, payload: Record<string, any>)`
-  - PUT `/${entity}/{id}` with JSON body; returns `{ data }`
+  - PUT `'/'+id` (scoped to `/${entity}/{id}`) with JSON body; returns `{ data }`
 - `delete(id: string | number)`
-  - DELETE `/${entity}/{id}`; returns `{ message }`
+  - DELETE `'/'+id` (scoped to `/${entity}/{id}`); returns `{ message }`
 - `search(params?: Record<string, any>)`
-  - GET `/${entity}/search` with `params`; returns `{ data, pagination? }`
+  - GET `'/search'` (scoped to `/${entity}/search`) with `params`; returns `{ data, pagination? }`
 - `bulk(operation: 'delete' | 'update', payload: Record<string, any>)`
-  - POST `/${entity}/bulk` with `{ operation, ...payload }`; returns `{ message }`
+  - POST `'/bulk'` (scoped to `/${entity}/bulk`) with `{ operation, ...payload }`; returns `{ message }`
 - `bulkDelete(ids: Array<string | number>)`
   - Convenience for `bulk('delete', { ids })`
 - `selectorList(params?: Record<string, any>)`
-  - GET `/${entity}/selector`; returns `{ data }`
+  - GET `'/selector'` (scoped to `/${entity}/selector`); returns `{ data }`
 - `selectorGet(id: string | number)`
-  - GET `/${entity}/selector/{id}`; returns `{ data }`
+  - GET `'/selector/'+id` (scoped to `/${entity}/selector/{id}`); returns `{ data }`
 
 Notes
 - Pass-through query params let `DynamicTable` control search/pagination/sorting
