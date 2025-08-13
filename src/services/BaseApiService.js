@@ -13,6 +13,21 @@ export default class BaseApiService {
     this.authToken = null
   }
 
+  // Base path for derived services; subclasses can override
+  basePath() {
+    return ''
+  }
+
+  // Scope a relative path to the service's basePath
+  scopePath(path) {
+    const bp = this.basePath() || ''
+    if (!bp) return path
+    if (path === '/' || path === '' || path == null) return bp
+    if (typeof path !== 'string') return bp
+    if (path.startsWith('/')) return `${bp}${path}`
+    return `${bp}/${path}`
+  }
+
   setAuthToken(token) {
     this.authToken = token || null
   }
@@ -35,7 +50,8 @@ export default class BaseApiService {
 
   async request(method, path, options = {}) {
     const { query, body, headers = {}, signal } = options
-    const url = this.buildUrl(path, query)
+    const scoped = this.scopePath(path)
+    const url = this.buildUrl(scoped, query)
     const finalHeaders = { ...this.defaultHeaders, ...headers }
     if (this.authToken) {
       finalHeaders['Authorization'] = `Bearer ${this.authToken}`

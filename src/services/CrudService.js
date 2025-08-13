@@ -11,36 +11,34 @@ export default class CrudService extends BaseApiService {
     this.config = uiConfig
   }
 
-  basePath() {
-    return `/${this.entity}`
-  }
+  basePath() { return `/${this.entity}` }
 
   list(params = {}) {
-    return super.get(this.basePath(), { query: params })
+    return super.get('/', { query: params })
   }
 
   get(id) {
-    return super.get(`${this.basePath()}/${encodeURIComponent(id)}`)
+    return super.get(`/${encodeURIComponent(id)}`)
   }
 
   create(payload) {
-    return super.post(this.basePath(), payload)
+    return super.post('/', payload)
   }
 
   update(id, payload) {
-    return super.put(`${this.basePath()}/${encodeURIComponent(id)}`, payload)
+    return super.put(`/${encodeURIComponent(id)}`, payload)
   }
 
   delete(id) {
-    return super.delete(`${this.basePath()}/${encodeURIComponent(id)}`)
+    return super.delete(`/${encodeURIComponent(id)}`)
   }
 
   search(params = {}) {
-    return super.get(`${this.basePath()}/search`, { query: params })
+    return super.get('/search', { query: params })
   }
 
   bulk(operation, payload = {}) {
-    return super.post(`${this.basePath()}/bulk`, { operation, ...payload })
+    return super.post('/bulk', { operation, ...payload })
   }
 
   bulkDelete(ids = []) {
@@ -48,11 +46,11 @@ export default class CrudService extends BaseApiService {
   }
 
   selectorList(params = {}) {
-    return super.get(`${this.basePath()}/selector`, { query: params })
+    return super.get('/selector', { query: params })
   }
 
   selectorGet(id) {
-    return super.get(`${this.basePath()}/selector/${encodeURIComponent(id)}`)
+    return super.get(`/selector/${encodeURIComponent(id)}`)
   }
 }
 
