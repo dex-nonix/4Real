@@ -421,6 +421,29 @@ const routes = [
 ]
 ```
 
+### Static route builder (CrudPage.createRoutes)
+```js
+// src/router/index.js (excerpt)
+import CrudPage from '@/views/CrudPage.vue'
+
+const routes = []
+
+// Adds: /artists, /artists/new, /artists/:id, /artists/:id/edit
+CrudPage.createRoutes(routes, 'artists', {
+  displayMode: 'inline',
+  // Optional extras passed into meta.crud and consumed by CrudPage/CrudManager:
+  // fixedFilters: { filter_status: 'eq:active' },
+  // refField: 'artist_id', refId: 123,
+  // showCreateButton: true,
+  // tableConfigOverride: { pageSize: 50 },
+  // formConfigOverride: { fields: [...] },
+  // basePath: '/artists' // default is `/${entityKey}`
+})
+
+// Example for albums too
+CrudPage.createRoutes(routes, 'albums', { displayMode: 'inline' })
+```
+
 ### CrudPage resolves injected service by meta and maps route → props
 ```vue
 <!-- src/views/CrudPage.vue (concept) -->
