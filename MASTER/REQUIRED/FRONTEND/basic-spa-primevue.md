@@ -5,7 +5,7 @@ Goal: A minimal, working SPA baseline that proves the routing, reusable layouts,
 ### Stack
 - **Vue 3** (Vite)
 - **Vue Router**
-- **PrimeVue** + **PrimeIcons** (minimal usage: a single Button)
+- **PrimeVue** + **PrimeIcons** + **PrimeFlex** (Prime-first; no custom CSS)
 
 ### Folder Layout (root level)
 ```
@@ -36,7 +36,8 @@ Goal: A minimal, working SPA baseline that proves the routing, reusable layouts,
     "vue": "^3.4.38",
     "vue-router": "^4.4.5",
     "primevue": "^3.52.0",
-    "primeicons": "^6.0.1"
+    "primeicons": "^6.0.1",
+    "primeflex": "^3.3.1"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.1.2",
@@ -77,9 +78,11 @@ import { createApp, h } from 'vue'
 import App from './App.vue'
 import router from './router'
 
-// PrimeVue minimal setup
+// Prime (PrimeVue + PrimeFlex) minimal setup
 import PrimeVue from 'primevue/config'
 import 'primeicons/primeicons.css'
+import 'primevue/resources/themes/lara-light-blue/theme.css'
+import 'primeflex/primeflex.css'
 // NOTE: PrimeVue components are imported locally in views to keep global minimal
 
 createApp({ render: () => h(App) })
@@ -258,7 +261,7 @@ export default defineConfig({
 
 ### Notes
 - Keep global PrimeVue config minimal. Import individual components locally until we add more widgets.
-- No styling frameworks beyond what's essential for PrimeVue icons.
+- Use PrimeFlex for layout/spacing; avoid custom CSS.
 - This doc defines only the baseline. Widgets/CRUD come later.
 - npm-first project structure with UI at root level, backend in `backend/` subdirectory.
 - Uses concurrently to run both servers from single npm command.

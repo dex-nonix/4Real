@@ -11,7 +11,7 @@
 
 ### **🏗️ Architecture:**
 - **Backend**: Flask + SQLAlchemy + APIRouter + CrudService (straightforward)
-- **Frontend**: Vue + PrimeVue (normal, working components)
+- **Frontend**: Vue + PrimeVue + PrimeFlex (Prime-first; no custom CSS; use Prime utilities/classes)
 - **Database**: SQLAlchemy ORM (SQLite dev, Postgres/MySQL prod)
 - **AI (later phase)**: Optional providers added after CRUD + frontend are stable
 
@@ -26,7 +26,7 @@
 
 ### **🔧 Technical Stack:**
 - **Backend**: Flask + SQLAlchemy + APIRouter + CrudService
-- **Frontend**: Vue 3 + PrimeVue
+- **Frontend**: Vue 3 + PrimeVue + PrimeFlex (all layout/spacing via PrimeFlex; theme via PrimeVue theme)
 - **Database**: SQLite for dev; PostgreSQL/MySQL for prod
 - **API**: Auto-generated REST endpoints via decorators and configuration; services can be instantiated without constructor args when subclasses provide class attributes like `model` and `config`. The parent requires `config` to exist (passed or class attribute) and only fills missing keys from defaults.
 
