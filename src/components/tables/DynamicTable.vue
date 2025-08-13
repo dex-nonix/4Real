@@ -55,7 +55,9 @@
             :row-data="slotProps.data"
             :column-config="col"
             @action="handleCellAction"
-          />
+          >
+            {{ slotProps.data[col.field] }}
+          </component>
         </template>
       </Column>
       
