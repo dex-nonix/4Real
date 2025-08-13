@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import CrudPage from '@/views/CrudPage.vue'
 
 const Home = () => import('../views/Home.vue')
 const About = () => import('../views/About.vue')
@@ -11,6 +12,7 @@ const routes = [
   { path: '/about', name: 'about', component: About, meta: { layout: 'alt' } },
   { path: '/dynamic-form', name: 'dynamic-form', component: DynamicFormExample, meta: { layout: 'master' } },
   { path: '/dynamic-table', name: 'dynamic-table', component: DynamicTableExample, meta: { layout: 'master' } },
+  ...CrudPage.createRoutes('artists', { displayMode: 'inline' }, { layout: 'master' }),
   { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound, meta: { layout: 'alt' } },
 ]
 

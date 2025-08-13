@@ -10,10 +10,13 @@ import 'primeflex/primeflex.css'
 
 // API services (configure base URL from env)
 import { API_BASE_URL } from '@/config.js'
+import ArtistService from '@/services/ArtistService.js'
 
 const app = createApp({ render: () => h(App) })
 app.use(router)
 app.use(PrimeVue)
 app.use(ToastService)
+// Provide service singletons (inline, no temp vars)
+app.provide('artists', new ArtistService())
 app.mount('#app')
 

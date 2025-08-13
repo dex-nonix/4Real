@@ -408,40 +408,54 @@ app.provide('albums', new AlbumService())
 app.provide('tracks', new TrackService())
 ```
 
-### Normalize routes to a single CrudPage via meta
-```js
-// src/router/index.js (excerpt)
-import CrudPage from '@/views/CrudPage.vue'
-
-const routes = [
-  { path: '/artists', component: CrudPage, meta: { crud: { key: 'artists', displayMode: 'inline' } } },
-  { path: '/artists/new', component: CrudPage, meta: { crud: { key: 'artists', displayMode: 'inline' } } },
-  { path: '/artists/:id', component: CrudPage, meta: { crud: { key: 'artists', displayMode: 'inline' } } },
-  { path: '/artists/:id/edit', component: CrudPage, meta: { crud: { key: 'artists', displayMode: 'inline' } } },
-]
-```
+### DO NOT handcraft CRUD routes manually
+- Always use `CrudPage.createRoutes(...)` to generate the standard CRUD paths.
+- This guarantees consistent meta and prevents drift.
 
 ### Static route builder (CrudPage.createRoutes)
 ```js
 // src/router/index.js (excerpt)
 import CrudPage from '@/views/CrudPage.vue'
 
-const routes = []
+// Returns an array with: /artists, /artists/new, /artists/:id, /artists/:id/edit
+const routes = [
+  ...CrudPage.createRoutes('artists', {
+    displayMode: 'inline',
+    // Optional extras passed into meta.crud and consumed by CrudPage/CrudManager:
+    // fixedFilters: { filter_status: 'eq:active' },
+    // refField: 'artist_id', refId: 123,
+    // showCreateButton: true,
+    // tableConfigOverride: { pageSize: 50 },
+    // formConfigOverride: { fields: [...] },
+    // basePath: '/artists' // default is `/${entityKey}`
+  }),
+  // Example for albums too
+  ...CrudPage.createRoutes('albums', { displayMode: 'inline' })
+]
+```
 
-// Adds: /artists, /artists/new, /artists/:id, /artists/:id/edit
-CrudPage.createRoutes(routes, 'artists', {
-  displayMode: 'inline',
-  // Optional extras passed into meta.crud and consumed by CrudPage/CrudManager:
-  // fixedFilters: { filter_status: 'eq:active' },
-  // refField: 'artist_id', refId: 123,
-  // showCreateButton: true,
-  // tableConfigOverride: { pageSize: 50 },
-  // formConfigOverride: { fields: [...] },
-  // basePath: '/artists' // default is `/${entityKey}`
-})
+#### API: CrudPage.createRoutes(entityKey, options?, meta?) → Route[]
+- **Purpose**: Generate the standard CRUD routes for a single entity, with normalized meta used by `CrudPage` and `CrudManager`.
+- **Parameters**
+  - **entityKey** (string): Injection key for the singleton service (e.g., `'artists'`, `'albums'`). Must match `app.provide('<key>', new Service())`.
+  - **options** (object, optional): Controls builder and passes CRUD-specific meta under `meta.crud`.
+    - **displayMode**: `'inline' | 'dialog'` (default `'inline'`).
+    - **basePath**: string (default `/${entityKey}`) to change the base URL segment.
+    - Passed into `meta.crud` (consumed by `CrudPage`/`CrudManager`):
+      - **fixedFilters**, **refField**, **refId**, **showCreateButton**, **tableConfigOverride**, **formConfigOverride**.
+  - **meta** (object, optional): Top-level route meta merged into each route. Default is `{ layout: 'master' }`.
+- **Returns**: An array of 4 route records:
+  - `/<basePath>` (list), `/<basePath>/new` (create), `/<basePath>/:id` (view), `/<basePath>/:id/edit` (edit)
+- **Notes**
+  - Delete is not routed; it is always confirmed and executed inside `CrudManager`.
+  - `CrudPage` reads the `meta.crud.key` to `inject(key)` the correct singleton service.
 
-// Example for albums too
-CrudPage.createRoutes(routes, 'albums', { displayMode: 'inline' })
+Example with custom layout meta:
+```js
+const routes = [
+  ...CrudPage.createRoutes('artists', { displayMode: 'inline' }, { layout: 'master' }),
+  ...CrudPage.createRoutes('albums', { displayMode: 'dialog' }, { layout: 'master' })
+]
 ```
 
 ### CrudPage resolves injected service by meta and maps route → props
