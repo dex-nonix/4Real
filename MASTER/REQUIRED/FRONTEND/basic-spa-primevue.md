@@ -19,7 +19,8 @@ Goal: A minimal, working SPA baseline that proves the routing, reusable layouts,
      ├─ router/
      │  └─ index.js
      ├─ layouts/
-     │  ├─ MasterLayout.vue      # Used by Home
+     │  ├─ master/
+     │  │  └─ MasterLayout.vue   # Used by Home
      │  └─ AltLayout.vue         # Used by About
      └─ views/
         ├─ Home.vue              # Route: /
@@ -123,8 +124,8 @@ src/App.vue
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import MasterLayout from './layouts/MasterLayout.vue'
-import AltLayout from './layouts/AltLayout.vue'
+ import MasterLayout from '@/layouts/master/MasterLayout.vue'
+ import AltLayout from '@/layouts/AltLayout.vue'
 
 const route = useRoute()
 const layouts = { master: MasterLayout, alt: AltLayout }
@@ -171,7 +172,7 @@ const router = createRouter({
 export default router
 ```
 
-src/layouts/MasterLayout.vue
+src/layouts/master/MasterLayout.vue
 ```vue
 <template>
   <div style="padding: 1rem; border: 2px solid #4caf50;">
