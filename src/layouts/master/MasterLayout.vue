@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-column h-screen">
+  <div class="flex flex-column h-full">
     <TopBar />
     <div class="flex flex-1 overflow-hidden">
       <LeftNavSidebar :pinned="false" />

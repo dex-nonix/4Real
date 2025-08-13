@@ -1,5 +1,5 @@
 <template>
-  <div class="page">
+  <div class="page h-full overflow-auto">
     <slot />
   </div>
 </template>
