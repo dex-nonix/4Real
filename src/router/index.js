@@ -13,6 +13,14 @@ const routes = [
   { path: '/dynamic-form', name: 'dynamic-form', component: DynamicFormExample, meta: { layout: 'master' } },
   { path: '/dynamic-table', name: 'dynamic-table', component: DynamicTableExample, meta: { layout: 'master' } },
   ...CrudPage.createRoutes('artists', { displayMode: 'inline' }, { layout: 'master' }),
+  ...CrudPage.createRoutes('personas', { displayMode: 'inline' }, { layout: 'master' }),
+  ...CrudPage.createRoutes('internal-tools', { displayMode: 'inline' }, { layout: 'master' }),
+  ...CrudPage.createRoutes('persona-tool-access', { displayMode: 'inline' }, { layout: 'master' }),
+  ...CrudPage.createRoutes('mcp-servers', { displayMode: 'inline' }, { layout: 'master' }),
+  ...CrudPage.createRoutes('persona-mcp-servers', { displayMode: 'inline' }, { layout: 'master' }),
+  ...CrudPage.createRoutes('chat-sessions', { displayMode: 'inline' }, { layout: 'master' }),
+  ...CrudPage.createRoutes('chat-messages', { displayMode: 'inline' }, { layout: 'master' }),
+  ...CrudPage.createRoutes('tool-invocation-logs', { displayMode: 'inline' }, { layout: 'master' }),
   { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound, meta: { layout: 'alt' } },
 ]
 

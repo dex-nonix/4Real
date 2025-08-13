@@ -28,6 +28,15 @@ def create_app() -> Flask:
         from .services.ai_provider_service import AIProviderService
         from .services.ai_model_mapping_service import AIModelMappingService
         from .services.ai_analysis_result_service import AIAnalysisResultService
+        from .services.persona_service import PersonaService
+        from .services.internal_tool_service import InternalToolService
+        from .services.persona_tool_access_service import PersonaToolAccessService
+        from .services.mcp_server_service import MCPServerService
+        from .services.persona_mcp_server_service import PersonaMCPServerService
+        from .services.chat_session_service import ChatSessionService
+        from .services.chat_message_service import ChatMessageService
+        from .services.tool_invocation_log_service import ToolInvocationLogService
+        from .services.chat_service import ChatService
 
         api_router.register_service('artists', ArtistService)
         api_router.register_service('albums', AlbumService)
@@ -37,6 +46,15 @@ def create_app() -> Flask:
         api_router.register_service('ai-providers', AIProviderService)
         api_router.register_service('ai-model-mappings', AIModelMappingService)
         api_router.register_service('ai-analysis-results', AIAnalysisResultService)
+        api_router.register_service('personas', PersonaService)
+        api_router.register_service('internal-tools', InternalToolService)
+        api_router.register_service('persona-tool-access', PersonaToolAccessService)
+        api_router.register_service('mcp-servers', MCPServerService)
+        api_router.register_service('persona-mcp-servers', PersonaMCPServerService)
+        api_router.register_service('chat-sessions', ChatSessionService)
+        api_router.register_service('chat-messages', ChatMessageService)
+        api_router.register_service('tool-invocation-logs', ToolInvocationLogService)
+        api_router.register_service('chat', ChatService)
 
         db.create_all()
 
