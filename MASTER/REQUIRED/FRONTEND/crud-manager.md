@@ -134,10 +134,19 @@ export default {
   components: { Dialog, Button, DynamicTable, DynamicForm },
   
   props: {
-    config: {
-      type: Object,
-      required: true
-    }
+    // Service-first API (router-agnostic component)
+    service: { type: Object, required: true },
+    // Optional UI config (titles, labels). If omitted, derive from service.entity
+    config: { type: Object, required: false, default: () => ({}) },
+    // External mode control to support inline usage and multi-instances per page
+    mode: { type: String, default: 'list' }, // 'list' | 'create' | 'view' | 'edit' | 'delete'
+    entityId: { type: [String, Number], default: null },
+    displayMode: { 
+      type: String, 
+      default: 'dialog', // 'inline' | 'dialog'
+      validator: v => ['inline', 'dialog'].includes(v)
+    },
+    showCreateButton: { type: Boolean, default: true }
   },
   
   data() {
@@ -158,14 +167,15 @@ export default {
   
   computed: {
     dialogTitle() {
+      const entity = this.config.entity || this.service?.entity || 'entity'
       return this.isEditing 
-        ? `Edit ${this.config.entity}` 
-        : `Create New ${this.config.entity}`
+        ? `Edit ${entity}` 
+        : `Create New ${entity}`
     }
   },
   
   methods: {
-    // Load entities (service-first)
+    // Load entities
     async loadEntities() {
       this.loading = true
       try {
@@ -180,11 +190,11 @@ export default {
       }
     },
     
-    // Handle row actions
+    // Handle row actions (emit only; parent decides routing or mode changes)
     async handleRowAction({ action, rowData }) {
       switch (action) {
         case 'view':
-          this.$router.push(`/${this.config.entity}s/${rowData.id}`)
+          this.$emit('view', rowData)
           break
         case 'edit':
           this.editEntity(rowData)
@@ -192,6 +202,8 @@ export default {
         case 'delete':
           this.deleteEntity(rowData)
           break
+        default:
+          this.$emit('row-action', { action, rowData })
       }
     },
     
@@ -251,19 +263,19 @@ export default {
       }
     },
     
-    // Create entity (service-first)
+    // Create entity
     async createEntity(formData) {
       const res = await this.service.create(formData)
       return res?.data
     },
     
-    // Update entity (service-first)
+    // Update entity
     async updateEntity(formData) {
       const res = await this.service.update(this.editingEntity.id, formData)
       return res?.data
     },
     
-    // Confirm delete (service-first)
+    // Confirm delete
     async confirmDelete() {
       this.deleting = true
       try {
@@ -280,7 +292,7 @@ export default {
       }
     },
     
-    // Confirm bulk delete (service-first)
+    // Confirm bulk delete
     async confirmBulkDelete() {
       this.bulkDeleting = true
       try {
@@ -390,18 +402,6 @@ export const artistCrudConfig = {
       { key: 'persona', type: 'json', label: 'Artist Persona', props: { height: '200px' } },
       { key: 'birth_date', type: 'date', label: 'Birth Date', props: { dateFormat: 'yy-mm-dd', showIcon: true } }
     ]
-  },
-  
-  // API configuration
-  api: {
-    endpoints: {
-      list: '/api/artists',
-      create: '/api/artists',
-      update: '/api/artists/{id}',
-      delete: '/api/artists/{id}',
-      get: '/api/artists/{id}',
-      bulkDelete: '/api/artists/bulk-delete'
-    }
   },
   
   // Features
