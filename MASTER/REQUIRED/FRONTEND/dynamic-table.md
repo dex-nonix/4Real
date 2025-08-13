@@ -190,8 +190,9 @@ This registry file lives in the same `components/tables/` folder as the DynamicT
 </template>
 
 <script>
-import { DataTable, Column } from 'primevue/datatable'
-import { TableCellWidgetManager } from './TableCellWidgetManager.js'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import TableCellWidgetManager from '@/components/tables/TableCellWidgetManager.js'
 import SearchFilter from '@/components/filters/SearchFilter.vue'
 import DateRangeFilter from '@/components/filters/DateRangeFilter.vue'
 import ActionButtons from '@/components/actions/ActionButtons.vue'
@@ -425,6 +426,18 @@ export default {
   @row-action="handleRowAction"
 />
 ```
+
+### Server-side pagination/sorting/filtering/search (aligns with backend)
+- Params mapping (DataTable → backend):
+  - page: computed as `first/rows + 1`
+  - per_page: bound to `rows`
+  - sort: `sortField`, order: `asc|desc` from `sortOrder` (1|-1)
+  - filters: convert to `filter_<field>=<op>:<value>` using backend ops (eq, ne, gt, lt, like, in)
+- Responses:
+  - Paginated: `{ data: [...], pagination: { page, per_page, total, pages } }`
+  - Non-paginated: `{ data: [...], total }`
+- Search endpoint:
+  - GET `/api/{entity}/search` with `q`, optional `fields`, plus `page`, `per_page`, `sort`, `order`
 
 ### **2. Horizontal Layout (for dashboards, widgets):**
 ```vue

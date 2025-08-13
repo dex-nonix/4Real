@@ -126,8 +126,8 @@
 <script>
 import { Dialog } from 'primevue/dialog'
 import { Button } from 'primevue/button'
-import DynamicTable from '@/components/core/DynamicTable.vue'
-import DynamicForm from '@/components/core/DynamicForm.vue'
+import DynamicTable from '@/components/tables/DynamicTable.vue'
+import DynamicForm from '@/components/forms/DynamicForm.vue'
 
 export default {
   name: 'CrudManager',
@@ -415,32 +415,14 @@ export const artistCrudConfig = {
     hover: true
   },
   
-  // Form configuration
+  // Form configuration (array-based fields)
   form: {
-    fields: {
-      name: {
-        type: 'text',
-        label: 'Artist Name',
-        required: true,
-        props: { placeholder: 'Enter artist name', maxLength: 100 }
-      },
-      abbreviation: {
-        type: 'text',
-        label: 'Abbreviation',
-        required: true,
-        props: { placeholder: 'Enter abbreviation', maxLength: 10 }
-      },
-      persona: {
-        type: 'rich_text',
-        label: 'Artist Persona',
-        props: { height: '200px', toolbar: ['bold', 'italic', 'underline'] }
-      },
-      birth_date: {
-        type: 'date',
-        label: 'Birth Date',
-        props: { dateFormat: 'yy-mm-dd', showIcon: true }
-      }
-    }
+    fields: [
+      { key: 'name', type: 'text', label: 'Artist Name', required: true, props: { placeholder: 'Enter artist name', maxLength: 100 } },
+      { key: 'abbreviation', type: 'text', label: 'Abbreviation', required: true, props: { placeholder: 'Enter abbreviation', maxLength: 10 } },
+      { key: 'persona', type: 'json', label: 'Artist Persona', props: { height: '200px' } },
+      { key: 'birth_date', type: 'date', label: 'Birth Date', props: { dateFormat: 'yy-mm-dd', showIcon: true } }
+    ]
   },
   
   // API configuration

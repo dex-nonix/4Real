@@ -34,7 +34,7 @@ data() {
 methods: {
   // Resolve widget using FormWidgetManager
   resolveWidget(type) {
-    return this.formManager.getWidget(type, {}, null) // Gets widget with default props
+    return this.formManager.getWidget(type, {}) // Gets widget with default props
   }
 }
 ```
@@ -45,75 +45,25 @@ The FormWidgetManager automatically resolves widget types like `'text'`, `'selec
 The FormWidgetManager uses a registry file that maps widget types to actual Vue components:
 
 ```javascript
-// components/forms/form-widgets.js
-import TextInput from '@/components/inputs/TextInput.vue'
-import SelectInput from '@/components/inputs/SelectInput.vue'
-import MultiSelect from '@/components/inputs/MultiSelect.vue'
-import Autocomplete from '@/components/inputs/Autocomplete.vue'
-import Slider from '@/components/inputs/Slider.vue'
-import DateInput from '@/components/inputs/DateInput.vue'
-import FileUpload from '@/components/inputs/FileUpload.vue'
-import JsonEditor from '@/components/inputs/JsonEditor.vue'
+// components/forms/form-widgets.js (PrimeVue components)
+import InputText from 'primevue/inputtext'
+import Dropdown from 'primevue/dropdown'
+import MultiSelect from 'primevue/multiselect'
+import AutoComplete from 'primevue/autocomplete'
+import Slider from 'primevue/slider'
+import Calendar from 'primevue/calendar'
+import FileUpload from 'primevue/fileupload'
+import Editor from 'primevue/editor'
 
 export const FORM_WIDGETS = {
-  'text': {
-    component: TextInput,             // Actual Vue component import
-    defaultProps: { 
-      placeholder: 'Enter text',
-      class: 'w-full'
-    }
-  },
-  'select': {
-    component: SelectInput,           // Actual Vue component import
-    defaultProps: { 
-      placeholder: 'Select option',
-      class: 'w-full'
-    }
-  },
-  'multi_select': {
-    component: MultiSelect,           // Actual Vue component import
-    defaultProps: { 
-      placeholder: 'Select options',
-      class: 'w-full'
-    }
-  },
-  'autocomplete': {
-    component: Autocomplete,          // Actual Vue component import
-    defaultProps: { 
-      placeholder: 'Type to search',
-      minLength: 2,
-      delay: 300
-    }
-  },
-  'slider': {
-    component: Slider,                // Actual Vue component import
-    defaultProps: { 
-      min: 0,
-      max: 100,
-      step: 1
-    }
-  },
-  'date': {
-    component: DateInput,             // Actual Vue component import
-    defaultProps: { 
-      dateFormat: 'yy-mm-dd',
-      class: 'w-full'
-    }
-  },
-  'file': {
-    component: FileUpload,            // Actual Vue component import
-    defaultProps: { 
-      multiple: false,
-      accept: '*'
-    }
-  },
-  'json': {
-    component: JsonEditor,            // Actual Vue component import
-    defaultProps: { 
-      height: '200px',
-      readOnly: false
-    }
-  }
+  'text': { component: InputText, defaultProps: { placeholder: 'Enter text', class: 'w-full' } },
+  'select': { component: Dropdown, defaultProps: { placeholder: 'Select option', class: 'w-full' } },
+  'multi_select': { component: MultiSelect, defaultProps: { placeholder: 'Select options', class: 'w-full' } },
+  'autocomplete': { component: AutoComplete, defaultProps: { placeholder: 'Type to search', minLength: 2, delay: 300 } },
+  'slider': { component: Slider, defaultProps: { min: 0, max: 100, step: 1 } },
+  'date': { component: Calendar, defaultProps: { dateFormat: 'yy-mm-dd', class: 'w-full' } },
+  'file': { component: FileUpload, defaultProps: { multiple: false, accept: '*' } },
+  'json': { component: Editor, defaultProps: { height: '200px', readOnly: false } }
 }
 ```
 
@@ -483,7 +433,7 @@ export const artistFilterConfig = {
       key: 'search',
       type: 'text',
       label: 'Search',
-      props: { placeholder: 'Search artists...', class: 'w-64' }
+      props: { placeholder: 'Search artists...', class: 'w-12rem' }
     },
     {
       key: 'status',
@@ -495,7 +445,7 @@ export const artistFilterConfig = {
           { label: 'Active', value: 'active' },
           { label: 'Inactive', value: 'inactive' }
         ],
-        class: 'w-32'
+        class: 'w-8rem'
       }
     },
     {
@@ -517,7 +467,7 @@ export const globalSearchConfig = {
       key: 'query',
       type: 'text',
       label: 'Search',
-      props: { placeholder: 'Search everything...', class: 'w-80' }
+      props: { placeholder: 'Search everything...', class: 'w-20rem' }
     },
     {
       key: 'entity',
@@ -530,7 +480,7 @@ export const globalSearchConfig = {
           { label: 'Albums', value: 'albums' },
           { label: 'Tracks', value: 'tracks' }
         ],
-        class: 'w-32'
+        class: 'w-8rem'
       }
     }
   ]

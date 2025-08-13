@@ -70,7 +70,7 @@ Constructor
       - `bulkDelete: `/api/${entity}/bulk-delete` (POST)`
 
 Public Methods
-- `list(params?: { q?, page?, pageSize?, sort?, dir?, ...extra })`
+- `list(params?: { q?, page?, per_page?, sort?, order?, ...extra })`
   - GET `endpoints.list` with `params` as query string
   - Returns `Array<any>` or `{ items, total }` depending on backend. Consumers should handle both; this service returns `data` as received.
 - `get(id: string | number)`
@@ -91,6 +91,26 @@ Helpers
 Notes
 - Pass-through query params let `DynamicTable` control search/pagination/sorting
 - Keep response shape unchanged; presentation components decide how to consume
+
+Param Naming (match backend exactly)
+- Pagination: `page` (1-based), `per_page`
+- Sorting: `sort`, `order` where order is `asc` or `desc`
+- Filters: send as `filter_<field>=<operator>:<value>` (e.g., `filter_name=like:John`, `filter_genre=in:rock,pop`)
+
+Examples
+```js
+// List page 2, 20 per page, sorted by name desc, filter status=active
+await service.list({ page: 2, per_page: 20, sort: 'name', order: 'desc', filter_status: 'eq:active' })
+
+// Search title and genre fields
+await service.search({ q: 'met', fields: 'title,genre', page: 1, per_page: 20 })
+
+// Bulk delete
+await service.bulk({ operation: 'delete', ids: [1,2,3] })
+
+// Selector list for dropdown
+await service.selectorList({ q: 'met' })
+```
 
 ---
 
@@ -144,7 +164,7 @@ import CrudService from '@/services/CrudService'
 export const artistService = new CrudService({ baseURL: '', entity: 'artists' })
 
 // In CrudManager
-await artistService.list({ q: search, page, pageSize })
+await artistService.list({ q: search, page, per_page: pageSize })
 await artistService.create(formData)
 await artistService.update(id, formData)
 await artistService.delete(id)
