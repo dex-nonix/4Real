@@ -42,7 +42,7 @@ methods: {
 
  
 
-The TableCellWidgetManager automatically resolves cell types like `'text'`, `'status'`, `'actions'`, `'date'` to their corresponding components (span, Tag, Button, etc.) and applies default styling and behavior for consistent table cell rendering. PrimeVue components are used directly; no custom input wrappers needed.
+The DisplayWidgetManager automatically resolves cell types like `'text'`, `'status'`, `'actions'`, `'date'` to their corresponding components (span, Tag, Button, etc.) and applies default styling and behavior for consistent table cell rendering. PrimeVue components are used directly; no custom input wrappers needed.
 
 ### **Display Widget Registry (display-widgets.js):**
 The DisplayWidgetManager uses a registry file that maps cell types to actual components:
@@ -102,7 +102,7 @@ export const DISPLAY_WIDGETS = {
 }
 ```
 
-This registry file lives in the same `components/tables/` folder as the DynamicTable component and TableCellWidgetManager.
+This registry file lives under `src/widgets/`.
 
 ## 🔧 **IMPLEMENTATION:**
 
@@ -653,8 +653,7 @@ export const artistCrudConfig = {
 - **`:responsive="true"`** - enable responsive behavior
 
 ### **✅ Widget Manager Integration:**
-- **TableCellWidgetManager** - handles all table cell widgets
-- **Same input widgets** - work in any layout
+- **DisplayWidgetManager** - handles all display cell widgets
 - **Consistent behavior** - same rendering, same events
 - **Reusable system** - one component, many use cases
 

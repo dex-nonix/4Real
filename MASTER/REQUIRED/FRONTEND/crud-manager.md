@@ -495,9 +495,9 @@ const displayMode = computed(() => cfg.displayMode || 'inline')
 - **Delete** - Single and bulk delete operations
 
 ### **✅ Widget Manager Integration:**
-- **DynamicForm** - uses FormWidgetManager for form fields
-- **DynamicTable** - uses TableCellWidgetManager for cell rendering
-- **Consistent widget system** - same widgets across all contexts
+- **DynamicForm** - uses EditWidgetManager (edit) and DisplayWidgetManager (display)
+- **DynamicTable** - uses DisplayWidgetManager for cell rendering
+- **Consistent widget system** - same display widgets across contexts
 
 ### **✅ Configuration-Driven:**
 - **Entity-specific behavior** - different configs per entity type
@@ -576,12 +576,12 @@ Fixed filters / reference scoping
     />
 
     <!-- View inline details -->
-    <div v-if="mode === 'view'" class="view-panel">
-      <!-- render read-only fields from form config -->
-      <div v-for="f in (formConfig.fields||[])" :key="f.key" v-if="f.key">
-        <strong>{{ f.label || f.key }}</strong>: {{ currentEntity?.[f.key] }}
-      </div>
-    </div>
+    <DynamicForm
+      v-if="mode === 'view'"
+      :config="formConfig"
+      :initial-data="currentEntity || {}"
+      mode="display"
+    />
 
     <!-- No inline delete bar; delete is handled via a confirmation dialog (see below) -->
   </div>
@@ -602,9 +602,7 @@ Fixed filters / reference scoping
   </Dialog>
 
   <Dialog v-model:visible="mode==='view'" header="View">
-    <div v-for="f in (formConfig.fields||[])" :key="f.key" v-if="f.key">
-      <strong>{{ f.label || f.key }}</strong>: {{ currentEntity?.[f.key] }}
-    </div>
+    <DynamicForm :config="formConfig" :initial-data="currentEntity || {}" mode="display" />
   </Dialog>
 
   <!-- Delete confirmation dialog (triggered by delete action) -->
