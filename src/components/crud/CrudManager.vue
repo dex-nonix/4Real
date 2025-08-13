@@ -5,7 +5,8 @@
 
       <div class="header-actions flex gap-3">
         <Button
-          @click="showCreateForm = true"
+          v-if="showCreateButton"
+          @click="onAddNew"
           icon="pi pi-plus"
           label="Add New"
         />
@@ -28,8 +29,26 @@
       @bulk-action="handleBulkAction"
     />
 
+    <!-- Inline create/edit form when displayMode is inline -->
+    <div v-if="displayMode === 'inline' && (isCreateMode || isEditMode)" class="mt-3">
+      <DynamicForm
+        :config="formConfig"
+        :initial-data="isEditMode ? currentEntity : {}"
+        :submit-label="isEditMode ? 'Update' : 'Create'"
+        @submit="handleFormSubmit"
+      />
+    </div>
+
+    <!-- Inline view panel when displayMode is inline -->
+    <div v-if="displayMode === 'inline' && isViewMode" class="view-panel mt-3">
+      <div v-for="f in (formConfig.fields || [])" :key="f.key" v-if="f && f.key" class="mb-2">
+        <strong>{{ f.label || f.key }}</strong>: {{ currentEntity ? currentEntity[f.key] : '' }}
+      </div>
+    </div>
+
     <Dialog
-      v-model:visible="showCreateForm"
+      v-if="displayMode === 'dialog'"
+      v-model:visible="formDialogVisible"
       :header="dialogTitle"
       :modal="true"
       :closable="true"
@@ -38,21 +57,21 @@
     >
       <DynamicForm
         :config="formConfig"
-        :initial-data="editingEntity"
-        :submit-label="isEditing ? 'Update' : 'Create'"
+        :initial-data="editingEntity || {}"
+        :submit-label="editingEntity ? 'Update' : 'Create'"
         @submit="handleFormSubmit"
-        @cancel="closeDialog"
+        @cancel="closeFormDialog"
       />
     </Dialog>
 
     <Dialog
+      v-if="displayMode === 'dialog'"
       v-model:visible="showViewDialog"
       :header="`View ${entitySingular}`"
       :modal="true"
       :closable="true"
       :close-on-escape="true"
       :style="{ width: '40vw' }"
-      @hide="onViewHide"
     >
       <div v-if="viewingEntity" class="view-details flex flex-column gap-3">
         <div
@@ -136,25 +155,29 @@ export default {
   components: { Dialog, Button, DynamicTable, DynamicForm },
 
   props: {
-    service: {
-      type: Object,
-      required: true
-    },
-    title: {
-      type: String,
-      default: ''
-    }
+    service: { type: Object, required: true },
+    title: { type: String, default: '' },
+    mode: { type: String, default: 'list' }, // 'list' | 'create' | 'view' | 'edit'
+    entityId: { type: [String, Number], default: null },
+    displayMode: { type: String, default: 'inline' }, // 'inline' | 'dialog'
+    showCreateButton: { type: Boolean, default: true },
+    tableConfigOverride: { type: Object, default: () => ({}) },
+    formConfigOverride: { type: Object, default: () => ({}) },
+    fixedFilters: { type: Object, default: () => ({}) },
+    refField: { type: String, default: '' },
+    refId: { type: [String, Number], default: null }
   },
 
   data() {
     return {
       entities: [],
       loading: false,
-      showCreateForm: false,
+      formDialogVisible: false,
       showViewDialog: false,
       showDeleteConfirm: false,
       showBulkDeleteConfirm: false,
       editingEntity: null,
+      currentEntity: null,
       viewingEntity: null,
       entityToDelete: null,
       selectedEntities: [],
@@ -169,10 +192,12 @@ export default {
       return this.service?.config || {}
     },
     tableConfig() {
-      return this.config.table || {}
+      return { ...(this.config.table || {}), ...(this.tableConfigOverride || {}) }
     },
     formConfig() {
-      return this.config.form || { fields: [] }
+      const base = this.config.form || { fields: [] }
+      const override = this.formConfigOverride || {}
+      return { ...base, ...override, fields: override.fields || base.fields }
     },
     exportEnabled() {
       return Boolean(this.config.exportEnabled)
@@ -194,7 +219,19 @@ export default {
       return `${base}s`
     },
     dialogTitle() {
-      return this.isEditing ? `Edit ${this.entitySingular}` : `Create New ${this.entitySingular}`
+      return this.isEditMode ? `Edit ${this.entitySingular}` : `Create New ${this.entitySingular}`
+    },
+    isListMode() {
+      return this.mode === 'list'
+    },
+    isCreateMode() {
+      return this.mode === 'create'
+    },
+    isViewMode() {
+      return this.mode === 'view'
+    },
+    isEditMode() {
+      return this.mode === 'edit'
     }
   },
 
@@ -202,7 +239,11 @@ export default {
     async loadEntities() {
       this.loading = true
       try {
-        const res = await this.service.list()
+        const query = { ...(this.fixedFilters || {}) }
+        if (this.refField && this.refId != null) {
+          query[`filter_${this.refField}`] = `eq:${this.refId}`
+        }
+        const res = await this.service.list(query)
         const body = res?.data
         const list = Array.isArray(body) ? body : body?.data
         this.entities = Array.isArray(list) ? list : []
@@ -218,10 +259,18 @@ export default {
     async handleRowAction({ action, rowData }) {
       switch (action) {
         case 'view':
-          this.openView(rowData)
+          if (this.displayMode === 'dialog') {
+            this.openView(rowData)
+          } else {
+            this.$emit('row-action', { action, rowData })
+          }
           break
         case 'edit':
-          this.editEntity(rowData)
+          if (this.displayMode === 'dialog') {
+            this.editEntity(rowData)
+          } else {
+            this.$emit('row-action', { action, rowData })
+          }
           break
         case 'delete':
           this.deleteEntity(rowData)
@@ -247,8 +296,7 @@ export default {
 
     editEntity(entity) {
       this.editingEntity = { ...entity }
-      this.isEditing = true
-      this.showCreateForm = true
+      this.formDialogVisible = true
     },
 
     deleteEntity(entity) {
@@ -266,11 +314,6 @@ export default {
         const obj = body?.data || body
         this.viewingEntity = obj || entity
         this.showViewDialog = true
-        // Sync URL query (?view=<id>)
-        if (this.$router && this.$route) {
-          const q = { ...(this.$route.query || {}), view: String(id) }
-          this.$router.replace({ query: q })
-        }
       } catch (error) {
         this.notifyError('Failed to load item')
         // eslint-disable-next-line no-console
@@ -278,41 +321,31 @@ export default {
       }
     },
 
-    async openViewById(id) {
-      if (id == null) return
-      await this.openView({ id })
-    },
-
     closeView() {
       this.showViewDialog = false
       this.viewingEntity = null
-      // Clear URL query param
-      if (this.$router && this.$route) {
-        const { view, ...rest } = this.$route.query || {}
-        this.$router.replace({ query: rest })
-      }
     },
 
-    onViewHide() {
-      // Ensure URL cleanup when dialog closes via escape/close icon
-      if (this.showViewDialog === false) {
-        if (this.$router && this.$route) {
-          const { view, ...rest } = this.$route.query || {}
-          this.$router.replace({ query: rest })
-        }
+    onAddNew() {
+      if (this.displayMode === 'dialog') {
+        this.editingEntity = null
+        this.formDialogVisible = true
+      } else {
+        this.$emit('row-action', { action: 'create' })
       }
     },
 
     async handleFormSubmit(formData) {
       try {
-        if (this.isEditing && this.editingEntity?.id != null) {
-          await this.service.update(this.editingEntity.id, formData)
+        if ((this.displayMode === 'dialog' && this.editingEntity?.id != null) || this.isEditMode) {
+          const id = this.editingEntity?.id ?? this.entityId
+          await this.service.update(id, formData)
           this.notifySuccess('Updated successfully')
         } else {
           await this.service.create(formData)
           this.notifySuccess('Created successfully')
         }
-        this.closeDialog()
+        this.closeFormDialog()
         await this.loadEntities()
       } catch (error) {
         this.notifyError('Operation failed')
@@ -364,10 +397,9 @@ export default {
       }
     },
 
-    closeDialog() {
-      this.showCreateForm = false
+    closeFormDialog() {
+      this.formDialogVisible = false
       this.editingEntity = null
-      this.isEditing = false
     },
 
     exportData() {
@@ -393,11 +425,12 @@ export default {
 
   mounted() {
     this.loadEntities()
-    // If URL carries ?view=<id>, open view dialog automatically
-    const viewId = this.$route && this.$route.query ? this.$route.query.view : null
-    if (viewId != null) {
-      const asNum = Number(viewId)
-      this.openViewById(Number.isNaN(asNum) ? viewId : asNum)
+    if ((this.isViewMode || this.isEditMode) && this.entityId != null) {
+      // Load current entity for inline modes
+      this.service.get(this.entityId).then(res => {
+        const body = res?.data
+        this.currentEntity = body?.data || body || null
+      }).catch(() => {})
     }
   }
 }

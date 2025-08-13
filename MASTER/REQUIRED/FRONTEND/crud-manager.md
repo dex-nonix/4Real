@@ -134,16 +134,16 @@ export default {
   components: { Dialog, Button, DynamicTable, DynamicForm },
   
   props: {
-    // Service-first API (router-agnostic component)
+    // Service usage (router-agnostic component)
     service: { type: Object, required: true },
     // Optional UI config (titles, labels). If omitted, derive from service.entity
     config: { type: Object, required: false, default: () => ({}) },
     // External mode control to support inline usage and multi-instances per page
-    mode: { type: String, default: 'list' }, // 'list' | 'create' | 'view' | 'edit' | 'delete'
+    mode: { type: String, default: 'list' }, // 'list' | 'create' | 'view' | 'edit'
     entityId: { type: [String, Number], default: null },
     displayMode: { 
       type: String, 
-      default: 'dialog', // 'inline' | 'dialog'
+      default: 'inline', // 'inline' | 'dialog'
       validator: v => ['inline', 'dialog'].includes(v)
     },
     showCreateButton: { type: Boolean, default: true }
@@ -153,57 +153,50 @@ export default {
     return {
       entities: [],
       loading: false,
-      showCreateForm: false,
       showDeleteConfirm: false,
       showBulkDeleteConfirm: false,
-      editingEntity: null,
+      currentEntity: null,
       entityToDelete: null,
       selectedEntities: [],
       deleting: false,
-      bulkDeleting: false,
-      isEditing: false
+      bulkDeleting: false
     }
   },
   
   computed: {
     dialogTitle() {
       const entity = this.config.entity || this.service?.entity || 'entity'
-      return this.isEditing 
+      return this.mode === 'edit' 
         ? `Edit ${entity}` 
         : `Create New ${entity}`
     }
   },
   
   methods: {
-    // Load entities
+    // Load entities (includes fixedFilters/refField/refId when provided)
     async loadEntities() {
       this.loading = true
       try {
-        const res = await this.service.list()
+        const query = { ...(this.fixedFilters || {}) }
+        if (this.refField && this.refId != null) {
+          query[`filter_${this.refField}`] = `eq:${this.refId}`
+        }
+        const res = await this.service.list(query)
         const body = res?.data
         this.entities = Array.isArray(body) ? body : (body?.data || [])
       } catch (error) {
         console.error('Error loading entities:', error)
-        this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load data', life: 3000 })
       } finally {
         this.loading = false
       }
     },
     
-    // Handle row actions (emit only; parent decides routing or mode changes)
+    // Handle row actions (emit only; parent sets mode/routing)
     async handleRowAction({ action, rowData }) {
-      switch (action) {
-        case 'view':
-          this.$emit('view', rowData)
-          break
-        case 'edit':
-          this.editEntity(rowData)
-          break
-        case 'delete':
-          this.deleteEntity(rowData)
-          break
-        default:
-          this.$emit('row-action', { action, rowData })
+      this.$emit('row-action', { action, rowData })
+      if (action === 'delete') {
+        this.entityToDelete = rowData
+        this.showDeleteConfirm = true
       }
     },
     
@@ -221,100 +214,86 @@ export default {
       }
     },
     
-    // Edit entity
-    editEntity(entity) {
-      this.editingEntity = { ...entity }
-      this.isEditing = true
-      this.showCreateForm = true
-    },
-    
-    // Delete entity
-    deleteEntity(entity) {
-      this.entityToDelete = entity
-      this.showDeleteConfirm = true
-    },
-    
-    // Handle form submission
+    // Handle form submission (internal; executes service call)
     async handleFormSubmit(formData) {
       try {
-        if (this.isEditing) {
-          await this.updateEntity(formData)
+        if (this.mode === 'edit' && (this.entityId != null || this.currentEntity?.id != null)) {
+          const id = this.entityId ?? this.currentEntity.id
+          await this.service.update(id, formData)
+          if (this.$toast?.add) this.$toast.add({ severity: 'success', summary: 'Success', detail: 'Updated successfully', life: 3000 })
+          this.$emit?.('success', { operation: 'update', data: { id } })
         } else {
-          await this.createEntity(formData)
+          await this.service.create(formData)
+          if (this.$toast?.add) this.$toast.add({ severity: 'success', summary: 'Success', detail: 'Created successfully', life: 3000 })
+          this.$emit?.('success', { operation: 'create', data: null })
         }
-        
-        this.closeDialog()
-        this.loadEntities()
-        
-        this.$toast.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: this.isEditing ? 'Updated successfully' : 'Created successfully',
-          life: 3000
-        })
+        await this.loadEntities()
       } catch (error) {
-        console.error('Form submission error:', error)
-        this.$toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Operation failed',
-          life: 3000
-        })
+        if (this.$toast?.add) this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Operation failed', life: 3000 })
+        this.$emit?.('error', { operation: this.mode === 'edit' ? 'update' : 'create', error })
       }
     },
     
-    // Create entity
-    async createEntity(formData) {
-      const res = await this.service.create(formData)
-      return res?.data
-    },
-    
-    // Update entity
-    async updateEntity(formData) {
-      const res = await this.service.update(this.editingEntity.id, formData)
-      return res?.data
-    },
-    
-    // Confirm delete
+    // Confirm delete (internal; executes service call)
     async confirmDelete() {
+      if (!this.entityToDelete?.id) {
+        this.showDeleteConfirm = false
+        return
+      }
       this.deleting = true
       try {
         await this.service.delete(this.entityToDelete.id)
         this.showDeleteConfirm = false
         this.entityToDelete = null
-        this.loadEntities()
-        this.$toast.add({ severity: 'success', summary: 'Success', detail: 'Deleted successfully', life: 3000 })
+        await this.loadEntities()
+        if (this.$toast?.add) this.$toast.add({ severity: 'success', summary: 'Success', detail: 'Deleted successfully', life: 3000 })
+        this.$emit?.('success', { operation: 'delete', data: null })
       } catch (error) {
-        console.error('Delete error:', error)
-        this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete', life: 3000 })
+        if (this.$toast?.add) this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete', life: 3000 })
+        this.$emit?.('error', { operation: 'delete', error })
       } finally {
         this.deleting = false
       }
     },
-    
-    // Confirm bulk delete
-    async confirmBulkDelete() {
-      this.bulkDeleting = true
+
+    // Load current entity for view/edit
+    async loadCurrentEntity() {
+      const id = this.entityId
+      if (id == null) return
       try {
-        const ids = this.selectedEntities.map(entity => entity.id)
-        await this.service.bulkDelete(ids)
-        this.showBulkDeleteConfirm = false
-        this.selectedEntities = []
-        this.loadEntities()
-        this.$toast.add({ severity: 'success', summary: 'Success', detail: `Deleted ${ids.length} entities successfully`, life: 3000 })
+        const res = await this.service.get(id)
+        const body = res?.data
+        this.currentEntity = body?.data || body || null
       } catch (error) {
-        console.error('Bulk delete error:', error)
-        this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete entities', life: 3000 })
-      } finally {
-        this.bulkDeleting = false
+        // no-op toast optional
       }
     },
     
-    // Close dialog
-    closeDialog() {
-      this.showCreateForm = false
-      this.editingEntity = null
-      this.isEditing = false
+    // Confirm bulk delete (internal; executes service call)
+    async confirmBulkDelete() {
+      const ids = this.selectedEntities.map(e => e.id).filter(v => v != null)
+      if (!ids.length) {
+        this.showBulkDeleteConfirm = false
+        return
+      }
+      this.bulkDeleting = true
+      try {
+        await this.service.bulkDelete(ids)
+        this.showBulkDeleteConfirm = false
+        this.selectedEntities = []
+        await this.loadEntities()
+        if (this.$toast?.add) {
+          this.$toast.add({ severity: 'success', summary: 'Success', detail: `Deleted ${ids.length} items`, life: 3000 })
+        }
+        this.$emit?.('success', { operation: 'bulk-delete', data: { ids } })
+      } catch (error) {
+        if (this.$toast?.add) {
+          this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete items', life: 3000 })
+        }
+        this.$emit?.('error', { operation: 'bulk-delete', error })
+      } finally {
+        this.bulkDeleting = false
+      }
     },
     
     // Export data
@@ -333,6 +312,9 @@ export default {
   // Load entities on mount
   mounted() {
     this.loadEntities()
+    if (this.mode === 'view' || this.mode === 'edit') {
+      this.loadCurrentEntity()
+    }
   }
 }
 </script>
@@ -409,54 +391,62 @@ export const artistCrudConfig = {
 }
 ```
 
-## 📁 **USAGE:**
+## 📁 **USAGE (Provide/Inject + CrudPage + Route Meta):**
 
-### **In Artist Management View:**
-```vue
-<template>
-  <div class="artists-view">
-    <CrudManager :config="artistCrudConfig" />
-  </div>
-</template>
+### Provide singletons (inline) at app bootstrap
+```js
+// src/main.js
+import ArtistService from '@/services/ArtistService.js'
+import AlbumService from '@/services/AlbumService.js'
+import TrackService from '@/services/TrackService.js'
 
-<script>
-import CrudManager from '@/components/crud/CrudManager.vue'
-import { artistCrudConfig } from '@/configs/crud/artist.js'
+// ... create app, use router/PrimeVue/ToastService
 
-export default {
-  name: 'ArtistsView',
-  components: { CrudManager },
-  data() {
-    return {
-      artistCrudConfig
-    }
-  }
-}
-</script>
+// Provide service singletons (inline, no temp vars)
+app.provide('artists', new ArtistService())
+app.provide('albums', new AlbumService())
+app.provide('tracks', new TrackService())
 ```
 
-### **In Album Management View:**
+### Normalize routes to a single CrudPage via meta
+```js
+// src/router/index.js (excerpt)
+import CrudPage from '@/views/CrudPage.vue'
+
+const routes = [
+  { path: '/artists', component: CrudPage, meta: { crud: { key: 'artists', displayMode: 'inline' } } },
+  { path: '/artists/new', component: CrudPage, meta: { crud: { key: 'artists', displayMode: 'inline' } } },
+  { path: '/artists/:id', component: CrudPage, meta: { crud: { key: 'artists', displayMode: 'inline' } } },
+  { path: '/artists/:id/edit', component: CrudPage, meta: { crud: { key: 'artists', displayMode: 'inline' } } },
+]
+```
+
+### CrudPage resolves injected service by meta and maps route → props
 ```vue
-<template>
-  <div class="albums-view">
-    <CrudManager :config="albumCrudConfig" />
-  </div>
-</template>
-
-<script>
+<!-- src/views/CrudPage.vue (concept) -->
+<script setup>
+import { inject, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import CrudManager from '@/components/crud/CrudManager.vue'
-import { albumCrudConfig } from '@/configs/crud/album.js'
 
-export default {
-  name: 'AlbumsView',
-  components: { CrudManager },
-  data() {
-    return {
-      albumCrudConfig
-    }
-  }
-}
+const route = useRoute()
+const cfg = route.meta?.crud || {}
+const service = inject(cfg.key)
+
+const mode = computed(() => {
+  if (route.path.endsWith('/new')) return 'create'
+  if (route.path.endsWith('/edit')) return 'edit'
+  return route.params.id ? 'view' : 'list'
+})
+const entityId = computed(() => route.params.id || null)
+const displayMode = computed(() => cfg.displayMode || 'inline')
 </script>
+
+<template>
+  <CrudManager :service="service" :mode="mode" :entity-id="entityId" :display-mode="displayMode" />
+  <!-- Delete confirmations are always handled by CrudManager dialogs -->
+  <!-- Routing changes happen outside via row-action (view/edit/create) if needed -->
+</template>
 ```
 
 ## 🎯 **KEY FEATURES:**
@@ -500,14 +490,11 @@ CrudManager is a pure component (no router usage) and supports both inline and d
 - **fixedFilters?**: object of persistent query params sent to `service.list(...)` (e.g., `{ filter_artist_id: 'eq:123' }`)
 - **refField?/refId?**: convenience to auto-build a fixed FK filter (e.g., `refField='artist_id'` + `refId=123` → `{ filter_artist_id: 'eq:123' }`)
 
-### Emits
-- **row-action**: `{ action, rowData }`
-- **bulk-action**: `{ action, selectedRows }`
-- **submit**: `{ payload, mode }` (when create/update is attempted)
-- **delete**: `{ id }` (when delete is confirmed)
+### Emits (optional)
+- **row-action**: `{ action, rowData }` (useful if parent wants to change route/mode)
 - **cancel**: `void`
-- **success**: `{ operation, data }`
-- **error**: `{ operation, error }`
+- **success**: `{ operation, data }` (optional notification)
+- **error**: `{ operation, error }` (optional notification)
 
 ### Behavior by mode
 - **list**: renders table only
@@ -516,7 +503,7 @@ CrudManager is a pure component (no router usage) and supports both inline and d
 - **edit**: loads entity by `entityId` and renders form inline; dialog when `displayMode='dialog'`
 
 Delete confirmation
-- Single and bulk delete are always confirmed in a dialog. Delete is not a navigable mode and does not change routes. The confirm dialog opens in-place from the current view.
+- Single and bulk delete are always confirmed in a dialog and executed internally by CrudManager. Delete is not a navigable mode and does not change routes. The confirm dialog opens in-place from the current view.
 
 Fixed filters / reference scoping
 - `fixedFilters` are always included in calls to `service.list(...)`, independent of UI filters on the table.
@@ -547,7 +534,7 @@ Fixed filters / reference scoping
       :config="formConfig"
       :initial-data="mode==='edit' ? currentEntity : {}"
       :submit-label="mode==='edit' ? 'Update' : 'Create'"
-      @submit="payload => $emit('submit', { payload, mode })"
+      @submit="handleFormSubmit"
       @cancel="$emit('cancel')"
     />
 
@@ -572,7 +559,7 @@ Fixed filters / reference scoping
       :config="formConfig"
       :initial-data="mode==='edit' ? currentEntity : {}"
       :submit-label="mode==='edit' ? 'Update' : 'Create'"
-      @submit="payload => $emit('submit', { payload, mode })"
+      @submit="handleFormSubmit"
       @cancel="$emit('cancel')"
     />
   </Dialog>
@@ -588,7 +575,7 @@ Fixed filters / reference scoping
     <div class="flex align-items-center gap-2">
       <span>Delete this {{ service.entity }}?</span>
       <Button label="Cancel" severity="secondary" @click="$emit('cancel')" />
-      <Button label="Delete" severity="danger" @click="$emit('delete', { id: entityId })" />
+      <Button label="Delete" severity="danger" @click="confirmDelete" />
     </div>
   </Dialog>
 </template>
