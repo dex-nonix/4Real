@@ -43,8 +43,8 @@
 
     <!-- Inline view panel when displayMode is inline -->
     <div v-if="displayMode === 'inline' && isViewMode" class="view-panel mt-3">
-      <div v-for="f in (formConfig.fields || [])" :key="f.key" v-if="f && f.key" class="mb-2">
-        <strong>{{ f.label || f.key }}</strong>: {{ currentEntity ? currentEntity[f.key] : '' }}
+      <div v-for="field in viewFields" :key="field.key" class="mb-2">
+        <strong>{{ field.label || field.key }}</strong>: {{ currentEntity ? currentEntity[field.key] : '' }}
       </div>
     </div>
 
@@ -215,7 +215,7 @@ export default {
     },
     viewFields() {
       const fields = Array.isArray(this.formConfig.fields) ? this.formConfig.fields : []
-      return fields.filter(f => f && f.key)
+      return fields.filter(field => field && field.key)
     },
     entityTitle() {
       const raw = this.config.entity || this.service?.entity || 'Entity'
@@ -247,6 +247,9 @@ export default {
   },
 
   methods: {
+    formatValue(field, value) {
+      return value == null ? '' : String(value)
+    },
     handleInlineCancel() {
       this.$emit('row-action', { action: 'cancel' })
     },
