@@ -159,6 +159,13 @@ backend/
 - **No reinvention** - same layout structure everywhere
 - **Simple and consistent** - header, sidebar, content area
 
+### **🧭 Layout + Page Mechanism (High-level):**
+- **Layout renders the shell and header**: top bar, left nav (Sidebar + PanelMenu), center content, right tools (slideout Sidebar).
+- **Page supplies header content**: the view uses a `Page` component to provide title, back flag, actions (PrimeVue Menu model), and optional custom header UI.
+- **Data flow**: Page sets shared header state; layout reads it and renders. Custom header parts can be injected via Teleport targets for left/right header zones.
+- **Mobile-first**: left and right sidebars are off-canvas on small screens; actions collapse to a kebab menu; header auto-collapses when Page provides no title/back/actions.
+- **No route meta for page chrome**: views control header via the Page component, keeping routing simple.
+
 ### **🔧 CRUD SYSTEM COMPONENTS:**
 - **Dynamic Form Generator** - creates forms based on data models
 - **Dynamic Table Generator** - creates tables based on data models
