@@ -1,12 +1,10 @@
 // BaseApiService.js - minimal fetch-based HTTP layer
+import { API_BASE_URL } from '../config.js'
 
 export default class BaseApiService {
   constructor(options = {}) {
-    const { baseURL, defaultHeaders = {}, onRequest, onResponse, onError, fetchImpl } = options
-    if (typeof baseURL !== 'string') {
-      throw new Error('BaseApiService requires a baseURL string')
-    }
-    this.baseURL = baseURL.replace(/\/$/, '')
+    const { defaultHeaders = {}, onRequest, onResponse, onError, fetchImpl } = options
+    this.baseURL = API_BASE_URL.replace(/\/$/, '')
     this.defaultHeaders = { 'Content-Type': 'application/json', ...defaultHeaders }
     this.onRequest = onRequest
     this.onResponse = onResponse

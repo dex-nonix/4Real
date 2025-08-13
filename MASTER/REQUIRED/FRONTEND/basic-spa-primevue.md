@@ -95,8 +95,8 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 const app = createApp({ render: () => h(App) })
 app.use(router)
 app.use(PrimeVue)
-// Provide CRUD factory bound to env base URL
-app.config.globalProperties.$api = { crud: (entity) => new CrudService({ baseURL: API_BASE_URL, entity }) }
+// Provide CRUD factory (base URL comes from environment automatically)
+app.config.globalProperties.$api = { crud: (entity) => new CrudService({ entity }) }
 app.mount('#app')
 ```
 

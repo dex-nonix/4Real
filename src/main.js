@@ -17,7 +17,7 @@ app.use(PrimeVue)
 
 // Provide a simple $api getter using CrudService factory
 app.config.globalProperties.$api = {
-  crud: (entity) => new CrudService({ baseURL: API_BASE_URL, entity })
+  crud: (entity) => new CrudService({ entity })
 }
 
 app.mount('#app')

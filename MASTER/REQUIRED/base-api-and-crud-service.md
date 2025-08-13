@@ -28,7 +28,6 @@ Purpose: Provide a thin, safe HTTP layer with JSON handling, query params, and o
 
 Constructor
 - `new BaseApiService(options)`
-  - `options.baseURL: string` (required)
   - `options.defaultHeaders?: Record<string,string>` (e.g., `{ 'Content-Type':'application/json' }`)
   - `options.onRequest?: (req) => void | Promise<void>`
   - `options.onResponse?: (res) => void | Promise<void>`
@@ -38,7 +37,7 @@ Public Methods
 - `setAuthToken(token: string | null)`
   - Stores a bearer token internally; when set, adds `Authorization: Bearer <token>` to requests
 - `buildUrl(path: string, query?: Record<string, any>): string`
-  - Concatenates `baseURL + path`, encodes `query` as `?key=value` (skips null/undefined)
+  - Concatenates environment-based API_BASE_URL + path, encodes `query` as `?key=value` (skips null/undefined)
 - `request(method: 'GET'|'POST'|'PUT'|'PATCH'|'DELETE', path: string, options?: { query?, body?, headers?, signal? })`
   - JSON encodes `body` (when provided and not `FormData`)
   - Merges headers with defaults and auth
@@ -65,7 +64,6 @@ Purpose: Generic CRUD wrapper tied to an entity or explicit endpoints; mirrors b
 
 Constructor
 - `new CrudService(options)`
-  - `options.baseURL: string` (required)
   - `options.entity?: string` e.g., `'artists'`
   - `options.endpoints?: { list?, get?, create?, update?, delete?, bulkDelete? }`
     - Defaults when `entity` is provided:
@@ -127,7 +125,7 @@ Singleton services per entity (recommended)
 ```js
 // src/services/ArtistService.js
 import CrudService from './CrudService'
-export const artistService = new CrudService({ baseURL: import.meta.env.VITE_API_BASE_URL, entity: 'artists' })
+export const artistService = new CrudService({ entity: 'artists' })
 ```
 
 Injection as a plugin (optional)
@@ -168,7 +166,7 @@ With CrudManager
 ```js
 // Bootstrapping
 import CrudService from '@/services/CrudService'
-export const artistService = new CrudService({ baseURL: import.meta.env.VITE_API_BASE_URL, entity: 'artists' })
+export const artistService = new CrudService({ entity: 'artists' })
 
 // In CrudManager
 await artistService.list({ q: search, page, per_page: pageSize })

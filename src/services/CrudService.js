@@ -3,8 +3,8 @@ import BaseApiService from './BaseApiService.js'
 
 export default class CrudService extends BaseApiService {
   constructor(options = {}) {
-    const { baseURL, entity, endpoints = {}, ...rest } = options
-    super({ baseURL, ...rest })
+    const { entity, endpoints = {}, ...rest } = options
+    super({ ...rest })
     this.entity = entity
     this.endpoints = this.#buildEndpoints(entity, endpoints)
   }
