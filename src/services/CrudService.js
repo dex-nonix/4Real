@@ -8,7 +8,25 @@ export default class CrudService extends BaseApiService {
       throw new Error('CrudService requires an entity string')
     }
     this.entity = entity
-    this.config = uiConfig
+    this.config = this.#withDefaults(uiConfig)
+  }
+
+  #withDefaults(config) {
+    const defaults = {
+      table: {
+        actions: ['view', 'edit', 'delete'],
+        bulkActions: ['delete', 'export'],
+        paginated: true,
+        pageSize: 20,
+        selectionMode: 'multiple',
+        resizable: true,
+        striped: true,
+        hover: true
+      }
+    }
+    const merged = { ...config }
+    merged.table = { ...defaults.table, ...(config.table || {}) }
+    return merged
   }
 
   basePath() { return `/${this.entity}` }
