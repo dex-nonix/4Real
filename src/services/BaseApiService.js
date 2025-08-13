@@ -3,13 +3,12 @@ import { API_BASE_URL } from '../config.js'
 
 export default class BaseApiService {
   constructor(options = {}) {
-    const { defaultHeaders = {}, onRequest, onResponse, onError, fetchImpl } = options
+    const { defaultHeaders = {}, onRequest, onResponse, onError } = options
     this.baseURL = API_BASE_URL.replace(/\/$/, '')
     this.defaultHeaders = { 'Content-Type': 'application/json', ...defaultHeaders }
     this.onRequest = onRequest
     this.onResponse = onResponse
     this.onError = onError
-    this.fetchImpl = fetchImpl || fetch
     this.authToken = null
   }
 
@@ -70,7 +69,7 @@ export default class BaseApiService {
 
     try {
       if (this.onRequest) await this.onRequest({ method, url, init })
-      const res = await this.fetchImpl(url, init)
+      const res = await window.fetch(url, init)
       const contentType = res.headers.get('content-type') || ''
       const isJson = contentType.includes('application/json')
       const data = isJson ? await res.json().catch(() => null) : await res.text().catch(() => null)
