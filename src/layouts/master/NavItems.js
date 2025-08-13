@@ -13,6 +13,19 @@ export const leftNavItems = [
       ,{ label: 'Rhyme Techniques', icon: 'pi pi-sliders-h', to: '/rhyme-techniques' }
       ,{ label: 'Chat', icon: 'pi pi-comments', to: { name: 'chat' } }
     ]
+  },
+  {
+    label: 'AI',
+    icon: 'pi pi-brain',
+    items: [
+      { label: 'Providers', icon: 'pi pi-cog', to: '/ai-providers' },
+      { label: 'Model Mappings', icon: 'pi pi-sitemap', to: '/ai-model-mappings' },
+      { label: 'Analysis Results', icon: 'pi pi-chart-bar', to: '/ai-analysis-results' },
+      { label: 'Internal Tools', icon: 'pi pi-wrench', to: '/internal-tools' },
+      { label: 'Persona Access', icon: 'pi pi-shield', to: '/persona-tool-access' },
+      { label: 'MCP Servers', icon: 'pi pi-server', to: '/mcp-servers' },
+      { label: 'Persona MCP', icon: 'pi pi-share-alt', to: '/persona-mcp-servers' }
+    ]
   }
 ]
 
