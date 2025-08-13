@@ -201,6 +201,17 @@ export default {
     }
   },
   
+  watch: {
+    // Ensure table renders incoming async data immediately
+    data: {
+      handler() {
+        this.applyFilters()
+      },
+      deep: true,
+      immediate: true
+    }
+  },
+  
   methods: {
     // Resolve cell widget using TableCellWidgetManager
     resolveCellWidget(type) {
