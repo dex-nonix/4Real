@@ -160,4 +160,4 @@ src/
 - **DynamicTable.md** - Table component using TableCellWidgetManager + table-widgets.js registry
 - **CrudManager.md** - CRUD component using both managers
 
-**This gives us ONE generic system that handles ALL widget management needs without over-engineering!**
+**This gives us ONE generic system that handles ALL widget management needs without over-engineering. Use PrimeVue components and PrimeFlex utilities for layout/spacing — avoid custom CSS unless truly unavoidable.**

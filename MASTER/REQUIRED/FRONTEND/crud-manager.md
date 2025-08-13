@@ -18,10 +18,10 @@
 <template>
   <div class="crud-manager">
     <!-- Header with Actions -->
-    <div class="crud-header">
+    <div class="crud-header flex justify-content-between align-items-center mb-4">
       <h1>{{ config.title || `${config.entity} Management` }}</h1>
       
-      <div class="header-actions">
+      <div class="header-actions flex gap-3">
         <Button 
           @click="showCreateForm = true" 
           icon="pi pi-plus"
@@ -359,36 +359,7 @@ export default {
 </script>
 
 <style scoped>
-.crud-manager {
-  padding: 1rem;
-}
-
-.crud-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.header-actions {
-  display: flex;
-  gap: 1rem;
-}
-
-.delete-confirmation,
-.bulk-delete-confirmation {
-  text-align: center;
-}
-
-.entity-name {
-  font-weight: bold;
-  color: #ef4444;
-}
-
-.warning {
-  color: #f59e0b;
-  font-weight: 500;
-}
+/* Use PrimeFlex utilities for spacing/layout; avoid custom CSS. */
 </style>
 
 ## 📋 **CRUD CONFIG INTEGRATION:**

@@ -104,12 +104,12 @@ This registry file lives in the same `components/tables/` folder as the DynamicT
 
 ## 🔧 **IMPLEMENTATION:**
 
-### **1. DynamicTable.vue Component:**
+### **1. DynamicTable.vue Component (Prime-first, no custom CSS):**
 ```vue
 <template>
   <div class="dynamic-table" :class="tableClasses">
     <!-- Search and Filters -->
-    <div v-if="config.filters && !minimal" class="table-filters">
+    <div v-if="config.filters && !minimal" class="table-filters flex align-items-center gap-3 mb-3">
       <SearchFilter 
         v-if="config.filters.includes('search')"
         v-model="searchQuery"
@@ -179,7 +179,7 @@ This registry file lives in the same `components/tables/` folder as the DynamicT
     </DataTable>
     
     <!-- Bulk Actions (hidden for minimal mode) -->
-    <div v-if="config.bulkActions && selectedRows.length > 0 && !minimal" class="bulk-actions">
+    <div v-if="config.bulkActions && selectedRows.length > 0 && !minimal" class="bulk-actions mt-3 p-3 surface-100 border-round">
       <BulkActions 
         :actions="config.bulkActions"
         :selected-count="selectedRows.length"
@@ -408,75 +408,8 @@ export default {
 </script>
 
 <style scoped>
-.dynamic-table {
-  width: 100%;
-}
-
-/* Vertical Layout (default) */
-.layout-vertical .p-datatable {
-  /* Normal table layout */
-}
-
-/* Horizontal Layout */
-.layout-horizontal .p-datatable {
-  /* Compact horizontal layout for dashboards */
-}
-
-/* Compact Mode */
-.compact .p-datatable {
-  font-size: 0.875rem;
-}
-
-.compact .p-datatable .p-datatable-thead > tr > th {
-  padding: 0.5rem;
-}
-
-.compact .p-datatable .p-datatable-tbody > tr > td {
-  padding: 0.5rem;
-}
-
-/* Dense Mode */
-.dense .p-datatable .p-datatable-tbody > tr {
-  height: 2.5rem;
-}
-
-.dense .p-datatable .p-datatable-thead > tr {
-  height: 2.5rem;
-}
-
-/* Minimal Mode */
-.minimal .p-paginator,
-.minimal .p-datatable-header {
-  display: none;
-}
-
-.minimal .p-datatable .p-datatable-thead > tr > th {
-  border-bottom: 1px solid #e5e7eb;
-}
-
-/* Table Filters */
-.table-filters {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  align-items: center;
-}
-
-/* Bulk Actions */
-.bulk-actions {
-  margin-top: 1rem;
-  padding: 1rem;
-  background-color: #f8fafc;
-  border-radius: 0.5rem;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .compact .p-datatable .p-datatable-thead > tr > th,
-  .compact .p-datatable .p-datatable-tbody > tr > td {
-    padding: 0.25rem;
-  }
-}
+/* Use PrimeFlex/PrimeVue utilities; avoid custom CSS here. */
+.dynamic-table { width: 100%; }
 </style>
 
 ## 📋 **LAYOUT CONFIGURATION:**
