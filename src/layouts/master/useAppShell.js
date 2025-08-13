@@ -2,13 +2,18 @@ import { reactive } from 'vue'
 
 // Simple shared shell state for left/right sidebars
 const shellState = reactive({
-  leftOpen: false,
+  leftOpen: false,      // mobile off-canvas visibility
+  leftCollapsed: false, // desktop pinned collapse
   rightOpen: false
 })
 
 export function useAppShell() {
   function toggleLeft() {
-    shellState.leftOpen = !shellState.leftOpen
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+      shellState.leftCollapsed = !shellState.leftCollapsed
+    } else {
+      shellState.leftOpen = !shellState.leftOpen
+    }
   }
 
   function toggleRight() {
