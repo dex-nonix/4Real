@@ -5,7 +5,7 @@
 
       <div class="header-actions flex gap-3">
         <Button
-          v-if="showCreateButton"
+          v-if="showAddButton"
           @click="onAddNew"
           icon="pi pi-plus"
           label="Add New"
@@ -37,6 +37,7 @@
         :initial-data="isEditMode ? currentEntity : {}"
         :submit-label="isEditMode ? 'Update' : 'Create'"
         @submit="handleFormSubmit"
+        @cancel="handleInlineCancel"
       />
     </div>
 
@@ -189,6 +190,14 @@ export default {
   },
 
   computed: {
+    showAddButton() {
+      if (!this.showCreateButton) return false
+      if (this.displayMode === 'inline') {
+        return this.isListMode
+      }
+      // dialog mode: button always visible; dialog overlays
+      return true
+    },
     config() {
       return this.service?.config || {}
     },
@@ -237,6 +246,9 @@ export default {
   },
 
   methods: {
+    handleInlineCancel() {
+      this.$emit('row-action', { action: 'cancel' })
+    },
     async loadEntities() {
       this.loading = true
       try {

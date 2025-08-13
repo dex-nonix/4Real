@@ -62,6 +62,9 @@ const CrudPage = {
         case 'create':
           router.push(`${base}/new`)
           break
+        case 'cancel':
+          router.push(`${base}`)
+          break
         case 'view':
           if (id != null) router.push(`${base}/${id}`)
           break
