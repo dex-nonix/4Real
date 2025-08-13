@@ -1,7 +1,7 @@
 <template>
   <div class="dynamic-form p-fluid" :class="formClasses">
     <form @submit.prevent="handleSubmit">
-      <div class="form-fields formgrid grid" :class="fieldsLayout">
+      <div class="form-fields formgrid grid gap-3" :class="fieldsLayout">
         <div
           v-for="(item, idx) in effectiveItems"
           :key="item.key ? item.key : `__ui_${idx}`"
@@ -31,14 +31,14 @@
           />
 
           <!-- Field Error Display -->
-          <small v-if="item.key && fieldErrors[item.key]" class="error-message">
+          <small v-if="item.key && fieldErrors[item.key]" class="p-error">
             {{ fieldErrors[item.key] }}
           </small>
         </div>
       </div>
       
       <!-- Form Actions (hidden for compact mode) -->
-      <div v-if="!compact" class="form-actions">
+      <div v-if="!compact" class="flex gap-3 justify-content-end mt-4">
         <Button type="submit" :loading="isSubmitting">
           {{ submitLabel }}
         </Button>
@@ -221,86 +221,5 @@ export default {
 </script>
 
 <style scoped>
-.dynamic-form {
-  width: 100%;
-}
-
-/* PrimeFlex handles base spacing; keep only minimal overrides if needed */
-
-/* Vertical Layout (default) */
-.layout-vertical .form-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.layout-vertical .form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.layout-vertical .field-label {
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-}
-
-/* Horizontal Layout */
-.layout-horizontal .form-fields {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: end;
-}
-
-.layout-horizontal .form-field {
-  display: flex;
-  flex-direction: column;
-  min-width: 200px;
-  gap: 0.5rem;
-}
-
-.layout-horizontal .field-label {
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-/* Compact Mode */
-.compact .form-fields {
-  gap: 0.75rem;
-}
-
-.compact .form-field {
-  margin-bottom: 0;
-}
-
-.compact .field-label {
-  margin-bottom: 0.25rem;
-  font-size: 0.875rem;
-}
-
-.compact .error-message {
-  font-size: 0.75rem;
-  margin-top: 0.125rem;
-}
-
-/* Form Actions */
-.form-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-  margin-top: 2rem;
-}
-
-/* Error Styling */
-.error-message {
-  color: #ef4444;
-  font-size: 0.875rem;
-  margin-top: 0.25rem;
-}
-
-.required {
-  color: #ef4444;
-}
+/* Using PrimeFlex/PrimeVue for layout and spacing; no custom CSS needed here. */
 </style>

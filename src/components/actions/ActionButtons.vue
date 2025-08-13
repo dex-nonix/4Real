@@ -1,5 +1,5 @@
 <template>
-  <div class="action-buttons">
+  <div class="action-buttons flex gap-2 justify-content-start">
     <Button 
       v-for="action in actions" 
       :key="action"
@@ -130,13 +130,5 @@ export default {
 </script>
 
 <style scoped>
-.action-buttons {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-start;
-}
-
-.action-btn {
-  /* Let PrimeVue handle button sizing naturally */
-}
+/* Using PrimeFlex for layout and spacing. */
 </style>

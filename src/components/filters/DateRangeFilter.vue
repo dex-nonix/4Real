@@ -1,12 +1,12 @@
 <template>
-  <div class="date-range-filter">
+  <div class="date-range-filter flex align-items-center">
     <Calendar 
       v-model="dateRange"
       selectionMode="range"
       :showIcon="true"
       placeholder="Select date range"
       @date-select="handleDateSelect"
-      class="date-input"
+      class="w-12rem"
     />
   </div>
 </template>
@@ -47,12 +47,5 @@ export default {
 </script>
 
 <style scoped>
-.date-range-filter {
-  display: flex;
-  align-items: center;
-}
-
-.date-input {
-  min-width: 200px;
-}
+/* Using PrimeFlex utilities for layout/width. */
 </style>

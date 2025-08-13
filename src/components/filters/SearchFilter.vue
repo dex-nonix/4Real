@@ -1,10 +1,10 @@
 <template>
-  <div class="search-filter">
+  <div class="search-filter flex align-items-center">
     <InputText 
       v-model="searchValue"
       :placeholder="placeholder"
       @input="handleInput"
-      class="search-input"
+      class="w-12rem"
     />
   </div>
 </template>
@@ -49,12 +49,5 @@ export default {
 </script>
 
 <style scoped>
-.search-filter {
-  display: flex;
-  align-items: center;
-}
-
-.search-input {
-  min-width: 200px;
-}
+/* Using PrimeFlex utilities for layout/width. */
 </style>
