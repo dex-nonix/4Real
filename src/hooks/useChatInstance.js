@@ -14,7 +14,7 @@ function saveToStorage(key, value) {
 }
 
 export default function useChatInstance(options) {
-  const { instanceId, persistKey = `chat:${instanceId}` } = options || {}
+  const { instanceId, persistKey = `chat:${instanceId}`, onError } = options || {}
   if (!instanceId) throw new Error('useChatInstance requires instanceId')
 
   const api = new ChatRuntimeService()
@@ -38,6 +38,10 @@ export default function useChatInstance(options) {
     saveToStorage(`${persistKey}:drafts`, state.draftsBySession)
   }
 
+  function notifyError(message, err) {
+    try { if (typeof onError === 'function') onError({ message, error: err }) } catch {}
+  }
+
   async function loadPersonas() {
     try {
       state.loading = true
@@ -46,12 +50,18 @@ export default function useChatInstance(options) {
       state.personas = body?.data || []
     } catch (e) {
       state.error = e
+      notifyError('Failed to load personas', e)
     } finally { state.loading = false }
   }
 
   async function loadSessions(params = {}) {
-    const { data } = await api.listSessions(params)
-    state.sessions = data?.data || data || []
+    try {
+      const { data } = await api.listSessions(params)
+      state.sessions = data?.data || data || []
+    } catch (e) {
+      notifyError('Failed to load sessions', e)
+      throw e
+    }
   }
 
   function findTabBySession(sessionId) {
@@ -64,23 +74,33 @@ export default function useChatInstance(options) {
   }
 
   async function openSession(sessionId) {
-    const existing = findTabBySession(sessionId)
-    if (existing) { activateTab(existing.id); return existing }
-    const { data } = await api.getSession(sessionId)
-    const sess = data?.data || data
-    const tab = { id: `${instanceId}:${sessionId}`, sessionId, title: sess?.title || `Session ${sessionId}` }
-    state.openTabs.push(tab)
-    activateTab(tab.id)
-    await loadMessages(sessionId)
-    return tab
+    try {
+      const existing = findTabBySession(sessionId)
+      if (existing) { activateTab(existing.id); return existing }
+      const { data } = await api.getSession(sessionId)
+      const sess = data?.data || data
+      const tab = { id: `${instanceId}:${sessionId}`, sessionId, title: sess?.title || `Session ${sessionId}` }
+      state.openTabs.push(tab)
+      activateTab(tab.id)
+      await loadMessages(sessionId)
+      return tab
+    } catch (e) {
+      notifyError('Failed to open session', e)
+      throw e
+    }
   }
 
   async function createSession({ personaId, title }) {
-    const payload = { persona_id: personaId, title }
-    const { data } = await api.createSession(payload)
-    const sess = data?.data || data
-    state.sessions.unshift(sess)
-    return openSession(sess.id)
+    try {
+      const payload = { persona_id: personaId, title }
+      const { data } = await api.createSession(payload)
+      const sess = data?.data || data
+      state.sessions.unshift(sess)
+      return openSession(sess.id)
+    } catch (e) {
+      notifyError('Failed to create session', e)
+      throw e
+    }
   }
 
   function closeTab(tabId) {
@@ -93,33 +113,62 @@ export default function useChatInstance(options) {
   }
 
   async function loadMessages(sessionId) {
-    const { data } = await api.listMessages(sessionId)
-    state.messagesBySession[sessionId] = data?.data || data || []
+    try {
+      const { data } = await api.listMessages(sessionId)
+      state.messagesBySession[sessionId] = data?.data || data || []
+    } catch (e) {
+      notifyError('Failed to load messages', e)
+      throw e
+    }
   }
 
   async function sendMessage(sessionId, content) {
-    // optimistic user message append
-    const user = { id: Date.now(), session_id: sessionId, role: 'user', content_json: content, created_at: new Date().toISOString() }
-    state.messagesBySession[sessionId] = (state.messagesBySession[sessionId] || []).concat(user)
-    const { data } = await api.send(sessionId, content)
-    const asst = data?.data || data
-    state.messagesBySession[sessionId] = (state.messagesBySession[sessionId] || []).concat(asst)
+    try {
+      const user = { id: Date.now(), session_id: sessionId, role: 'user', content_json: content, created_at: new Date().toISOString() }
+      state.messagesBySession[sessionId] = (state.messagesBySession[sessionId] || []).concat(user)
+      const { data } = await api.send(sessionId, content)
+      const asst = data?.data || data
+      state.messagesBySession[sessionId] = (state.messagesBySession[sessionId] || []).concat(asst)
+    } catch (e) {
+      notifyError('Failed to send message', e)
+      throw e
+    }
   }
 
   async function retryLast(sessionId) {
-    const { data } = await api.retry(sessionId)
-    const asst = data?.data || data
-    state.messagesBySession[sessionId] = (state.messagesBySession[sessionId] || []).concat(asst)
+    try {
+      const { data } = await api.retry(sessionId)
+      const asst = data?.data || data
+      state.messagesBySession[sessionId] = (state.messagesBySession[sessionId] || []).concat(asst)
+    } catch (e) {
+      notifyError('Failed to retry message', e)
+      throw e
+    }
   }
 
   async function loadPersonaTools(personaId) {
-    const { data } = await api.personaTools(personaId)
-    state.availableToolsByPersona[personaId] = data?.data || data || []
+    try {
+      const { data } = await api.personaTools(personaId)
+      state.availableToolsByPersona[personaId] = data?.data || data || []
+    } catch (e) {
+      notifyError('Failed to load persona tools', e)
+      throw e
+    }
   }
 
   async function loadMcpStatus() {
-    const { data } = await api.mcpStatus()
-    state.mcpServers = data?.data || data || []
+    try {
+      const { data } = await api.mcpStatus()
+      state.mcpServers = data?.data || data || []
+    } catch (e) {
+      notifyError('Failed to load MCP status', e)
+      throw e
+    }
+  }
+
+  function setDraft(sessionId, text) {
+    state.draftsBySession[sessionId] = text || ''
+    persist()
   }
 
   return {
@@ -135,6 +184,7 @@ export default function useChatInstance(options) {
     loadPersonaTools,
     loadMcpStatus,
     activateTab,
+    setDraft,
   }
 }
 

@@ -8,6 +8,8 @@
       :sessions="sessions"
       :open-tabs="openTabs"
       :active-tab-id="activeTabId"
+      :messages-by-session="messagesBySession"
+      :drafts-by-session="draftsBySession"
       @send="handleSend"
       @retry="handleRetry"
       @update:selected-persona-id="(v) => { selectedPersonaId = v }"
@@ -15,6 +17,8 @@
       @new-session="handleNewSession"
       @activate-tab="(id) => activateTab(id)"
       @close-tab="handleCloseTab"
+      @load-messages="(sid) => loadMessages(sid)"
+      @update-draft="({ sessionId, text }) => setDraft(sessionId, text)"
     />
   </div>
 </template>
@@ -24,6 +28,7 @@ import { ref, onMounted } from 'vue'
 import Button from 'primevue/button'
 import ChatWorkspace from '@/components/chat/ChatWorkspace.vue'
 import useChatInstance from '@/hooks/useChatInstance.js'
+import { useToast } from 'primevue/usetoast'
 
 const props = defineProps({
   instanceId: { type: String, required: true },
@@ -39,12 +44,19 @@ const props = defineProps({
 
 defineEmits(['update:sessionId','tab-open','tab-close','message-sent','retry','error'])
 
+const toast = useToast?.() || null
+
+function handleErrorToast({ message, error }) {
+  if (toast && toast.add) toast.add({ severity: 'error', summary: 'Chat Error', detail: message, life: 3000 })
+}
+
 const { 
   personas, sessions, openTabs, activeTabId, messagesBySession, draftsBySession,
   availableToolsByPersona, mcpServers,
   loadPersonas, loadSessions, openSession, createSession, loadMessages,
   sendMessage, retryLast, loadPersonaTools, loadMcpStatus, activateTab,
-} = useChatInstance({ instanceId: props.instanceId, persistKey: props.persistKey || `chat:${props.instanceId}` })
+  setDraft,
+} = useChatInstance({ instanceId: props.instanceId, persistKey: props.persistKey || `chat:${props.instanceId}`, onError: handleErrorToast })
 
 let selectedPersonaId = ref(props.initialPersonaId)
 

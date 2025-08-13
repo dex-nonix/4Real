@@ -27,10 +27,16 @@
             @close-tab="$emit('close-tab', $event)"
           />
           <div class="mt-3">
-            <ChatMessageList :messages="activeMessages" />
-            <div class="mt-2">
-              <ChatComposer :session-id="activeSessionId" v-model="draftValue" @send="(c)=>$emit('send', c)" @retry="$emit('retry')" />
-            </div>
+            <template v-if="activeSessionId">
+              <div v-if="activeMessages.length === 0" class="p-2 text-600">No messages yet</div>
+              <ChatMessageList :messages="activeMessages" />
+              <div class="mt-2">
+                <ChatComposer :session-id="activeSessionId" v-model="draftValue" @send="(c)=>$emit('send', c)" @retry="$emit('retry')" />
+              </div>
+            </template>
+            <template v-else>
+              <div class="p-3 text-600">Select a session or create a new one to start chatting.</div>
+            </template>
           </div>
         </div>
       </div>
@@ -59,9 +65,11 @@ const props = defineProps({
   sessions: { type: Array, default: () => [] },
   openTabs: { type: Array, default: () => [] },
   activeTabId: { type: [String, null], default: null },
+  messagesBySession: { type: Object, default: () => ({}) },
+  draftsBySession: { type: Object, default: () => ({}) },
 })
 
-defineEmits(['update:selected-persona-id','open-session','new-session','activate-tab','close-tab'])
+const emit = defineEmits(['update:selected-persona-id','open-session','new-session','activate-tab','close-tab','load-messages','update-draft','send','retry'])
 
 const activeTitle = computed(() => {
   const active = props.openTabs.find(t => t.id === props.activeTabId)
@@ -79,13 +87,27 @@ const activeSessionId = computed(() => {
   return active?.sessionId || null
 })
 
-const draftValue = ref('')
-
 const activeMessages = computed(() => {
-  // Parent passes messages? For now, workspace expects parent to supply messages by session via props not yet defined.
-  // As an interim, we accept a global messages map via provide/inject or keep simple and let parent feed content.
-  // Here, expose an event contract: parent should listen to `send`/`retry` and update messages.
-  return []
+  return (props.messagesBySession && activeSessionId.value != null)
+    ? (props.messagesBySession[activeSessionId.value] || [])
+    : []
+})
+
+const draftValue = computed({
+  get() {
+    if (!activeSessionId.value) return ''
+    return props.draftsBySession?.[activeSessionId.value] || ''
+  },
+  set(v) {
+    if (!activeSessionId.value) return
+    emit('update-draft', { sessionId: activeSessionId.value, text: v || '' })
+  }
+})
+
+watch(activeSessionId, (sid) => {
+  if (!sid) return
+  const loaded = !!(props.messagesBySession && props.messagesBySession[sid])
+  if (!loaded) emit('load-messages', sid)
 })
 </script>
 

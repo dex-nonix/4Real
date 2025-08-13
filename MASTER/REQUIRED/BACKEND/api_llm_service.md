@@ -174,9 +174,13 @@ Implement the following services by extending `CrudService` with model + config:
 - Before executing a tool, check persona allowlist. If not permitted, return an LLM-visible error message; do not execute.
 - For MCP, only connect to servers assigned to the persona and marked `is_active`.
 
-### Model Selection
-- Use `AIModelMapping` to select model parameters for `purpose='chat'`, optionally by `persona_id`.
-- Fallback to a default provider/model if no mapping exists (placeholder used until provider hookup).
+### Model Selection & Provider Execution
+- Use `AIModelMapping` with `purpose='chat'` to select the active mapping (optionally extend with `persona_id`).
+- `ChatService` now calls a provider adapter (`llm_client.run_chat`) that:
+  - Instantiates the client strictly from DB config (`AIProvider.config_json`: api_key, base_url; `AIModelMapping`: model_name, parameters_json)
+  - Current implementation supports `provider_type='openai'` via LangChain `ChatOpenAI`.
+  - Returns assistant text; on errors, returns a readable message and does not crash.
+- If no active mapping/provider exists, the service returns a safe fallback message.
 
 ---
 
@@ -184,9 +188,9 @@ Implement the following services by extending `CrudService` with model + config:
 
 1) Add models (SQLAlchemy): Persona, InternalTool, PersonaToolAccess, MCPServer, PersonaMCPServer, ChatSession, ChatMessage, ToolInvocationLog. Optionally extend `AIModelMapping` with `persona_id`.
 2) Create services extending `CrudService` for each model with appropriate configs (filters, sorting, validation, selector fields).
-3) Implement `ChatService` with the custom endpoints above using `@expose`.
+3) Implement `ChatService` with the custom endpoints above using `@expose`. (DONE)
 4) Internal tool registry: a Python module that registers callables keyed by `qualified_name` from DB; examples: `artist:list_albums`, `artist:create_album`, `file:read_lyrics`, `admin:system_info`.
-5) MCP client manager: a lightweight manager to spawn/connect to configured MCP servers on demand and list/execute tools for requests.
+5) MCP client manager: a lightweight manager to spawn/connect to configured MCP servers on demand and list/execute tools for requests. (PENDING UI integration; DB models ready)
 6) Register new services in `backend/app/__init__.py` with `api_router.register_service(...)`.
 
 Notes:

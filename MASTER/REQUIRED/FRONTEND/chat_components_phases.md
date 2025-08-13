@@ -74,79 +74,65 @@ Phase 5 — Tabs Bar
   - Open 2–3 sessions; close one; reload; tabs persist per instance
 
 Phase 6 — Messages List
+Status: DONE (components + wiring)
 - Goal: Load and display messages for active session
 - Tasks
-  - Components: `ChatMessageList.vue`, `MessageBubble.vue`, `ToolCallMessage.vue`
-  - Action: `loadMessages(sessionId)` caches under `messagesBySession`
+  - Components: `ChatMessageList.vue`, `MessageBubble.vue`, `ToolCallMessage.vue` (DONE)
+  - Action: `loadMessages(sessionId)` caches under `messagesBySession` (DONE)
   - Roles: `system`, `user`, `assistant`, `tool`
 - Acceptance
-  - Opening a tab loads messages; roles render distinctly
+  - Opening a tab loads messages; roles render distinctly (DONE)
 - Test
   - Verify system/user/assistant/tool styles
 
 Phase 7 — Composer (Send & Retry)
+Status: DONE
 - Goal: Send message; retry last turn
 - Tasks
-  - Components: `ChatComposer.vue`, `RetryButton.vue`
-  - Actions: `sendMessage(sessionId, content)`, `retryLast(sessionId)`
-  - Draft persistence per session via `draftsBySession`
+  - Components: `ChatComposer.vue`, `RetryButton.vue` (DONE)
+  - Actions: `sendMessage(sessionId, content)`, `retryLast(sessionId)` (DONE)
+  - Draft persistence per session via `draftsBySession` (API in place via `setDraft`, UI binding PENDING)
 - Acceptance
   - Enter to send; Shift+Enter newline; retry works
 - Test
   - Send/Retry and verify updates
 
 Phase 8 — Right Panel (Tools & MCP)
+Status: PARTIAL (panel container present; tool/MCP widgets pending)
 - Goal: Show persona tools and MCP server status
 - Tasks
-  - Components: `ToolList.vue`, `MCPStatus.vue`
-  - Fetch tools `/api/chat/personas/{persona_id}/tools`
-  - Fetch MCP `/api/chat/mcp/servers/status`
+  - Components: `ToolList.vue`, `MCPStatus.vue` (PENDING)
+  - Fetch tools `/api/chat/personas/{persona_id}/tools` (hook exists; UI PENDING)
+  - Fetch MCP `/api/chat/mcp/servers/status` (hook exists; UI PENDING)
 - Acceptance
   - Tool list and MCP status render and refresh
 - Test
   - Switch personas; tool list updates; MCP list loads
 
 Phase 9 — Autoscroll & Mobile
+Status: DONE (autoscroll); Mobile responsive shell present via grid
 - Goal: Smooth autoscroll and mobile panels
 - Tasks
-  - Utils: `scroll.js` for autoscroll-to-bottom, freeze on scroll up
-  - Responsive: Collapse left/right panels on small screens; toggle via header
+  - Utils: `scroll.js` for autoscroll-to-bottom, freeze on scroll up (DONE)
+  - Responsive: Grid-based collapse works; explicit toggle controls PENDING
 - Acceptance
   - New messages auto-scroll unless user scrolled up; panels toggle on mobile
 - Test
   - Send while scrolled up; verify behavior
 
 Phase 10 — Errors & Empty States
+Status: DONE (error toasts via hook callback); Empty prompts PARTIAL
 - Goal: Friendly UX when data missing/errors occur
 - Tasks
-  - Use PrimeVue Toasts in hooks error paths
-  - Empty prompts: “No sessions”, “No messages yet”, “No tools available”
+  - Use PrimeVue Toasts in hooks error paths (DONE)
+  - Empty prompts: “No sessions”, “No messages yet”, “No tools available” (PENDING minimal copy in panels)
 - Acceptance
   - Errors surface as toasts; empty states clear
 - Test
   - Simulate network error; verify toasts
 
-Phase 11 — Parent Deep Links & Reload (Optional)
-- Goal: Parent page controls deep links; widget stays router-free
-- Tasks
-  - Parent passes `initialSessionId` prop from route
-  - Parent listens to `update:sessionId` to sync URL
-  - Tabs/drafts already persist per instance via localStorage
-- Acceptance
-  - Visiting route opens session via props; reload restores tabs per instance
-- Test
-  - Change route param; widget updates active tab
-
-Phase 12 — Admin Links (Optional)
-- Goal: Link to CRUD pages for Personas, Tools, etc.
-- Tasks
-  - Parent page renders nav links to `/personas`, `/internal-tools`, `/persona-tool-access`, `/mcp-servers`
-- Acceptance
-  - Links navigate to existing CRUD pages
-- Test
-  - Navigate successfully
-
-Phase 13 — Real LLM Hookup (Optional)
+Phase 11 — Real LLM Hookup (Optional)
+Status: DONE (OpenAI via LangChain; DB-only config). More providers PENDING.
 - Goal: Replace placeholder assistant reply with real LLM call
 - Tasks
   - Configure `AIModelMapping` (`purpose='chat'`)
@@ -166,7 +152,7 @@ Deliverables per phase
 Time-saving tips
 - Build UI with minimal styling (PrimeVue + PrimeFlex)
 - Keep components small and focused; avoid “god files”
-- No router or global store inside the widget; parent owns deep linking
+- No router or global store inside the widget
 
 Reference
 - See `MASTER/REQUIRED/FRONTEND/chat_components.md` for exact file/folder list and responsibilities

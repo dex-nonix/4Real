@@ -15,6 +15,7 @@ from ..models.persona_mcp_server import PersonaMCPServer
 from ..models.mcp_server import MCPServer
 from ..models.ai_model_mapping import AIModelMapping
 from ..models.tool_invocation_log import ToolInvocationLog
+from .llm_client import run_chat
 
 
 class ChatService:
@@ -140,11 +141,35 @@ class ChatService:
             available_tools = self._resolve_persona_tools(persona.id)
             model_info = self._select_chat_model(persona.id)
 
-            # Placeholder assistant response (LLM integration to be wired with provider)
-            assistant_output = {
-                'type': 'text',
-                'text': 'Assistant reply placeholder. Tools available: ' + ', '.join(sorted(available_tools.keys()))
-            }
+            # Build chat history for provider call
+            history = []
+            system_msgs = ChatMessage.query.filter_by(session_id=id, role='system').order_by(ChatMessage.created_at.asc()).all()
+            for sm in system_msgs:
+                content = sm.content_json if isinstance(sm.content_json, dict) else {'text': str(sm.content_json)}
+                history.append({'role': 'system', 'content': content})
+            user_msgs = ChatMessage.query.filter(ChatMessage.session_id==id, ChatMessage.id<=user_msg.id).order_by(ChatMessage.created_at.asc()).all()
+            for um in user_msgs:
+                role = um.role
+                if role not in ('user', 'assistant'):
+                    continue
+                content = um.content_json if isinstance(um.content_json, dict) else {'text': str(um.content_json)}
+                history.append({'role': role, 'content': content})
+
+            # Resolve model mapping and provider; fallback to placeholder if none
+            assistant_output = None
+            if model_info:
+                from ..models.ai_provider import AIProvider
+                provider = AIProvider.query.filter_by(id=model_info['provider_id'], is_active=True).first()
+                if provider:
+                    try:
+                        assistant_output = run_chat(provider, AIModelMapping.query.filter_by(provider_id=provider.id, purpose='chat', is_active=True).first(), history)
+                    except Exception as exc:  # noqa: BLE001
+                        assistant_output = {'type': 'text', 'text': f'Provider error: {exc}'}
+            if not assistant_output:
+                assistant_output = {
+                    'type': 'text',
+                    'text': 'Assistant reply (fallback). Tools available: ' + ', '.join(sorted(available_tools.keys()))
+                }
 
             asst_msg = ChatMessage(session_id=id, role='assistant', content_json=assistant_output)
             db.session.add(asst_msg)

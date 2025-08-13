@@ -8,7 +8,7 @@ This document explains EXACTLY which files to create, where they live, and how t
 - Left panel: personas + sessions
 - Center: messages + composer
 - Right panel: persona tools + MCP server status
-- Works without router; deep-linking is handled by the parent page if desired
+- Works without router
 - All data is live from backend `/api/chat/*` and CRUD endpoints
 
 ---
@@ -23,8 +23,7 @@ This document explains EXACTLY which files to create, where they live, and how t
   - POST `/api/chat/sessions/{id}/retry` — retry last user turn
   - GET `/api/chat/personas/{persona_id}/tools` — list persona tools
   - GET `/api/chat/mcp/servers/status` — list MCP servers
-- CRUD endpoints (already available)
-  - `/api/personas`, `/api/chat-sessions`, `/api/chat-messages`, etc. (used for admin/management screens, not required for basic chat UI)
+
 
 ---
 
@@ -37,7 +36,7 @@ Create these under `src/`. Each file is small and focused — no giant “god fi
   - The ONE component you embed anywhere
   - Self-contained: no router, no global store, no provide/inject
   - Accepts props for initial persona/session and persistence keys
-  - Emits events so the parent can deep-link or track analytics
+- Emits events so the parent can integrate or track analytics
 
 ### 2.2 Services
 - `src/services/ChatRuntimeService.js`
@@ -61,6 +60,7 @@ Create these under `src/`. Each file is small and focused — no giant “god fi
 - `src/components/chat/ChatWorkspace.vue`
   - Used internally by `ChatWidget.vue`
   - Orchestrates header, panels, tabs, center view
+  - Receives `messagesBySession` and `draftsBySession`; resolves active messages and persists drafts per session — IMPLEMENTED
 
 - Header (title/actions)
   - `src/components/chat/header/ChatHeader.vue`
@@ -88,32 +88,32 @@ Create these under `src/`. Each file is small and focused — no giant “god fi
 
 - Messages (center)
   - `src/components/chat/messages/ChatMessageList.vue`
-    - Renders messages for active session (system/user/assistant/tool)
-    - Autoscroll-to-bottom except when user scrolls up
+    - Renders messages for active session (system/user/assistant/tool) — IMPLEMENTED
+    - Autoscroll-to-bottom except when user scrolls up — IMPLEMENTED
   - `src/components/chat/messages/MessageBubble.vue`
-    - Displays a single message bubble (user vs assistant vs system)
+    - Displays a single message bubble (user vs assistant vs system) — IMPLEMENTED
   - `src/components/chat/messages/ToolCallMessage.vue`
-    - Render tool-result style messages (compact JSON view when present)
+    - Render tool-result style messages (compact JSON view when present) — IMPLEMENTED
 
 - Composer (input area)
   - `src/components/chat/composer/ChatComposer.vue`
-    - Textarea with send button
-    - Shift+Enter for newline, Enter to send
-    - Keeps draft per session (syncs with store)
+    - Textarea with send button — IMPLEMENTED
+    - Shift+Enter for newline, Enter to send — IMPLEMENTED
+    - Keeps draft per session (syncs with store) — IMPLEMENTED
   - `src/components/chat/composer/RetryButton.vue`
-    - Retries last assistant turn for active session
+    - Retries last assistant turn for active session — IMPLEMENTED
   - `src/components/chat/composer/AttachmentButton.vue` (optional stub)
   - `src/components/chat/composer/ToolPicker.vue` (optional stub)
 
 - Right Panel (tools/status)
   - `src/components/chat/panel/RightPanel.vue`
-    - Container layout for right side
+    - Container layout for right side — IMPLEMENTED (placeholder)
   - `src/components/chat/panel/ToolList.vue`
-    - Shows effective tools for active persona (from `/api/chat/personas/{personaId}/tools`)
-    - Simple search/filter
+    - Shows effective tools for active persona (from `/api/chat/personas/{personaId}/tools`) — PENDING
+    - Simple search/filter — PENDING
   - `src/components/chat/panel/MCPStatus.vue`
-    - Shows MCP servers and status (from `/api/chat/mcp/servers/status`)
-    - Refresh button
+    - Shows MCP servers and status (from `/api/chat/mcp/servers/status`) — PENDING
+    - Refresh button — PENDING
 
 - Dialogs
   - `src/components/chat/dialogs/NewSessionDialog.vue`
@@ -123,7 +123,7 @@ Create these under `src/`. Each file is small and focused — no giant “god fi
 
 - Utilities
   - `src/components/chat/utils/scroll.js`
-    - Helpers for autoscroll-to-bottom and freeze-on-scroll-up
+    - Helpers for autoscroll-to-bottom and freeze-on-scroll-up — IMPLEMENTED
   - `src/components/chat/utils/formatting.js`
     - Format message content: plain text, tool outputs
 
@@ -134,12 +134,7 @@ Create these under `src/`. Each file is small and focused — no giant “god fi
 - `src/hooks/usePersonaTools.js`
   - Derives filtered tool lists per persona; simple client-side search
 
-### 2.6 Router (optional, outside the component)
-- The ChatWidget does NOT use the router. If you want deep-linking:
-  - Parent page handles the route and passes `initialSessionId` prop
-  - Listen to `update:sessionId` to keep URL in sync
-
-### 2.7 Models (JSDoc types for clarity — optional but recommended)
+### 2.6 Models (JSDoc types for clarity — optional but recommended)
 - `src/models/chat.js`
   - `/** @typedef {{ id:number, persona_id:number, title:string, created_by?:string }} ChatSession */`
   - `/** @typedef {{ id:number, session_id:number, role:'system'|'user'|'assistant'|'tool', content_json:any, created_at:string }} ChatMessage */`
@@ -154,10 +149,10 @@ Create these under `src/`. Each file is small and focused — no giant “god fi
 2) `useChatInstance(instanceId, persistKey)` inside the widget loads personas and sessions. If `initialSessionId` provided and not open, it opens that session tab and loads messages.
 3) Left panel shows PersonaSelector and SessionList. Selecting a session opens/activates its tab. Creating a new session calls POST `/api/chat/sessions`.
 4) Center shows header, tabs, messages, and composer.
-   - Sending a message calls POST `/api/chat/sessions/{id}/send`. The store adds the user message optimistically and then appends the assistant response.
-   - Retry calls POST `/api/chat/sessions/{id}/retry`.
+   - Sending a message calls POST `/api/chat/sessions/{id}/send`. The instance hook adds the user message optimistically and then appends the assistant response. — IMPLEMENTED
+   - Retry calls POST `/api/chat/sessions/{id}/retry`. — IMPLEMENTED
 5) Right panel shows ToolList (`/api/chat/personas/{persona_id}/tools`) and MCPStatus (`/api/chat/mcp/servers/status`).
-6) Tabs persist per instance across reloads: `openTabs`, `activeTabId`, and drafts are stored in localStorage under the widget’s `persistKey`. Closing a tab does not delete the session.
+6) Tabs persist per instance across reloads: `openTabs`, `activeTabId`, and drafts are stored in localStorage under the widget’s `persistKey`. Closing a tab does not delete the session. — IMPLEMENTED (draft UI binding PENDING)
 
 ---
 
@@ -187,15 +182,15 @@ Create these under `src/`. Each file is small and focused — no giant “god fi
 - PrimeVue + PrimeFlex are available (already in project)
 - No custom CSS; rely on Prime theme + utilities
 - Services are imported directly (no provide/inject). The widget is self-contained.
-- Existing CRUD pages handle admin; Chat UI focuses on runtime chat only
+- Chat UI focuses on runtime chat only
 
 ---
 
 ## 6) Error handling and empty states
 
-- Show inline toasts (PrimeVue ToastService) on API errors
-- Empty states for: no sessions, no messages yet, no tools
-- Disable buttons while loading/sending
+- Show inline toasts (PrimeVue ToastService) on API errors — IMPLEMENTED via `useChatInstance({ onError })` + `useToast` in `ChatWidget`.
+- Empty states for: no sessions, no messages yet, no tools — PENDING minimal UI copy
+- Disable buttons while loading/sending — PARTIAL (composer disables while sending)
 
 ---
 
@@ -213,12 +208,11 @@ Create these under `src/`. Each file is small and focused — no giant “god fi
 ## 8) Quick implementation checklist (in order)
 
 1) Create files/folders exactly as listed in Section 2.
-2) (Optional) Parent page sets up deep linking and passes props; ChatWidget itself uses no router.
-3) Implement `ChatRuntimeService.js` wrapping `/api/chat` endpoints.
-4) Implement `useChatInstance.js` with instance-scoped state, actions, and localStorage persistence.
-5) Build `ChatWidget.vue` using `ChatWorkspace.vue`; render header, panels, tabs, messages, composer.
-6) Wire LeftPanel → open/create sessions; Center → show messages + send; RightPanel → tools and MCP status.
-7) Test: create session, send message, open multiple tabs, close tabs, reload to confirm persistence.
+2) Implement `ChatRuntimeService.js` wrapping `/api/chat` endpoints.
+3) Implement `useChatInstance.js` with instance-scoped state, actions, and localStorage persistence.
+4) Build `ChatWidget.vue` using `ChatWorkspace.vue`; render header, panels, tabs, messages, composer.
+5) Wire LeftPanel → open/create sessions; Center → show messages + send; RightPanel → tools and MCP status.
+6) Test: create session, send message, open multiple tabs, close tabs, reload to confirm persistence.
 
 ---
 

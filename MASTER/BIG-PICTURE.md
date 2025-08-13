@@ -15,8 +15,9 @@
 - **Database**: SQLAlchemy ORM (SQLite dev, Postgres/MySQL prod)
 - **AI (later phase)**: Optional providers added after CRUD + frontend are stable
 
-### **🤖 AI Requirements (deferred):**
-- Placeholder for future phase. Core CRUD and frontend come first.
+### **🤖 AI Requirements:**
+- Runtime-configurable providers and model mappings in DB
+- Chat uses provider adapter instantiated from DB config (no env required)
 
 ### **📊 Database Structure:**
 - **Core Entities**: Artist, Album, Track, Style, RhymeTechnique
