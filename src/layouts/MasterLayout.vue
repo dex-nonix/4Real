@@ -1,9 +1,7 @@
 <template>
-  <div style="padding: 1rem; border: 2px solid #4caf50;">
-    <header><h2>Master Layout</h2></header>
-    <main>
-      <slot />
-    </main>
+  <slot />
+  <div style="margin-top: 1rem; border: 1px dashed #bbb; padding: .5rem;">
+    <small>Legacy MasterLayout placeholder. New master shell is in <code>src/layouts/master/MasterLayout.vue</code>.</small>
   </div>
 </template>
 
