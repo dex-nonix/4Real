@@ -39,7 +39,7 @@
       
       <!-- Form Actions (hidden for compact mode) -->
       <div v-if="!compact" class="flex gap-3 justify-content-end mt-4">
-        <Button type="submit" :loading="isSubmitting">
+        <Button type="submit" :loading="isSubmitting" :disabled="isSubmitting">
           {{ submitLabel }}
         </Button>
         <Button type="button" severity="secondary" @click="$emit('cancel')">
@@ -185,6 +185,7 @@ export default {
     
     // Handle form submission
     async handleSubmit() {
+      if (this.isSubmitting) return
       if (!this.validateForm()) {
         return
       }

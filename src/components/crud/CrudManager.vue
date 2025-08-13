@@ -185,7 +185,8 @@ export default {
       selectedEntities: [],
       deleting: false,
       bulkDeleting: false,
-      isEditing: false
+      isEditing: false,
+      submitting: false
     }
   },
 
@@ -349,6 +350,8 @@ export default {
     },
 
     async handleFormSubmit(formData) {
+      if (this.submitting) return
+      this.submitting = true
       try {
         if ((this.displayMode === 'dialog' && this.editingEntity?.id != null) || this.isEditMode) {
           const id = this.editingEntity?.id ?? this.entityId
@@ -360,10 +363,19 @@ export default {
         }
         this.closeFormDialog()
         await this.loadEntities()
+        if (this.displayMode === 'inline') {
+          // Return to list after a successful submit in inline mode
+          this.$emit('row-action', { action: 'cancel' })
+        }
       } catch (error) {
-        this.notifyError('Operation failed')
+        const detail = (error && error.data && Array.isArray(error.data.errors) && error.data.errors[0])
+          || (error && error.message)
+          || 'Operation failed'
+        this.notifyError(detail)
         // eslint-disable-next-line no-console
         console.error('Form submission error:', error)
+      } finally {
+        this.submitting = false
       }
     },
 
