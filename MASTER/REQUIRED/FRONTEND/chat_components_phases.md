@@ -98,12 +98,12 @@ Status: DONE
   - Send/Retry and verify updates
 
 Phase 8 — Right Panel (Tools & MCP)
-Status: PARTIAL (panel container present; tool/MCP widgets pending)
+Status: DONE (UI + wiring); MCP tool execution backend PENDING
 - Goal: Show persona tools and MCP server status
 - Tasks
-  - Components: `ToolList.vue`, `MCPStatus.vue` (PENDING)
-  - Fetch tools `/api/chat/personas/{persona_id}/tools` (hook exists; UI PENDING)
-  - Fetch MCP `/api/chat/mcp/servers/status` (hook exists; UI PENDING)
+  - Components: `ToolList.vue`, `MCPStatus.vue` (DONE)
+  - Fetch tools `/api/chat/personas/{persona_id}/tools` (DONE)
+  - Fetch MCP `/api/chat/mcp/servers/status` (DONE)
 - Acceptance
   - Tool list and MCP status render and refresh
 - Test

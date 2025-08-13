@@ -16,6 +16,7 @@ from ..models.mcp_server import MCPServer
 from ..models.ai_model_mapping import AIModelMapping
 from ..models.tool_invocation_log import ToolInvocationLog
 from .llm_client import run_chat
+from .internal_tool_registry import registry as internal_tool_registry
 
 
 class ChatService:
@@ -171,6 +172,42 @@ class ChatService:
                     'text': 'Assistant reply (fallback). Tools available: ' + ', '.join(sorted(available_tools.keys()))
                 }
 
+            # If model requested a tool call, execute when allowlisted
+            if isinstance(assistant_output, dict) and (assistant_output.get('type') == 'tool_call' or 'tool' in assistant_output):
+                tool_name = assistant_output.get('tool')
+                tool_args = assistant_output.get('args') or {}
+                if tool_name and tool_name in available_tools:
+                    log = ToolInvocationLog(
+                        session_id=id,
+                        message_id=user_msg.id,
+                        tool_name=tool_name,
+                        input_json=tool_args,
+                        status='started'
+                    )
+                    db.session.add(log)
+                    db.session.commit()
+
+                    exec_result = internal_tool_registry.execute(tool_name, tool_args)
+                    log.status = 'success' if exec_result.get('status') == 'success' else 'error'
+                    log.output_json = exec_result
+                    db.session.commit()
+
+                    tool_msg = ChatMessage(session_id=id, role='tool', content_json={'type': 'tool_result', 'tool': tool_name, 'input': tool_args, 'output': exec_result})
+                    db.session.add(tool_msg)
+                    db.session.commit()
+
+                    # Follow-up assistant acknowledgment
+                    asst_msg = ChatMessage(session_id=id, role='assistant', content_json={'type': 'text', 'text': 'Tool executed'})
+                    db.session.add(asst_msg)
+                    db.session.commit()
+                    return jsonify({'data': asst_msg.to_dict()})
+                else:
+                    asst_msg = ChatMessage(session_id=id, role='assistant', content_json={'type': 'text', 'text': f'Tool {tool_name or "(unknown)"} not allowed'})
+                    db.session.add(asst_msg)
+                    db.session.commit()
+                    return jsonify({'data': asst_msg.to_dict()})
+
+            # Default assistant text message
             asst_msg = ChatMessage(session_id=id, role='assistant', content_json=assistant_output)
             db.session.add(asst_msg)
             db.session.commit()
@@ -201,6 +238,47 @@ class ChatService:
             tools = self._resolve_persona_tools(persona.id)
             return jsonify({'data': sorted(list(tools.keys()))})
         except Exception as exc:  # noqa: BLE001
+            return jsonify({'error': str(exc)}), 500
+
+    @expose('/personas/{persona_id}/tools/execute', methods=['POST'])
+    def persona_tool_execute(self, req: Request, persona_id: int):
+        try:
+            payload = req.get_json(silent=True) or {}
+            tool_name = payload.get('tool')
+            tool_args = payload.get('args') or {}
+            session_id = payload.get('session_id')
+            user_message_id = payload.get('message_id')
+
+            persona = Persona.query.filter_by(id=persona_id).first()
+            if not persona:
+                return jsonify({'error': 'Not found'}), 404
+            allow = self._resolve_persona_tools(persona.id)
+            if tool_name not in allow:
+                return jsonify({'error': 'Tool not allowed'}), 403
+
+            log = ToolInvocationLog(
+                session_id=session_id,
+                message_id=user_message_id,
+                tool_name=tool_name,
+                input_json=tool_args,
+                status='started'
+            )
+            db.session.add(log)
+            db.session.commit()
+
+            exec_result = internal_tool_registry.execute(tool_name, tool_args)
+            log.status = 'success' if exec_result.get('status') == 'success' else 'error'
+            log.output_json = exec_result
+            db.session.commit()
+
+            if session_id:
+                tool_msg = ChatMessage(session_id=session_id, role='tool', content_json={'type': 'tool_result', 'tool': tool_name, 'input': tool_args, 'output': exec_result})
+                db.session.add(tool_msg)
+                db.session.commit()
+
+            return jsonify({'data': exec_result})
+        except Exception as exc:  # noqa: BLE001
+            db.session.rollback()
             return jsonify({'error': str(exc)}), 500
 
     @expose('/mcp/servers/status', methods=['GET'])

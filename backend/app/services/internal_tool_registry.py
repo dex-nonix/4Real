@@ -18,6 +18,16 @@ class InternalToolRegistry:
     def list(self) -> Dict[str, Callable[..., Any]]:
         return dict(self._registry)
 
+    def execute(self, qualified_name: str, args: dict | None = None) -> dict:
+        func = self.get(qualified_name)
+        if not func:
+            return {'status': 'error', 'error': f'tool {qualified_name} not found'}
+        try:
+            result = func(**(args or {})) if args else func()
+            return {'status': 'success', 'result': result}
+        except Exception as exc:  # noqa: BLE001
+            return {'status': 'error', 'error': str(exc)}
+
 
 registry = InternalToolRegistry()
 

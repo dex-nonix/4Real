@@ -158,7 +158,7 @@ Implement the following services by extending `CrudService` with model + config:
 ### Tool Resolution
 - Internal tools: stored in `InternalTool` table. At runtime, each `qualified_name` maps to a registered Python function. A small registry maps `qualified_name` → callable.
 - Persona allowlist: union of explicit tools and wildcard patterns applied to active internal tool set.
-- MCP tools: for each active `PersonaMCPServer`, start/connect to the server (or reuse a managed connection) and list exposed tools; include them in the runtime tool map under `serverName:toolName`.
+- MCP tools: for each active `PersonaMCPServer`, start/connect to the server (or reuse a managed connection) and list exposed tools; include them in the runtime tool map under `serverName:toolName`. (Execution PENDING)
 
 ### Message/Content JSON Shapes
 - user/assistant message `content_json` example:
@@ -173,6 +173,12 @@ Implement the following services by extending `CrudService` with model + config:
 ### Safety & Permissions
 - Before executing a tool, check persona allowlist. If not permitted, return an LLM-visible error message; do not execute.
 - For MCP, only connect to servers assigned to the persona and marked `is_active`.
+
+### Tool Invocation API
+- Internal tools: provider may return a tool call `{ "type": "tool_call", "tool": "namespace:name", "args": { ... } }`.
+- ChatService will:
+  - Check allowlist; execute via in-process registry; log to `tool_invocation_logs`; append a `tool` message; optionally follow with assistant acknowledgment.
+- Endpoint: `POST /api/chat/personas/{persona_id}/tools/execute` for on-demand execution with body `{ tool, args, session_id?, message_id? }` (allowlist enforced).
 
 ### Model Selection & Provider Execution
 - Use `AIModelMapping` with `purpose='chat'` to select the active mapping (optionally extend with `persona_id`).
