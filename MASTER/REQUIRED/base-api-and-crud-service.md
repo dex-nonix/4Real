@@ -2,6 +2,13 @@
 
 Goal: Prime-first, minimal, fetch-based services that mirror the backend CRUD API. No custom frameworks. Clean, reusable, predictable.
 
+Environment-aware base URL
+- Use `VITE_API_BASE_URL` to point to the backend host + `/api`.
+- Examples:
+  - Dev (with Vite proxy): `VITE_API_BASE_URL=/api`
+  - Prod: `VITE_API_BASE_URL=https://backend-host:5000/api`
+- `CrudService` builds endpoints RELATIVE to this base (e.g., `/${entity}`, `/${entity}/{id}`), so you never prefix `/api` twice.
+
 ### Files
 - `src/services/BaseApiService.js`
 - `src/services/CrudService.js` (extends `BaseApiService`)
@@ -62,12 +69,12 @@ Constructor
   - `options.entity?: string` e.g., `'artists'`
   - `options.endpoints?: { list?, get?, create?, update?, delete?, bulkDelete? }`
     - Defaults when `entity` is provided:
-      - `list: `/api/${entity}` (GET)`
-      - `get: `/api/${entity}/{id}` (GET)`
-      - `create: `/api/${entity}` (POST)`
-      - `update: `/api/${entity}/{id}` (PUT)`
-      - `delete: `/api/${entity}/{id}` (DELETE)`
-      - `bulkDelete: `/api/${entity}/bulk-delete` (POST)`
+      - `list: `/${entity}` (GET)`
+      - `get: `/${entity}/{id}` (GET)`
+      - `create: `/${entity}` (POST)`
+      - `update: `/${entity}/{id}` (PUT)`
+      - `delete: `/${entity}/{id}` (DELETE)`
+      - `bulkDelete: `/${entity}/bulk-delete` (POST)`
 
 Public Methods
 - `list(params?: { q?, page?, per_page?, sort?, order?, ...extra })`
@@ -120,7 +127,7 @@ Singleton services per entity (recommended)
 ```js
 // src/services/ArtistService.js
 import CrudService from './CrudService'
-export const artistService = new CrudService({ baseURL: '', entity: 'artists' })
+export const artistService = new CrudService({ baseURL: import.meta.env.VITE_API_BASE_URL, entity: 'artists' })
 ```
 
 Injection as a plugin (optional)
@@ -161,7 +168,7 @@ With CrudManager
 ```js
 // Bootstrapping
 import CrudService from '@/services/CrudService'
-export const artistService = new CrudService({ baseURL: '', entity: 'artists' })
+export const artistService = new CrudService({ baseURL: import.meta.env.VITE_API_BASE_URL, entity: 'artists' })
 
 // In CrudManager
 await artistService.list({ q: search, page, per_page: pageSize })

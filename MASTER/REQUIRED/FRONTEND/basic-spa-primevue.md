@@ -52,6 +52,10 @@ Goal: A minimal, working SPA baseline that proves the routing, reusable layouts,
 # From repo root
 cd /home/dex/Desktop/shadewalk/4Real
 npm install
+# Dev server proxies /api to http://localhost:5000 by default (see vite.config.js)
+## Environment vars
+# Dev: VITE_API_BASE_URL=/api
+# Prod: VITE_API_BASE_URL=https://backend-host:5000/api
 ```
 
 ### Minimal Files — Content
@@ -85,10 +89,15 @@ import 'primevue/resources/themes/lara-light-blue/theme.css'
 import 'primeflex/primeflex.css'
 // NOTE: PrimeVue components are imported locally in views to keep global minimal
 
-createApp({ render: () => h(App) })
-  .use(router)
-  .use(PrimeVue)
-  .mount('#app')
+import CrudService from '@/services/CrudService'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+
+const app = createApp({ render: () => h(App) })
+app.use(router)
+app.use(PrimeVue)
+// Provide CRUD factory bound to env base URL
+app.config.globalProperties.$api = { crud: (entity) => new CrudService({ baseURL: API_BASE_URL, entity }) }
+app.mount('#app')
 ```
 
 src/App.vue
@@ -262,6 +271,7 @@ export default defineConfig({
 ### Notes
 - Keep global PrimeVue config minimal. Import individual components locally until we add more widgets.
 - Use PrimeFlex for layout/spacing; avoid custom CSS.
+- Configure backend host via `VITE_API_BASE_URL` (dev: `/api`, prod: `https://host:port/api`).
 - This doc defines only the baseline. Widgets/CRUD come later.
 - npm-first project structure with UI at root level, backend in `backend/` subdirectory.
 - Uses concurrently to run both servers from single npm command.

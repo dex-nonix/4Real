@@ -10,7 +10,8 @@ export default class CrudService extends BaseApiService {
   }
 
   #buildEndpoints(entity, overrides) {
-    const tpl = (p) => (entity ? `/api/${entity}${p}` : '')
+    // BaseApiService.baseURL should include /api; endpoints here are relative to it
+    const tpl = (p) => (entity ? `/${entity}${p}` : '')
     const base = {
       list: overrides.list || (entity ? tpl('') : ''),
       get: overrides.get || (entity ? tpl('/{id}') : ''),
