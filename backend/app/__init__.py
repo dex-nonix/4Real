@@ -8,18 +8,13 @@ db = SQLAlchemy()
 
 
 def create_app() -> Flask:
-    # Load .env before creating the app (no-op if missing)
     load_dotenv()
     app = Flask(__name__)
-    # When running via python backend/cli.py, the working module root is backend/.
-    # So import config as a top-level module within that root.
     app.config.from_object('config.Config')
 
-    # Extensions
     CORS(app)
     db.init_app(app)
 
-    # Blueprint router
     from .services.api_router import APIRouter
     api_router = APIRouter()
 
@@ -43,7 +38,6 @@ def create_app() -> Flask:
         api_router.register_service('ai-model-mappings', AIModelMappingService)
         api_router.register_service('ai-analysis-results', AIAnalysisResultService)
 
-        # Create tables on startup for MVP (after router setup)
         db.create_all()
 
     app.register_blueprint(api_router.blueprint, url_prefix='/api')
