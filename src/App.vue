@@ -2,18 +2,6 @@
   <component :is="layout">
     <router-view />
   </component>
-
-  <nav style="margin-top: 1rem;">
-    <router-link to="/">Home</router-link>
-    <span style="margin: 0 0.5rem;">|</span>
-    <router-link to="/about">About</router-link>
-    <span style="margin: 0 0.5rem;">|</span>
-    <router-link to="/dynamic-form">DynamicForm</router-link>
-    <span style="margin: 0 0.5rem;">|</span>
-    <router-link to="/dynamic-table">DynamicTable</router-link>
-  </nav>
-  <hr />
-  <small>Layout: {{ layoutName }}</small>
 </template>
 
 <script setup>
