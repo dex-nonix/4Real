@@ -1,7 +1,7 @@
 <template>
   <div class="flex align-items-center justify-content-between px-3 py-2 border-bottom-1 surface-border">
     <div class="flex align-items-center gap-2">
-      <Button icon="pi pi-bars" text @click="toggleLeft" />
+      <Button icon="pi pi-bars" text @click="toggleLeft" aria-label="Toggle navigation" />
       <div id="page-header-left" class="flex align-items-center gap-2">
         <Button v-if="header.back" icon="pi pi-arrow-left" text @click="onBackClick" />
         <h2 v-if="header.title" class="m-0 text-xl">{{ header.title }}</h2>
