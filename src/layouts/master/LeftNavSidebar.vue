@@ -1,13 +1,13 @@
 <template>
   <Sidebar ref="sidebarRef" v-model:visible="visible" position="left" modal :dismissable="true" :style="{ width: '90vw', maxWidth: '18rem' }" @hide="onHide">
     <div class="w-full h-full overflow-y-auto overflow-x-hidden">
-      <PanelMenu :model="menuItems" :router="true" :exact="true" class="w-full md:w-18rem"/>
+      <PanelMenu :model="leftNavItems" :router="true" :exact="true" class="w-full md:w-18rem" @item-click="onItemClick"/>
     </div>
   </Sidebar>
   <div class="hidden md:block h-full" v-if="!collapsed">
     <div class="border-right-1 surface-border h-full overflow-hidden">
       <div class="h-full overflow-y-auto">
-        <PanelMenu :model="menuItems" :router="true" :exact="true" class="w-18rem p-1"/>
+        <PanelMenu :model="leftNavItems" :router="true" :exact="true" class="w-18rem p-1" @item-click="onItemClick"/>
       </div>
     </div>
   </div>
@@ -33,23 +33,13 @@ const visible = computed({
 const collapsed = computed(() => state.leftCollapsed)
 const router = useRouter()
 
-// Ensure clicks on leaf items close the mobile sidebar
-function attachCommands(items) {
-  return items.map(item => {
-    const copy = { ...item }
-    if (copy.items && copy.items.length) {
-      copy.items = attachCommands(copy.items)
-    } else if (copy.to) {
-      copy.command = () => {
-        router.push(copy.to)
-        state.leftOpen = false
-      }
-    }
-    return copy
-  })
+function onItemClick(event) {
+  // Close sidebar after router processes
+  setTimeout(() => {
+    if (state.leftOpen) state.leftOpen = false
+    try { if (document.activeElement) document.activeElement.blur() } catch {}
+  }, 0)
 }
-
-const menuItems = computed(() => attachCommands(leftNavItems))
 
 const sidebarRef = ref()
 function onHide() {
@@ -65,6 +55,8 @@ watch(visible, (v) => {
     }, 0)
   }
 })
+
+// no-op
 </script>
 
 <style scoped>

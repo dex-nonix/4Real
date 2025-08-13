@@ -1,5 +1,5 @@
 <template>
-  <div class="flex align-items-center justify-content-between px-3 py-2 border-bottom-1 surface-border">
+  <div class="flex align-items-center justify-content-between px-3 py-2 border-bottom-1 surface-border" role="banner">
     <div class="flex align-items-center gap-2">
       <Button icon="pi pi-bars" text @click="toggleLeft" aria-label="Toggle navigation" />
       <div id="page-header-left" class="flex align-items-center gap-2">
@@ -10,7 +10,7 @@
     <div class="flex align-items-center gap-2">
       <div id="page-header-right" class="flex align-items-center gap-2">
         <Menu v-if="header.actions && header.actions.length" ref="menu" :model="header.actions" :popup="true" />
-        <Button v-if="header.actions && header.actions.length" icon="pi pi-ellipsis-v" text @click="toggleMenu" class="md:hidden" />
+        <Button v-if="header.actions && header.actions.length" icon="pi pi-ellipsis-v" text @click="toggleMenu" class="md:hidden" aria-haspopup="menu" />
       </div>
       <Button v-if="header.showRightToggle" icon="pi pi-cog" text @click="toggleRight" />
     </div>
