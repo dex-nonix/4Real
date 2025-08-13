@@ -6,12 +6,14 @@ const About = () => import('../views/About.vue')
 const NotFound = () => import('../views/NotFound.vue')
 const DynamicFormExample = () => import('../views/DynamicFormExample.vue')
 const DynamicTableExample = () => import('../views/DynamicTableExample.vue')
+const Chat = () => import('../views/Chat.vue')
 
 const routes = [
   { path: '/', name: 'home', component: Home, meta: { layout: 'master' } },
   { path: '/about', name: 'about', component: About, meta: { layout: 'alt' } },
   { path: '/dynamic-form', name: 'dynamic-form', component: DynamicFormExample, meta: { layout: 'master' } },
   { path: '/dynamic-table', name: 'dynamic-table', component: DynamicTableExample, meta: { layout: 'master' } },
+  { path: '/chat', name: 'chat', component: Chat, meta: { layout: 'master' } },
   ...CrudPage.createRoutes('artists', { displayMode: 'inline' }, { layout: 'master' }),
   ...CrudPage.createRoutes('personas', { displayMode: 'inline' }, { layout: 'master' }),
   ...CrudPage.createRoutes('internal-tools', { displayMode: 'inline' }, { layout: 'master' }),
