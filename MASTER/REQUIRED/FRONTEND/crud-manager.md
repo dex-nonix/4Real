@@ -165,20 +165,16 @@ export default {
   },
   
   methods: {
-    // Load entities
+    // Load entities (service-first)
     async loadEntities() {
       this.loading = true
       try {
-        const response = await this.$api.get(this.config.api.endpoints.list)
-        this.entities = response.data
+        const res = await this.service.list()
+        const body = res?.data
+        this.entities = Array.isArray(body) ? body : (body?.data || [])
       } catch (error) {
         console.error('Error loading entities:', error)
-        this.$toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to load data',
-          life: 3000
-        })
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load data', life: 3000 })
       } finally {
         this.loading = false
       }
@@ -255,77 +251,48 @@ export default {
       }
     },
     
-    // Create entity
+    // Create entity (service-first)
     async createEntity(formData) {
-      const response = await this.$api.post(this.config.api.endpoints.create, formData)
-      return response.data
+      const res = await this.service.create(formData)
+      return res?.data
     },
     
-    // Update entity
+    // Update entity (service-first)
     async updateEntity(formData) {
-      const response = await this.$api.put(
-        this.config.api.endpoints.update.replace('{id}', this.editingEntity.id), 
-        formData
-      )
-      return response.data
+      const res = await this.service.update(this.editingEntity.id, formData)
+      return res?.data
     },
     
-    // Confirm delete
+    // Confirm delete (service-first)
     async confirmDelete() {
       this.deleting = true
       try {
-        await this.$api.delete(
-          this.config.api.endpoints.delete.replace('{id}', this.entityToDelete.id)
-        )
-        
+        await this.service.delete(this.entityToDelete.id)
         this.showDeleteConfirm = false
         this.entityToDelete = null
         this.loadEntities()
-        
-        this.$toast.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Deleted successfully',
-          life: 3000
-        })
+        this.$toast.add({ severity: 'success', summary: 'Success', detail: 'Deleted successfully', life: 3000 })
       } catch (error) {
         console.error('Delete error:', error)
-        this.$toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to delete',
-          life: 3000
-        })
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete', life: 3000 })
       } finally {
         this.deleting = false
       }
     },
     
-    // Confirm bulk delete
+    // Confirm bulk delete (service-first)
     async confirmBulkDelete() {
       this.bulkDeleting = true
       try {
         const ids = this.selectedEntities.map(entity => entity.id)
-        await this.$api.post(this.config.api.endpoints.bulkDelete, { ids })
-        
+        await this.service.bulkDelete(ids)
         this.showBulkDeleteConfirm = false
         this.selectedEntities = []
         this.loadEntities()
-        
-        this.$toast.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: `Deleted ${ids.length} entities successfully`,
-          life: 3000
-        })
+        this.$toast.add({ severity: 'success', summary: 'Success', detail: `Deleted ${ids.length} entities successfully`, life: 3000 })
       } catch (error) {
         console.error('Bulk delete error:', error)
-        this.$toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to delete entities',
-          life: 3000
-        })
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete entities', life: 3000 })
       } finally {
         this.bulkDeleting = false
       }

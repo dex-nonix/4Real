@@ -90,14 +90,9 @@ import 'primevue/resources/themes/lara-light-blue/theme.css'
 import 'primeflex/primeflex.css'
 // NOTE: PrimeVue components are imported locally in views to keep global minimal
 
-import CrudService from '@/services/CrudService'
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
-
 const app = createApp({ render: () => h(App) })
 app.use(router)
 app.use(PrimeVue)
-// Provide CRUD factory (base URL comes from environment automatically)
-app.config.globalProperties.$api = { crud: (entity) => new CrudService({ entity }) }
 app.mount('#app')
 ```
 

@@ -15,8 +15,5 @@ const app = createApp({ render: () => h(App) })
 app.use(router)
 app.use(PrimeVue)
 app.use(ToastService)
-
-// No global $api registry/factory used; services are imported where needed
-
 app.mount('#app')
 
