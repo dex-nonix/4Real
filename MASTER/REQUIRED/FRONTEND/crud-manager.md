@@ -484,3 +484,134 @@ export default {
 - **Loading states** - visual feedback during operations
 
 **This gives you ONE CRUD component that works for ALL entities with ZERO code duplication!** 
+
+## ⚙️ Mode-driven Rendering (inline vs dialog)
+
+CrudManager is a pure component (no router usage) and supports both inline and dialog rendering via props. Dialogs are optional.
+
+### Props
+- **service**: instance of a `CrudService` subclass (required)
+- **mode**: `'list' | 'create' | 'view' | 'edit'` (required)
+- **entityId?**: `string | number` (used for `view`, `edit`)
+- **displayMode?**: `'inline' | 'dialog'` (default: `'inline'`) — applies to create/view/edit only
+- **showCreateButton?**: `boolean` (default: `true`)
+- **tableConfigOverride?**: object (optional overrides for `service.config.table`)
+- **formConfigOverride?**: object (optional overrides for `service.config.form`)
+- **fixedFilters?**: object of persistent query params sent to `service.list(...)` (e.g., `{ filter_artist_id: 'eq:123' }`)
+- **refField?/refId?**: convenience to auto-build a fixed FK filter (e.g., `refField='artist_id'` + `refId=123` → `{ filter_artist_id: 'eq:123' }`)
+
+### Emits
+- **row-action**: `{ action, rowData }`
+- **bulk-action**: `{ action, selectedRows }`
+- **submit**: `{ payload, mode }` (when create/update is attempted)
+- **delete**: `{ id }` (when delete is confirmed)
+- **cancel**: `void`
+- **success**: `{ operation, data }`
+- **error**: `{ operation, error }`
+
+### Behavior by mode
+- **list**: renders table only
+- **create**: renders form inline; if `displayMode='dialog'`, opens form in dialog
+- **view**: renders read-only details inline; if `displayMode='dialog'`, opens in dialog
+- **edit**: loads entity by `entityId` and renders form inline; dialog when `displayMode='dialog'`
+
+Delete confirmation
+- Single and bulk delete are always confirmed in a dialog. Delete is not a navigable mode and does not change routes. The confirm dialog opens in-place from the current view.
+
+Fixed filters / reference scoping
+- `fixedFilters` are always included in calls to `service.list(...)`, independent of UI filters on the table.
+- When `refField` and `refId` are provided, they are translated into a persistent FK filter: `filter_<refField>=eq:<refId>`.
+- UI filters (search/date/etc.) layer on top of `fixedFilters`.
+
+### Example (inline rendering)
+```vue
+<template>
+  <div class="crud-view">
+    <!-- Albums scoped to a specific artist (FK ref) -->
+    <!-- Either pass fixedFilters directly: { filter_artist_id: 'eq:123' } -->
+    <!-- Or pass sugar props: refField='artist_id' refId=123 -->
+
+    <!-- List -->
+    <DynamicTable
+      v-if="mode === 'list'"
+      :config="service.config.table"
+      :data="entities"
+      :loading="loading"
+      @row-action="$emit('row-action', $event)"
+      @bulk-action="$emit('bulk-action', $event)"
+    />
+
+    <!-- Create/Edit inline form -->
+    <DynamicForm
+      v-if="mode === 'create' || mode === 'edit'"
+      :config="formConfig"
+      :initial-data="mode==='edit' ? currentEntity : {}"
+      :submit-label="mode==='edit' ? 'Update' : 'Create'"
+      @submit="payload => $emit('submit', { payload, mode })"
+      @cancel="$emit('cancel')"
+    />
+
+    <!-- View inline details -->
+    <div v-if="mode === 'view'" class="view-panel">
+      <!-- render read-only fields from form config -->
+      <div v-for="f in (formConfig.fields||[])" :key="f.key" v-if="f.key">
+        <strong>{{ f.label || f.key }}</strong>: {{ currentEntity?.[f.key] }}
+      </div>
+    </div>
+
+    <!-- No inline delete bar; delete is handled via a confirmation dialog (see below) -->
+  </div>
+</template>
+```
+
+### Example (dialog rendering)
+```vue
+<template>
+  <Dialog v-model:visible="mode==='create' || mode==='edit'" :header="mode==='edit' ? 'Edit' : 'Create'">
+    <DynamicForm
+      :config="formConfig"
+      :initial-data="mode==='edit' ? currentEntity : {}"
+      :submit-label="mode==='edit' ? 'Update' : 'Create'"
+      @submit="payload => $emit('submit', { payload, mode })"
+      @cancel="$emit('cancel')"
+    />
+  </Dialog>
+
+  <Dialog v-model:visible="mode==='view'" header="View">
+    <div v-for="f in (formConfig.fields||[])" :key="f.key" v-if="f.key">
+      <strong>{{ f.label || f.key }}</strong>: {{ currentEntity?.[f.key] }}
+    </div>
+  </Dialog>
+
+  <!-- Delete confirmation dialog (triggered by delete action) -->
+  <Dialog v-model:visible="showDeleteConfirm" header="Confirm Delete">
+    <div class="flex align-items-center gap-2">
+      <span>Delete this {{ service.entity }}?</span>
+      <Button label="Cancel" severity="secondary" @click="$emit('cancel')" />
+      <Button label="Delete" severity="danger" @click="$emit('delete', { id: entityId })" />
+    </div>
+  </Dialog>
+</template>
+```
+
+## 🧩 CrudPage (View) — Route → Props
+
+- Purpose: a view that composes the existing `Page` component and maps URL to `CrudManager` props. No inheritance needed; composition only.
+- Behavior:
+  - Reads the current route and computes `{ mode, entityId, displayMode }`.
+  - Passes those props to `CrudManager`.
+  - Handles navigation on `submit/delete/cancel/success/error` events.
+  - Can host multiple `CrudManager` instances (pass different services/props).
+
+### Route examples
+- `/artists` → `mode='list'`
+- `/artists/new` → `mode='create'`
+- `/artists/:id` → `mode='view'`, `entityId=:id`
+- `/artists/:id/edit` → `mode='edit'`, `entityId=:id`
+
+### Mobile-first
+- Use `Page` to control header/actions; render compact inline tables/forms in `CrudManager`.
+- When `displayMode='dialog'`, the dialogs open above the same shell.
+
+Note on delete
+- Delete (single and bulk) is confirmed via dialog in-place; do not route to a delete URL. The view listens for delete actions and toggles the confirm dialog.
