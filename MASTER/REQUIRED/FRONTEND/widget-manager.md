@@ -161,3 +161,16 @@ src/
 - **CrudManager.md** - CRUD component using both managers
 
 **This gives us ONE generic system that handles ALL widget management needs without over-engineering. Use PrimeVue components and PrimeFlex utilities for layout/spacing — avoid custom CSS unless truly unavoidable.**
+
+---
+
+## 🔌 New FK Widgets (Registry Coverage)
+
+- Edit widget mapping (in `src/widgets/edit-widgets.js`):
+  - `fk_select`: dropdown backed by `/api/{entity}/selector`; supports optional search and debounce
+  - `fk_autocomplete`: remote search variant for large datasets
+  - `fk_multi_select`: multiple selection for M:N relations
+- Display widget mapping (in `src/widgets/display-widgets.js`):
+  - `fk_display`: resolves an ID to a label via `/selector/{id}` for read-only/table rendering
+
+These widgets are resolved by the same managers (FormWidgetManager, TableCellWidgetManager) and require no changes to `DynamicForm` beyond specifying `type` and `props` in field items.
