@@ -125,6 +125,8 @@ export default {
       editManager: new EditWidgetManager(),
       displayManager: new DisplayWidgetManager(),
       formData: { ...this.initialData },
+      changedValues: {},
+      isDirty: false,
       fieldErrors: {},
       isSubmitting: false
     }
@@ -141,11 +143,41 @@ export default {
     formatDisplay(value) {
       return value == null ? '' : String(value)
     },
+    deepEqual(a, b) {
+      if (a === b) return true
+      if (a == null || b == null) return a == null && b == null
+      if (typeof a !== typeof b) return false
+      if (Array.isArray(a) && Array.isArray(b)) {
+        if (a.length !== b.length) return false
+        for (let i = 0; i < a.length; i += 1) {
+          if (!this.deepEqual(a[i], b[i])) return false
+        }
+        return true
+      }
+      if (typeof a === 'object' && typeof b === 'object') {
+        const aKeys = Object.keys(a)
+        const bKeys = Object.keys(b)
+        if (aKeys.length !== bKeys.length) return false
+        for (const k of aKeys) {
+          if (!this.deepEqual(a[k], b[k])) return false
+        }
+        return true
+      }
+      return false
+    },
     
     // Update field value
     updateField(key, value) {
       this.formData[key] = value
       this.clearFieldError(key)
+      const original = this.initialData ? this.initialData[key] : undefined
+      if (this.deepEqual(original, value)) {
+        if (Object.prototype.hasOwnProperty.call(this.changedValues, key)) delete this.changedValues[key]
+      } else {
+        this.changedValues[key] = value
+      }
+      this.isDirty = Object.keys(this.changedValues).length > 0
+      this.$emit('dirty-change', { isDirty: this.isDirty, changes: { ...this.changedValues } })
       this.$emit('field-change', { key, value, formData: this.formData })
     },
     
@@ -215,7 +247,7 @@ export default {
       this.isSubmitting = true
       
       try {
-        await this.$emit('submit', this.formData)
+        await this.$emit('submit', { ...this.changedValues })
       } catch (error) {
         console.error('Form submission error:', error)
       } finally {
@@ -229,6 +261,9 @@ export default {
     initialData: {
       handler(newData) {
         this.formData = { ...newData }
+        this.changedValues = {}
+        this.isDirty = false
+        this.$emit('dirty-change', { isDirty: false, changes: {} })
       },
       deep: true
     }
