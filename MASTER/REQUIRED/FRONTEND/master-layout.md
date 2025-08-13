@@ -53,7 +53,8 @@ const leftNavItems = [
     items: [
       { label: 'Artists', icon: 'pi pi-user', to: { name: 'artists' } },
       { label: 'Albums', icon: 'pi pi-list', to: { name: 'albums' } },
-      { label: 'Tracks', icon: 'pi pi-play', to: { name: 'tracks' } }
+      { label: 'Tracks', icon: 'pi pi-play', to: { name: 'tracks' } },
+      { label: 'Chat', icon: 'pi pi-comments', to: { name: 'chat' } }
     ]
   },
   {

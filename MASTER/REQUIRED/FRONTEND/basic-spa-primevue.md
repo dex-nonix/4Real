@@ -159,6 +159,9 @@ const routes = [
   },
 ]
 
+// Add Chat route
+{ path: '/chat', name: 'chat', component: () => import('../views/Chat.vue'), meta: { layout: 'master' } }
+
 const router = createRouter({
   history: createWebHistory(),
   routes,
