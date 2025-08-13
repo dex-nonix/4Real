@@ -7,45 +7,52 @@
 
 ### **Core Concept:**
 - **Configuration-driven forms** - no hardcoded form layouts
-- **Widget manager integration** - uses FormWidgetManager for field rendering
+- **Widget manager integration** - uses EditWidgetManager (edit) and DisplayWidgetManager (display)
 - **Generic value handling** - works with any PrimeVue input component
 - **Flexible layouts** - vertical (default), horizontal, compact for filters
 - **Reusable across all entities** - artists, albums, tracks, etc.
 
-### **FormWidgetManager Integration:**
-The DynamicForm component uses the **FormWidgetManager** class to resolve and render form field widgets. The FormWidgetManager:
+### **Widget Manager Integration (edit/display):**
+DynamicForm uses two managers to resolve widgets:
+— EditWidgetManager for input (edit) widgets
+— DisplayWidgetManager for read-only (display) widgets
 
-- **Extends BaseWidgetManager** - inherits generic widget management capabilities
-- **Manages form-specific widgets** - text inputs, selects, multi-selects, etc.
-- **Handles default props** - provides sensible defaults for each widget type
-- **Allows prop overrides** - user props can override default widget behavior
-- **Co-located with form component** - lives in the same `components/forms/` folder
+- Both extend BaseWidgetManager, provide sensible defaults, and allow prop overrides
 
-#### **How FormWidgetManager Works:**
+#### **How widget resolution works:**
 ```javascript
 // In DynamicForm.vue
 data() {
   return {
-    formManager: new FormWidgetManager(), // Creates form widget manager
+    editManager: new EditWidgetManager(),
+    displayManager: new DisplayWidgetManager(),
     // ... other data
   }
 },
 
 methods: {
-  // Resolve widget using FormWidgetManager
-  resolveWidget(type) {
-    return this.formManager.getWidget(type, {}) // Gets widget with default props
+  // Resolve edit widget (string maps to registry; component passes through)
+  resolveEditWidget(widget) {
+    return typeof widget === 'string' 
+      ? this.editManager.getWidget(widget, {}) 
+      : { component: widget, props: {} }
+  },
+  // Resolve display widget (string maps to registry; component passes through)
+  resolveDisplayWidget(widget) {
+    return typeof widget === 'string' 
+      ? this.displayManager.getWidget(widget, {}) 
+      : { component: widget, props: {} }
   }
 }
 ```
 
 The FormWidgetManager automatically resolves widget types like `'text'`, `'select'`, `'multi_select'` to their corresponding Vue components (TextInput, SelectInput, MultiSelect) and applies default styling and behavior.
 
-### **Form Widget Registry (form-widgets.js):**
-The FormWidgetManager uses a registry file that maps widget types to actual Vue components:
+### **Edit Widget Registry (edit-widgets.js):**
+The EditWidgetManager uses a registry file that maps widget types to actual Vue components:
 
 ```javascript
-// components/forms/form-widgets.js (PrimeVue components)
+// widgets/edit-widgets.js (PrimeVue components)
 import InputText from 'primevue/inputtext'
 import Dropdown from 'primevue/dropdown'
 import MultiSelect from 'primevue/multiselect'
@@ -55,7 +62,7 @@ import Calendar from 'primevue/calendar'
 import FileUpload from 'primevue/fileupload'
 import Editor from 'primevue/editor'
 
-export const FORM_WIDGETS = {
+export const EDIT_WIDGETS = {
   'text': { component: InputText, defaultProps: { placeholder: 'Enter text', class: 'w-full' } },
   'select': { component: Dropdown, defaultProps: { placeholder: 'Select option', class: 'w-full' } },
   'multi_select': { component: MultiSelect, defaultProps: { placeholder: 'Select options', class: 'w-full' } },
@@ -67,11 +74,11 @@ export const FORM_WIDGETS = {
 }
 ```
 
-This registry file lives in the same `components/forms/` folder as the DynamicForm component and FormWidgetManager. Because we use PrimeVue components directly, no custom `inputs/` wrappers are required for standard fields.
+Registries live under `widgets/`. Because we use PrimeVue components directly, no custom wrappers are required for standard fields.
 
 ## 🔧 **IMPLEMENTATION:**
 
-### ⚠️ Breaking change: fields are now an ordered ARRAY
+### ⚠️ Field items (edit/display schema)
 
 - `config.fields` is now an array of field items, rendered in order
 - Each item uses a `key` to bind to `formData[key]`; items without `key` are allowed (UI-only/dataless)
@@ -81,21 +88,19 @@ Field item shape:
 
 ```ts
 type FieldItem = {
-  key?: string,                // optional; dataless if omitted
-  type: string,                // widget type (see form-widgets.js)
-  label?: string,
-  required?: boolean,
-  props?: Record<string, any>,
-  // Minimal conditional contract:
-  // - false → hide
-  // - true|null|undefined → show as-is
-  // - object → replace this item with the returned one
-  // - array<FieldItem> → inline-extend by inserting returned items after this item
-  check?: (formData: Record<string, any>, index: number, item: FieldItem) =>
-    | boolean
-    | null
-    | FieldItem
-    | FieldItem[]
+  key?: string
+  label?: string
+  required?: boolean
+  check?: (formData: Record<string, any>, index: number, item: FieldItem) => boolean | null | FieldItem | FieldItem[]
+
+  // Edit (input) widget
+  editWidget: string | Component
+  editProps?: Record<string, any>
+
+  // Display (value) widget
+  displayOnly?: boolean
+  displayWidget?: string | Component // optional override; defaults to editWidget name
+  displayProps?: Record<string, any>
 }
 ```
 
@@ -104,7 +109,7 @@ Notes:
 - Hidden values are preserved (no clearing) to keep behavior minimal.
 - Inline expansion: when `check` returns an array, those items are inserted immediately after the provider item for that render pass.
 
-### **1. DynamicForm.vue Component (Prime-first, no custom CSS):**
+### **1. DynamicForm.vue Component (edit/display modes):**
 ```vue
 <template>
   <div class="dynamic-form p-fluid" :class="formClasses">
@@ -121,11 +126,12 @@ Notes:
             <span v-if="item.required" class="required">*</span>
           </label>
 
-          <!-- Dynamic Widget Rendering -->
+          <!-- Dynamic Widget Rendering (edit vs display) -->
           <component 
-            :is="resolveWidget(item.type).component"
+            v-if="(mode !== 'display') && !item.displayOnly"
+            :is="resolveEditWidget(item.editWidget).component"
             :id="item.key || `__ui_${idx}`"
-            v-bind="{ ...resolveWidget(item.type).props, ...(item.props || {}) }"
+            v-bind="{ ...resolveEditWidget(item.editWidget).props, ...(item.editProps || {}) }"
             v-if="item.key"
             :model-value="formData[item.key]"
             @update:model-value="updateField(item.key, $event)"
@@ -133,9 +139,9 @@ Notes:
           />
           <component
             v-else
-            :is="resolveWidget(item.type).component"
-            :id="`__ui_${idx}`"
-            v-bind="{ ...resolveWidget(item.type).props, ...(item.props || {}) }"
+            :is="resolveDisplayWidget(item.displayWidget || item.editWidget).component"
+            :id="item.key || `__ui_${idx}`"
+            v-bind="{ ...resolveDisplayWidget(item.displayWidget || item.editWidget).props, ...(item.displayProps || item.editProps || {}) }"
           />
 
           <!-- Field Error Display -->
@@ -159,7 +165,8 @@ Notes:
 </template>
 
 <script>
-import FormWidgetManager from '@/components/forms/FormWidgetManager.js'
+import EditWidgetManager from '@/widgets/EditWidgetManager.js'
+import DisplayWidgetManager from '@/widgets/DisplayWidgetManager.js'
 import Button from 'primevue/button'
 
 export default {
@@ -170,6 +177,10 @@ export default {
     config: {
       type: Object,
       required: true
+    },
+    mode: { // 'edit' | 'display'
+      type: String,
+      default: 'edit'
     },
     initialData: {
       type: Object,
@@ -215,7 +226,8 @@ export default {
   
   data() {
     return {
-      formManager: new FormWidgetManager(),
+      editManager: new EditWidgetManager(),
+      displayManager: new DisplayWidgetManager(),
       formData: { ...this.initialData },
       fieldErrors: {},
       isSubmitting: false
@@ -223,9 +235,12 @@ export default {
   },
   
   methods: {
-    // Resolve widget using FormWidgetManager
-    resolveWidget(type) {
-      return this.formManager.getWidget(type, {})
+    // Resolve widgets using managers
+    resolveEditWidget(widget) {
+      return typeof widget === 'string' ? this.editManager.getWidget(widget, {}) : { component: widget, props: {} }
+    },
+    resolveDisplayWidget(widget) {
+      return typeof widget === 'string' ? this.displayManager.getWidget(widget, {}) : { component: widget, props: {} }
     },
     
     // Update field value
