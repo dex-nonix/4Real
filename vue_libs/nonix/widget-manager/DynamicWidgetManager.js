@@ -1,14 +1,14 @@
 import BaseWidgetManager from '@nonix/widget-manager/BaseWidgetManager.js'
-import { DYNAMIC_WIDGETS } from '@nonix/registries/dynamic-widgets.js'
+import {DYNAMIC_WIDGETS} from '@nonix/registries/dynamic-widgets.js'
 
 class DynamicWidgetManager extends BaseWidgetManager {
-  constructor() {
-    super(DYNAMIC_WIDGETS)
-  }
+    constructor() {
+        super(DYNAMIC_WIDGETS)
+    }
 
-  getDefaultWidget() {
-    return { component: 'div', props: { class: 'text-sm', innerHTML: 'Unknown widget' } }
-  }
+    getDefaultWidget() {
+        return {component: 'div', props: {class: 'text-sm', innerHTML: 'Unknown widget'}}
+    }
 }
 
 export default DynamicWidgetManager

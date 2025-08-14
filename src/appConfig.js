@@ -25,6 +25,9 @@ import DynamicTableExample from "@/views/DynamicTableExample.vue";
 import Chat from "@/views/Chat.vue";
 
 export const appConfig = {
+    use:[
+        /*usage for the vuex store*/
+    ],
     service: {
         "artists": () => new ArtistService(),
         "albums": () => new AlbumService(),
@@ -87,7 +90,12 @@ export const appConfig = {
 
         // 404 route
         {path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound, meta: {layout: 'alt'}},
-    ]
+    ],
+    layouts:{},
+    pages:{},
+    displayWidgets:{},
+    editWidgets:{},
+    dynamicWidgets:{},
 };
 
 

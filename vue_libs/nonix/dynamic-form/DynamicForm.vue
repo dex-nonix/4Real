@@ -117,6 +117,9 @@ export default {
         'label-compact': this.compact,
         'label-horizontal': this.layout === 'horizontal'
       }
+    },
+    effectiveItems() {
+      return this.computeEffectiveItems()
     }
   },
   
@@ -269,12 +272,12 @@ export default {
     }
   },
 
-  computed: {
+  /*computed: {
     // Existing computed properties retained
     effectiveItems() {
       return this.computeEffectiveItems()
     }
-  }
+  }*/
 }
 </script>
 

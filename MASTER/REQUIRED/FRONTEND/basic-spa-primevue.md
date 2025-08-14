@@ -80,7 +80,7 @@ index.html
 src/main.js
 ```js
 import { createApp, h } from 'vue'
-import App from './App.vue'
+import App from './NxApp.vue'
 import router from './router'
 
 // Prime (PrimeVue + PrimeFlex) minimal setup

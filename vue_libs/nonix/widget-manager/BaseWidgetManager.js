@@ -1,48 +1,49 @@
-// BaseWidgetManager.js - GENERIC base class!
-import { markRaw } from 'vue'
+import {markRaw} from 'vue'
 
 class BaseWidgetManager {
-  constructor(widgetMap = {}) {
-    // Mark all components as raw to prevent Vue reactivity
-    this.widgets = Object.fromEntries(
-      Object.entries(widgetMap).map(([key, widget]) => [
-        key, 
-        {
-          ...widget,
-          component: markRaw(widget.component)
+    constructor(widgetMap = {}) {
+        // Mark all components as raw to prevent Vue reactivity
+        this.widgets = Object.fromEntries(
+            Object.entries(widgetMap).map(([key, widget]) => [
+                key,
+                {
+                    ...widget,
+                    component: markRaw(widget.component)
+                }
+            ])
+        )
+    }
+
+    // Get widget with resolved props
+    getWidget(type, userProps = {}) {
+        const widget = this.widgets[type]
+        if (!widget) {
+            return this.getDefaultWidget()
         }
-      ])
-    )
-  }
 
-  // Get widget with resolved props
-  getWidget(type, userProps = {}) {
-    const widget = this.widgets[type]
-    if (!widget) return this.getDefaultWidget() // fallback
-    
-    return {
-      component: widget.component,
-      props: { ...widget.defaultProps, ...userProps }
+        return {
+            component: widget.component,
+            props: {...widget.defaultProps, ...userProps}
+        }
     }
-  }
 
-  // Register new widget
-  registerWidget(type, component, defaultProps = {}) {
-    this.widgets[type] = { 
-      component: markRaw(component), 
-      defaultProps 
+    // Register new widget
+    registerWidget(type, component, defaultProps = {}) {
+        this.widgets[type] = {
+            component: markRaw(component),
+            defaultProps
+        }
     }
-  }
 
-  // Get available widget types
-  getAvailableTypes() {
-    return Object.keys(this.widgets)
-  }
+    // Get available widget types
+    getAvailableTypes() {
+        return Object.keys(this.widgets)
+    }
 
-  // Abstract method - subclasses must implement
-  getDefaultWidget() {
-    throw new Error('Subclasses must implement getDefaultWidget()')
-  }
+    // Abstract method - subclasses must implement
+    getDefaultWidget() {
+        throw new Error('Subclasses must implement getDefaultWidget()')
+    }
 }
 
 export default BaseWidgetManager

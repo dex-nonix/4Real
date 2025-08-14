@@ -1,14 +1,14 @@
-import BaseWidgetManager from '@nonix/widget-manager/BaseWidgetManager.js'
-import { EDIT_WIDGETS } from '@nonix/registries/edit-widgets.js'
+import BaseWidgetManager from './BaseWidgetManager.js'
+import {EDIT_WIDGETS} from '@nonix/registries/edit-widgets.js'
 
 class EditWidgetManager extends BaseWidgetManager {
-  constructor() {
-    super(EDIT_WIDGETS)
-  }
+    constructor() {
+        super(EDIT_WIDGETS)
+    }
 
-  getDefaultWidget() {
-    return { component: 'input', props: { class: 'w-full' } }
-  }
+    getDefaultWidget() {
+        return {component: 'input', props: {class: 'w-full'}}
+    }
 }
 
 export default EditWidgetManager

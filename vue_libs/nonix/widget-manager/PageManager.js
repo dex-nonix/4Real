@@ -1,15 +1,14 @@
-// src/pages/PageManager.js
-import BaseWidgetManager from '@nonix/widget-manager/BaseWidgetManager.js'
-import { PAGES } from '@nonix/registries/pages.js'
+import BaseWidgetManager from './BaseWidgetManager.js'
+import {PAGES} from '@nonix/registries/pages.js'
 
 class PageManager extends BaseWidgetManager {
-  constructor() {
-    super(PAGES)
-  }
+    constructor() {
+        super(PAGES)
+    }
 
-  getDefaultWidget() {
-    return { component: { header: { title: 'Page' }, widgets: [] }, props: {} }
-  }
+    getDefaultWidget() {
+        return {component: {header: {title: 'Page'}, widgets: []}, props: {}}
+    }
 }
 
 export default new PageManager()

@@ -1,4 +1,3 @@
-// src/pages/pages.js
 // Registry of dynamic pages. Shape matches other registries:
 // name -> { component: pageConfigObject, defaultProps: {} }
 
