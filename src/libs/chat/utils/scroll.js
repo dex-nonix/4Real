@@ -1,5 +1,3 @@
-// src/components/chat/utils/scroll.js
-
 export function isAtBottom(container, threshold = 10) {
   if (!container) return true
   const { scrollTop, scrollHeight, clientHeight } = container

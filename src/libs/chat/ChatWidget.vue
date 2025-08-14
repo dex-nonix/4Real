@@ -30,8 +30,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import Button from 'primevue/button'
-import ChatWorkspace from '@/libs/chat/ChatWorkspace.vue'
-import useChatInstance from '@/libs/chat/hooks/useChatInstance.js'
+import ChatWorkspace from './ChatWorkspace.vue'
+import useChatInstance from './hooks/useChatInstance.js'
 import { useToast } from 'primevue/usetoast'
 
 const props = defineProps({
@@ -98,14 +98,14 @@ async function refreshTools() {
   const personaId = selectedPersonaId.value || (personas.value[0]?.id ?? personas.value[0]?.value)
   if (!personaId) { effectiveTools.value = []; return }
   try {
-    const res = await new (await import('@/app/services/ChatRuntimeService.js')).default().personaTools(personaId)
+    const res = await new (await import('@/libs/chat/services/ChatRuntimeService.js')).default().personaTools(personaId)
     effectiveTools.value = res.data?.data || res.data || []
   } catch { effectiveTools.value = [] }
 }
 
 async function refreshMcp() {
   try {
-    const res = await new (await import('@/app/services/ChatRuntimeService.js')).default().mcpStatus()
+    const res = await new (await import('@/libs/chat/services/ChatRuntimeService.js')).default().mcpStatus()
     mcpServers.value = res.data?.data || res.data || []
   } catch {}
 }

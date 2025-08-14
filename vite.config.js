@@ -6,7 +6,10 @@ export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src')
+      '@': resolve(__dirname, 'src'),
+      '@nonix': resolve(__dirname, 'vue_libs/nonix'),
+      '@nonix-chat': resolve(__dirname, 'vue_libs/nonix-chat'),
+
     }
   },
   optimizeDeps: {

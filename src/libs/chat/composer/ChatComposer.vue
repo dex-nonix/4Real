@@ -10,7 +10,7 @@
 import { ref, computed, watch } from 'vue'
 import Textarea from 'primevue/textarea'
 import Button from 'primevue/button'
-import RetryButton from '@/libs/chat/composer/RetryButton.vue'
+import RetryButton from './RetryButton.vue'
 
 const props = defineProps({
   sessionId: { type: [Number, String], default: null },

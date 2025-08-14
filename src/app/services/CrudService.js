@@ -1,5 +1,5 @@
 // CrudService.js - generic CRUD service extending BaseApiService
-import BaseApiService from './BaseApiService.js'
+import BaseApiService from '../../libs/core/services/BaseApiService.js'
 
 export default class CrudService extends BaseApiService {
   constructor(entity, uiConfig) {

@@ -1,6 +1,6 @@
-// src/hooks/useChatInstance.js
+
 import { reactive, toRefs } from 'vue'
-import ChatRuntimeService from '@/app/services/ChatRuntimeService.js'
+import ChatRuntimeService from '../services/ChatRuntimeService.js'
 
 function loadFromStorage(key, fallback) {
   try {
