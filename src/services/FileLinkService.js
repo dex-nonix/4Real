@@ -1,0 +1,28 @@
+// src/services/FileLinkService.js
+import CrudService from '@/services/CrudService.js'
+
+export default class FileLinkService extends CrudService {
+  constructor() {
+    super('file-links', {
+      table: {
+        columns: [
+          { field: 'file_id', header: 'File', type: 'fk_display', props: { entity: 'files' } },
+          { field: 'status', header: 'Status', type: 'text' },
+          { field: 'comment', header: 'Comment', type: 'text' },
+          { field: 'sort_order', header: 'Order', type: 'number' }
+        ]
+      },
+      form: {
+        fields: [
+          { key: 'file_id', type: 'fk_select', label: 'File', required: true, props: { entity: 'files', search: true } },
+          { key: 'status', type: 'select', label: 'Status', required: true, props: { options: ['prototype', 'snippet', 'final'] } },
+          { key: 'comment', type: 'text', label: 'Comment' },
+          { key: 'sort_order', type: 'number', label: 'Order' }
+        ]
+      }
+    })
+  }
+}
+
+
+

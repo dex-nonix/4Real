@@ -30,6 +30,9 @@ const routes = [
   ...CrudPage.createRoutes('chat-sessions', { displayMode: 'inline' }, { layout: 'master' }),
   ...CrudPage.createRoutes('chat-messages', { displayMode: 'inline' }, { layout: 'master' }),
   ...CrudPage.createRoutes('tool-invocation-logs', { displayMode: 'inline' }, { layout: 'master' }),
+  ...CrudPage.createRoutes('file-categories', { displayMode: 'inline' }, { layout: 'master' }),
+  ...CrudPage.createRoutes('files', { displayMode: 'inline' }, { layout: 'master' }),
+  ...CrudPage.createRoutes('file-links', { displayMode: 'inline' }, { layout: 'master' }),
   { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound, meta: { layout: 'alt' } },
 ]
 

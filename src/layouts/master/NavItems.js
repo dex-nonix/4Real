@@ -27,6 +27,15 @@ export const leftNavItems = [
       { label: 'Persona MCP', icon: 'pi pi-share-alt', to: '/persona-mcp-servers' }
     ]
   }
+  ,{
+    label: 'Media',
+    icon: 'pi pi-image',
+    items: [
+      { label: 'File Categories', icon: 'pi pi-folder', to: '/file-categories' },
+      { label: 'Files', icon: 'pi pi-file', to: '/files' },
+      { label: 'File Links', icon: 'pi pi-link', to: '/file-links' }
+    ]
+  }
 ]
 
 

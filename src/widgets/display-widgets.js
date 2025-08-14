@@ -4,6 +4,7 @@ import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import { ref, inject, h } from 'vue'
 import CrudService from '@/services/CrudService.js'
+import FilePreview from '@/components/widgets/FilePreview.vue'
 
 export const DISPLAY_WIDGETS = {
   'text': { component: 'span', defaultProps: { class: 'text-sm' } },
@@ -13,6 +14,7 @@ export const DISPLAY_WIDGETS = {
   'actions': { component: Button, defaultProps: { size: 'small', severity: 'secondary' } },
   'image': { component: Avatar, defaultProps: { size: 'normal', shape: 'circle' } },
   'boolean': { component: 'i', defaultProps: { class: 'pi', style: 'font-size: 1.2rem;' } },
+  'file_preview': { component: FilePreview, defaultProps: { } },
   'fk_display': { component: {
     props: { value: [Number, String, Array], entity: { type: String, required: true }, labelKey: { type: String, default: 'label' } },
     setup(props) {

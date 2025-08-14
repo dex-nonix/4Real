@@ -9,6 +9,7 @@ import FileUpload from 'primevue/fileupload'
 import Editor from 'primevue/editor'
 import { ref, inject, h } from 'vue'
 import CrudService from '@/services/CrudService.js'
+import FileUploadField from '@/components/widgets/FileUploadField.vue'
 
 export const EDIT_WIDGETS = {
   'text': { component: InputText, defaultProps: { placeholder: 'Enter text', class: 'w-full' } },
@@ -110,5 +111,6 @@ export const FK_MULTI_SELECT = createFkSelect()
 EDIT_WIDGETS['fk_select'] = { component: FK_SELECT, defaultProps: {} }
 EDIT_WIDGETS['fk_autocomplete'] = { component: FK_SELECT, defaultProps: { search: true } }
 EDIT_WIDGETS['fk_multi_select'] = { component: FK_MULTI_SELECT, defaultProps: { multiple: true } }
+EDIT_WIDGETS['file_upload'] = { component: FileUploadField, defaultProps: { buttonLabel: 'Choose File' } }
 
 

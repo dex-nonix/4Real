@@ -26,6 +26,9 @@ import PersonaMCPServerService from '@/services/PersonaMCPServerService.js'
 import ChatSessionService from '@/services/ChatSessionService.js'
 import ChatMessageService from '@/services/ChatMessageService.js'
 import ToolInvocationLogService from '@/services/ToolInvocationLogService.js'
+import FileCategoryService from '@/services/FileCategoryService.js'
+import FileService from '@/services/FileService.js'
+import FileLinkService from '@/services/FileLinkService.js'
 
 const app = createApp({ render: () => h(App) })
 app.use(router)
@@ -48,5 +51,8 @@ app.provide('persona-mcp-servers', new PersonaMCPServerService())
 app.provide('chat-sessions', new ChatSessionService())
 app.provide('chat-messages', new ChatMessageService())
 app.provide('tool-invocation-logs', new ToolInvocationLogService())
+app.provide('file-categories', new FileCategoryService())
+app.provide('files', new FileService())
+app.provide('file-links', new FileLinkService())
 app.mount('#app')
 
