@@ -16,7 +16,7 @@ export default class PersonaService extends CrudService {
         fields: [
           { key: 'name', type: 'text', label: 'Name', required: true },
           { key: 'artist_id', type: 'fk_select', label: 'Artist (optional)', props: { entity: 'artists', search: true } },
-          { key: 'ai_model_mapping_id', type: 'fk_select', label: 'Model Mapping (chat)', props: { entity: 'ai-model-mappings', search: true } },
+          { key: 'ai_model_mapping_id', type: 'fk_select', label: 'Model Mapping (chat)', required: true, props: { entity: 'ai-model-mappings', search: true } },
           { key: 'is_active', type: 'boolean', label: 'Active' },
           { key: 'system_prompt', type: 'textarea', label: 'System Prompt' },
           { key: 'metadata_json', type: 'json', label: 'Metadata (JSON)' }

@@ -15,7 +15,7 @@ class PersonaService(CrudService):
             'allowed_fields': ['name', 'artist_id', 'ai_model_mapping_id', 'created_at'],
         },
         'validation': {
-            'required_fields': ['name'],
+            'required_fields': ['name', 'ai_model_mapping_id'],
             'unique_fields': ['name'],
         },
         'selector': {

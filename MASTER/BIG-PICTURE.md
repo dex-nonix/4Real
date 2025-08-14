@@ -18,6 +18,7 @@
 ### **🤖 AI Requirements:**
 - Runtime-configurable providers and model mappings in DB
 - Chat uses provider adapter instantiated from DB config (no env required)
+ - Persona is REQUIRED for chat. Each persona MUST reference a model mapping (no global fallback). Optional `artist_id` on persona scopes tools/data to that artist.
 
 ### **📊 Database Structure:**
 - **Core Entities**: Artist, Album, Track, Style, RhymeTechnique

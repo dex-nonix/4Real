@@ -14,7 +14,7 @@ class Persona(db.Model):
     system_prompt = db.Column(db.Text)
     metadata_json = db.Column(db.JSON)
     artist_id = db.Column(db.Integer, db.ForeignKey('artists.id'), nullable=True)
-    ai_model_mapping_id = db.Column(db.Integer, db.ForeignKey('ai_model_mappings.id'), nullable=True)
+    ai_model_mapping_id = db.Column(db.Integer, db.ForeignKey('ai_model_mappings.id'), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
     updated_at = db.Column(db.DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 

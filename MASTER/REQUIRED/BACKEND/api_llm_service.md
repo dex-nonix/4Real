@@ -35,7 +35,6 @@ All tables are SQLite-friendly and portable to Postgres/MySQL.
 - AIModelMapping
   - id (PK)
   - provider_id (FK AIProvider)
-  - purpose (string) – e.g., `chat`
   - model_name (string) – provider model identifier (e.g., `gpt-4o-mini`, `claude-3-haiku-20240307`)
   - parameters_json (JSON, nullable) – run-time params (e.g., `temperature`, `max_tokens`)
   - is_active (bool)
@@ -113,9 +112,8 @@ All tables are SQLite-friendly and portable to Postgres/MySQL.
   - started_at, completed_at, duration_ms
 
 ### 4) Chat Model Selection
-- Reuse `AIModelMapping` with `purpose = 'chat'`.
-- Optional column addition in `AIModelMapping`: `persona_id` (nullable FK) to override model per persona.
-  - Resolution order: persona-specific mapping → global `purpose='chat'` mapping.
+- Each persona MUST reference its model via `ai_model_mapping_id`.
+- Persona must have an active model mapping; otherwise chat returns an error and does not proceed.
 
 ---
 
@@ -160,7 +158,7 @@ Implement the following services by extending `CrudService` with model + config:
   - body: `{ content, attachments?, metadata? }`
   - behavior:
     1) persist user message
-    2) resolve persona, system prompt, and chat model (`AIModelMapping` purpose='chat')
+    2) resolve persona, system prompt, and chat model (from persona.ai_model_mapping_id)
     3) compile available tools = internal allowed by `PersonaToolAccess` + MCP tools from attached servers
     4) call LLM via provider-defined module/class/method with merged props; future: execute tool calls within allowlist; log each call in `ToolInvocationLog`
     5) persist assistant final message
@@ -202,7 +200,6 @@ Implement the following services by extending `CrudService` with model + config:
 - Endpoint: `POST /api/chat/personas/{persona_id}/tools/execute` for on-demand execution with body `{ tool, args, session_id?, message_id? }` (allowlist enforced).
 
 ### Model Selection & Provider Execution
-- Use `AIModelMapping` with `purpose='chat'` to select the active mapping (optionally extend with `persona_id`).
 - Provider construction is DB-driven from `AIProvider` fields:
   - Import `module`, get `class`, instantiate with kwargs built by merging:
     - Provider `config_json` (connection and credentials only, e.g., `api_key`, `base_url`)
@@ -210,7 +207,7 @@ Implement the following services by extending `CrudService` with model + config:
     - Overrides from `AIModelMapping.parameters_json` (e.g., `temperature`, `max_tokens`)
   - Call the instance `method` (default `invoke`) with LangChain-formatted messages.
 - Returns assistant text; on errors, returns a readable message and does not crash.
-- If no active mapping/provider exists, the service returns a safe fallback message.
+- If the persona has no active mapping/provider, the service returns a clear error; no fallback behavior.
 
 ---
 
@@ -241,7 +238,7 @@ Notes:
 - Tool-first chat with hybrid internal + MCP tools
 - Persona-based access via simple config stored in DB
 - Persistent chat history and logs in DB
-- Model mappings reused via `AIModelMapping` with purpose='chat'
+- Model mappings reused via `AIModelMapping` referenced directly by persona
 - Minimal, extensible architecture using existing APIRouter + CrudService patterns
 
 ---
@@ -314,7 +311,6 @@ Notes:
 ```json
 {
   "provider_id": 1,
-  "purpose": "chat",
   "model_name": "gpt-4o-mini",
   "parameters_json": { "temperature": 0.2, "max_tokens": 512 },
   "is_active": true
@@ -327,5 +323,9 @@ Notes:
   - `model` = `model_name` from mapping
   - Overrides from `parameters_json`
 - Call `method` (default `invoke`) with LangChain-formatted messages.
+
+### Persona Requirements (strict)
+- `ai_model_mapping_id` on `Persona` is required. No persona or missing mapping → no chat.
+- Optional `artist_id` on `Persona` allows scoping tools/data to that artist.
 
 

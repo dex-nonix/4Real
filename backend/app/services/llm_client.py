@@ -5,7 +5,7 @@ import importlib
 
 
 def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """Provider adapter for purpose='chat' driven entirely by DB configuration.
+    """Provider adapter driven entirely by DB configuration (persona-selected mapping).
 
     - Imports provider.module, resolves provider.class
     - Instantiates with merged kwargs: provider.config_json + model + mapping.parameters_json
@@ -70,8 +70,6 @@ def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]]) -> Dic
         return { 'type': 'text', 'text': f'Provider error: {exc}' }
 
 
-def _openai_langchain(*args: Any, **kwargs: Any) -> Dict[str, Any]:
-    # Kept only to avoid import-time errors if referenced elsewhere; not used now.
-    return { 'type': 'text', 'text': 'Deprecated path' }
+ 
 
 
