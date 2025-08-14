@@ -1,5 +1,5 @@
-import DynamicPage from "@/libs/core/page/DynamicPage.vue";
-import CrudPage from "@/libs/core/page/CrudPage.vue";
+import DynamicPage from "@nonix/page/DynamicPage.vue";
+import CrudPage from "@nonix/page/CrudPage.vue";
 
 export const ROUTE_TYPES = {
     dynamic: function (definition) {

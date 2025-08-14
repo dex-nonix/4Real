@@ -11,11 +11,11 @@
 </template>
 
 <script>
-import DynamicWidgetList from '@/libs/core/dynamic-widget/DynamicWidgetList.vue'
-import Page from '@/libs/core/page/Page.vue'
+import DynamicWidgetList from '@nonix/dynamic-widget/DynamicWidgetList.vue'
+import Page from '@nonix/page/Page.vue'
 import { useRoute } from 'vue-router'
 import { inject, computed } from 'vue'
-import PageManager from '@/libs/core/page/PageManager.js'
+import PageManager from '@nonix/page/PageManager.js'
 
 const DynamicPage = {
   name: 'DynamicPage',

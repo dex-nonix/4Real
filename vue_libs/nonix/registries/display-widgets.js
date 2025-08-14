@@ -3,7 +3,7 @@ import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import { ref, inject, h } from 'vue'
 import CrudService from '@/app/services/CrudService.js'
-import FilePreview from '@/libs/core/file-manager/FilePreview.vue'
+import FilePreview from '@nonix/file-manager/FilePreview.vue'
 
 export const DISPLAY_WIDGETS = {
   'text': { component: 'span', defaultProps: { class: 'text-sm' } },

@@ -94,9 +94,9 @@
 <script>
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-import DisplayWidgetManager from '@/libs/core/widget-manager/DisplayWidgetManager.js'
-import SearchFilter from '../../../app/components/filters/SearchFilter.vue'
-import DateRangeFilter from '../../../app/components/filters/DateRangeFilter.vue'
+import DisplayWidgetManager from '@nonix/widget-manager/DisplayWidgetManager.js'
+import SearchFilter from '@/app/components/filters/SearchFilter.vue'
+import DateRangeFilter from '@/app/components/filters/DateRangeFilter.vue'
 import ActionButtons from './actions/ActionButtons.vue'
 import BulkActions from './actions/BulkActions.vue'
 

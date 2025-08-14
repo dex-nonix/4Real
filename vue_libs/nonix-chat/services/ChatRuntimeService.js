@@ -1,4 +1,4 @@
-import BaseApiService from '@/libs/core/services/BaseApiService.js'
+import BaseApiService from '@nonix/services/BaseApiService.js'
 
 export default class ChatRuntimeService extends BaseApiService {
   basePath() { return '/chat' }

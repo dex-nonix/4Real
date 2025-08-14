@@ -11,7 +11,7 @@ import Textarea from 'primevue/textarea'
 import Button from 'primevue/button'
 import { ref, inject, h } from 'vue'
 import CrudService from '@/app/services/CrudService.js'
-import FileUploadField from '@/libs/core/file-manager/FileUploadField.vue'
+import FileUploadField from '@nonix/file-manager/FileUploadField.vue'
 
 export const EDIT_WIDGETS = {
   'text': { component: InputText, defaultProps: { placeholder: 'Enter text', class: 'w-full' } },
