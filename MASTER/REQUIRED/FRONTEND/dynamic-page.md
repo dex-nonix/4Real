@@ -175,7 +175,7 @@ export const personaToolsPage = {
 ## DynamicPage.vue – Component API and Usage
 
 ### Location
-- `src/views/DynamicPage.vue` (suggested)
+- `src/pages/DynamicPage.vue` (suggested)
 
 ### Props (minimal)
 - `config` (object, required): the dynamic page config defined above
@@ -228,7 +228,7 @@ export default {
 
 ### Router Usage (example)
 ```js
-import DynamicPage from '@/views/DynamicPage.vue'
+import DynamicPage from '@/pages/DynamicPage.vue'
 import { dashboardPage } from '@/configs/pages/dashboard.js'
 
 export default createRouter({
@@ -249,7 +249,7 @@ If you prefer to keep `CrudPage` and `DynamicPage` uniform, you can create a sim
   <DynamicPage :config="page" />
   </template>
 <script>
-import DynamicPage from '@/views/DynamicPage.vue'
+import DynamicPage from '@/pages/DynamicPage.vue'
 import { dashboardPage as page } from '@/configs/pages/dashboard.js'
 export default { components: { DynamicPage }, setup() { return { page } } }
 </script>

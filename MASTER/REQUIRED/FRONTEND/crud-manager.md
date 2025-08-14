@@ -431,7 +431,7 @@ app.provide('tool-invocation-logs', new ToolInvocationLogService())
 ### Static route builder (CrudPage.createRoutes)
 ```js
 // src/router/index.js (excerpt)
-import CrudPage from '@/views/CrudPage.vue'
+import CrudPage from '@/pages/CrudPage.vue'
 
 // Returns an array with standard CRUD routes for the key
 const routes = [
@@ -483,7 +483,7 @@ const routes = [
 
 ### CrudPage resolves injected service by meta and maps route → props
 ```vue
-<!-- src/views/CrudPage.vue (concept) -->
+<!-- src/pages/CrudPage.vue (concept) -->
 <script setup>
 import { inject, computed } from 'vue'
 import { useRoute } from 'vue-router'
