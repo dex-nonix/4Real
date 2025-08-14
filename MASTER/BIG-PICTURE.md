@@ -170,6 +170,23 @@ backend/
 - **Mobile-first**: left and right sidebars are off-canvas on small screens; actions collapse to a kebab menu; header auto-collapses when Page provides no title/back/actions.
 - **No route meta for page chrome**: views control header via the Page component, keeping routing simple.
 
+### **🧩 Dynamic Widgets (View Extensions):**
+- Service configs can declare dynamic widget lists to render before/after the core CRUD manager
+- Files:
+  - `src/widgets/DynamicWidgetManager.js` (resolver)
+  - `src/widgets/dynamic-widgets.js` (registry)
+  - `src/components/widgets/DynamicWidget.vue` (single renderer)
+  - `src/components/widgets/DynamicWidgetList.vue` (list renderer)
+- Config keys (per service):
+  - `view.before: []`, `view.after: []` – arrays of dynamic widget items
+- Widget item schema:
+  - `type` (string) or `component` (Vue)
+  - `props` (object | (ctx) => object)
+  - `check(ctx)` → boolean | object | array | null (explicit: false=hide; true/null=render; object=merge; array=expand)
+  - `id?` optional reference
+- Context `ctx` for `check/props`: `{ service, mode, entityId, entity, entitySingular, entityPlural, current, extra }`
+- Layout: PrimeFlex; default full-width rows; override with `props.class` (e.g., `col-12 md:col-6`)
+
 ### **🔧 CRUD SYSTEM COMPONENTS:**
 - **Dynamic Form Generator** - creates forms based on data models
 - **Dynamic Table Generator** - creates tables based on data models
