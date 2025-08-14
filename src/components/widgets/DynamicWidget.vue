@@ -10,7 +10,7 @@ export default {
   props: {
     widget: { type: [String, Object], required: true },
     props: { type: [Object, Function], default: () => ({}) },
-    ctx: { type: Object, default: () => ({}) }
+    context: { type: Object, default: () => ({}) }
   },
   data() {
     return {
@@ -23,7 +23,7 @@ export default {
       const type = def.type
       const comp = def.component
       const userProps = typeof (def.props ?? this.props) === 'function'
-        ? (def.props ?? this.props)(this.ctx)
+        ? (def.props ?? this.props)(this.context)
         : { ...(def.props || {}), ...(this.props || {}) }
       if (comp) return { component: comp, props: userProps }
       return this.manager.get(type, userProps)

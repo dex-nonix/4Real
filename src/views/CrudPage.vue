@@ -1,5 +1,11 @@
 <template>
   <div class="crud-page">
+    <DynamicWidgetList
+      v-if="viewBefore && viewBefore.length"
+      :items="viewBefore"
+      :context="widgetContextResolver"
+      class="mb-3"
+    />
     <CrudManager
       :service="service"
       :mode="mode"
@@ -15,6 +21,12 @@
       @success="handleSuccess"
       @error="handleError"
     />
+    <DynamicWidgetList
+      v-if="viewAfter && viewAfter.length"
+      :items="viewAfter"
+      :context="widgetContextResolver"
+      class="mt-3"
+    />
   </div>
   </template>
 
@@ -22,10 +34,11 @@
 import { inject, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CrudManager from '@/components/crud/CrudManager.vue'
+import DynamicWidgetList from '@/components/widgets/DynamicWidgetList.vue'
 
 const CrudPage = {
   name: 'CrudPage',
-  components: { CrudManager },
+  components: { CrudManager, DynamicWidgetList },
   setup() {
     const route = useRoute()
     const router = useRouter()
@@ -54,6 +67,20 @@ const CrudPage = {
     const entityPlural = computed(() =>
       String(entitySingular.value).endsWith('s') ? String(entitySingular.value) : `${entitySingular.value}s`
     )
+
+    // Dynamic widgets: before/after lists from service config
+    const viewBefore = computed(() => service?.config?.view?.before || [])
+    const viewAfter = computed(() => service?.config?.view?.after || [])
+    
+    // Dynamic widget context resolver (evaluated by the list)
+    const widgetContextResolver = () => ({
+      service,
+      mode: mode.value,
+      entityId: entityId.value,
+      entity: entitySingular.value,
+      entitySingular: entitySingular.value,
+      entityPlural: entityPlural.value
+    })
 
     function handleRowAction({ action, rowData }) {
       const id = rowData?.id
@@ -90,6 +117,9 @@ const CrudPage = {
       showCreateButton,
       tableConfigOverride,
       formConfigOverride,
+       viewBefore,
+       viewAfter,
+       widgetContextResolver,
       handleRowAction,
       handleSuccess,
       handleError,

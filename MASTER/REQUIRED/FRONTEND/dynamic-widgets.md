@@ -55,9 +55,10 @@ CrudManager remains untouched and generic.
 - `id?` (optional string): stable identifier for reference
 - `type` (string) OR `component` (Vue component)
 - `props?` (object | (ctx) => object) – props can be computed from context
-- `check?` (ctx) => boolean | object | array | null – identical semantics to forms
+- `setup?` (ctx) => boolean | object | array | null | Promise – optional pre-step per item
+- `check?` (ctx) => boolean | object | array | null – conditional rendering step
 
-Context `ctx` (single object) passed to `check`/`props`:
+Context `ctx` (single object) passed to `setup`/`check`/`props`:
 ```
 { service, mode, entityId, entity, entitySingular, entityPlural, current, extra }
 ```
@@ -65,7 +66,23 @@ Where:
 - `current`: the current entity data object used by the page (same object shown in view/edit)
 - `extra`: optional bag for page-level or caller-provided context
 
-`check(ctx)` semantics (same as forms):
+Evaluation order & semantics:
+1) Resolve context
+   - The list accepts a single `context` prop which can be:
+     - An object → used as-is
+     - A function (sync or async) → called to obtain the context object
+2) Run `setup(ctx)` if provided
+   - Returns are interpreted as:
+     - `false` → skip item
+     - `true`/`null`/`undefined` → keep item as-is
+     - `object` → shallow-merge into the item (override fields), then continue
+     - `array` → replace item with this array (expand), then continue per element
+3) Run `check(ctx)`
+   - Returns use the same interpretation as `setup(ctx)` (skip/keep/merge/expand)
+4) Resolve final props
+   - If `props` is a function: `props(ctx)` → object; else use object as-is
+
+`check(ctx)` semantics:
 - `false` → skip item
 - `true`/`null`/`undefined` → render item as-is
 - `object` → shallow-merge overrides into the item then render
