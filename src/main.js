@@ -1,6 +1,6 @@
 import {createApp, h} from 'vue'
 import App from '@/App.vue'
-import {createRouter} from '@/router'
+import {createRouter} from 'src/core/router'
 
 import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
