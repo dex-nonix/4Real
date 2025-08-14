@@ -2,11 +2,14 @@
 import BaseApiService from './BaseApiService.js'
 
 export default class CrudService extends BaseApiService {
-  constructor(entity, uiConfig = {}) {
-    super()
+  constructor(entity, uiConfig) {
     if (!entity) {
       throw new Error('CrudService requires an entity string')
     }
+    if (!uiConfig) {
+      throw new Error('CrudService requires an uiConfig ')
+    }
+    super()
     this.entity = entity
     this.config = this.#withDefaults(uiConfig)
   }
