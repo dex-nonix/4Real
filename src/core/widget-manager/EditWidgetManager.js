@@ -1,5 +1,5 @@
 // src/widgets/EditWidgetManager.js
-import BaseWidgetManager from '@/widgets/BaseWidgetManager.js'
+import BaseWidgetManager from '@/core/widget-manager/BaseWidgetManager.js'
 import { EDIT_WIDGETS } from '@/widgets/edit-widgets.js'
 
 class EditWidgetManager extends BaseWidgetManager {
