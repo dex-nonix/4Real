@@ -17,7 +17,7 @@ import { useRoute } from 'vue-router'
 import { inject, computed } from 'vue'
 import PageManager from '@/pages/PageManager.js'
 
-export default {
+const DynamicPage = {
   name: 'DynamicPage',
   components: { DynamicWidgetList, Page },
   props: { config: { type: Object, required: true } },

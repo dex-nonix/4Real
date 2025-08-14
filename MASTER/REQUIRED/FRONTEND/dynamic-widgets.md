@@ -21,7 +21,8 @@ A unified, dynamic widget system for non-form content (view extensions, inline p
 - `src/components/widgets/DynamicWidget.vue`
   - Renders a single widget (by `type` or direct component)
 - `src/components/widgets/DynamicWidgetList.vue`
-  - Renders an array of items with `check(...)` support and responsive layout
+  - Renders an array of items with `setup/check/props` support and responsive layout
+  - Computes items asynchronously and renders the resolved list
 
 ---
 
@@ -123,28 +124,24 @@ Per-item layout overrides:
 
 ## Registry (dynamic-widgets.js)
 
-Common built-ins (generic):
-- `inline_crud`: thin wrapper around `CrudManager` to display a related entity filtered via `refField`/`refId`
-- `text_block`: render arbitrary text/HTML
-- `json_view`: pretty JSON view
-- `stats_card`: small metric card (label/value/icon)
-- `chart_widget`: wrapper around a chart component
+Currently provided built-ins in code:
+- `persona_tools`: loads `PersonaToolsViewer.vue`
+- `text_block`: render arbitrary text (simple `h('div', text)` implementation)
+- `json_view`: pretty JSON view (stringifies objects/arrays)
 
 Example registry entry:
 ```js
 export const DYNAMIC_WIDGETS = {
-  inline_crud: { component: InlineCrudContainer, defaultProps: { displayMode: 'inline' } },
-  text_block: { component: TextBlock, defaultProps: { class: 'text-sm' } },
-  json_view: { component: JsonView, defaultProps: {} },
-  stats_card: { component: StatsCard, defaultProps: {} },
-  chart_widget: { component: ChartWidget, defaultProps: {} }
+  persona_tools: { component: () => import('@/components/widgets/PersonaToolsViewer.vue'), defaultProps: {} },
+  text_block: { component: { props: { text: String }, render() { return h('div', this.text) } }, defaultProps: {} },
+  json_view: { component: { props: { value: [Object, Array, String, null] }, render() { /* stringify */ } }, defaultProps: {} }
 }
 ```
 
 DynamicWidgetManager resolves by `type` and merges `defaultProps` with user `props`.
 
 ### Single Widget Rendering
-- Use `<DynamicWidget widget="type-or-definition" :props="..." :ctx="ctx" />` to render one item anywhere.
+- Use `<DynamicWidget widget="type-or-definition" :props="..." :context="ctx" />` to render one item anywhere.
 - `widget` can be a string type (resolved via registry) or a full definition object (with `type/component`, `props`, `check`).
 
 ---
