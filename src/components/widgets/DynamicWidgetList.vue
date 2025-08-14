@@ -77,7 +77,7 @@ export default {
   },
   computed: {
     effectiveItems() {
-      return [] // computed async via created/mounted
+      return this._eff // computed async via created/mounted
     },
     resolvedContext() {
       return this._lastResolvedContext || (typeof this.context === 'object' ? this.context : {})
