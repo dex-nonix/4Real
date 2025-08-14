@@ -15,7 +15,7 @@ import DynamicWidgetList from '@/components/widgets/DynamicWidgetList.vue'
 import Page from '@/components/page/Page.vue'
 import { useRoute } from 'vue-router'
 import { inject, computed } from 'vue'
-import PageManager from '@/pages/PageManager.js'
+import PageManager from '@/core/page/PageManager.js'
 
 const DynamicPage = {
   name: 'DynamicPage',
