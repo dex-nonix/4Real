@@ -1,5 +1,5 @@
 // src/services/AlbumService.js
-import CrudService from '@/services/CrudService.js'
+import CrudService from '@/app/services/CrudService.js'
 
 export default class AlbumService extends CrudService {
   constructor() {

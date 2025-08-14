@@ -1,5 +1,5 @@
 // BaseApiService.js - minimal fetch-based HTTP layer
-import { API_BASE_URL } from '../env.js'
+import { API_BASE_URL } from '../../env.js'
 
 export default class BaseApiService {
   constructor(options = {}) {

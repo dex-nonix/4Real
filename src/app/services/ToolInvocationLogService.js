@@ -1,5 +1,5 @@
 // src/services/ToolInvocationLogService.js
-import CrudService from '@/services/CrudService.js'
+import CrudService from '@/app/services/CrudService.js'
 
 export default class ToolInvocationLogService extends CrudService {
   constructor() {

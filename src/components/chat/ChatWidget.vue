@@ -98,14 +98,14 @@ async function refreshTools() {
   const personaId = selectedPersonaId.value || (personas.value[0]?.id ?? personas.value[0]?.value)
   if (!personaId) { effectiveTools.value = []; return }
   try {
-    const res = await new (await import('@/services/ChatRuntimeService.js')).default().personaTools(personaId)
+    const res = await new (await import('@/app/services/ChatRuntimeService.js')).default().personaTools(personaId)
     effectiveTools.value = res.data?.data || res.data || []
   } catch { effectiveTools.value = [] }
 }
 
 async function refreshMcp() {
   try {
-    const res = await new (await import('@/services/ChatRuntimeService.js')).default().mcpStatus()
+    const res = await new (await import('@/app/services/ChatRuntimeService.js')).default().mcpStatus()
     mcpServers.value = res.data?.data || res.data || []
   } catch {}
 }

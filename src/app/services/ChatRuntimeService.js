@@ -1,5 +1,5 @@
 // src/services/ChatRuntimeService.js
-import BaseApiService from '@/services/BaseApiService.js'
+import BaseApiService from '@/app/services/BaseApiService.js'
 
 export default class ChatRuntimeService extends BaseApiService {
   basePath() { return '/chat' }
