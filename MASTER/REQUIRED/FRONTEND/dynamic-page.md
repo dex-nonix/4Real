@@ -13,7 +13,7 @@ A generic page renderer powered by the DynamicWidget system. Use it for dashboar
 ## Files (building blocks)
 - `src/components/widgets/DynamicWidgetList.vue` – renders a list of items with setup/check/props flow
 - `src/components/widgets/DynamicWidget.vue` – renders a single item by `type` or `component`
-- `src/widgets/DynamicWidgetManager.js` – resolves widget types from the registry
+- `src/widgets/DynamicWidgetManager.js` – subclass of `BaseWidgetManager`; seeded from `dynamic-widgets.js`
 - `src/widgets/dynamic-widgets.js` – widget registry (`type` → `{ component, defaultProps }`)
 
 ---
@@ -50,6 +50,22 @@ Context `ctx` available to all items:
 { service, mode, entityId, entity, entitySingular, entityPlural, current, extra }
 ```
 - `current` is optional; fetch it in a widget’s `setup(ctx)` or within the widget if needed
+
+---
+
+## Manager Pattern (uniform)
+
+- **Base class**: `src/widgets/BaseWidgetManager.js`
+  - `getWidget(type, userProps)` merges registry `defaultProps` with `userProps`
+  - `registerWidget(type, component, defaultProps)` to extend at runtime
+  - Subclasses implement only `getDefaultWidget()`; no custom APIs
+- **Subclasses**:
+  - `DisplayWidgetManager.js` → seeds `DISPLAY_WIDGETS`, trivial `getDefaultWidget()`
+  - `EditWidgetManager.js` → seeds `EDIT_WIDGETS`, trivial `getDefaultWidget()`
+  - `DynamicWidgetManager.js` → seeds `DYNAMIC_WIDGETS`, trivial `getDefaultWidget()`
+- **Registries** are pure maps (`type` → `{ component, defaultProps }`): `display-widgets.js`, `edit-widgets.js`, `dynamic-widgets.js`
+
+This keeps all managers identical in structure and usage with zero special-case logic.
 
 ---
 
@@ -278,38 +294,30 @@ Purpose:
 ### Location
 - `src/pages/PageManager.js`
 
-### Design (uses BaseWidgetManager directly)
-Pages are “just widgets” with a different payload. Reuse the exact manager pattern from `BaseWidgetManager` so the API and behavior are identical.
+### Design
+Pages are “just widgets” with a different payload. Follow the exact subclass pattern from `BaseWidgetManager` with no extra methods.
 
 ```js
 // src/pages/PageManager.js
 import BaseWidgetManager from '@/widgets/BaseWidgetManager.js'
 
+// Seed from a simple pages registry map (same shape as other registries)
+// src/pages/pages.js
+// export const PAGES = {
+//   dashboard: { component: { header: { title: 'Dashboard' }, widgets: [] }, defaultProps: {} },
+//   detail: { component: { header: { title: 'Detail' }, widgets: [] }, defaultProps: {} }
+// }
+
+import { PAGES } from '@/pages/pages.js'
+
 class PageManager extends BaseWidgetManager {
   constructor() {
-    // Seed with an optional initial map of pages if desired
-    super({})
+    // Directly seed the map; no adapters or transformations
+    super(PAGES)
   }
 
-  // Map the generic BaseWidgetManager APIs to page semantics
-  register(key, config) {
-    // registerWidget(type, component, defaultProps) → here config is the payload, no component
-    // We store the whole page config as the "component" and empty defaultProps
-    this.registerWidget(key, config, {})
-  }
-
-  getPage(key) {
-    // getWidget(type) returns { component, props } – we only care about the component payload
-    const resolved = this.getWidget(key)
-    return resolved?.component || this.getDefaultPage()
-  }
-
-  getAvailablePages() {
-    return this.getAvailableTypes()
-  }
-
-  getDefaultPage() {
-    return { header: { title: 'Page' }, widgets: [] }
+  getDefaultWidget() {
+    return { component: { header: { title: 'Page' }, widgets: [] }, props: {} }
   }
 }
 
@@ -318,19 +326,15 @@ export default new PageManager()
 
 ### Usage
 ```js
-// Register pages at startup (e.g., in main.js or a dedicated register-pages.js)
 import PageManager from '@/pages/PageManager.js'
-import { dashboardPage } from '@/configs/pages/dashboard.js'
-import { detailPage } from '@/configs/pages/detail.js'
-
-PageManager.register('dashboard', dashboardPage)
-PageManager.register('order-detail', detailPage)
+// To read a page config: use the standard API
+const { component: pageConfig } = PageManager.getWidget('dashboard')
 ```
 
 ### Resolution Rules in DynamicPage (final)
 1) Read `meta.page`
 2) If function → call with `{ route, inject }` (await if Promise) → baseConfig
-3) Else if string → `PageManager.getPage(name)` → baseConfig
+3) Else if string → `PageManager.getWidget(name).component` → baseConfig
 4) Else if object → baseConfig = meta.page
 5) If `meta.pageOverride` is provided → deep-merge onto baseConfig (route wins)
 6) Render header/layout; pass `baseConfig.context` (or `{}`) to `DynamicWidgetList`
