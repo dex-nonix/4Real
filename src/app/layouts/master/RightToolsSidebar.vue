@@ -12,7 +12,7 @@
 <script setup>
 import Sidebar from 'primevue/sidebar'
 import { computed } from 'vue'
-import { useAppShell } from './useAppShell'
+import { useAppShell } from './useAppShell.js'
 
 const { state } = useAppShell()
 const visible = computed({

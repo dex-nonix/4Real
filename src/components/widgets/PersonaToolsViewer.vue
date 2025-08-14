@@ -25,7 +25,7 @@ export default {
     async load() {
       this.loading = true
       try {
-        const { API_BASE_URL } = await import('@/config.js')
+        const { API_BASE_URL } = await import('@/env.js')
         const res = await fetch(`${API_BASE_URL}/chat/personas/${this.personaId}/tools`)
         const data = await res.json()
         this.tools = Array.isArray(data?.data) ? data.data : []

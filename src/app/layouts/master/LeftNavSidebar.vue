@@ -19,8 +19,8 @@ import Sidebar from 'primevue/sidebar'
 import PanelMenu from 'primevue/panelmenu'
 import { computed, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAppShell } from './useAppShell'
-import { leftNavItems } from './NavItems'
+import { useAppShell } from './useAppShell.js'
+import { leftNavItems } from './NavItems.js'
 
 const props = defineProps({ pinned: { type: Boolean, default: false } })
 
