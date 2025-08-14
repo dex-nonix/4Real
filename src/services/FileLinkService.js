@@ -1,5 +1,5 @@
 // src/services/FileLinkService.js
-import CrudService from '@/app/services/CrudService.js'
+import CrudService from '@/services/CrudService.js'
 
 export default class FileLinkService extends CrudService {
   constructor() {

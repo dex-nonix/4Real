@@ -2,7 +2,7 @@ import Tag from 'primevue/tag'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import { ref, inject, h } from 'vue'
-import CrudService from '@/app/services/CrudService.js'
+import CrudService from '@/services/CrudService.js'
 import FilePreview from '@nonix/file-manager/FilePreview.vue'
 
 export const DISPLAY_WIDGETS = {

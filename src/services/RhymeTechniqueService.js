@@ -1,9 +1,9 @@
-// src/services/StyleService.js
-import CrudService from '@/app/services/CrudService.js'
+// src/services/RhymeTechniqueService.js
+import CrudService from '@/services/CrudService.js'
 
-export default class StyleService extends CrudService {
+export default class RhymeTechniqueService extends CrudService {
   constructor() {
-    super('styles', {
+    super('rhyme-techniques', {
       table: {
         columns: [
           { field: 'name', header: 'Name', type: 'text', sortable: true },
@@ -21,7 +21,7 @@ export default class StyleService extends CrudService {
       },
       form: {
         fields: [
-          { key: 'name', type: 'text', label: 'Name', required: true, props: { placeholder: 'Enter style name' } },
+          { key: 'name', type: 'text', label: 'Name', required: true, props: { placeholder: 'Enter technique name' } },
           { key: 'description', type: 'text', label: 'Description' }
         ]
       }

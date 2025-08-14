@@ -1,5 +1,5 @@
 // src/services/PersonaService.js
-import CrudService from '@/app/services/CrudService.js'
+import CrudService from '@/services/CrudService.js'
 
 export default class PersonaService extends CrudService {
   constructor() {

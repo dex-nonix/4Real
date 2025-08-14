@@ -1,13 +1,12 @@
-// src/services/FileCategoryService.js
-import CrudService from '@/app/services/CrudService.js'
+// src/services/StyleService.js
+import CrudService from '@/services/CrudService.js'
 
-export default class FileCategoryService extends CrudService {
+export default class StyleService extends CrudService {
   constructor() {
-    super('file-categories', {
+    super('styles', {
       table: {
         columns: [
           { field: 'name', header: 'Name', type: 'text', sortable: true },
-          { field: 'slug', header: 'Slug', type: 'text', sortable: true },
           { field: 'description', header: 'Description', type: 'text' }
         ],
         actions: ['view', 'edit', 'delete'],
@@ -22,14 +21,12 @@ export default class FileCategoryService extends CrudService {
       },
       form: {
         fields: [
-          { key: 'name', type: 'text', label: 'Name', required: true },
-          { key: 'slug', type: 'text', label: 'Slug' },
+          { key: 'name', type: 'text', label: 'Name', required: true, props: { placeholder: 'Enter style name' } },
           { key: 'description', type: 'text', label: 'Description' }
         ]
       }
     })
   }
 }
-
 
 

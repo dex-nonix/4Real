@@ -1,5 +1,5 @@
 // src/services/TrackService.js
-import CrudService from '@/app/services/CrudService.js'
+import CrudService from '@/services/CrudService.js'
 
 export default class TrackService extends CrudService {
   constructor() {

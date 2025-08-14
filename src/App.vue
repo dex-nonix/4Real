@@ -8,8 +8,8 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import MasterLayout from '@/app/layouts/master/MasterLayout.vue'
-import AltLayout from '@/app/layouts/AltLayout.vue'
+import MasterLayout from '@/layouts/master/MasterLayout.vue'
+import AltLayout from '@/layouts/AltLayout.vue'
 import Toast from 'primevue/toast'
 
 const route = useRoute()
