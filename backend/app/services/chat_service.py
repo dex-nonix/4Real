@@ -16,7 +16,7 @@ from ..models.mcp_server import MCPServer
 from ..models.ai_model_mapping import AIModelMapping
 from ..models.tool_invocation_log import ToolInvocationLog
 from .llm_client import run_chat
-from .internal_tool_registry import registry as internal_tool_registry
+from .tool_runtime import build_persona_tool_map, execute_tool, list_persona_tools
 
 
 class ChatService:
@@ -143,7 +143,7 @@ class ChatService:
 
             # Resolve persona and tools
             persona = session.persona
-            available_tools = self._resolve_persona_tools(persona.id)
+            available_tools = { name: {'type': 'internal'} for name in build_persona_tool_map(persona.id).keys() }
             model_info = self._select_chat_model(persona.id)
 
             # Build chat history for provider call
@@ -190,7 +190,7 @@ class ChatService:
                     db.session.add(log)
                     db.session.commit()
 
-                    exec_result = internal_tool_registry.execute(tool_name, tool_args)
+                    exec_result = execute_tool(persona.id, tool_name, tool_args)
                     log.status = 'success' if exec_result.get('status') == 'success' else 'error'
                     log.output_json = exec_result
                     db.session.commit()
@@ -238,8 +238,7 @@ class ChatService:
             persona = Persona.query.filter_by(id=persona_id).first()
             if not persona:
                 return jsonify({'error': 'Not found'}), 404
-            tools = self._resolve_persona_tools(persona.id)
-            return jsonify({'data': sorted(list(tools.keys()))})
+            return jsonify({'data': list_persona_tools(persona.id)})
         except Exception as exc:  # noqa: BLE001
             return jsonify({'error': str(exc)}), 500
 
@@ -255,8 +254,8 @@ class ChatService:
             persona = Persona.query.filter_by(id=persona_id).first()
             if not persona:
                 return jsonify({'error': 'Not found'}), 404
-            allow = self._resolve_persona_tools(persona.id)
-            if tool_name not in allow:
+            tools = build_persona_tool_map(persona.id)
+            if tool_name not in tools:
                 return jsonify({'error': 'Tool not allowed'}), 403
 
             log = ToolInvocationLog(
@@ -269,7 +268,7 @@ class ChatService:
             db.session.add(log)
             db.session.commit()
 
-            exec_result = internal_tool_registry.execute(tool_name, tool_args)
+            exec_result = execute_tool(persona.id, tool_name, tool_args)
             log.status = 'success' if exec_result.get('status') == 'success' else 'error'
             log.output_json = exec_result
             db.session.commit()
