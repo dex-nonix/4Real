@@ -1,5 +1,5 @@
 import BaseWidgetManager from '@/core/widget-manager/BaseWidgetManager.js'
-import { DYNAMIC_WIDGETS } from '@/registries/dynamic-widgets.js'
+import { DYNAMIC_WIDGETS } from '@/core/registries/dynamic-widgets.js'
 
 class DynamicWidgetManager extends BaseWidgetManager {
   constructor() {
