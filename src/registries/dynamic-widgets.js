@@ -1,5 +1,3 @@
-// src/widgets/dynamic-widgets.js
-// Registry of dynamic view widgets
 import { h } from 'vue'
 
 export const DYNAMIC_WIDGETS = {

@@ -1,4 +1,3 @@
-// src/widgets/edit-widgets.js
 import InputText from 'primevue/inputtext'
 import Dropdown from 'primevue/dropdown'
 import MultiSelect from 'primevue/multiselect'
