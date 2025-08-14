@@ -36,14 +36,61 @@ export default class FileService extends CrudService {
     return this.post('/upload', formData)
   }
 
+  uploadWithProgress(file, { title, category_id } = {}, onProgress) {
+    const url = this.buildUrl(this.scopePath('/upload'))
+    return new Promise((resolve, reject) => {
+      try {
+        const xhr = new XMLHttpRequest()
+        xhr.open('POST', url, true)
+        if (this.authToken) xhr.setRequestHeader('Authorization', `Bearer ${this.authToken}`)
+        xhr.upload.onprogress = e => {
+          if (onProgress && e && e.lengthComputable) {
+            try { onProgress(Math.round((e.loaded / e.total) * 100)) } catch {}
+          }
+        }
+        xhr.onreadystatechange = () => {
+          if (xhr.readyState === 4) {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try { resolve({ status: xhr.status, ok: true, data: JSON.parse(xhr.responseText || '{}') }) }
+              catch (err) { resolve({ status: xhr.status, ok: true, data: null }) }
+            } else {
+              let data = null
+              try { data = JSON.parse(xhr.responseText || '{}') } catch {}
+              const error = { status: xhr.status, message: (data && (data.message || data.error)) || 'Upload failed', data }
+              reject(error)
+            }
+          }
+        }
+        const form = new FormData()
+        form.append('file', file)
+        if (title) form.append('title', title)
+        if (category_id != null) form.append('category_id', String(category_id))
+        xhr.send(form)
+      } catch (err) {
+        reject(err)
+      }
+    })
+  }
+
   // Override create flow: when an upload has already created the record,
   // we receive { upload: <id>, title?, category_id? } and should update that row.
-  async create(payload) {
-    // New contract: File field provides a File object in formData.upload
-    const file = payload && payload.upload
-    if (file && typeof File !== 'undefined' && file instanceof File) {
-      const res = await this.upload(file, { title: payload.title, category_id: payload.category_id })
-      return res
+  async create(payload, options = {}) {
+    // Supports: File object in payload.upload OR wrapper { file }
+    const uploadVal = payload && payload.upload
+    const onProgress = options && options.onProgress
+    if (uploadVal) {
+      let file = null
+      if (typeof File !== 'undefined' && uploadVal instanceof File) {
+        file = uploadVal
+      } else if (typeof uploadVal === 'object') {
+        file = uploadVal.file || null
+      }
+      if (file) {
+        if (typeof onProgress === 'function' && typeof this.uploadWithProgress === 'function') {
+          return this.uploadWithProgress(file, { title: payload.title, category_id: payload.category_id }, onProgress)
+        }
+        return this.upload(file, { title: payload.title, category_id: payload.category_id })
+      }
     }
     // If an id was manually provided (rare), update metadata
     const uploadId = payload && typeof payload.upload === 'number' ? payload.upload : null
