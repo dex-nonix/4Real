@@ -20,21 +20,24 @@ import PageManager from '@/pages/PageManager.js'
 const DynamicPage = {
   name: 'DynamicPage',
   components: { DynamicWidgetList, Page },
-  props: { config: { type: Object, required: true } },
-  setup(props) {
+
+  setup() {
     const route = useRoute()
+    
+    // Resolve page config from route meta using the existing function
+    const config = computed(() => resolveRoutePageConfig(route))
 
-    const resolvedTitle = computed(() => typeof props.config?.header?.title === 'function'
-      ? props.config.header.title({ route })
-      : (props.config?.header?.title || ''))
+    const resolvedTitle = computed(() => typeof config.value?.header?.title === 'function'
+      ? config.value.header.title({ route })
+      : (config.value?.header?.title || ''))
 
-    const resolvedActions = computed(() => props.config?.header?.actions || [])
+    const resolvedActions = computed(() => config.value?.header?.actions || [])
 
-    const contextResolver = () => (typeof props.config?.context === 'function'
-      ? props.config.context({ route, inject })
-      : (props.config?.context || {}))
+    const contextResolver = () => (typeof config.value?.context === 'function'
+      ? config.value.context({ route, inject })
+      : (config.value.context || {}))
 
-    return { resolvedTitle, resolvedActions, contextResolver }
+    return { config, resolvedTitle, resolvedActions, contextResolver }
   }
 }
 
