@@ -37,6 +37,9 @@ def create_app() -> Flask:
         from .services.chat_message_service import ChatMessageService
         from .services.tool_invocation_log_service import ToolInvocationLogService
         from .services.chat_service import ChatService
+        from .services.file_category_service import FileCategoryService
+        from .services.file_service import FileService
+        from .services.file_link_service import FileLinkService
 
         api_router.register_service('artists', ArtistService)
         api_router.register_service('albums', AlbumService)
@@ -55,6 +58,9 @@ def create_app() -> Flask:
         api_router.register_service('chat-messages', ChatMessageService)
         api_router.register_service('tool-invocation-logs', ToolInvocationLogService)
         api_router.register_service('chat', ChatService)
+        api_router.register_service('file-categories', FileCategoryService)
+        api_router.register_service('files', FileService)
+        api_router.register_service('file-links', FileLinkService)
 
         db.create_all()
 
