@@ -13,7 +13,13 @@ export const DISPLAY_WIDGETS = {
   'status': { component: Tag, defaultProps: { severity: 'info' } },
   'actions': { component: Button, defaultProps: { size: 'small', severity: 'secondary' } },
   'image': { component: Avatar, defaultProps: { size: 'normal', shape: 'circle' } },
-  'boolean': { component: 'i', defaultProps: { class: 'pi', style: 'font-size: 1.2rem;' } },
+  'boolean': { component: {
+    props: { value: [Boolean, Number, String] },
+    render() {
+      const truthy = this.value === true || this.value === 1 || this.value === '1'
+      return h('i', { class: `pi ${truthy ? 'pi-check text-green-500' : 'pi-times text-red-500'}`, style: 'font-size: 1.2rem;' })
+    }
+  }, defaultProps: {} },
   'file_preview': { component: FilePreview, defaultProps: { } },
   'file_preview_fk': { component: {
     props: { value: [Number, String], entity: { type: String, default: 'files' }, labelKey: { type: String, default: 'label' } },

@@ -8,14 +8,14 @@ export default class PersonaToolAccessService extends CrudService {
         columns: [
           { field: 'persona_id', header: 'Persona', type: 'fk_display', sortable: true, props: { entity: 'personas' } },
           { field: 'pattern', header: 'Pattern', type: 'text', sortable: true },
-          { field: 'allow', header: 'Allow', type: 'text', sortable: true }
+          { field: 'allow', header: 'Allow', type: 'boolean', sortable: true }
         ]
       },
       form: {
         fields: [
           { key: 'persona_id', type: 'fk_select', label: 'Persona', required: true, props: { entity: 'personas', search: true } },
           { key: 'pattern', type: 'text', label: 'Pattern', required: true },
-          { key: 'allow', type: 'text', label: 'Allow' }
+          { key: 'allow', type: 'boolean', label: 'Allow' }
         ]
       }
     })

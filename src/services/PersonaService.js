@@ -7,13 +7,13 @@ export default class PersonaService extends CrudService {
       table: {
         columns: [
           { field: 'name', header: 'Name', type: 'text', sortable: true },
-          { field: 'is_active', header: 'Active', type: 'text', sortable: true }
+          { field: 'is_active', header: 'Active', type: 'boolean', sortable: true }
         ]
       },
       form: {
         fields: [
           { key: 'name', type: 'text', label: 'Name', required: true },
-          { key: 'is_active', type: 'text', label: 'Active' },
+          { key: 'is_active', type: 'boolean', label: 'Active' },
           { key: 'system_prompt', type: 'textarea', label: 'System Prompt' },
           { key: 'metadata_json', type: 'json', label: 'Metadata (JSON)' }
         ]

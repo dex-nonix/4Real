@@ -9,7 +9,7 @@ export default class InternalToolService extends CrudService {
           { field: 'qualified_name', header: 'Qualified Name', type: 'text', sortable: true },
           { field: 'namespace', header: 'Namespace', type: 'text', sortable: true },
           { field: 'name', header: 'Name', type: 'text', sortable: true },
-          { field: 'is_active', header: 'Active', type: 'text', sortable: true }
+          { field: 'is_active', header: 'Active', type: 'boolean', sortable: true }
         ]
       },
       form: {
@@ -19,7 +19,7 @@ export default class InternalToolService extends CrudService {
           { key: 'qualified_name', type: 'text', label: 'Qualified Name', required: true },
           { key: 'description', type: 'textarea', label: 'Description' },
           { key: 'config_json', type: 'json', label: 'Config (JSON)' },
-          { key: 'is_active', type: 'text', label: 'Active' }
+          { key: 'is_active', type: 'boolean', label: 'Active' }
         ]
       }
     })

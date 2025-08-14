@@ -4,6 +4,7 @@ import Dropdown from 'primevue/dropdown'
 import MultiSelect from 'primevue/multiselect'
 import AutoComplete from 'primevue/autocomplete'
 import Slider from 'primevue/slider'
+import InputSwitch from 'primevue/inputswitch'
 import Calendar from 'primevue/calendar'
 import FileUpload from 'primevue/fileupload'
 import Editor from 'primevue/editor'
@@ -19,7 +20,8 @@ export const EDIT_WIDGETS = {
   'slider': { component: Slider, defaultProps: { min: 0, max: 100, step: 1 } },
   'date': { component: Calendar, defaultProps: { dateFormat: 'yy-mm-dd', class: 'w-full' } },
   'file': { component: FileUpload, defaultProps: { multiple: false, accept: '*' } },
-  'json': { component: Editor, defaultProps: { height: '200px', readOnly: false } }
+  'json': { component: Editor, defaultProps: { height: '200px', readOnly: false } },
+  'boolean': { component: InputSwitch, defaultProps: { class: '' } }
 }
 
 // Minimal FK helper component factories
