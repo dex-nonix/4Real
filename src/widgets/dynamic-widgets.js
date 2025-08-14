@@ -2,7 +2,8 @@
 // Registry of dynamic view widgets
 
 export const DYNAMIC_WIDGETS = {
-  // Example built-ins can be registered here by the app later
+  // Built-ins
+  persona_tools: { component: () => import('@/components/widgets/PersonaToolsViewer.vue'), defaultProps: {} }
 }
 
 

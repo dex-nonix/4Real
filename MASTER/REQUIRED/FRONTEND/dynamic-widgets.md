@@ -13,7 +13,9 @@ A unified, dynamic widget system for non-form content (view extensions, inline p
 ## Files
 
 - `src/widgets/DynamicWidgetManager.js`
-  - Resolves widget by `type` using the registry and merges `defaultProps` with user props
+  - Subclass of `BaseWidgetManager`; seeded with `DYNAMIC_WIDGETS`
+  - Use `getWidget(type, userProps)` from the base to resolve components and merge `defaultProps`
+  - Implements `getDefaultWidget()` returning `{ component: 'div', props: { class: 'text-sm', innerHTML: 'Unknown widget' } }`
 - `src/widgets/dynamic-widgets.js`
   - Registry mapping `type` → `{ component, defaultProps }`
 - `src/components/widgets/DynamicWidget.vue`

@@ -26,7 +26,7 @@ export default {
         ? (def.props ?? this.props)(this.context)
         : { ...(def.props || {}), ...(this.props || {}) }
       if (comp) return { component: comp, props: userProps }
-      return this.manager.get(type, userProps)
+      return this.manager.getWidget(type, userProps)
     }
   }
 }

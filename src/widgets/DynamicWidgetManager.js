@@ -1,19 +1,17 @@
 // src/widgets/DynamicWidgetManager.js
+import BaseWidgetManager from '@/widgets/BaseWidgetManager.js'
 import { DYNAMIC_WIDGETS } from '@/widgets/dynamic-widgets.js'
 
-export default class DynamicWidgetManager {
-  constructor(widgetMap = DYNAMIC_WIDGETS) {
-    this.widgets = widgetMap || {}
+class DynamicWidgetManager extends BaseWidgetManager {
+  constructor() {
+    super(DYNAMIC_WIDGETS)
   }
 
-  get(type, userProps = {}) {
-    const entry = this.widgets[type]
-    if (!entry) {
-      return { component: 'div', props: { class: 'text-sm', innerHTML: `Unknown widget: ${String(type)}` } }
-    }
-    const baseProps = entry.defaultProps || {}
-    return { component: entry.component, props: { ...baseProps, ...userProps } }
+  getDefaultWidget() {
+    return { component: 'div', props: { class: 'text-sm', innerHTML: 'Unknown widget' } }
   }
 }
+
+export default DynamicWidgetManager
 
 
