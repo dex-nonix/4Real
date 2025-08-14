@@ -2,7 +2,7 @@ import { h } from 'vue'
 
 export const DYNAMIC_WIDGETS = {
   // Built-ins
-  persona_tools: { component: () => import('@/components/widgets/PersonaToolsViewer.vue'), defaultProps: {} },
+  persona_tools: { component: () => import('@/app/components/widgets/PersonaToolsViewer.vue'), defaultProps: {} },
   text_block: { component: {
     props: { text: { type: String, default: '' } },
     render() { return h('div', this.text) }

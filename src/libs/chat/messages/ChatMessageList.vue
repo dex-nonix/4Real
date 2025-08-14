@@ -9,9 +9,9 @@
 
 <script setup>
 import { ref, watch, nextTick } from 'vue'
-import MessageBubble from '@/components/chat/messages/MessageBubble.vue'
-import ToolCallMessage from '@/components/chat/messages/ToolCallMessage.vue'
-import { isAtBottom, scrollToBottom } from '@/components/chat/utils/scroll.js'
+import MessageBubble from '@/libs/chat/messages/MessageBubble.vue'
+import ToolCallMessage from '@/libs/chat/messages/ToolCallMessage.vue'
+import { isAtBottom, scrollToBottom } from '@/libs/chat/utils/scroll.js'
 
 const props = defineProps({
   messages: { type: Array, default: () => [] }

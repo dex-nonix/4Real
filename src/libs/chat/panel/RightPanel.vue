@@ -16,8 +16,8 @@
 
 <script setup>
 import Button from 'primevue/button'
-import ToolList from '@/components/chat/panel/ToolList.vue'
-import MCPStatus from '@/components/chat/panel/MCPStatus.vue'
+import ToolList from '@/libs/chat/panel/ToolList.vue'
+import MCPStatus from '@/libs/chat/panel/MCPStatus.vue'
 
 defineProps({
   tools: { type: Array, default: () => [] },

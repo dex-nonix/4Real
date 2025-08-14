@@ -30,7 +30,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import Button from 'primevue/button'
-import ChatWorkspace from '@/components/chat/ChatWorkspace.vue'
+import ChatWorkspace from '@/libs/chat/ChatWorkspace.vue'
 import useChatInstance from '@/hooks/useChatInstance.js'
 import { useToast } from 'primevue/usetoast'
 

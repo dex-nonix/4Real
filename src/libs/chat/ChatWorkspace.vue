@@ -52,12 +52,12 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
-import ChatHeader from '@/components/chat/header/ChatHeader.vue'
-import LeftPanel from '@/components/chat/panel/LeftPanel.vue'
-import RightPanel from '@/components/chat/panel/RightPanel.vue'
-import ChatTabs from '@/components/chat/tabs/ChatTabs.vue'
-import ChatMessageList from '@/components/chat/messages/ChatMessageList.vue'
-import ChatComposer from '@/components/chat/composer/ChatComposer.vue'
+import ChatHeader from '@/libs/chat/header/ChatHeader.vue'
+import LeftPanel from '@/libs/chat/panel/LeftPanel.vue'
+import RightPanel from '@/libs/chat/panel/RightPanel.vue'
+import ChatTabs from '@/libs/chat/tabs/ChatTabs.vue'
+import ChatMessageList from '@/libs/chat/messages/ChatMessageList.vue'
+import ChatComposer from '@/libs/chat/composer/ChatComposer.vue'
 
 const props = defineProps({
   enableLeftPanel: { type: Boolean, default: true },
