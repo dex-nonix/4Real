@@ -95,10 +95,10 @@
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import DisplayWidgetManager from '@/widgets/DisplayWidgetManager.js'
-import SearchFilter from '../filters/SearchFilter.vue'
-import DateRangeFilter from '../filters/DateRangeFilter.vue'
-import ActionButtons from '../actions/ActionButtons.vue'
-import BulkActions from '../actions/BulkActions.vue'
+import SearchFilter from '../../components/filters/SearchFilter.vue'
+import DateRangeFilter from '../../components/filters/DateRangeFilter.vue'
+import ActionButtons from '../../components/actions/ActionButtons.vue'
+import BulkActions from '../../components/actions/BulkActions.vue'
 
 export default {
   name: 'DynamicTable',
