@@ -1,7 +1,7 @@
 // Registry of dynamic pages. Shape matches other registries:
 // name -> { component: pageConfigObject, defaultProps: {} }
 
-import MasterLayout from "@/layouts/master/MasterLayout.vue";
+import MasterLayout from "@nonix-master-layout/MasterLayout.vue";
 import AltLayout from "@/layouts/AltLayout.vue";
 
 export const LAYOUTS = {

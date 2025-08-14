@@ -6,7 +6,7 @@
 
 <script setup>
 import { onMounted, onBeforeUnmount, watch, toRefs } from 'vue'
-import { usePageHeader } from '@/layouts/master/usePageHeader.js'
+import { usePageHeader } from '@nonix-master-layout/usePageHeader.js'
 
 const props = defineProps({
   title: { type: String, default: undefined },
