@@ -6,7 +6,7 @@ export default class FileLinkService extends CrudService {
     super('file-links', {
       table: {
         columns: [
-          { field: 'file_id', header: 'File', type: 'fk_display', props: { entity: 'files' } },
+          { field: 'file_id', header: 'File', type: 'file_preview_fk', props: { entity: 'files' } },
           { field: 'status', header: 'Status', type: 'text' },
           { field: 'comment', header: 'Comment', type: 'text' },
           { field: 'sort_order', header: 'Order', type: 'number' }

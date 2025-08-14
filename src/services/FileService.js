@@ -18,7 +18,11 @@ export default class FileService extends CrudService {
         fields: [
           { key: 'title', type: 'text', label: 'Title' },
           { key: 'category_id', type: 'fk_select', label: 'Category', props: { entity: 'file-categories', search: true } },
-          { key: 'upload', type: 'file_upload', label: 'Upload File', required: true }
+          { key: 'upload', type: 'file_upload', label: 'Upload File', required: true },
+          { key: 'storage_url', type: 'file_preview', label: 'Preview', displayOnly: true },
+          { key: 'original_filename', type: 'text', label: 'Filename', displayOnly: true },
+          { key: 'mime_type', type: 'text', label: 'MIME', displayOnly: true },
+          { key: 'size_bytes', type: 'number', label: 'Size (bytes)', displayOnly: true }
         ]
       }
     })

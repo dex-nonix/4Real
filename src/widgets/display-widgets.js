@@ -15,6 +15,27 @@ export const DISPLAY_WIDGETS = {
   'image': { component: Avatar, defaultProps: { size: 'normal', shape: 'circle' } },
   'boolean': { component: 'i', defaultProps: { class: 'pi', style: 'font-size: 1.2rem;' } },
   'file_preview': { component: FilePreview, defaultProps: { } },
+  'file_preview_fk': { component: {
+    props: { value: [Number, String], entity: { type: String, default: 'files' }, labelKey: { type: String, default: 'label' } },
+    setup(props) {
+      const injected = inject(props.entity)
+      const service = injected || new CrudService(props.entity)
+      const data = ref(null)
+      const load = async (id) => {
+        try {
+          const res = await service.get(id)
+          const obj = res?.data?.data || res?.data
+          data.value = obj || null
+        } catch { data.value = null }
+      }
+      if (props.value != null) load(props.value)
+      return { data }
+    },
+    render() {
+      const file = this.data || {}
+      return h(FilePreview, { value: file, url: file.storage_url, mime: file.mime_type, title: file.title, filename: file.original_filename })
+    }
+  }, defaultProps: {} },
   'fk_display': { component: {
     props: { value: [Number, String, Array], entity: { type: String, required: true }, labelKey: { type: String, default: 'label' } },
     setup(props) {

@@ -74,8 +74,18 @@ class FileService(CrudService):
             mime_type = getattr(file_storage, 'mimetype', 'application/octet-stream')
             sha256 = self._file_sha256(file_path)
 
-            # Dev URL mapping
-            storage_url = f"/uploads/{safe_name}"
+            # Build absolute URL on the API server so clients always load from the same host
+            public_base = str(getattr(current_app.config, 'PUBLIC_BASE_URL', '') or '').rstrip('/')
+            if not public_base:
+                # Use request.url_root if no explicit public base configured
+                try:
+                    public_base = (req.url_root or '').rstrip('/')  # type: ignore[attr-defined]
+                except Exception:
+                    public_base = ''
+            if public_base:
+                storage_url = f"{public_base}/uploads/{safe_name}"
+            else:
+                storage_url = f"/uploads/{safe_name}"
 
             title = (req.form.get('title') or '').strip()  # type: ignore[attr-defined]
             category_id_raw = req.form.get('category_id')  # type: ignore[attr-defined]
