@@ -50,7 +50,7 @@
           <!-- Dynamic Cell Widget Rendering -->
           <component 
             :is="resolveCellWidget(col.type || 'text').component"
-            v-bind="resolveCellWidget(col.type || 'text').props"
+            v-bind="{ ...resolveCellWidget(col.type || 'text').props, ...(col.props || {}) }"
             :value="slotProps.data[col.field]"
             :row-data="slotProps.data"
             :column-config="col"

@@ -4,8 +4,10 @@
       mode="basic"
       name="file"
       :choose-label="buttonLabel"
+      :auto="true"
       :custom-upload="true"
       @uploader="onUpload"
+      @select="onSelect"
     />
     <small v-if="hint" class="text-500">{{ hint }}</small>
     <div v-if="uploaded" class="flex align-items-center gap-2">
@@ -38,6 +40,12 @@ export default {
     return { filesService }
   },
   methods: {
+    async onSelect(evt) {
+      // For safety, in case auto/custom uploader is not triggered by the lib in basic mode
+      if (evt && evt.files && evt.files[0]) {
+        await this.onUpload({ files: evt.files })
+      }
+    },
     async onUpload(evt) {
       try {
         const file = (evt && evt.files && evt.files[0]) || null

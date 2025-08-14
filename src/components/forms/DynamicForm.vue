@@ -247,7 +247,7 @@ export default {
       this.isSubmitting = true
       
       try {
-        await this.$emit('submit', { ...this.changedValues })
+        await this.$emit('submit', { ...this.changedValues, __full: { ...this.formData } })
       } catch (error) {
         console.error('Form submission error:', error)
       } finally {
