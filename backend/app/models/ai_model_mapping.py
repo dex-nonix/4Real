@@ -10,7 +10,7 @@ class AIModelMapping(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     provider_id = db.Column(db.Integer, db.ForeignKey('ai_providers.id'), nullable=False)
-    purpose = db.Column(db.String(255), nullable=False)  # e.g., 'analysis.style_classification'
+    name = db.Column(db.String(255), nullable=False)
     model_name = db.Column(db.String(255), nullable=False)
     parameters_json = db.Column(db.JSON)
     is_active = db.Column(db.Boolean, nullable=False, server_default=db.text('1'))
@@ -24,7 +24,7 @@ class AIModelMapping(db.Model):
         return {
             'id': self.id,
             'provider_id': self.provider_id,
-            'purpose': self.purpose,
+            'name': self.name,
             'model_name': self.model_name,
             'parameters_json': self.parameters_json,
             'is_active': self.is_active,
@@ -33,5 +33,5 @@ class AIModelMapping(db.Model):
         }
 
     def __repr__(self) -> str:  # pragma: no cover
-        return f"<AIModelMapping id={self.id} purpose={self.purpose!r} model={self.model_name!r}>"
+        return f"<AIModelMapping id={self.id} name={self.name!r} model={self.model_name!r}>"
 

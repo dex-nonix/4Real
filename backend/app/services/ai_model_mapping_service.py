@@ -8,20 +8,20 @@ class AIModelMappingService(CrudService):
     def __init__(self) -> None:
         config = {
             'filters': {
-                'fields': ['provider_id', 'purpose', 'model_name', 'is_active'],
+                'fields': ['provider_id', 'name', 'model_name', 'is_active'],
             },
             'sorting': {
-                'default_sort': 'purpose',
-                'allowed_fields': ['purpose', 'model_name', 'created_at'],
+                'default_sort': 'name',
+                'allowed_fields': ['name', 'model_name', 'created_at'],
             },
             'validation': {
-                'required_fields': ['provider_id', 'purpose', 'model_name'],
+                'required_fields': ['provider_id', 'name', 'model_name'],
                 'unique_fields': [],
             },
             'selector': {
-                'fields': ['purpose', 'model_name'],
-                'display_format': 'purpose',
-                'search_fields': ['purpose', 'model_name'],
+                'fields': ['name', 'model_name'],
+                'display_format': 'name',
+                'search_fields': ['name', 'model_name'],
             },
         }
         super().__init__(AIModelMapping, config)

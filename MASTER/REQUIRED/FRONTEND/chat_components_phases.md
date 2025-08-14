@@ -135,7 +135,7 @@ Phase 11 — Real LLM Hookup (Optional)
 Status: DONE (OpenAI via LangChain; DB-only config). More providers PENDING.
 - Goal: Replace placeholder assistant reply with real LLM call
 - Tasks
-  - Configure `AIModelMapping` and set each `Persona.ai_model_mapping_id` (no purpose-based fallback)
+  - Configure `AIModelMapping` and set each `Persona.ai_model_mapping_id`
   - Update backend ChatService to call provider (keep tool allowlist checks)
 - Acceptance
   - Assistant responses come from real provider

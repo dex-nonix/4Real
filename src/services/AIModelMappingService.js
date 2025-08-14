@@ -7,7 +7,7 @@ export default class AIModelMappingService extends CrudService {
       table: {
         columns: [
           { field: 'provider_id', header: 'Provider', type: 'fk_display', sortable: true, props: { entity: 'ai-providers' } },
-          { field: 'purpose', header: 'Purpose', type: 'text', sortable: true },
+          { field: 'name', header: 'Name', type: 'text', sortable: true },
           { field: 'model_name', header: 'Model', type: 'text', sortable: true },
           { field: 'is_active', header: 'Active', type: 'boolean', sortable: true }
         ],
@@ -24,7 +24,7 @@ export default class AIModelMappingService extends CrudService {
       form: {
         fields: [
           { key: 'provider_id', type: 'fk_select', label: 'Provider', required: true, props: { entity: 'ai-providers', search: true } },
-          { key: 'purpose', type: 'text', label: 'Purpose', required: true },
+          { key: 'name', type: 'text', label: 'Name', required: true },
           { key: 'model_name', type: 'text', label: 'Model Name', required: true },
           { key: 'parameters_json', type: 'json', label: 'Parameters (JSON)' },
           { key: 'is_active', type: 'boolean', label: 'Active' }

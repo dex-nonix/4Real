@@ -8,7 +8,7 @@ export default class PersonaService extends CrudService {
         columns: [
           { field: 'name', header: 'Name', type: 'text', sortable: true },
           { field: 'artist_id', header: 'Artist', type: 'fk_display', sortable: true, props: { entity: 'artists' } },
-          { field: 'ai_model_mapping_id', header: 'Model Mapping', type: 'fk_display', sortable: true, props: { entity: 'ai-model-mappings', labelKey: 'purpose' } },
+          { field: 'ai_model_mapping_id', header: 'Model Mapping', type: 'fk_display', sortable: true, props: { entity: 'ai-model-mappings', labelKey: 'name' } },
           { field: 'is_active', header: 'Active', type: 'boolean', sortable: true }
         ]
       },
