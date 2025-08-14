@@ -1,6 +1,6 @@
 // src/pages/PageManager.js
 import BaseWidgetManager from '@nonix/widget-manager/BaseWidgetManager.js'
-import { PAGES } from '@nonix/page/pages.js'
+import { PAGES } from '@nonix/registries/pages.js'
 
 class PageManager extends BaseWidgetManager {
   constructor() {
