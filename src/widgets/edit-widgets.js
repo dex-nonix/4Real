@@ -21,7 +21,7 @@ export const EDIT_WIDGETS = {
   'date': { component: Calendar, defaultProps: { dateFormat: 'yy-mm-dd', class: 'w-full' } },
   'file': { component: FileUpload, defaultProps: { multiple: false, accept: '*' } },
   'json': { component: Editor, defaultProps: { height: '200px', readOnly: false } },
-  'boolean': { component: InputSwitch, defaultProps: { class: '' } }
+  'boolean': { component: InputSwitch, defaultProps: { class: 'block' } }
 }
 
 // Minimal FK helper component factories

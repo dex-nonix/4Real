@@ -16,7 +16,7 @@ def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]]) -> Dic
     params: Dict[str, Any] = mapping.parameters_json or {}
 
     module_name: str = getattr(provider, 'module', '') or ''
-    class_name: str = getattr(provider, 'class_', '') or ''
+    class_name: str = getattr(provider, 'cls', '') or ''
     method_name: str = (getattr(provider, 'method', None) or 'invoke')
 
     if not module_name or not class_name:

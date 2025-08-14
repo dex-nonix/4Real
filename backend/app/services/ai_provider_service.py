@@ -8,20 +8,20 @@ class AIProviderService(CrudService):
     model = AIProvider
     config = {
         'filters': {
-            'fields': ['name', 'provider_type', 'module', 'class', 'method', 'is_active'],
+            'fields': ['name', 'provider_type', 'module', 'cls', 'method', 'is_active'],
         },
         'sorting': {
             'default_sort': 'name',
-            'allowed_fields': ['name', 'provider_type', 'module', 'class', 'method', 'created_at'],
+            'allowed_fields': ['name', 'provider_type', 'module', 'cls', 'method', 'created_at'],
         },
         'validation': {
-            'required_fields': ['name', 'provider_type', 'module', 'class'],
+            'required_fields': ['name', 'provider_type', 'module', 'cls'],
             'unique_fields': ['name'],
         },
         'selector': {
-            'fields': ['name', 'provider_type', 'module', 'class', 'method'],
+            'fields': ['name', 'provider_type', 'module', 'cls', 'method'],
             'display_format': 'name',
-            'search_fields': ['name', 'provider_type', 'module', 'class'],
+            'search_fields': ['name', 'provider_type', 'module', 'cls'],
         },
     }
 
