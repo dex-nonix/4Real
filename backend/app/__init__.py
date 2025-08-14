@@ -1,7 +1,8 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from dotenv import load_dotenv
+import os
 
 
 db = SQLAlchemy()
@@ -63,6 +64,13 @@ def create_app() -> Flask:
         api_router.register_service('file-links', FileLinkService)
 
         db.create_all()
+
+        # Serve uploaded files directly from the API server in all run modes
+        upload_dir = app.config.get('UPLOAD_DIR')
+        if upload_dir and os.path.isdir(upload_dir):
+            @app.route('/uploads/<path:filename>')
+            def uploads(filename):  # pragma: no cover
+                return send_from_directory(upload_dir, filename)
 
     app.register_blueprint(api_router.blueprint, url_prefix='/api')
     return app

@@ -4,22 +4,20 @@
       mode="basic"
       name="file"
       :choose-label="buttonLabel"
-      :auto="true"
-      :custom-upload="true"
-      @uploader="onUpload"
+      :auto="false"
+      :custom-upload="false"
       @select="onSelect"
     />
     <small v-if="hint" class="text-500">{{ hint }}</small>
-    <div v-if="uploaded" class="flex align-items-center gap-2">
+    <div v-if="fileName" class="flex align-items-center gap-2">
       <i class="pi pi-check-circle text-green-500"></i>
-      <span>{{ uploaded.original_filename }}</span>
+      <span>{{ fileName }}</span>
     </div>
   </div>
   </template>
 
 <script>
 import FileUpload from 'primevue/fileupload'
-import { inject } from 'vue'
 
 export default {
   name: 'FileUploadField',
@@ -33,29 +31,16 @@ export default {
   },
   emits: ['update:modelValue', 'uploaded', 'error'],
   data() {
-    return { uploaded: null }
-  },
-  setup() {
-    const filesService = inject('files')
-    return { filesService }
+    return { fileName: '' }
   },
   methods: {
-    async onSelect(evt) {
-      // For safety, in case auto/custom uploader is not triggered by the lib in basic mode
-      if (evt && evt.files && evt.files[0]) {
-        await this.onUpload({ files: evt.files })
-      }
-    },
-    async onUpload(evt) {
+    onSelect(evt) {
       try {
         const file = (evt && evt.files && evt.files[0]) || null
         if (!file) return
-        const res = await this.filesService.upload(file, { title: this.title, category_id: this.categoryId })
-        const created = res?.data?.data || res?.data
-        this.uploaded = created
-        this.$emit('uploaded', created)
-        // Emit id or full object depending on consumer expectation
-        this.$emit('update:modelValue', created?.id ?? created)
+        this.fileName = file.name
+        // Emit the File object; the form submit handler/service will perform the upload
+        this.$emit('update:modelValue', file)
       } catch (e) {
         this.$emit('error', e)
       }

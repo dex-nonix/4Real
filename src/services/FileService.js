@@ -39,22 +39,33 @@ export default class FileService extends CrudService {
   // Override create flow: when an upload has already created the record,
   // we receive { upload: <id>, title?, category_id? } and should update that row.
   async create(payload) {
-    const uploadId = payload && payload.upload
+    // New contract: File field provides a File object in formData.upload
+    const file = payload && payload.upload
+    if (file && typeof File !== 'undefined' && file instanceof File) {
+      const res = await this.upload(file, { title: payload.title, category_id: payload.category_id })
+      return res
+    }
+    // If an id was manually provided (rare), update metadata
+    const uploadId = payload && typeof payload.upload === 'number' ? payload.upload : null
     if (uploadId != null) {
       const updateData = {}
       if (Object.prototype.hasOwnProperty.call(payload, 'title')) updateData.title = payload.title
       if (Object.prototype.hasOwnProperty.call(payload, 'category_id')) updateData.category_id = payload.category_id
-      // Remove the synthetic field to avoid confusion and avoid sending empty create payload
       try { delete payload.upload } catch (e) {}
-      if (Object.keys(updateData).length > 0) {
-        return super.put(`/${encodeURIComponent(uploadId)}`, updateData)
-      }
-      return super.get(`/${encodeURIComponent(uploadId)}`)
+      return super.put(`/${encodeURIComponent(uploadId)}`, updateData)
     }
-    // Without an upload, backend validation would fail. Enforce usage.
     const err = { status: 400, message: 'File upload is required', data: { errors: ['upload is required'] } }
     if (this.onError) await this.onError(err)
     throw err
+  }
+
+  // Prevent accidental duplicate upload by calling create() twice quickly
+  async update(id, payload) {
+    // Ignore any synthetic upload key on update
+    if (payload && Object.prototype.hasOwnProperty.call(payload, 'upload')) {
+      try { delete payload.upload } catch (e) {}
+    }
+    return super.update(id, payload)
   }
 }
 
