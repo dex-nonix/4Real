@@ -39,7 +39,7 @@
 
 <script setup>
 import Button from 'primevue/button'
-import Page from '@/app/components/page/Page.vue'
+import Page from '@/core/page/Page.vue'
 import ChatWidget from '@/libs/chat/ChatWidget.vue'
 </script>
 
