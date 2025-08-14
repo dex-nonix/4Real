@@ -8,11 +8,11 @@ class PersonaService(CrudService):
     model = Persona
     config = {
         'filters': {
-            'fields': ['name', 'is_active'],
+            'fields': ['name', 'is_active', 'artist_id', 'ai_model_mapping_id'],
         },
         'sorting': {
             'default_sort': 'name',
-            'allowed_fields': ['name', 'created_at'],
+            'allowed_fields': ['name', 'artist_id', 'ai_model_mapping_id', 'created_at'],
         },
         'validation': {
             'required_fields': ['name'],

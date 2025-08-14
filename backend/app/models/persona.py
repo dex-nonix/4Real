@@ -13,6 +13,8 @@ class Persona(db.Model):
     is_active = db.Column(db.Boolean, nullable=False, server_default=db.text('1'))
     system_prompt = db.Column(db.Text)
     metadata_json = db.Column(db.JSON)
+    artist_id = db.Column(db.Integer, db.ForeignKey('artists.id'), nullable=True)
+    ai_model_mapping_id = db.Column(db.Integer, db.ForeignKey('ai_model_mappings.id'), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
     updated_at = db.Column(db.DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
@@ -23,6 +25,8 @@ class Persona(db.Model):
             'is_active': self.is_active,
             'system_prompt': self.system_prompt,
             'metadata_json': self.metadata_json,
+            'artist_id': self.artist_id,
+            'ai_model_mapping_id': self.ai_model_mapping_id,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }

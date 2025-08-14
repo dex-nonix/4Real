@@ -43,8 +43,14 @@ class ChatService:
         return tools
 
     def _select_chat_model(self, persona_id: int) -> Dict[str, Any] | None:
-        # Minimal selection: pick first active mapping for purpose='chat'
-        mapping = AIModelMapping.query.filter_by(purpose='chat', is_active=True).first()
+        # Prefer persona-specific mapping; else first active global mapping for purpose='chat'
+        from ..models.persona import Persona
+        persona = Persona.query.filter_by(id=persona_id).first()
+        mapping = None
+        if persona and getattr(persona, 'ai_model_mapping_id', None):
+            mapping = AIModelMapping.query.filter_by(id=persona.ai_model_mapping_id, is_active=True).first()
+        if not mapping:
+            mapping = AIModelMapping.query.filter_by(purpose='chat', is_active=True).first()
         if not mapping:
             return None
         return {
