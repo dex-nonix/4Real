@@ -36,7 +36,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import DynamicForm from '../../core/dynamic-form/DynamicForm.vue'
+import DynamicForm from '../../libs/core/dynamic-form/DynamicForm.vue'
 
 // Form data
 const formData = ref({

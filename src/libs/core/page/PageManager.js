@@ -1,6 +1,6 @@
 // src/pages/PageManager.js
-import BaseWidgetManager from '@/core/widget-manager/BaseWidgetManager.js'
-import { PAGES } from '@/core/page/pages.js'
+import BaseWidgetManager from '@/libs/core/widget-manager/BaseWidgetManager.js'
+import { PAGES } from '@/libs/core/page/pages.js'
 
 class PageManager extends BaseWidgetManager {
   constructor() {

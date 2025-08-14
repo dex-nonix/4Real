@@ -1,5 +1,5 @@
-import BaseWidgetManager from '@/core/widget-manager/BaseWidgetManager.js'
-import { DISPLAY_WIDGETS } from '@/core/registries/display-widgets.js'
+import BaseWidgetManager from '@/libs/core/widget-manager/BaseWidgetManager.js'
+import { DISPLAY_WIDGETS } from '@/libs/core/registries/display-widgets.js'
 
 class DisplayWidgetManager extends BaseWidgetManager {
   constructor() {

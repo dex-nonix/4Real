@@ -148,8 +148,8 @@
 <script>
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
-import DynamicTable from '@/core/dynamic-table/DynamicTable.vue'
-import DynamicForm from '@/core/dynamic-form/DynamicForm.vue'
+import DynamicTable from '@/libs/core/dynamic-table/DynamicTable.vue'
+import DynamicForm from '@/libs/core/dynamic-form/DynamicForm.vue'
 
 export default {
   name: 'CrudManager',

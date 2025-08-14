@@ -7,7 +7,7 @@
   </template>
 
 <script>
-import DynamicWidget from '@/core/dynamic-widget/DynamicWidget.vue'
+import DynamicWidget from '@/libs/core/dynamic-widget/DynamicWidget.vue'
 
 export default {
   name: 'DynamicWidgetList',

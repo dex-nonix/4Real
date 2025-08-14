@@ -7,7 +7,7 @@
 </template>
 
 <script setup>
-import Page from '@/core/page/Page.vue'
+import Page from '@/libs/core/page/Page.vue'
 import ChatWidget from '@/libs/chat/ChatWidget.vue'
 </script>
 

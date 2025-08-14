@@ -33,8 +33,8 @@
 <script>
 import { inject, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import CrudManager from '@/core/crud/CrudManager.vue'
-import DynamicWidgetList from '@/core/dynamic-widget/DynamicWidgetList.vue'
+import CrudManager from '@/libs/core/crud/CrudManager.vue'
+import DynamicWidgetList from '@/libs/core/dynamic-widget/DynamicWidgetList.vue'
 
 const CrudPage = {
   name: 'CrudPage',

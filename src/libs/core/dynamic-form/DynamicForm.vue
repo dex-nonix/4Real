@@ -61,8 +61,8 @@
 </template>
 
 <script>
-import EditWidgetManager from '@/core/widget-manager/EditWidgetManager.js'
-import DisplayWidgetManager from '@/core/widget-manager/DisplayWidgetManager.js'
+import EditWidgetManager from '@/libs/core/widget-manager/EditWidgetManager.js'
+import DisplayWidgetManager from '@/libs/core/widget-manager/DisplayWidgetManager.js'
 import Button from 'primevue/button'
 
 export default {
