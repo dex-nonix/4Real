@@ -44,7 +44,8 @@ export const leftNavItems = [
     icon: 'pi pi-image',
     items: [
       { label: 'Dynamic Form', icon: 'pi pi-file-edit', to: { name: 'dynamic-form' } },
-      { label: 'Dynamic Table', icon: 'pi pi-table', to: { name: 'dynamic-table' } }
+      { label: 'Dynamic Table', icon: 'pi pi-table', to: { name: 'dynamic-table' } },
+      { label: 'Dashboard', icon: 'pi pi-chart-bar', to: '/dashboard' }
     ]
   }
 ]
