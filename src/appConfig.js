@@ -17,12 +17,12 @@ import ToolInvocationLogService from '@/app/services/ToolInvocationLogService.js
 import FileCategoryService from '@/app/services/FileCategoryService.js'
 import FileService from '@/app/services/FileService.js'
 import FileLinkService from '@/app/services/FileLinkService.js'
-import NotFound from "@/views/NotFound.vue";
-import Home from "@/views/Home.vue";
-import About from "@/views/About.vue";
-import DynamicFormExample from "@/views/DynamicFormExample.vue";
-import DynamicTableExample from "@/views/DynamicTableExample.vue";
-import Chat from "@/views/Chat.vue";
+import NotFound from "@/app/views/NotFound.vue";
+import Home from "@/app/views/Home.vue";
+import About from "@/app/views/About.vue";
+import DynamicFormExample from "@/app/views/DynamicFormExample.vue";
+import DynamicTableExample from "@/app/views/DynamicTableExample.vue";
+import Chat from "@/app/views/Chat.vue";
 
 export const appConfig = {
     service: {
