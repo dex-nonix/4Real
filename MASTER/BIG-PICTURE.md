@@ -24,6 +24,7 @@
 - **Relationships**: 1:N (Artist→Album→Track), M:N (Track↔Style, Track↔RhymeTechnique)
 - **AI Integration**: Provider configs, model mappings, analysis results
 - **Flexibility**: Easy to extend with new entities and relationships
+ - **File Storage**: Two-table media store (`file_categories`, `files`) plus generic `file_links` to attach files to any entity (status/comment, reusable). Upload endpoint and dev static serving available.
 
 ### **🔧 Technical Stack:**
 - **Backend**: Flask + SQLAlchemy + APIRouter + CrudService
@@ -44,6 +45,7 @@
 - **API Routing**: Auto-registration via APIRouter and @expose decorators
 - **Data Import/Export**: XML, JSON, CSV support (later)
 - **AI/Providers**: Future phase (not in scope for initial build)
+ - **File Storage**: Implemented upload + CRUD for categories/files/links; previews served from `/uploads/*` in dev. Frontend FK selectors and previews supported.
 
 ### **📁 File Structure:**
 ```

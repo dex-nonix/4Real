@@ -115,6 +115,42 @@ DynamicForm passes the `props` down to the widget. The widget internally calls `
 
 ---
 
+### 3.1 File selection and attachments (new)
+
+- To select an uploaded file: use `fk_select` with `entity: 'files'`.
+- To attach files to a `Track` (or any entity), use the generic `file-links` CRUD with fixed filters:
+
+Form fields for `file-links`:
+```json
+[
+  { "key": "file_id", "type": "fk_select", "label": "File", "required": true, "props": { "entity": "files", "search": true } },
+  { "key": "status", "type": "select", "label": "Status", "required": true, "props": { "options": ["prototype","snippet","final"] } },
+  { "key": "comment", "type": "text", "label": "Comment" },
+  { "key": "sort_order", "type": "number", "label": "Order" }
+]
+```
+
+Table columns for `file-links`:
+```json
+[
+  { "field": "file_id", "header": "File", "type": "fk_display", "props": { "entity": "files" } },
+  { "field": "status", "header": "Status", "type": "text" },
+  { "field": "comment", "header": "Comment", "type": "text" },
+  { "field": "sort_order", "header": "Order", "type": "number" }
+]
+```
+
+Embed in a Track page using fixed filters:
+```js
+// CrudPage meta example
+{
+  key: 'file-links',
+  fixedFilters: { filter_entity_type: 'eq:track', filter_entity_id: `eq:${trackId}` }
+}
+```
+
+---
+
 ## 4) Backend selector API (how it formats options)
 
 Selector responses (already implemented by CrudService):

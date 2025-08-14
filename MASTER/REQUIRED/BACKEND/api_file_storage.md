@@ -78,7 +78,7 @@ All services are standard `CrudService` subclasses with full create/read/update/
 ### FileService (`/api/files`)
 
 - Filters: `category_id`, `mime_type`, `title`, `original_filename`
-- Sorting: `created_at desc` by default
+- Sorting: `created_at` (client can request `order=desc` for newest-first)
 - Validation: `original_filename`, `mime_type`, `size_bytes`, `storage_url`
 - Selector: fields `['title', 'original_filename']`, label: `title || original_filename`
 
@@ -178,11 +178,16 @@ curl -X POST http://localhost:5173/api/file-links/ \
 - Models: `file_category.py`, `file.py`, `file_link.py`
 - Services: `file_category_service.py`, `file_service.py` (with `/upload`), `file_link_service.py`
 - App registration: import and register services in `backend/app/__init__.py`
-- Static serving for `/uploads/` in dev (`config.py` path; Flask route)
+- Static serving for `/uploads/` in dev (`config.py` path; Flask route in `backend/wsgi.py`)
 - Frontend services: `FileCategoryService.js`, `FileService.js` (with `upload`), `FileLinkService.js`
 - Widgets: register `file_select` (edit) and `file_preview` (display) with widget managers
 - Track UI: embed `CrudManager` for `file-links` with fixed filters for current track
 
-Status: Design approved; pending implementation.
+Status: Implemented. Tables and services added, `/api/files/upload` available, and dev static serving at `/uploads/<filename>`.
+
+Runtime config (dev):
+
+- `UPLOAD_DIR` (default: `backend/app/uploads`)
+- `MAX_CONTENT_LENGTH` (default: `50MB`)
 
 

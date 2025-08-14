@@ -106,6 +106,9 @@ api_router = APIRouter()
 api_router.register_service('artists', ArtistService)
 api_router.register_service('albums', AlbumService)
 api_router.register_service('chat', ChatService)
+api_router.register_service('file-categories', FileCategoryService)
+api_router.register_service('files', FileService)
+api_router.register_service('file-links', FileLinkService)
 
 # (example for complex service using factory intentionally omitted)
 
