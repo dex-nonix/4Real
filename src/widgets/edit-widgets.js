@@ -8,19 +8,70 @@ import InputSwitch from 'primevue/inputswitch'
 import Calendar from 'primevue/calendar'
 import FileUpload from 'primevue/fileupload'
 import Editor from 'primevue/editor'
+import Textarea from 'primevue/textarea'
+import Button from 'primevue/button'
 import { ref, inject, h } from 'vue'
 import CrudService from '@/services/CrudService.js'
 import FileUploadField from '@/components/widgets/FileUploadField.vue'
 
 export const EDIT_WIDGETS = {
   'text': { component: InputText, defaultProps: { placeholder: 'Enter text', class: 'w-full' } },
+  'textarea': { component: Textarea, defaultProps: { autoResize: true, class: 'w-full', rows: 5 } },
   'select': { component: Dropdown, defaultProps: { placeholder: 'Select option', class: 'w-full' } },
   'multi_select': { component: MultiSelect, defaultProps: { placeholder: 'Select options', class: 'w-full' } },
   'autocomplete': { component: AutoComplete, defaultProps: { placeholder: 'Type to search', minLength: 2, delay: 300 } },
   'slider': { component: Slider, defaultProps: { min: 0, max: 100, step: 1 } },
   'date': { component: Calendar, defaultProps: { dateFormat: 'yy-mm-dd', class: 'w-full' } },
   'file': { component: FileUpload, defaultProps: { multiple: false, accept: '*' } },
-  'json': { component: Editor, defaultProps: { height: '200px', readOnly: false } },
+  // Dedicated markdown editor (rich text). Use this only for markdown fields
+  'markdown': { component: Editor, defaultProps: { height: '220px', readOnly: false } },
+  // JSON editor: textarea with validation and format helper
+  'json': { component: {
+    props: { modelValue: [Object, Array, String, null] },
+    emits: ['update:modelValue'],
+    data() {
+      let start = ''
+      try {
+        if (this.modelValue != null && typeof this.modelValue !== 'string') {
+          start = JSON.stringify(this.modelValue, null, 2)
+        } else if (typeof this.modelValue === 'string') {
+          start = this.modelValue
+        }
+      } catch { start = '' }
+      return { text: start, error: '' }
+    },
+    methods: {
+      onInput(e) {
+        this.text = e?.target?.value ?? ''
+        try {
+          const parsed = this.text ? JSON.parse(this.text) : null
+          this.error = ''
+          this.$emit('update:modelValue', parsed)
+        } catch (err) {
+          this.error = 'Invalid JSON'
+        }
+      },
+      format() {
+        try {
+          const obj = this.text ? JSON.parse(this.text) : null
+          this.text = obj != null ? JSON.stringify(obj, null, 2) : ''
+          this.error = ''
+          this.$emit('update:modelValue', obj)
+        } catch {
+          this.error = 'Invalid JSON'
+        }
+      }
+    },
+    render() {
+      return h('div', { class: 'flex flex-column gap-2 w-full' }, [
+        h(Textarea, { modelValue: this.text, 'onUpdate:modelValue': v => this.onInput({ target: { value: v } }), class: 'w-full font-mono', autoResize: true, rows: 8 }),
+        h('div', { class: 'flex align-items-center justify-content-between' }, [
+          h('small', { class: this.error ? 'p-error' : 'invisible' }, this.error || '\u00A0'),
+          h(Button, { label: 'Format', size: 'small', onClick: this.format })
+        ])
+      ])
+    }
+  }, defaultProps: {} },
   'boolean': { component: InputSwitch, defaultProps: { class: 'block' } }
 }
 

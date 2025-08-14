@@ -21,6 +21,17 @@ export const DISPLAY_WIDGETS = {
     }
   }, defaultProps: {} },
   'file_preview': { component: FilePreview, defaultProps: { } },
+  'json': { component: {
+    props: { value: [Object, Array, String, null] },
+    render() {
+      let text = ''
+      try {
+        if (typeof this.value === 'string') text = this.value
+        else if (this.value != null) text = JSON.stringify(this.value, null, 2)
+      } catch { text = '' }
+      return h('pre', { class: 'text-sm font-mono whitespace-pre-wrap' }, text)
+    }
+  }, defaultProps: {} },
   'file_preview_fk': { component: {
     props: { value: [Number, String], entity: { type: String, default: 'files' }, labelKey: { type: String, default: 'label' } },
     setup(props) {
