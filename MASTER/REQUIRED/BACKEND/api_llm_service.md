@@ -20,6 +20,27 @@ This document specifies the LLM/Chat backend service so all chat behavior, perso
 
 All tables are SQLite-friendly and portable to Postgres/MySQL.
 
+### 0) Providers and Model Mappings (updated)
+- AIProvider
+  - id (PK)
+  - name (string, unique)
+  - provider_type (string) – e.g., `openai`, `anthropic`, `google`
+  - module (string) – Python module to import, e.g., `langchain_openai`
+  - class (string) – class to instantiate, e.g., `ChatOpenAI`
+  - method (string, default `invoke`) – instance method to call
+  - config_json (JSON) – connection/credential props only (e.g., `api_key`, `base_url`, timeouts)
+  - is_active (bool)
+  - created_at, updated_at
+
+- AIModelMapping
+  - id (PK)
+  - provider_id (FK AIProvider)
+  - purpose (string) – e.g., `chat`
+  - model_name (string) – provider model identifier (e.g., `gpt-4o-mini`, `claude-3-haiku-20240307`)
+  - parameters_json (JSON, nullable) – run-time params (e.g., `temperature`, `max_tokens`)
+  - is_active (bool)
+  - created_at, updated_at
+
 ### 1) Personas and Access
 - Persona
   - id (PK)
@@ -141,7 +162,7 @@ Implement the following services by extending `CrudService` with model + config:
     1) persist user message
     2) resolve persona, system prompt, and chat model (`AIModelMapping` purpose='chat')
     3) compile available tools = internal allowed by `PersonaToolAccess` + MCP tools from attached servers
-    4) call LLM (placeholder today); future: execute tool calls within allowlist; log each call in `ToolInvocationLog`
+    4) call LLM via provider-defined module/class/method with merged props; future: execute tool calls within allowlist; log each call in `ToolInvocationLog`
     5) persist assistant final message
     6) return assistant final message
 
@@ -182,10 +203,13 @@ Implement the following services by extending `CrudService` with model + config:
 
 ### Model Selection & Provider Execution
 - Use `AIModelMapping` with `purpose='chat'` to select the active mapping (optionally extend with `persona_id`).
-- `ChatService` now calls a provider adapter (`llm_client.run_chat`) that:
-  - Instantiates the client strictly from DB config (`AIProvider.config_json`: api_key, base_url; `AIModelMapping`: model_name, parameters_json)
-  - Current implementation supports `provider_type='openai'` via LangChain `ChatOpenAI`.
-  - Returns assistant text; on errors, returns a readable message and does not crash.
+- Provider construction is DB-driven from `AIProvider` fields:
+  - Import `module`, get `class`, instantiate with kwargs built by merging:
+    - Provider `config_json` (connection and credentials only, e.g., `api_key`, `base_url`)
+    - `model` = `AIModelMapping.model_name`
+    - Overrides from `AIModelMapping.parameters_json` (e.g., `temperature`, `max_tokens`)
+  - Call the instance `method` (default `invoke`) with LangChain-formatted messages.
+- Returns assistant text; on errors, returns a readable message and does not crash.
 - If no active mapping/provider exists, the service returns a safe fallback message.
 
 ---
@@ -219,5 +243,89 @@ Notes:
 - Persistent chat history and logs in DB
 - Model mappings reused via `AIModelMapping` with purpose='chat'
 - Minimal, extensible architecture using existing APIRouter + CrudService patterns
+
+---
+
+## Provider and Mapping JSON Examples
+
+### OpenAI (standard)
+```json
+{
+  "name": "openai-main",
+  "provider_type": "openai",
+  "module": "langchain_openai",
+  "class": "ChatOpenAI",
+  "method": "invoke",
+  "config_json": {
+    "api_key": "sk-REPLACE_ME",
+    "base_url": "https://api.openai.com/v1"
+  },
+  "is_active": true
+}
+```
+
+### Anthropic
+```json
+{
+  "name": "anthropic-main",
+  "provider_type": "anthropic",
+  "module": "langchain_anthropic",
+  "class": "ChatAnthropic",
+  "method": "invoke",
+  "config_json": {
+    "api_key": "sk-ant-REPLACE_ME"
+  },
+  "is_active": true
+}
+```
+
+### Google (Gemini)
+```json
+{
+  "name": "google-genai",
+  "provider_type": "google",
+  "module": "langchain_google_genai",
+  "class": "ChatGoogleGenerativeAI",
+  "method": "invoke",
+  "config_json": {
+    "api_key": "AIza-REPLACE_ME"
+  },
+  "is_active": true
+}
+```
+
+### OpenAI-compatible Proxy
+```json
+{
+  "name": "openai-proxy",
+  "provider_type": "openai",
+  "module": "langchain_openai",
+  "class": "ChatOpenAI",
+  "method": "invoke",
+  "config_json": {
+    "api_key": "sk-proxy-REPLACE_ME",
+    "base_url": "https://your-proxy.example.com/v1"
+  },
+  "is_active": true
+}
+```
+
+### Mapping (shared shape)
+```json
+{
+  "provider_id": 1,
+  "purpose": "chat",
+  "model_name": "gpt-4o-mini",
+  "parameters_json": { "temperature": 0.2, "max_tokens": 512 },
+  "is_active": true
+}
+```
+
+### Merge/Precedence Rules
+- Instantiate provider class with kwargs merged in this order:
+  - Provider `config_json`
+  - `model` = `model_name` from mapping
+  - Overrides from `parameters_json`
+- Call `method` (default `invoke`) with LangChain-formatted messages.
 
 
