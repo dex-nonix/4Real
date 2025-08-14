@@ -17,6 +17,12 @@ import ToolInvocationLogService from '@/services/ToolInvocationLogService.js'
 import FileCategoryService from '@/services/FileCategoryService.js'
 import FileService from '@/services/FileService.js'
 import FileLinkService from '@/services/FileLinkService.js'
+import NotFound from "@/views/NotFound.vue";
+import Home from "@/views/Home.vue";
+import About from "@/views/About.vue";
+import DynamicFormExample from "@/views/DynamicFormExample.vue";
+import DynamicTableExample from "@/views/DynamicTableExample.vue";
+import Chat from "@/views/Chat.vue";
 
 export const appConfig = {
     service: {
@@ -39,7 +45,49 @@ export const appConfig = {
         "file-categories": () => new FileCategoryService(),
         "files": () => new FileService(),
         "file-links": () => new FileLinkService(),
-    }
+    },
+    routes: [
+
+        // Regular routes
+        {path: '/', name: 'home', component: Home, meta: {layout: 'master'}},
+        {path: '/about', name: 'about', component: About, meta: {layout: 'alt'}},
+        {path: '/dynamic-form', name: 'dynamic-form', component: DynamicFormExample, meta: {layout: 'master'}},
+        {path: '/dynamic-table', name: 'dynamic-table', component: DynamicTableExample, meta: {layout: 'master'}},
+        {path: '/chat', name: 'chat', component: Chat, meta: {layout: 'master'}},
+
+        // Dynamic route
+        {
+
+            type: "dynamic",
+            path: '/dashboard',
+            page: 'dashboard',
+            meta: {layout: 'master'}
+        },
+
+        // CRUD routes
+        {type: "crud", entity: 'albums'},
+        {type: "crud", entity: 'tracks'},
+        {type: "crud", entity: 'styles'},
+        {type: "crud", entity: 'rhyme-techniques'},
+        {type: "crud", entity: 'ai-providers'},
+        {type: "crud", entity: 'ai-model-mappings'},
+        {type: "crud", entity: 'ai-analysis-results'},
+        {type: "crud", entity: 'artists'},
+        {type: "crud", entity: 'personas'},
+        {type: "crud", entity: 'internal-tools'},
+        {type: "crud", entity: 'persona-tool-access'},
+        {type: "crud", entity: 'mcp-servers'},
+        {type: "crud", entity: 'persona-mcp-servers'},
+        {type: "crud", entity: 'chat-sessions'},
+        {type: "crud", entity: 'chat-messages'},
+        {type: "crud", entity: 'tool-invocation-logs'},
+        {type: "crud", entity: 'file-categories'},
+        {type: "crud", entity: 'files'},
+        {type: "crud", entity: 'file-links'},
+
+        // 404 route
+        {path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound, meta: {layout: 'alt'}},
+    ]
 };
 
 

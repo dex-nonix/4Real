@@ -1,6 +1,6 @@
-import { createApp, h } from 'vue'
+import {createApp, h} from 'vue'
 import App from '@/App.vue'
-import router from '@/router'
+import {createRouter} from '@/router'
 
 import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
@@ -10,13 +10,13 @@ import 'primeflex/primeflex.css'
 
 import {appConfig} from "@/appConfig.js";
 
-const app = createApp({ render: () => h(App) })
-app.use(router)
+const app = createApp({render: () => h(App)})
+app.use(createRouter(appConfig.routes));
 app.use(PrimeVue)
 app.use(ToastService)
 
 Object.keys(appConfig.service).forEach(key => {
-    app.provide(key, appConfig.service[key](  ));
+    app.provide(key, appConfig.service[key]());
 })
 
 app.mount('#app')
