@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import CrudPage from '@/views/CrudPage.vue'
-import DynamicPage from '@/views/DynamicPage.vue'
+import CrudPage from '@/pages/CrudPage.vue'
+import DynamicPage from '@/pages/DynamicPage.vue'
 
 const Home = () => import('../views/Home.vue')
 const About = () => import('../views/About.vue')
