@@ -8,6 +8,9 @@ export default class AIProviderService extends CrudService {
         columns: [
           { field: 'name', header: 'Name', type: 'text', sortable: true },
           { field: 'provider_type', header: 'Type', type: 'text', sortable: true },
+          { field: 'module', header: 'Module', type: 'text', sortable: true },
+          { field: 'class', header: 'Class', type: 'text', sortable: true },
+          { field: 'method', header: 'Method', type: 'text', sortable: true },
           { field: 'is_active', header: 'Active', type: 'text', sortable: true }
         ],
         actions: ['view', 'edit', 'delete'],
@@ -24,6 +27,9 @@ export default class AIProviderService extends CrudService {
         fields: [
           { key: 'name', type: 'text', label: 'Name', required: true },
           { key: 'provider_type', type: 'text', label: 'Type', required: true },
+          { key: 'module', type: 'text', label: 'Module', required: true },
+          { key: 'class', type: 'text', label: 'Class', required: true },
+          { key: 'method', type: 'text', label: 'Method (default: invoke)' },
           { key: 'config_json', type: 'json', label: 'Config (JSON)' },
           { key: 'is_active', type: 'text', label: 'Active' }
         ]
