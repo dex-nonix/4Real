@@ -95,8 +95,8 @@
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import DisplayWidgetManager from '@nonix/widget-manager/DisplayWidgetManager.js'
-import SearchFilter from '@/components/filters/SearchFilter.vue'
-import DateRangeFilter from '@/components/filters/DateRangeFilter.vue'
+import SearchFilter from '@nonix/dynamic-table/filters/SearchFilter.vue'
+import DateRangeFilter from '@nonix/dynamic-table/filters/DateRangeFilter.vue'
 import ActionButtons from './actions/ActionButtons.vue'
 import BulkActions from './actions/BulkActions.vue'
 
