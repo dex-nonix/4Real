@@ -1,0 +1,146 @@
+{
+  "base_information": {
+    "extraction_purpose": "Page Structure Analysis",
+    "analysis_type": "Layout and Component Relationship Analysis",
+    "target_outcome": "Complete page composition with layout schemas and component relationships",
+    "focus_area": "Page layout, component hierarchies, and spatial relationships",
+    "methodology": "Layout pattern recognition and component relationship mapping"
+  },
+  "extraction_goals": {
+    "primary_objective": "Analyze complete page structure and component relationships",
+    "component_identification": [
+      "Identify all visible components and their spatial positioning",
+      "Detect layout patterns and grid systems",
+      "Extract component hierarchies and nesting relationships",
+      "Map component interactions and workflow connections"
+    ],
+    "layout_analysis": [
+      "Analyze page layout structure and composition",
+      "Identify layout patterns and grid systems",
+      "Document component spatial relationships",
+      "Map navigation and user flow patterns"
+    ],
+    "quality_metrics": [
+      "Complete page component coverage",
+      "Accurate layout pattern identification",
+      "Proper spatial relationship mapping",
+      "Consistent navigation flow documentation"
+    ]
+  },
+  "frameworks": [
+    {
+      "name": "PrimeVue",
+      "type": "ui_framework",
+      "definitions": {
+        "components": ["Card", "Button", "DataTable", "Panel", "InputText", "Dropdown", "Checkbox", "RadioButton", "Rating", "Slider", "Calendar", "FileUpload", "Message", "Toast", "Tooltip", "Accordion", "TabView", "Sidebar", "Menu", "Breadcrumb", "Paginator", "Tree", "TreeTable"],
+        "detection_rules": "Look for Vue components in the image, focusing on PrimeVue styling patterns and component structures"
+      }
+    },
+    {
+      "name": "PrimeFlex",
+      "type": "css_framework",
+      "definitions": {
+        "utility_classes": ["p-d-flex", "p-d-block", "p-d-none", "p-justify-start", "p-justify-center", "p-justify-end", "p-justify-between", "p-justify-around", "p-align-start", "p-align-center", "p-align-end", "p-m-0", "p-m-1", "p-m-2", "p-m-3", "p-m-4", "p-m-5", "p-m-6", "p-p-0", "p-p-1", "p-p-2", "p-p-3", "p-p-4", "p-p-5", "p-p-6", "p-mx-auto", "p-my-auto", "p-px-auto", "p-py-auto"],
+        "detection_rules": "Look for CSS utility classes with p- prefix in the image, focusing on layout, spacing, and flexbox utilities"
+      }
+    },
+    {
+      "name": "PrimeIcons",
+      "type": "icon_library",
+      "definitions": {
+        "icon_classes": ["pi-home", "pi-user", "pi-settings", "pi-search", "pi-plus", "pi-minus", "pi-edit", "pi-trash", "pi-eye", "pi-eye-slash", "pi-lock", "pi-unlock", "pi-check", "pi-times", "pi-arrow-left", "pi-arrow-right", "pi-arrow-up", "pi-arrow-down", "pi-calendar", "pi-clock", "pi-envelope", "pi-phone", "pi-map-marker", "pi-star", "pi-heart", "pi-thumbs-up", "pi-thumbs-down"],
+        "detection_rules": "Look for icon elements with pi- class prefix in the image, focusing on PrimeIcons styling and positioning"
+      }
+    }
+  ],
+  "technology_stack": {
+    "framework": "Vue 3",
+    "composition_api": "JavaScript Composition API",
+    "styling": "PrimeFlex CSS utilities",
+    "icons": "PrimeIcons library",
+    "components": "PrimeVue component library"
+  },
+  "extraction_rules": {
+    "detection_priority": "page_structure_focus",
+    "analysis_depth": "layout_and_relationship_analysis",
+    "property_extraction": {
+      "required_properties": ["type", "position", "confidence", "color", "children"],
+      "optional_properties": ["additional_info", "validation", "interactions", "accessibility"],
+      "styling_properties": ["background", "text", "border", "shadow", "spacing"],
+      "behavior_properties": ["clickable", "hoverable", "draggable", "resizable"],
+      "layout_properties": ["grid_position", "flexbox_properties", "spacing_relationships", "alignment_patterns"]
+    },
+    "component_mapping": {
+      "spatial_relationships": "Map component positioning and layout relationships",
+      "hierarchical_structure": "Document component nesting and parent-child relationships",
+      "layout_patterns": "Identify grid systems, flexbox layouts, and positioning patterns",
+      "navigation_flow": "Map user navigation patterns and workflow connections"
+    }
+  },
+  "layout_analysis": {
+    "grid_systems": {
+      "purpose": "Identify and document grid-based layout systems",
+      "patterns": ["CSS Grid", "Flexbox Grid", "Bootstrap Grid", "Custom Grid"],
+      "detection": "Look for aligned components, consistent spacing, and grid-like arrangements"
+    },
+    "flexbox_layouts": {
+      "purpose": "Analyze flexbox-based layout patterns",
+      "patterns": ["Horizontal Layouts", "Vertical Layouts", "Centered Layouts", "Justified Layouts"],
+      "detection": "Look for flexbox utility classes and component alignment patterns"
+    },
+    "spatial_relationships": {
+      "purpose": "Map component positioning and spacing relationships",
+      "patterns": ["Margins", "Padding", "Alignment", "Distribution"],
+      "detection": "Analyze spacing between components and alignment patterns"
+    }
+  },
+  "page_structure": {
+    "layout_schemas": {
+      "purpose": "Document page layout patterns and composition",
+      "structure": "Layout definitions with component positioning",
+      "reusability": "Create reusable layout schemas for similar pages"
+    },
+    "component_hierarchies": {
+      "purpose": "Map component nesting and relationship structures",
+      "structure": "Parent-child relationships and component composition",
+      "navigation": "User flow and interaction patterns"
+    },
+    "spatial_mapping": {
+      "purpose": "Document component positioning and spatial relationships",
+      "structure": "Grid positions, flexbox properties, and spacing",
+      "patterns": "Layout patterns and positioning systems"
+    }
+  },
+  "output_structure": {
+    "format": "page_structure_with_layout_schemas",
+    "structure": "Page composition with layout patterns and relationships",
+    "depth": "Layout-focused with spatial relationship mapping",
+    "relationships": "Component hierarchies, spatial relationships, and navigation patterns"
+  },
+  "extraction_adaptations": {
+    "visual_analysis": [
+      "Page layout structure recognition",
+      "Component positioning and alignment analysis",
+      "Grid system and flexbox pattern detection",
+      "Spatial relationship and spacing analysis"
+    ],
+    "pattern_matching": [
+      "Layout pattern recognition (grid, flexbox, positioning)",
+      "Component relationship pattern identification",
+      "Navigation flow pattern detection",
+      "Spatial arrangement pattern recognition"
+    ],
+    "quality_assurance": [
+      "Complete page component coverage validation",
+      "Layout pattern accuracy verification",
+      "Spatial relationship mapping verification",
+      "Navigation flow completeness validation"
+    ]
+  },
+  "layout_focus": {
+    "grid_analysis": "Identify and document grid-based layout systems",
+    "flexbox_analysis": "Analyze flexbox layout patterns and properties",
+    "spatial_mapping": "Map component positioning and spacing relationships",
+    "navigation_patterns": "Document user flow and interaction patterns"
+  }
+}

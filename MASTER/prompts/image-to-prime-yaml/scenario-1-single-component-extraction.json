@@ -1,0 +1,105 @@
+{
+  "base_information": {
+    "extraction_purpose": "Single Component Deep Analysis",
+    "analysis_type": "Focused Component Extraction",
+    "target_outcome": "Detailed single component definition with all properties and relationships",
+    "focus_area": "One specific component with comprehensive analysis",
+    "methodology": "Deep visual analysis of single component for detailed documentation"
+  },
+  "extraction_goals": {
+    "primary_objective": "Extract and analyze one specific component in detail",
+    "component_identification": [
+      "Identify the target component by visual characteristics",
+      "Extract all visible properties and styling information",
+      "Map component internal structure and child elements",
+      "Document component behavior and interaction patterns"
+    ],
+    "analysis_depth": [
+      "Complete property extraction including colors, sizes, positioning",
+      "Detailed child component mapping and nesting relationships",
+      "Styling analysis including CSS classes and visual patterns",
+      "Interaction behavior documentation and accessibility features"
+    ],
+    "quality_metrics": [
+      "100% component property completeness",
+      "Accurate child component identification",
+      "Precise styling and positioning data",
+      "Complete interaction pattern documentation"
+    ]
+  },
+  "frameworks": [
+    {
+      "name": "PrimeVue",
+      "type": "ui_framework",
+      "definitions": {
+        "components": ["Card", "Button", "DataTable", "Panel", "InputText", "Dropdown", "Checkbox", "RadioButton", "Rating", "Slider", "Calendar", "FileUpload", "Message", "Toast", "Tooltip", "Accordion", "TabView", "Sidebar", "Menu", "Breadcrumb", "Paginator", "Tree", "TreeTable"],
+        "detection_rules": "Look for Vue components in the image, focusing on PrimeVue styling patterns and component structures"
+      }
+    },
+    {
+      "name": "PrimeFlex",
+      "type": "css_framework",
+      "definitions": {
+        "utility_classes": ["p-d-flex", "p-d-block", "p-d-none", "p-justify-start", "p-justify-center", "p-justify-end", "p-justify-between", "p-justify-around", "p-align-start", "p-align-center", "p-align-end", "p-m-0", "p-m-1", "p-m-2", "p-m-3", "p-m-4", "p-m-5", "p-m-6", "p-p-0", "p-p-1", "p-p-2", "p-p-3", "p-p-4", "p-p-5", "p-p-6", "p-mx-auto", "p-my-auto", "p-px-auto", "p-py-auto"],
+        "detection_rules": "Look for CSS utility classes with p- prefix in the image, focusing on layout, spacing, and flexbox utilities"
+      }
+    },
+    {
+      "name": "PrimeIcons",
+      "type": "icon_library",
+      "definitions": {
+        "icon_classes": ["pi-home", "pi-user", "pi-settings", "pi-search", "pi-plus", "pi-minus", "pi-edit", "pi-trash", "pi-eye", "pi-eye-slash", "pi-lock", "pi-unlock", "pi-check", "pi-times", "pi-arrow-left", "pi-arrow-right", "pi-arrow-up", "pi-arrow-down", "pi-calendar", "pi-clock", "pi-envelope", "pi-phone", "pi-map-marker", "pi-star", "pi-heart", "pi-thumbs-up", "pi-thumbs-down"],
+        "detection_rules": "Look for icon elements with pi- class prefix in the image, focusing on PrimeIcons styling and positioning"
+      }
+    }
+  ],
+  "technology_stack": {
+    "framework": "Vue 3",
+    "composition_api": "JavaScript Composition API",
+    "styling": "PrimeFlex CSS utilities",
+    "icons": "PrimeIcons library",
+    "components": "PrimeVue component library"
+  },
+  "extraction_rules": {
+    "detection_priority": "single_component_focus",
+    "analysis_depth": "maximum_detail",
+    "property_extraction": {
+      "required_properties": ["type", "position", "confidence", "color", "children", "additional_info"],
+      "styling_properties": ["background", "text", "border", "shadow", "spacing", "typography", "layout"],
+      "behavior_properties": ["clickable", "hoverable", "draggable", "resizable", "focusable", "accessible"],
+      "relationship_properties": ["parent", "children", "siblings", "layout_context", "interaction_dependencies"]
+    },
+    "component_mapping": {
+      "internal_structure": "Map all child components and their relationships",
+      "styling_analysis": "Extract all CSS classes, colors, and visual properties",
+      "interaction_patterns": "Document all interactive behaviors and states",
+      "accessibility_features": "Identify ARIA labels, keyboard navigation, and screen reader support"
+    }
+  },
+  "output_structure": {
+    "format": "single_component_definition",
+    "structure": "One detailed component with all properties and children",
+    "depth": "Maximum detail including all visible and inferable properties",
+    "relationships": "Complete parent-child and sibling relationship mapping"
+  },
+  "extraction_adaptations": {
+    "visual_analysis": [
+      "Component shape and size recognition with pixel-perfect accuracy",
+      "Color and styling pattern detection including gradients and shadows",
+      "Layout structure identification with precise positioning",
+      "Interactive element discovery with state indicators"
+    ],
+    "pattern_matching": [
+      "PrimeVue component signature recognition",
+      "PrimeFlex utility class identification",
+      "PrimeIcons icon class detection",
+      "Custom styling and layout pattern recognition"
+    ],
+    "quality_assurance": [
+      "100% component property completeness",
+      "Pixel-perfect positioning and sizing",
+      "Complete child component identification",
+      "Accurate relationship mapping"
+    ]
+  }
+}

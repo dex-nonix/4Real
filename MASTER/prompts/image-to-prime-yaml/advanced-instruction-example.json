@@ -1,0 +1,195 @@
+{
+  "base_information": {
+    "extraction_purpose": "Enterprise Component Detection and Catalog Creation",
+    "analysis_type": "Advanced UI Component Extraction",
+    "target_outcome": "Comprehensive enterprise component catalog with business logic and custom components",
+    "focus_area": "Multi-framework component identification with custom enterprise components",
+    "methodology": "Advanced visual analysis with business context understanding"
+  },
+  "extraction_goals": {
+    "primary_objective": "Extract all visible UI components for enterprise catalog creation with business logic integration",
+    "component_identification": [
+      "Identify framework components by visual characteristics",
+      "Detect custom enterprise components with business context",
+      "Extract component hierarchies and complex relationships",
+      "Map component interactions and business workflows"
+    ],
+    "catalog_creation": [
+      "Generate reusable component definitions with business logic",
+      "Document component variations and enterprise use cases",
+      "Create complex component relationship mappings",
+      "Establish enterprise component classification system"
+    ],
+    "quality_metrics": [
+      "Accurate component type identification across frameworks",
+      "Complete property extraction including business context",
+      "Proper relationship mapping for complex enterprise workflows",
+      "Consistent naming conventions and enterprise standards"
+    ]
+  },
+  "frameworks": [
+    {
+      "name": "PrimeVue",
+      "type": "ui_framework",
+      "definitions": {
+        "components": ["Card", "Button", "DataTable", "Panel", "InputText", "Dropdown", "Checkbox", "RadioButton", "Rating", "Slider", "Calendar", "FileUpload", "Message", "Toast", "Tooltip", "Accordion", "TabView", "Sidebar", "Menu", "Breadcrumb", "Paginator", "Tree", "TreeTable"],
+        "detection_rules": "Look for Vue components in the image, focusing on PrimeVue styling patterns and component structures"
+      }
+    },
+    {
+      "name": "PrimeFlex",
+      "type": "css_framework",
+      "definitions": {
+        "utility_classes": ["p-d-flex", "p-d-block", "p-d-none", "p-justify-start", "p-justify-center", "p-justify-end", "p-justify-between", "p-justify-around", "p-align-start", "p-align-center", "p-align-end", "p-m-0", "p-m-1", "p-m-2", "p-m-3", "p-m-4", "p-m-5", "p-m-6", "p-p-0", "p-p-1", "p-p-2", "p-p-3", "p-p-4", "p-p-5", "p-p-6", "p-mx-auto", "p-my-auto", "p-px-auto", "p-py-auto"],
+        "detection_rules": "Look for CSS utility classes with p- prefix in the image, focusing on layout, spacing, and flexbox utilities"
+      }
+    },
+    {
+      "name": "PrimeIcons",
+      "type": "icon_library",
+      "definitions": {
+        "icon_classes": ["pi-home", "pi-user", "pi-settings", "pi-search", "pi-plus", "pi-minus", "pi-edit", "pi-trash", "pi-eye", "pi-eye-slash", "pi-lock", "pi-unlock", "pi-check", "pi-times", "pi-arrow-left", "pi-arrow-right", "pi-arrow-up", "pi-arrow-down", "pi-calendar", "pi-clock", "pi-envelope", "pi-phone", "pi-map-marker", "pi-star", "pi-heart", "pi-thumbs-up", "pi-thumbs-down"],
+        "detection_rules": "Look for icon elements with pi- class prefix in the image, focusing on PrimeIcons styling and positioning"
+      }
+    },
+    {
+      "name": "Enterprise Custom Components",
+      "type": "custom_library",
+      "definitions": {
+        "custom_components": {
+          "LeadPriorityIndicator": {
+            "description": "Visual indicator showing lead priority and potential value",
+            "purpose": "Help sales teams prioritize their efforts and focus on high-value opportunities",
+            "variants": ["Hot Lead", "Warm Lead", "Cold Lead", "VIP Prospect"],
+            "business_logic": "Priority calculated based on company size, budget, timeline, and engagement level",
+            "interactions": "Click to view detailed scoring breakdown, hover for quick insights",
+            "visual_patterns": "Color-coded badges with priority text, usually near lead information",
+            "detection_rules": "Look for colored priority badges with text like 'Hot', 'Warm', 'Cold', 'VIP' in the image"
+          },
+          "PipelineStageTracker": {
+            "description": "Visual representation of sales pipeline with stage progression",
+            "purpose": "Track opportunity progress through sales stages and identify bottlenecks",
+            "variants": ["Qualification", "Discovery", "Proposal", "Negotiation", "Closed Won", "Closed Lost"],
+            "business_logic": "Stages represent actual sales process with time tracking and conversion rates",
+            "interactions": "Drag and drop opportunities between stages, click for stage details",
+            "visual_patterns": "Horizontal or vertical stage bars with opportunity cards",
+            "detection_rules": "Look for stage-based layouts with drag-and-drop indicators and opportunity cards in the image"
+          },
+          "Customer360Card": {
+            "description": "Comprehensive customer information display with action shortcuts",
+            "purpose": "Provide complete customer context for informed decision making and relationship building",
+            "variants": ["Summary View", "Detailed View", "Activity View", "Financial View"],
+            "business_logic": "Aggregates data from multiple systems (CRM, billing, support, marketing)",
+            "interactions": "Expandable sections, quick action buttons, real-time updates",
+            "visual_patterns": "Card layout with customer photo, information sections, and action buttons",
+            "detection_rules": "Look for customer profile cards with avatar, information sections, and multiple action buttons in the image"
+          },
+          "SmartActionButton": {
+            "description": "Context-aware action button that adapts based on customer state and user permissions",
+            "purpose": "Streamline common sales actions and ensure consistent process execution",
+            "variants": ["Schedule Meeting", "Send Proposal", "Create Quote", "Log Activity", "Escalate"],
+            "business_logic": "Actions dynamically change based on customer status, sales stage, and user role",
+            "interactions": "Click to execute action, shows confirmation and next steps",
+            "visual_patterns": "Contextual buttons that change appearance based on customer state",
+            "detection_rules": "Look for action buttons that change color, text, or state based on context in the image"
+          },
+          "RevenueForecastWidget": {
+            "description": "Real-time revenue forecasting with trend analysis and predictive insights",
+            "purpose": "Provide sales managers with accurate revenue projections and pipeline health metrics",
+            "variants": ["Monthly View", "Quarterly View", "Annual View", "Custom Period"],
+            "business_logic": "Uses historical data, current pipeline, and AI-powered prediction models",
+            "interactions": "Interactive charts, drill-down capabilities, export functionality",
+            "visual_patterns": "Charts and graphs with revenue data, trend lines, and forecasting elements",
+            "detection_rules": "Look for revenue charts, forecasting graphs, and financial metrics displays in the image"
+          }
+        }
+      }
+    }
+  ],
+  "extraction_rules": {
+    "detection_priorities": {
+      "high_priority": ["LeadPriorityIndicator", "PipelineStageTracker", "Customer360Card", "SmartActionButton", "RevenueForecastWidget", "Card", "Button", "DataTable"],
+              "medium_priority": ["Avatar", "Badge", "Chip", "Message", "Toast", "Tooltip"],
+        "low_priority": ["Divider", "spacer", "decorative elements"]
+    },
+    "property_extraction": {
+      "required_properties": ["type", "position", "confidence", "color", "children"],
+      "optional_properties": ["additional_info", "validation", "interactions", "accessibility"],
+      "styling_properties": ["background", "text", "border", "shadow", "spacing"],
+      "behavior_properties": ["clickable", "hoverable", "draggable", "resizable"],
+      "business_properties": ["business_logic", "workflow_stage", "user_permissions", "data_sources"]
+    },
+    "relationship_mapping": {
+      "parent_child": "Detect component containment and nesting",
+      "sibling_relationships": "Identify components at same level",
+      "layout_relationships": "Map grid, flexbox, and positioning relationships",
+      "interaction_relationships": "Connect related interactive components",
+      "business_relationships": "Map workflow dependencies and business logic connections"
+    }
+  },
+  "business_context": {
+    "application_type": "Enterprise CRM System",
+    "primary_workflow": "Lead Management → Opportunity Tracking → Customer Relationship → Revenue Generation",
+    "user_roles": ["Sales Representatives", "Account Managers", "Sales Managers", "System Administrators"],
+    "business_processes": {
+      "lead_management": "Capture → Qualify → Nurture → Convert → Close",
+      "opportunity_tracking": "Discovery → Needs Analysis → Solution Design → Proposal → Negotiation → Close",
+      "customer_relationship": "Onboarding → Growth → Retention → Expansion → Advocacy"
+    },
+    "success_metrics": [
+      "Time to qualify lead < 5 minutes",
+      "Opportunity conversion rate > 25%",
+      "Customer response time < 2 hours",
+      "Sales cycle reduction by 20%"
+    ]
+  },
+  "catalog_structure": {
+    "component_definitions": {
+      "purpose": "Reusable component templates with business logic and enterprise context",
+      "structure": "Complete component specification including business variants and workflow integration",
+      "reusability": "Enable component reuse across different enterprise contexts and user roles"
+    },
+    "instance_mapping": {
+      "purpose": "Map actual component instances to their definitions with business context",
+      "variations": "Document component variations and enterprise customizations",
+      "positioning": "Record spatial relationships and business workflow layout information"
+    },
+    "pattern_recognition": {
+      "repetitive_structures": "Identify repeated component patterns for enterprise reuse",
+      "layout_patterns": "Recognize common enterprise layout arrangements",
+      "interaction_patterns": "Map consistent enterprise interaction behaviors",
+      "workflow_patterns": "Identify business process patterns and workflow components"
+    }
+  },
+  "extraction_adaptations": {
+    "visual_analysis": [
+      "Component shape and size recognition",
+      "Color and styling pattern detection",
+      "Layout structure identification",
+      "Interactive element discovery",
+      "Business workflow visualization recognition"
+    ],
+    "pattern_matching": [
+      "Multi-framework component signature recognition",
+      "Enterprise UI pattern identification",
+      "Business component composition pattern detection",
+      "Enterprise layout grid and spacing pattern recognition",
+      "Workflow stage and process pattern recognition"
+    ],
+    "quality_assurance": [
+      "Confidence scoring for multi-framework component detection",
+      "Business context property completeness validation",
+      "Enterprise relationship accuracy verification",
+      "Business naming convention consistency",
+      "Workflow integration validation"
+    ]
+  },
+  "output_optimization": {
+    "catalog_format": "Structured JSON for enterprise parsing and processing",
+    "component_references": "Use $ref system for reusable enterprise component definitions",
+    "instance_variations": "Document enterprise component variations through overrides",
+    "relationship_mapping": "Clear parent-child, sibling, and business workflow relationships",
+    "property_completeness": "Extract all visible, inferable, and business context properties",
+    "enterprise_integration": "Include business logic, workflow stages, and user permission mappings"
+  }
+}
