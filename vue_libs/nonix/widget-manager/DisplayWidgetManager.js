@@ -11,6 +11,6 @@ class DisplayWidgetManager extends BaseWidgetManager {
     }
 }
 
-export default DisplayWidgetManager
+export default new DisplayWidgetManager()
 
 

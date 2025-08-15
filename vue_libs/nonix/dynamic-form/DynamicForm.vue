@@ -125,8 +125,8 @@ export default {
   
   data() {
     return {
-      editManager: new EditWidgetManager(),
-      displayManager: new DisplayWidgetManager(),
+      editManager: EditWidgetManager,
+      displayManager: DisplayWidgetManager,
       formData: { ...this.initialData },
       changedValues: {},
       isDirty: false,

@@ -11,6 +11,6 @@ class EditWidgetManager extends BaseWidgetManager {
     }
 }
 
-export default EditWidgetManager
+export default new EditWidgetManager()
 
 

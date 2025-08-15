@@ -12,5 +12,3 @@ class PageManager extends BaseWidgetManager {
 }
 
 export default new PageManager()
-
-

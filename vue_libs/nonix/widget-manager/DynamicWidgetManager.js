@@ -11,6 +11,6 @@ class DynamicWidgetManager extends BaseWidgetManager {
     }
 }
 
-export default DynamicWidgetManager
+export default new DynamicWidgetManager()
 
 

@@ -14,7 +14,7 @@ export default {
   },
   data() {
     return {
-      manager: new DynamicWidgetManager()
+      manager: DynamicWidgetManager
     }
   },
   computed: {

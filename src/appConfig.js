@@ -17,7 +17,6 @@ import ToolInvocationLogService from '@/services/ToolInvocationLogService.js'
 import FileCategoryService from '@/services/FileCategoryService.js'
 import FileService from '@/services/FileService.js'
 import FileLinkService from '@/services/FileLinkService.js'
-import NotFound from "@/views/NotFound.vue";
 import Home from "@/views/Home.vue";
 import About from "@/views/About.vue";
 import DynamicFormExample from "@/views/DynamicFormExample.vue";
@@ -25,30 +24,7 @@ import DynamicTableExample from "@/views/DynamicTableExample.vue";
 import Chat from "@/views/Chat.vue";
 
 export const appConfig = {
-    use:[
-        /*usage for the vuex store*/
-    ],
-    service: {
-        "artists": () => new ArtistService(),
-        "albums": () => new AlbumService(),
-        "tracks": () => new TrackService(),
-        "styles": () => new StyleService(),
-        "rhyme-techniques": () => new RhymeTechniqueService(),
-        "ai-providers": () => new AIProviderService(),
-        "ai-model-mappings": () => new AIModelMappingService(),
-        "ai-analysis-results": () => new AIAnalysisResultService(),
-        "personas": () => new PersonaService(),
-        "internal-tools": () => new InternalToolService(),
-        "persona-tool-access": () => new PersonaToolAccessService(),
-        "mcp-servers": () => new MCPServerService(),
-        "persona-mcp-servers": () => new PersonaMCPServerService(),
-        "chat-sessions": () => new ChatSessionService(),
-        "chat-messages": () => new ChatMessageService(),
-        "tool-invocation-logs": () => new ToolInvocationLogService(),
-        "file-categories": () => new FileCategoryService(),
-        "files": () => new FileService(),
-        "file-links": () => new FileLinkService(),
-    },
+
     routes: [
 
         // Regular routes
@@ -59,13 +35,7 @@ export const appConfig = {
         {path: '/chat', name: 'chat', component: Chat, meta: {layout: 'master'}},
 
         // Dynamic route
-        {
-
-            type: "dynamic",
-            path: '/dashboard',
-            page: 'dashboard',
-            meta: {layout: 'master'}
-        },
+        {type: "dynamic", path: '/dashboard', page: 'dashboard', meta: {layout: 'master'}},
 
         // CRUD routes
         {type: "crud", entity: 'albums'},
@@ -89,13 +59,48 @@ export const appConfig = {
         {type: "crud", entity: 'file-links'},
 
         // 404 route
-        {path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound, meta: {layout: 'alt'}},
+        //{path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound, meta: {layout: 'alt'}},
     ],
-    layouts:{},
-    pages:{},
-    displayWidgets:{},
-    editWidgets:{},
-    dynamicWidgets:{},
+    service: {
+        "artists": () => new ArtistService(),
+        "albums": () => new AlbumService(),
+        "tracks": () => new TrackService(),
+        "styles": () => new StyleService(),
+        "rhyme-techniques": () => new RhymeTechniqueService(),
+        "ai-providers": () => new AIProviderService(),
+        "ai-model-mappings": () => new AIModelMappingService(),
+        "ai-analysis-results": () => new AIAnalysisResultService(),
+        "personas": () => new PersonaService(),
+        "internal-tools": () => new InternalToolService(),
+        "persona-tool-access": () => new PersonaToolAccessService(),
+        "mcp-servers": () => new MCPServerService(),
+        "persona-mcp-servers": () => new PersonaMCPServerService(),
+        "chat-sessions": () => new ChatSessionService(),
+        "chat-messages": () => new ChatMessageService(),
+        "tool-invocation-logs": () => new ToolInvocationLogService(),
+        "file-categories": () => new FileCategoryService(),
+        "files": () => new FileService(),
+        "file-links": () => new FileLinkService(),
+    },
+    use: [],
+    layouts: {},
+    pages: {},
+    displayWidgets: {},
+    editWidgets: {},
+    dynamicWidgets: {},
+    packages: [
+        /*
+        {
+            service: [],
+            use: [],
+            layouts: {},
+            pages: {},
+            displayWidgets: {},
+            editWidgets: {},
+            dynamicWidgets: {},
+        }
+        */
+    ]
 };
 
 

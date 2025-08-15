@@ -16,5 +16,3 @@ class LayoutManager extends BaseWidgetManager {
 }
 
 export default new LayoutManager()
-
-

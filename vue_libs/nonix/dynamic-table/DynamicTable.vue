@@ -180,7 +180,7 @@ export default {
   
   data() {
     return {
-      tableManager: new DisplayWidgetManager(),
+      tableManager: DisplayWidgetManager,
       searchQuery: '',
       dateRange: null,
       selectedRows: [],
