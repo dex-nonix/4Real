@@ -38,7 +38,7 @@ const iterObject = (obj, callback) => {
         callback(key, obj[key]);
     }
 };
-const loadConfigObject = ({app, config}) => {
+const loadConfigObject = (app, config) => {
     iterArray(config.use, [app, "use"])
     iterObject(config.service, (key, value) => app.provide(key, value()));
     iterObject(config.layouts, (key, item) => LayoutManager.registerWidget(key, item.component, item.defaultProps));
@@ -54,6 +54,7 @@ export const mountNxApp = (target, config = {}) => {
     app.use(createRouter(config.routes));
     app.use(PrimeVue);
     app.use(ToastService);
-    loadConfigObject({app: app, config: config});
+    loadConfigObject(app, config);
+    iterObject( config.packages, (packageConfig)=> loadConfigObject(app, packageConfig));
     app.mount(target);
 };
