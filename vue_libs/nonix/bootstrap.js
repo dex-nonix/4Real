@@ -13,6 +13,7 @@ import DisplayWidgetManager from "@nonix/widget-manager/DisplayWidgetManager.js"
 import EditWidgetManager from "@nonix/widget-manager/EditWidgetManager.js";
 import DynamicWidgetManager from "@nonix/widget-manager/DynamicWidgetManager.js";
 import NotFound from "@/views/NotFound.vue";
+import Tooltip from "primevue/tooltip";
 
 
 const ensureCallback = callback => {
@@ -54,6 +55,7 @@ export const mountNxApp = (target, config = {}) => {
     app.use(createRouter(config.routes));
     app.use(PrimeVue);
     app.use(ToastService);
+    app.directive('tooltip', Tooltip);
     loadConfigObject(app, config);
     iterObject( config.packages, (packageConfig)=> loadConfigObject(app, packageConfig));
     app.mount(target);

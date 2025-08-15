@@ -22,20 +22,22 @@ import About from "@/views/About.vue";
 import DynamicFormExample from "@/views/DynamicFormExample.vue";
 import DynamicTableExample from "@/views/DynamicTableExample.vue";
 import Chat from "@/views/Chat.vue";
+import ChatExample from "@nonix-chat/_prototype/impl/ChatExample.vue";
 
 export const appConfig = {
 
     routes: [
 
         // Regular routes
-        {path: '/', name: 'home', component: Home, meta: {layout: 'master'}},
+        {path: '/', name: 'home', component: Home},
         {path: '/about', name: 'about', component: About, meta: {layout: 'alt'}},
-        {path: '/dynamic-form', name: 'dynamic-form', component: DynamicFormExample, meta: {layout: 'master'}},
-        {path: '/dynamic-table', name: 'dynamic-table', component: DynamicTableExample, meta: {layout: 'master'}},
-        {path: '/chat', name: 'chat', component: Chat, meta: {layout: 'master'}},
+        {path: '/dynamic-form', name: 'dynamic-form', component: DynamicFormExample},
+        {path: '/dynamic-table', name: 'dynamic-table', component: DynamicTableExample},
+        {path: '/chat', name: 'chat', component: Chat},
+        {path: '/chat2', name: 'chat', component: ChatExample},
 
         // Dynamic route
-        {type: "dynamic", path: '/dashboard', page: 'dashboard', meta: {layout: 'master'}},
+        {type: "dynamic", path: '/dashboard', page: 'dashboard'},
 
         // CRUD routes
         {type: "crud", entity: 'albums'},
