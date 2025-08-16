@@ -1,30 +1,30 @@
 {
   "base_information": {
-    "extraction_purpose": "Full Application Analysis",
-    "analysis_type": "Complete System Component Mapping",
-    "target_outcome": "Comprehensive application component catalog with business logic and enterprise patterns",
-    "focus_area": "Complete application with workflows, business logic, and enterprise integration",
-    "methodology": "Enterprise-level component analysis with business context understanding"
+    "extraction_purpose": "Full Application Analysis and Architecture Mapping",
+    "analysis_type": "Comprehensive Application Analysis",
+    "target_outcome": "Complete application understanding with business logic, workflows, and component architecture",
+    "focus_area": "Entire application structure, business context, and component ecosystem",
+    "methodology": "Holistic analysis covering all aspects of the application"
   },
   "extraction_goals": {
-    "primary_objective": "Create comprehensive application component catalog with business context",
+    "primary_objective": "Analyze the complete application architecture, business logic, and component ecosystem",
     "component_identification": [
-      "Identify all visible components across the entire application",
-      "Detect enterprise patterns and business workflows",
-      "Extract component hierarchies and complex relationships",
-      "Map business logic and user interaction patterns"
+      "Identify all application components and their purposes",
+      "Map business workflows and user journeys",
+      "Analyze component relationships and dependencies",
+      "Document application architecture patterns"
     ],
-    "application_analysis": [
-      "Analyze complete application structure and composition",
-      "Identify business workflows and user journey patterns",
-      "Document enterprise integration points and data flows",
-      "Map complete component ecosystem and relationships"
+    "catalog_creation": [
+      "Create comprehensive application component catalog",
+      "Map business logic and workflow patterns",
+      "Document application architecture and design patterns",
+      "Establish development and maintenance guidelines"
     ],
     "quality_metrics": [
-      "Complete application component coverage",
-      "Accurate business logic identification",
-      "Proper enterprise pattern recognition",
-      "Consistent workflow documentation"
+      "Complete application coverage",
+      "Accurate business logic mapping",
+      "Proper architecture documentation",
+      "Comprehensive component ecosystem understanding"
     ]
   },
   "frameworks": [
@@ -33,15 +33,15 @@
       "type": "ui_framework",
       "definitions": {
         "components": ["Card", "Button", "DataTable", "Panel", "InputText", "Dropdown", "Checkbox", "RadioButton", "Rating", "Slider", "Calendar", "FileUpload", "Message", "Toast", "Tooltip", "Accordion", "TabView", "Sidebar", "Menu", "Breadcrumb", "Paginator", "Tree", "TreeTable"],
-        "detection_rules": "Look for Vue components in the image, focusing on PrimeVue styling patterns and component structures"
+        "detection_rules": "Use PrimeVue components to create application architecture and business workflow elements"
       }
     },
     {
       "name": "PrimeFlex",
       "type": "css_framework",
       "definitions": {
-        "utility_classes": ["p-d-flex", "p-d-block", "p-d-none", "p-justify-start", "p-justify-center", "p-justify-end", "p-justify-between", "p-justify-around", "p-align-start", "p-align-center", "p-align-end", "p-m-0", "p-m-1", "p-m-2", "p-m-3", "p-m-4", "p-m-5", "p-m-6", "p-p-0", "p-p-1", "p-p-2", "p-p-3", "p-p-4", "p-p-5", "p-p-6", "p-mx-auto", "p-my-auto", "p-px-auto", "p-py-auto"],
-        "detection_rules": "Look for CSS utility classes with p- prefix in the image, focusing on layout, spacing, and flexbox utilities"
+        "utility_classes": ["flex", "flex-column", "flex-row", "justify-content-start", "justify-content-center", "justify-content-end", "justify-content-between", "justify-content-around", "align-items-start", "align-items-center", "align-items-end", "m-0", "m-1", "m-2", "m-3", "m-4", "m-5", "m-6", "p-0", "p-1", "p-2", "p-3", "p-4", "p-5", "p-6", "mx-auto", "my-auto", "px-auto", "py-auto"],
+        "detection_rules": "Use PrimeFlex utility classes throughout the application for consistent layout and styling"
       }
     },
     {
@@ -49,152 +49,77 @@
       "type": "icon_library",
       "definitions": {
         "icon_classes": ["pi-home", "pi-user", "pi-settings", "pi-search", "pi-plus", "pi-minus", "pi-edit", "pi-trash", "pi-eye", "pi-eye-slash", "pi-lock", "pi-unlock", "pi-check", "pi-times", "pi-arrow-left", "pi-arrow-right", "pi-arrow-up", "pi-arrow-down", "pi-calendar", "pi-clock", "pi-envelope", "pi-phone", "pi-map-marker", "pi-star", "pi-heart", "pi-thumbs-up", "pi-thumbs-down"],
-        "detection_rules": "Look for icon elements with pi- class prefix in the image, focusing on PrimeIcons styling and positioning"
-      }
-    },
-    {
-      "name": "Enterprise Custom Components",
-      "type": "custom_library",
-      "definitions": {
-        "custom_components": {
-          "BusinessWorkflowComponent": {
-            "description": "Components that represent business processes and workflows",
-            "purpose": "Map business logic and process flows",
-            "variants": ["Process Steps", "Workflow Stages", "Business Rules", "Decision Points"],
-            "business_logic": "Business process representation and workflow management",
-            "interactions": "Process navigation, stage progression, rule application",
-            "visual_patterns": "Workflow diagrams, process steps, business rule indicators",
-            "detection_rules": "Look for workflow components, process steps, and business rule indicators in the image"
-          },
-          "DataIntegrationComponent": {
-            "description": "Components that integrate with external systems and data sources",
-            "purpose": "Data integration and system connectivity",
-            "variants": ["API Connectors", "Data Feeds", "System Integrations", "Data Transformers"],
-            "business_logic": "External system integration and data flow management",
-            "interactions": "Data synchronization, system connectivity, data transformation",
-            "visual_patterns": "Integration indicators, data flow arrows, system connection points",
-            "detection_rules": "Look for integration components, data flow indicators, and system connection points in the image"
-          },
-          "EnterpriseSecurityComponent": {
-            "description": "Components that handle security, authentication, and permissions",
-            "purpose": "Security management and access control",
-            "variants": ["Authentication", "Authorization", "Role Management", "Permission Control"],
-            "business_logic": "Security policies and access control management",
-            "interactions": "Login, logout, role assignment, permission management",
-            "visual_patterns": "Security indicators, authentication forms, permission controls",
-            "detection_rules": "Look for security components, authentication forms, and permission controls in the image"
-          }
-        }
+        "detection_rules": "Use PrimeIcons across the application for navigation and user experience elements"
       }
     }
   ],
-  "technology_stack": {
-    "framework": "Vue 3",
-    "composition_api": "JavaScript Composition API",
-    "styling": "PrimeFlex CSS utilities",
-    "icons": "PrimeIcons library",
-    "components": "PrimeVue component library",
-    "enterprise_features": "Business logic, workflow management, system integration"
-  },
   "extraction_rules": {
-    "detection_priority": "complete_application_focus",
-    "analysis_depth": "enterprise_and_business_analysis",
+    "detection_priorities": {
+      "high_priority": ["Application architecture", "Business workflows", "Core functionality", "User experience patterns"],
+      "medium_priority": ["Component relationships", "Data flow patterns", "Navigation structure", "Interactive elements"],
+      "low_priority": ["Decorative elements", "Fine styling details", "Background patterns", "Visual effects"]
+    },
     "property_extraction": {
-      "required_properties": ["type", "position", "confidence", "color", "children"],
-      "optional_properties": ["additional_info", "validation", "interactions", "accessibility"],
-      "styling_properties": ["background", "text", "border", "shadow", "spacing"],
-      "behavior_properties": ["clickable", "hoverable", "draggable", "resizable"],
-      "business_properties": ["business_logic", "workflow_stage", "user_permissions", "data_sources"],
-      "enterprise_properties": ["integration_points", "security_features", "compliance_requirements", "scalability_features"]
+      "required_properties": ["type", "position", "confidence", "color", "children", "business_role"],
+      "optional_properties": ["additional_info", "business_logic", "workflow_state", "data_relationships", "user_experience"],
+      "styling_properties": ["background", "text", "border", "shadow", "spacing", "application_theme"],
+      "behavior_properties": ["clickable", "hoverable", "draggable", "resizable", "business_functionality"]
     },
-    "component_mapping": {
-      "business_workflows": "Map business processes and workflow components",
-      "enterprise_integration": "Document system integration and data flow components",
-      "security_components": "Identify security, authentication, and permission components",
-      "compliance_features": "Map compliance and regulatory requirement components"
+    "relationship_mapping": {
+      "parent_child": "Map application structure and component hierarchies",
+      "sibling_relationships": "Identify components at the same level in the application",
+      "business_relationships": "Connect components based on business logic and workflows",
+      "data_relationships": "Map data flow and component dependencies"
     }
   },
-  "business_context": {
-    "application_type": "Enterprise Business Application",
-    "primary_workflow": "Business Process Management → Data Integration → User Management → Compliance",
-    "user_roles": ["Business Users", "System Administrators", "Data Analysts", "Compliance Officers"],
-    "business_processes": {
-      "workflow_management": "Process Design → Execution → Monitoring → Optimization",
-      "data_integration": "Data Source → Transformation → Storage → Analysis",
-      "user_management": "Authentication → Authorization → Role Assignment → Permission Control",
-      "compliance_management": "Policy Definition → Implementation → Monitoring → Reporting"
+  "catalog_structure": {
+    "application_architecture": {
+      "purpose": "Document the complete application architecture and structure",
+      "structure": "Map application sections, workflows, and component organization",
+      "patterns": "Identify application design patterns and architectural approaches"
     },
-    "success_metrics": [
-      "Business process efficiency improvement",
-      "Data integration accuracy and reliability",
-      "User access control and security compliance",
-      "Regulatory compliance and audit readiness"
-    ]
-  },
-  "enterprise_analysis": {
-    "workflow_patterns": {
-      "purpose": "Identify and document business workflow patterns",
-      "patterns": ["Linear Workflows", "Branching Workflows", "Parallel Workflows", "Conditional Workflows"],
-      "detection": "Look for workflow components, process steps, and business rule indicators"
+    "business_logic": {
+      "purpose": "Map business logic and workflow patterns",
+      "workflows": "Document user journeys and business processes",
+      "rules": "Identify business rules and validation patterns"
     },
-    "integration_patterns": {
-      "purpose": "Analyze system integration and data flow patterns",
-      "patterns": ["API Integration", "Data Synchronization", "Event-Driven Integration", "Batch Processing"],
-      "detection": "Look for integration components, data flow indicators, and system connection points"
-    },
-    "security_patterns": {
-      "purpose": "Document security and access control patterns",
-      "patterns": ["Authentication", "Authorization", "Role-Based Access", "Permission Management"],
-      "detection": "Look for security components, authentication forms, and permission controls"
-    }
-  },
-  "application_structure": {
     "component_ecosystem": {
-      "purpose": "Map complete application component ecosystem",
-      "structure": "All components with business context and relationships",
-      "reusability": "Enterprise component reuse and standardization"
-    },
-    "business_integration": {
-      "purpose": "Document business logic and workflow integration",
-      "structure": "Business process components and workflow relationships",
-      "patterns": "Business workflow patterns and process management"
-    },
-    "enterprise_features": {
-      "purpose": "Map enterprise features and compliance requirements",
-      "structure": "Security, compliance, and scalability components",
-      "integration": "System integration and data flow management"
+      "purpose": "Document the complete component ecosystem and relationships",
+      "components": "Map all components and their purposes",
+      "relationships": "Document component dependencies and interactions"
     }
-  },
-  "output_structure": {
-    "format": "complete_application_catalog",
-    "structure": "Full application with business context and enterprise patterns",
-    "depth": "Enterprise-focused with business logic and workflow mapping",
-    "relationships": "Complete component ecosystem with business and technical relationships"
   },
   "extraction_adaptations": {
     "visual_analysis": [
-      "Complete application component recognition",
-      "Business workflow pattern detection",
-      "Enterprise feature identification",
-      "Integration point and data flow analysis"
+      "Application architecture and structure recognition",
+      "Business workflow and user journey analysis",
+      "Component ecosystem and relationship identification",
+      "Application design pattern recognition"
     ],
     "pattern_matching": [
-      "Multi-framework component signature recognition",
-      "Enterprise UI pattern identification",
-      "Business workflow pattern detection",
-      "Integration and security pattern recognition"
+      "PrimeVue component role identification in application context",
+      "PrimeFlex utility class usage pattern recognition across application",
+      "Application architecture and design pattern identification",
+      "Business logic and workflow pattern recognition"
     ],
     "quality_assurance": [
       "Complete application coverage validation",
-      "Business logic accuracy verification",
-      "Enterprise pattern recognition verification",
-      "Workflow and integration completeness validation"
+      "Accurate business logic mapping verification",
+      "Proper architecture documentation confirmation",
+      "Comprehensive component ecosystem understanding validation"
     ]
   },
-  "enterprise_focus": {
-    "business_workflows": "Identify and document business process workflows",
-    "system_integration": "Analyze system integration and data flow patterns",
-    "security_compliance": "Document security features and compliance requirements",
-    "scalability_features": "Identify scalability and performance optimization components"
+  "output_optimization": {
+    "application_format": "Comprehensive application documentation with business context",
+    "architecture_mapping": "Complete application architecture and design pattern documentation",
+    "business_logic_mapping": "Comprehensive business workflow and logic documentation",
+    "component_ecosystem": "Complete component ecosystem and relationship mapping",
+    "development_guidance": "Clear development and maintenance guidelines"
+  },
+  "full_application_focus": {
+    "holistic_analysis": "Focus on complete application understanding and architecture",
+    "business_context": "Analyze business logic, workflows, and user experience patterns",
+    "technical_architecture": "Map technical architecture, design patterns, and component relationships",
+    "development_guidance": "Provide comprehensive development and maintenance guidance"
   }
 }

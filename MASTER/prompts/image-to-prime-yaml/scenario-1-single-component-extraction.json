@@ -1,30 +1,30 @@
 {
   "base_information": {
-    "extraction_purpose": "Single Component Deep Analysis",
-    "analysis_type": "Focused Component Extraction",
-    "target_outcome": "Detailed single component definition with all properties and relationships",
-    "focus_area": "One specific component with comprehensive analysis",
-    "methodology": "Deep visual analysis of single component for detailed documentation"
+    "extraction_purpose": "Single Component Extraction and Analysis",
+    "analysis_type": "Focused UI Component Extraction",
+    "target_outcome": "Detailed analysis of a single UI component with maximum detail",
+    "focus_area": "Individual component deep dive with all properties and relationships",
+    "methodology": "Intensive visual analysis focused on one component"
   },
   "extraction_goals": {
-    "primary_objective": "Extract and analyze one specific component in detail",
+    "primary_objective": "Extract maximum detail from a single UI component",
     "component_identification": [
-      "Identify the target component by visual characteristics",
-      "Extract all visible properties and styling information",
-      "Map component internal structure and child elements",
+      "Identify the specific component type and variant",
+      "Extract all visual properties and styling details",
+      "Map internal component structure and child elements",
       "Document component behavior and interaction patterns"
     ],
-    "analysis_depth": [
-      "Complete property extraction including colors, sizes, positioning",
-      "Detailed child component mapping and nesting relationships",
-      "Styling analysis including CSS classes and visual patterns",
-      "Interaction behavior documentation and accessibility features"
+    "catalog_creation": [
+      "Create comprehensive component definition",
+      "Document all component variations and states",
+      "Map component relationships and dependencies",
+      "Establish component usage patterns and best practices"
     ],
     "quality_metrics": [
-      "100% component property completeness",
-      "Accurate child component identification",
-      "Precise styling and positioning data",
-      "Complete interaction pattern documentation"
+      "Maximum detail extraction for single component",
+      "Complete property documentation",
+      "Accurate relationship mapping",
+      "Comprehensive usage pattern identification"
     ]
   },
   "frameworks": [
@@ -33,15 +33,15 @@
       "type": "ui_framework",
       "definitions": {
         "components": ["Card", "Button", "DataTable", "Panel", "InputText", "Dropdown", "Checkbox", "RadioButton", "Rating", "Slider", "Calendar", "FileUpload", "Message", "Toast", "Tooltip", "Accordion", "TabView", "Sidebar", "Menu", "Breadcrumb", "Paginator", "Tree", "TreeTable"],
-        "detection_rules": "Look for Vue components in the image, focusing on PrimeVue styling patterns and component structures"
+        "detection_rules": "Use PrimeVue components to create UI elements, focusing on specific component types and implementation details"
       }
     },
     {
       "name": "PrimeFlex",
       "type": "css_framework",
       "definitions": {
-        "utility_classes": ["p-d-flex", "p-d-block", "p-d-none", "p-justify-start", "p-justify-center", "p-justify-end", "p-justify-between", "p-justify-around", "p-align-start", "p-align-center", "p-align-end", "p-m-0", "p-m-1", "p-m-2", "p-m-3", "p-m-4", "p-m-5", "p-m-6", "p-p-0", "p-p-1", "p-p-2", "p-p-3", "p-p-4", "p-p-5", "p-p-6", "p-mx-auto", "p-my-auto", "p-px-auto", "p-py-auto"],
-        "detection_rules": "Look for CSS utility classes with p- prefix in the image, focusing on layout, spacing, and flexbox utilities"
+        "utility_classes": ["flex", "flex-column", "flex-row", "justify-content-start", "justify-content-center", "justify-content-end", "justify-content-between", "justify-content-around", "align-items-start", "align-items-center", "align-items-end", "m-0", "m-1", "m-2", "m-3", "m-4", "m-5", "m-6", "p-0", "p-1", "p-2", "p-3", "p-4", "p-5", "p-6", "mx-auto", "my-auto", "px-auto", "py-auto"],
+        "detection_rules": "Use PrimeFlex utility classes for component layout, spacing, and styling when creating components"
       }
     },
     {
@@ -49,57 +49,77 @@
       "type": "icon_library",
       "definitions": {
         "icon_classes": ["pi-home", "pi-user", "pi-settings", "pi-search", "pi-plus", "pi-minus", "pi-edit", "pi-trash", "pi-eye", "pi-eye-slash", "pi-lock", "pi-unlock", "pi-check", "pi-times", "pi-arrow-left", "pi-arrow-right", "pi-arrow-up", "pi-arrow-down", "pi-calendar", "pi-clock", "pi-envelope", "pi-phone", "pi-map-marker", "pi-star", "pi-heart", "pi-thumbs-up", "pi-thumbs-down"],
-        "detection_rules": "Look for icon elements with pi- class prefix in the image, focusing on PrimeIcons styling and positioning"
+        "detection_rules": "Use PrimeIcons within components, following PrimeIcons positioning and styling patterns"
       }
     }
   ],
-  "technology_stack": {
-    "framework": "Vue 3",
-    "composition_api": "JavaScript Composition API",
-    "styling": "PrimeFlex CSS utilities",
-    "icons": "PrimeIcons library",
-    "components": "PrimeVue component library"
-  },
   "extraction_rules": {
-    "detection_priority": "single_component_focus",
-    "analysis_depth": "maximum_detail",
-    "property_extraction": {
-      "required_properties": ["type", "position", "confidence", "color", "children", "additional_info"],
-      "styling_properties": ["background", "text", "border", "shadow", "spacing", "typography", "layout"],
-      "behavior_properties": ["clickable", "hoverable", "draggable", "resizable", "focusable", "accessible"],
-      "relationship_properties": ["parent", "children", "siblings", "layout_context", "interaction_dependencies"]
+    "detection_priorities": {
+      "high_priority": ["Target component identification", "Component type and variant", "Internal structure and children"],
+      "medium_priority": ["Styling and visual properties", "Layout and positioning", "Interactive elements"],
+      "low_priority": ["Background elements", "Decorative details", "Spacing and margins"]
     },
-    "component_mapping": {
-      "internal_structure": "Map all child components and their relationships",
-      "styling_analysis": "Extract all CSS classes, colors, and visual properties",
-      "interaction_patterns": "Document all interactive behaviors and states",
-      "accessibility_features": "Identify ARIA labels, keyboard navigation, and screen reader support"
+    "property_extraction": {
+      "required_properties": ["type", "position", "confidence", "color", "children", "component_variant"],
+      "optional_properties": ["additional_info", "validation", "interactions", "accessibility", "state", "size", "theme"],
+      "styling_properties": ["background", "text", "border", "shadow", "spacing", "typography", "animations"],
+      "behavior_properties": ["clickable", "hoverable", "draggable", "resizable", "focusable", "keyboard_navigation"]
+    },
+    "relationship_mapping": {
+      "parent_child": "Map all child elements and their relationships within the component",
+      "sibling_relationships": "Identify elements at the same level within the component",
+      "layout_relationships": "Map internal layout structure, grid systems, and positioning",
+      "interaction_relationships": "Connect related interactive elements and their behaviors"
     }
   },
-  "output_structure": {
-    "format": "single_component_definition",
-    "structure": "One detailed component with all properties and children",
-    "depth": "Maximum detail including all visible and inferable properties",
-    "relationships": "Complete parent-child and sibling relationship mapping"
+  "catalog_structure": {
+    "component_definitions": {
+      "purpose": "Comprehensive single component definition with all details",
+      "structure": "Complete component specification including all variants and states",
+      "reusability": "Enable component reuse with full understanding of capabilities"
+    },
+    "instance_mapping": {
+      "purpose": "Document the specific component instance with all variations",
+      "variations": "Document all component variations, states, and customizations",
+      "positioning": "Record precise positioning and layout information"
+    },
+    "pattern_recognition": {
+      "component_patterns": "Identify component design patterns and implementation approaches",
+      "layout_patterns": "Recognize internal layout arrangements and structure",
+      "interaction_patterns": "Map component interaction behaviors and user experience patterns"
+    }
   },
   "extraction_adaptations": {
     "visual_analysis": [
-      "Component shape and size recognition with pixel-perfect accuracy",
-      "Color and styling pattern detection including gradients and shadows",
-      "Layout structure identification with precise positioning",
-      "Interactive element discovery with state indicators"
+      "Intensive component shape and size analysis",
+      "Detailed color and styling pattern detection",
+      "Comprehensive internal structure identification",
+      "Interactive element behavior analysis"
     ],
     "pattern_matching": [
-      "PrimeVue component signature recognition",
-      "PrimeFlex utility class identification",
-      "PrimeIcons icon class detection",
-      "Custom styling and layout pattern recognition"
+      "PrimeVue component signature deep analysis",
+      "PrimeFlex utility class comprehensive identification",
+      "PrimeIcons usage pattern recognition",
+      "Custom styling and layout pattern analysis"
     ],
     "quality_assurance": [
-      "100% component property completeness",
-      "Pixel-perfect positioning and sizing",
-      "Complete child component identification",
-      "Accurate relationship mapping"
+      "Maximum detail extraction validation",
+      "Complete property documentation verification",
+      "Accurate relationship mapping confirmation",
+      "Comprehensive pattern identification validation"
     ]
+  },
+  "output_optimization": {
+    "catalog_format": "Detailed JSON with maximum component information",
+    "component_references": "Use $ref system for reusable component definitions",
+    "instance_variations": "Document all component variations and customizations",
+    "relationship_mapping": "Comprehensive parent-child and sibling relationships",
+    "property_completeness": "Extract all visible, inferable, and contextual properties"
+  },
+  "single_component_focus": {
+    "depth_analysis": "Focus on maximum detail extraction for single component",
+    "comprehensive_mapping": "Map all aspects, properties, and relationships",
+    "pattern_identification": "Identify design patterns and implementation approaches",
+    "best_practices": "Document component usage patterns and best practices"
   }
 }

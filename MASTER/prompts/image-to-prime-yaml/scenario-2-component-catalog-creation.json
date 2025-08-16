@@ -1,30 +1,30 @@
 {
   "base_information": {
-    "extraction_purpose": "Component Catalog Creation",
-    "analysis_type": "Reusable Component Library Generation",
-    "target_outcome": "Comprehensive component catalog with reusable definitions and $ref system",
-    "focus_area": "All components with focus on reusability and template creation",
-    "methodology": "Pattern recognition and reusable component template generation"
+    "extraction_purpose": "Component Catalog Creation and Documentation",
+    "analysis_type": "Comprehensive UI Component Extraction",
+    "target_outcome": "Reusable component catalog with all component types and variations",
+    "focus_area": "Multiple component identification and catalog organization",
+    "methodology": "Systematic visual analysis for catalog creation"
   },
   "extraction_goals": {
-    "primary_objective": "Create reusable component catalog with template definitions",
+    "primary_objective": "Create comprehensive component catalog for reuse and development",
     "component_identification": [
-      "Identify all visible components and their visual characteristics",
-      "Detect repetitive component patterns for template creation",
+      "Identify all visible UI components and their types",
       "Extract component properties and styling information",
-      "Map component hierarchies and nesting relationships"
+      "Map component hierarchies and relationships",
+      "Document component variations and instances"
     ],
     "catalog_creation": [
-      "Generate reusable component templates with $ref system",
-      "Document component variations and instances",
-      "Create component relationship mappings for reuse",
-      "Establish component classification and organization system"
+      "Generate reusable component definitions",
+      "Create component classification system",
+      "Document component relationships and dependencies",
+      "Establish component usage patterns and best practices"
     ],
     "quality_metrics": [
-      "Accurate component type identification",
-      "Complete template property extraction",
-      "Proper $ref system implementation",
-      "Consistent reusable component structure"
+      "Complete component coverage",
+      "Accurate component classification",
+      "Proper relationship mapping",
+      "Consistent naming and documentation"
     ]
   },
   "frameworks": [
@@ -33,15 +33,15 @@
       "type": "ui_framework",
       "definitions": {
         "components": ["Card", "Button", "DataTable", "Panel", "InputText", "Dropdown", "Checkbox", "RadioButton", "Rating", "Slider", "Calendar", "FileUpload", "Message", "Toast", "Tooltip", "Accordion", "TabView", "Sidebar", "Menu", "Breadcrumb", "Paginator", "Tree", "TreeTable"],
-        "detection_rules": "Look for Vue components in the image, focusing on PrimeVue styling patterns and component structures"
+        "detection_rules": "Use PrimeVue components to create UI elements, focusing on component types and their variations"
       }
     },
     {
       "name": "PrimeFlex",
       "type": "css_framework",
       "definitions": {
-        "utility_classes": ["p-d-flex", "p-d-block", "p-d-none", "p-justify-start", "p-justify-center", "p-justify-end", "p-justify-between", "p-justify-around", "p-align-start", "p-align-center", "p-align-end", "p-m-0", "p-m-1", "p-m-2", "p-m-3", "p-m-4", "p-m-5", "p-m-6", "p-p-0", "p-p-1", "p-p-2", "p-p-3", "p-p-4", "p-p-5", "p-p-6", "p-mx-auto", "p-my-auto", "p-px-auto", "p-py-auto"],
-        "detection_rules": "Look for CSS utility classes with p- prefix in the image, focusing on layout, spacing, and flexbox utilities"
+        "utility_classes": ["flex", "flex-column", "flex-row", "justify-content-start", "justify-content-center", "justify-content-end", "justify-content-between", "justify-content-around", "align-items-start", "align-items-center", "align-items-end", "m-0", "m-1", "m-2", "m-3", "m-4", "m-5", "m-6", "p-0", "p-1", "p-2", "p-3", "p-4", "p-5", "p-6", "mx-auto", "my-auto", "px-auto", "py-auto"],
+        "detection_rules": "Use PrimeFlex utility classes for layout, spacing, and styling across components when creating them"
       }
     },
     {
@@ -49,83 +49,77 @@
       "type": "icon_library",
       "definitions": {
         "icon_classes": ["pi-home", "pi-user", "pi-settings", "pi-search", "pi-plus", "pi-minus", "pi-edit", "pi-trash", "pi-eye", "pi-eye-slash", "pi-lock", "pi-unlock", "pi-check", "pi-times", "pi-arrow-left", "pi-arrow-right", "pi-arrow-up", "pi-arrow-down", "pi-calendar", "pi-clock", "pi-envelope", "pi-phone", "pi-map-marker", "pi-star", "pi-heart", "pi-thumbs-up", "pi-thumbs-down"],
-        "detection_rules": "Look for icon elements with pi- class prefix in the image, focusing on PrimeIcons styling and positioning"
+        "detection_rules": "Use PrimeIcons throughout the interface, following established usage patterns"
       }
     }
   ],
-  "technology_stack": {
-    "framework": "Vue 3",
-    "composition_api": "JavaScript Composition API",
-    "styling": "PrimeFlex CSS utilities",
-    "icons": "PrimeIcons library",
-    "components": "PrimeVue component library"
-  },
   "extraction_rules": {
-    "detection_priority": "catalog_creation_focus",
-    "analysis_depth": "template_generation",
-    "property_extraction": {
-      "required_properties": ["type", "position", "confidence", "color", "children"],
-      "optional_properties": ["additional_info", "validation", "interactions", "accessibility"],
-      "styling_properties": ["background", "text", "border", "shadow", "spacing"],
-      "behavior_properties": ["clickable", "hoverable", "draggable", "resizable"],
-      "template_properties": ["reusable_patterns", "variation_points", "override_targets"]
+    "detection_priorities": {
+      "high_priority": ["Core UI components", "Navigation elements", "Main content areas", "Interactive components"],
+      "medium_priority": ["Secondary components", "Form controls", "Display elements", "Feedback components"],
+      "low_priority": ["Decorative elements", "Spacing components", "Background elements", "Utility components"]
     },
-    "component_mapping": {
-      "reusable_patterns": "Identify components that can be reused as templates",
-      "variation_analysis": "Document component variations and customization points",
-      "template_structure": "Create base templates with override capabilities",
-      "relationship_mapping": "Map component dependencies and composition patterns"
+    "property_extraction": {
+      "required_properties": ["type", "position", "confidence", "color", "children", "component_category"],
+      "optional_properties": ["additional_info", "validation", "interactions", "accessibility", "variants", "states"],
+      "styling_properties": ["background", "text", "border", "shadow", "spacing", "typography"],
+      "behavior_properties": ["clickable", "hoverable", "draggable", "resizable", "focusable"]
+    },
+    "relationship_mapping": {
+      "parent_child": "Map component containment and nesting relationships",
+      "sibling_relationships": "Identify components at the same level",
+      "layout_relationships": "Map grid, flexbox, and positioning relationships",
+      "functional_relationships": "Connect related functional components"
     }
   },
   "catalog_structure": {
     "component_definitions": {
-      "purpose": "Reusable component templates with all properties",
-      "structure": "Complete component specification including variation points",
-      "reusability": "Enable component reuse across different contexts with $ref system"
+      "purpose": "Reusable component templates for development",
+      "structure": "Organized component specifications with categories and types",
+      "reusability": "Enable component reuse across different contexts and applications"
     },
     "instance_mapping": {
-      "purpose": "Map actual component instances to their template definitions",
+      "purpose": "Map actual component instances to their definitions",
       "variations": "Document component variations and customizations",
-      "positioning": "Record spatial relationships and layout information",
-      "overrides": "Document customization points and override patterns"
+      "positioning": "Record spatial relationships and layout information"
     },
     "pattern_recognition": {
-      "repetitive_structures": "Identify repeated component patterns for template creation",
-      "layout_patterns": "Recognize common layout arrangements for reuse",
-      "interaction_patterns": "Map consistent interaction behaviors for templates",
-      "styling_patterns": "Identify reusable styling and theme patterns"
+      "repetitive_structures": "Identify repeated component patterns for reuse",
+      "layout_patterns": "Recognize common layout arrangements and structures",
+      "interaction_patterns": "Map consistent interaction behaviors and user experience patterns"
     }
-  },
-  "output_structure": {
-    "format": "component_catalog_with_templates",
-    "structure": "Definitions + Layout with $ref system",
-    "depth": "Template-focused with override capabilities",
-    "relationships": "Reusable component relationships and composition patterns"
   },
   "extraction_adaptations": {
     "visual_analysis": [
-      "Component shape and size recognition for template creation",
-      "Color and styling pattern detection for theme consistency",
-      "Layout structure identification for reusable patterns",
-      "Interactive element discovery for behavior templates"
+      "Comprehensive component identification across the interface",
+      "Pattern recognition for repeated components",
+      "Layout structure analysis and mapping",
+      "Component relationship and hierarchy identification"
     ],
     "pattern_matching": [
-      "PrimeVue component signature recognition",
-      "PrimeFlex utility class identification",
-      "PrimeIcons icon class detection",
-      "Reusable component pattern recognition"
+      "PrimeVue component signature recognition and classification",
+      "PrimeFlex utility class identification and usage patterns",
+      "PrimeIcons usage pattern recognition and documentation",
+      "Custom styling and layout pattern identification"
     ],
     "quality_assurance": [
-      "Template completeness and reusability validation",
-      "Override system implementation verification",
-      "Component relationship accuracy verification",
-      "Template naming convention consistency"
+      "Complete component coverage validation",
+      "Accurate component classification verification",
+      "Proper relationship mapping confirmation",
+      "Consistent naming and documentation validation"
     ]
   },
-  "reusability_focus": {
-    "template_generation": "Create base templates for all repeated components",
-    "variation_documentation": "Document all component variations and customization points",
-    "override_system": "Implement $ref system with precise override capabilities",
-    "composition_patterns": "Identify and document component composition patterns"
+  "output_optimization": {
+    "catalog_format": "Organized JSON structure for easy navigation and reuse",
+    "component_references": "Use $ref system for reusable component definitions",
+    "instance_variations": "Document component variations and customizations",
+    "relationship_mapping": "Clear parent-child and sibling relationships",
+    "property_completeness": "Extract all visible and inferable properties for each component"
+  },
+  "catalog_organization": {
+    "component_categories": "Organize components by type, function, and complexity",
+    "reusability_focus": "Prioritize components that can be reused across contexts",
+    "documentation_standards": "Maintain consistent documentation format and detail level",
+    "development_guidance": "Provide clear guidance for component implementation and usage"
   }
 }
