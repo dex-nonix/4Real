@@ -15,12 +15,71 @@ const sessions = ref([
 
 const allMessages = {
   1: [
-    { id: 101, text: "Hey, I'm finalizing the UI for the launch—color scheme is set, but I'm tweaking typography for all devices. What do you think of the mockups?", senderId: CURRENT_USER_ID, timestamp: '14:43', status: 'delivered' },
-    { id: 102, text: "Looks great, but button hover effects are lagging on older browsers—I'll optimize them. Let me know if you want to adjust the animation timing. 😉", senderId: 'user-esther', timestamp: '14:53', status: 'sent' },
-    { id: 103, text: "The design is solid, and I've updated the backend for launch, but there's a minor form validation issue on the contact page I'm fixing now.", senderId: CURRENT_USER_ID, timestamp: '14:53', status: 'pending' },
+    { 
+      id: 101, 
+      type: 'text',
+      text: "Hey, I'm finalizing the UI for the launch—color scheme is set, but I'm tweaking typography for all devices. What do you think of the mockups?", 
+      senderId: CURRENT_USER_ID, 
+      timestamp: '14:43', 
+      status: 'delivered' 
+    },
+    { 
+      id: 102, 
+      type: 'text',
+      text: "Looks great, but button hover effects are lagging on older browsers—I'll optimize them. Let me know if you want to adjust the animation timing. 😉", 
+      senderId: 'user-esther', 
+      timestamp: '14:53', 
+      status: 'sent' 
+    },
+    { 
+      id: 103, 
+      type: 'text',
+      text: "The design is solid, and I've updated the backend for launch, but there's a minor form validation issue on the contact page I'm fixing now.", 
+      senderId: CURRENT_USER_ID, 
+      timestamp: '14:53', 
+      status: 'pending' 
+    },
+    {
+      id: 104,
+      type: 'system',
+      text: 'Esther Howard joined the conversation',
+      senderId: 'system',
+      timestamp: '14:40'
+    },
+    {
+      id: 105,
+      type: 'tool',
+      text: 'Searching for design files...',
+      senderId: 'assistant',
+      timestamp: '14:42',
+      metadata: {
+        toolName: 'File Search',
+        toolParams: { query: 'design mockups', type: 'ui' },
+        executionStatus: 'success',
+        result: 'Found 3 design files in the project'
+      }
+    }
   ],
-  2: [ { id: 201, text: "Hi Jane, do you have the latest report?", senderId: CURRENT_USER_ID, timestamp: '11:20', status: 'sent' } ],
-  3: [ { id: 301, text: "Let's catch up later today.", senderId: 'user-cody', timestamp: '09:05', status: 'sent' } ],
+  2: [ 
+    { 
+      id: 201, 
+      type: 'text',
+      text: "Hi Jane, do you have the latest report?", 
+      senderId: CURRENT_USER_ID, 
+      timestamp: '11:20', 
+      status: 'sent' 
+    } 
+  ],
+  3: [ 
+    { 
+      id: 301, 
+      type: 'text',
+      text: "Let's catch up later today.", 
+      senderId: 'user-cody', 
+      timestamp: '09:05', 
+      status: 'sent' 
+    } 
+  ],
 };
 
 const activeMessages = ref(allMessages[1]);
@@ -33,6 +92,7 @@ const onSessionSelected = (sessionId) => {
 const onSendMessage = ({ sessionId, text }) => {
   const newMessage = {
     id: Date.now(),
+    type: 'text', // Default to text type for user messages
     text: text,
     senderId: CURRENT_USER_ID,
     timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
