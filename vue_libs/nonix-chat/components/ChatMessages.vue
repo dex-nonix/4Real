@@ -6,7 +6,10 @@
 <script setup>
 import { computed, onMounted } from 'vue';
 import chatMessageTypeManager from './ChatMessageTypeManager.js';
-import * as MessageTypes from './message-types/index.js';
+import TextMessage from './message-types/TextMessage.vue';
+import SystemMessage from './message-types/SystemMessage.vue';
+import ToolMessage from './message-types/ToolMessage.vue';
+import UserMessage from './message-types/UserMessage.vue';
 
 const props = defineProps({
   messages: {
@@ -22,10 +25,10 @@ const props = defineProps({
 
 // Register all message types with the manager
 onMounted(() => {
-  chatMessageTypeManager.registerMessageType('text', MessageTypes.TextMessage);
-  chatMessageTypeManager.registerMessageType('system', MessageTypes.SystemMessage);
-  chatMessageTypeManager.registerMessageType('tool', MessageTypes.ToolMessage);
-  chatMessageTypeManager.registerMessageType('user', MessageTypes.UserMessage);
+  chatMessageTypeManager.registerMessageType('text', TextMessage);
+  chatMessageTypeManager.registerMessageType('system', SystemMessage);
+  chatMessageTypeManager.registerMessageType('tool', ToolMessage);
+  chatMessageTypeManager.registerMessageType('user', UserMessage);
 });
 
 // Get the appropriate component for each message

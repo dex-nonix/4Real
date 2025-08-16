@@ -22,7 +22,7 @@ import About from "@/views/About.vue";
 import DynamicFormExample from "@/views/DynamicFormExample.vue";
 import DynamicTableExample from "@/views/DynamicTableExample.vue";
 import Chat from "@/views/Chat.vue";
-import ChatExample from "@nonix-chat/_prototype/impl/ChatExample.vue";
+import ChatExample from "@nonix-chat/components/ChatExample.vue";
 
 export const appConfig = {
 

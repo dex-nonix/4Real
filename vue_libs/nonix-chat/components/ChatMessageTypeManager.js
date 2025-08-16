@@ -1,5 +1,5 @@
 import { markRaw } from 'vue';
-import BaseWidgetManager from '../../../nonix/widget-manager/BaseWidgetManager.js';
+import BaseWidgetManager from '../../nonix/widget-manager/BaseWidgetManager.js';
 
 /**
  * ChatMessageTypeManager - Registry for managing different chat message type components
