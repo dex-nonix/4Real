@@ -7,9 +7,12 @@ def expose(
     summary: Optional[str] = None,
     description: Optional[str] = None,
     tags: Optional[List[str]] = None,
+    status_codes: Optional[Dict[int, str]] = None,
     request_dto: Optional[Type] = None,
     response_dto: Optional[Type] = None,
-    status_codes: Optional[Dict[int, str]] = None
+    # 🚀 NEW: Direct schema definition
+    request_schema: Optional[Dict[str, Any]] = None,
+    response_schema: Optional[Dict[str, Any]] = None
 ) -> Callable:
     """
     Enhanced decorator to expose service method as API route with OpenAPI metadata.
@@ -20,9 +23,11 @@ def expose(
         summary: Short description for OpenAPI
         description: Detailed description for OpenAPI
         tags: API grouping tags (e.g., ['Artists'])
-        request_dto: DTO class for request validation
-        response_dto: DTO class for response schema
+        request_dto: DTO class for request validation (legacy)
+        response_dto: DTO class for response schema (legacy)
         status_codes: HTTP status codes and descriptions
+        request_schema: Direct OpenAPI schema for request body
+        response_schema: Direct OpenAPI schema for response body
     """
     if methods is None:
         methods = ['GET']
@@ -40,6 +45,10 @@ def expose(
         setattr(func, '_request_dto', request_dto)
         setattr(func, '_response_dto', response_dto)
         setattr(func, '_status_codes', status_codes or {200: 'Success'})
+        
+        # 🚀 NEW: Direct schema support
+        setattr(func, '_request_schema', request_schema)
+        setattr(func, '_response_schema', response_schema)
         
         return func
     

@@ -34,13 +34,33 @@ class OpenAPIGenerator:
                 print(f"⏭️  Skipping service '{service_name}' (not in filter)")
                 continue
             print(f"✅ Processing service '{service_name}'")
+            
+            # Get service's Swagger definitions via to_swagger() method
+            if hasattr(service, 'to_swagger'):
+                service_swagger = service.to_swagger()
+                
+                # Add schemas to components
+                if 'schemas' in service_swagger:
+                    components["schemas"].update(service_swagger['schemas'])
+                
+                # Add tags
+                if 'tags' in service_swagger:
+                    tags.extend(service_swagger['tags'])
+                
+                # Add paths from service
+                if 'paths' in service_swagger:
+                    paths.update(service_swagger['paths'])
+            
+            # Process exposed methods for additional paths (fallback for services without to_swagger)
             for attr_name in dir(service):
                 method = getattr(service, attr_name)
                 if hasattr(method, '_exposed'):
-                    path_info = self._generate_path_info(service_name, method)
-                    paths.update(path_info)
+                    # Only generate paths if service doesn't provide them via to_swagger
+                    if not hasattr(service, 'to_swagger') or 'paths' not in service.to_swagger():
+                        path_info = self._generate_path_info(service_name, method)
+                        paths.update(path_info)
                     
-                    # Add DTO schemas to components
+                    # Add DTO schemas to components (backward compatibility)
                     if hasattr(method, '_request_dto') and method._request_dto:
                         schema_name = method._request_dto.__name__
                         components["schemas"][schema_name] = method._request_dto.model_json_schema()

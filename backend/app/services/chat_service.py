@@ -18,9 +18,10 @@ from ..models.ai_model_mapping import AIModelMapping
 from ..models.tool_invocation_log import ToolInvocationLog
 from .llm_client import run_chat
 from .tool_runtime import build_persona_tool_map, execute_tool, list_persona_tools
+from .base_api_service import BaseApiService
 
 
-class ChatService:
+class ChatService(BaseApiService):
     """Simple chat endpoints handling session lifecycle and message send."""
 
     # Helpers
@@ -79,7 +80,31 @@ class ChatService:
         return query.group_by(ChatSession.id)
 
     # Endpoints
-    @expose('/sessions', methods=['POST'], tags=["Chat"])
+    @expose(
+        '/sessions', 
+        methods=['POST'], 
+        tags=["Chat"],
+        status_codes={201: 'Created', 400: 'Bad Request'},
+        # 🚀 NEW: Define request/response types in decorator
+        request_schema={
+            "type": "object",
+            "properties": {
+                "persona_id": {"type": "integer", "description": "Persona ID"},
+                "session_name": {"type": "string", "description": "Session name"},
+                "session_icon": {"type": "string", "description": "Session icon"}
+            },
+            "required": ["persona_id"]
+        },
+        response_schema={
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer"},
+                "persona_id": {"type": "integer"},
+                "session_name": {"type": "string"},
+                "is_active": {"type": "boolean"}
+            }
+        }
+    )
     def create_session(self, req: Request):
         try:
             payload = req.get_json(silent=True) or {}
