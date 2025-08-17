@@ -4,6 +4,8 @@ import { ref, computed, watch, inject } from 'vue';
 import ChatHeader from './ChatHeader.vue';
 import ChatSessionBar from './ChatSessionBar.vue';
 import ChatMessageContainer from './ChatMessageContainer.vue';
+import PersonaSelectionDialog from './PersonaSelectionDialog.vue';
+import HistoryManagementDialog from './HistoryManagementDialog.vue';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
@@ -37,9 +39,41 @@ const currentUserId = ref('user-self');
 const errors = ref([]);
 const isLoading = ref(false);
 
+// Dialog state
+const showPersonaDialog = ref(false);
+const showHistoryDialog = ref(false);
+
 // Computed values with null safety - now using selectedSession
 const currentSession = computed(() => {
   return selectedSession.value;
+});
+
+// Get current history object from selectedSession and currentHistoryId
+const currentHistory = computed(() => {
+  if (!selectedSession.value?.histories || !currentHistoryId.value) {
+    return null;
+  }
+  
+  // Find the current history in the selected session's histories
+  return selectedSession.value.histories.find(history => history.id === currentHistoryId.value) || null;
+});
+
+// Get current persona object for ChatHeader
+const currentPersona = computed(() => {
+  if (currentSession.value?.persona) {
+    return currentSession.value.persona;
+  }
+  
+  // Fallback: create persona object from session data
+  if (currentSession.value?.persona_id && currentSession.value?.session_name) {
+    return {
+      id: currentSession.value.persona_id,
+      name: currentSession.value.session_name,
+      avatar_url: currentSession.value.avatar_url || null
+    };
+  }
+  
+  return null;
 });
 
 // Error handling utilities
@@ -291,10 +325,26 @@ const handleSendMessage = async (messageData) => {
   }
 };
 
-// Handle persona addition (placeholder for future functionality)
+// Handle persona addition - open persona selection dialog
 const handleAddPersona = () => {
-  addInfo('Persona addition not yet implemented');
-  console.log('Add persona functionality requested');
+  console.log('Opening persona selection dialog');
+  showPersonaDialog.value = true;
+};
+
+// Refresh sessions list from ChatSessionBar
+const refreshSessions = async () => {
+  try {
+    addInfo('Refreshing sessions...');
+    // Manually trigger a reload by calling the service
+    const response = await chatService.getSessions();
+    if (response?.data) {
+      handleSessionsLoaded(response);
+      console.log('Sessions refreshed via service call');
+    }
+  } catch (error) {
+    console.error('Failed to refresh sessions:', error);
+    addError('Failed to refresh sessions', error);
+  }
 };
 
 // Handle persona selection
@@ -308,14 +358,79 @@ const handlePersonaSelected = async (persona) => {
     
     if (response.data) {
       addSuccess(`Chat started with ${persona.name}`);
+      
+      // Close the persona dialog
+      showPersonaDialog.value = false;
+      
       // Refresh sessions to show the new one
-      // This will trigger a reload of the session list
+      await refreshSessions();
+      
+      // Auto-select the new session if it was created
+      if (response.data.id) {
+        console.log('Auto-selecting newly created session:', response.data.id);
+        await handleSessionSelected(response.data.id);
+      }
     }
   } catch (error) {
     console.error('Failed to start chat with persona:', error);
     addError(`Failed to start chat with ${persona.name}`, error);
   } finally {
     isLoading.value = false;
+  }
+};
+
+// Handle history view request
+const handleViewHistory = () => {
+  console.log('View history requested');
+  showHistoryDialog.value = true;
+};
+
+// Handle chat close request
+const handleCloseChat = () => {
+  console.log('Close chat requested');
+  addInfo('Close chat functionality not yet implemented');
+};
+
+// Handle history rename request
+const handleRenameHistory = async (historyId, newTitle) => {
+  try {
+    if (!currentSessionId.value) {
+      addError('No session selected for history rename');
+      return;
+    }
+    
+    addInfo('Renaming history...');
+    const response = await chatService.updateHistory(currentSessionId.value, historyId, { title: newTitle });
+    
+    if (response.data) {
+      addSuccess('History renamed successfully');
+      // Refresh the current session to get updated data
+      await handleSessionSelected(currentSessionId.value);
+    }
+  } catch (error) {
+    console.error('Failed to rename history:', error);
+    addError('Failed to rename history', error);
+  }
+};
+
+// Handle history selection from HistoryManagementDialog
+const handleHistorySelected = async (historyId) => {
+  try {
+    if (!currentSessionId.value) {
+      addError('No session selected for history selection');
+      return;
+    }
+    
+    console.log('History selected:', historyId);
+    currentHistoryId.value = historyId;
+    
+    // Close the history dialog
+    showHistoryDialog.value = false;
+    
+    addSuccess('History selected successfully');
+  } catch (error) {
+    console.error('Failed to select history:', error);
+    addError('Failed to select history', error);
   }
 };
 
@@ -336,6 +451,8 @@ defineExpose({
   handlePersonaSelected,
   clearErrors,
   currentSession,
+  currentPersona,
+  currentHistory,
   currentSessionId,
   currentHistoryId,
   selectedSession,
@@ -351,9 +468,13 @@ defineExpose({
   
   <div class="flex flex-column overflow-hidden" style="width: 1024px; height: 768px; border: 1px solid var(--surface-border)">
     <ChatHeader 
-      :persona="currentSession?.persona" 
+      :persona="currentPersona" 
       :current-session="currentSession"
+      :current-history="currentHistory"
       @add-persona="handleAddPersona"
+      @view-history="handleViewHistory"
+      @close-chat="handleCloseChat"
+      @rename-history="handleRenameHistory"
     />
 
     <div class="flex flex-row flex-1" style="min-height: 0;">
@@ -362,6 +483,8 @@ defineExpose({
         @session-selected="handleSessionSelected"
         @add-session="handleAddPersona"
         @sessions-loaded="handleSessionsLoaded"
+        @session-added="handleSessionAdded"
+        @session-removed="handleSessionRemoved"
         @error="(errorData) => addError(errorData.message, errorData.details)"
       />
       
@@ -425,6 +548,20 @@ defineExpose({
         </div>
       </div>
     </div>
+    
+    <!-- Persona Selection Dialog -->
+    <PersonaSelectionDialog
+      v-model:visible="showPersonaDialog"
+      @persona-selected="handlePersonaSelected"
+    />
+    
+    <!-- History Management Dialog -->
+    <HistoryManagementDialog
+      v-model:visible="showHistoryDialog"
+      :session-id="currentSessionId"
+      :current-history-id="currentHistoryId"
+      @history-selected="handleHistorySelected"
+    />
   </div>
 </template>
 

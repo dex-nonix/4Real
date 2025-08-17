@@ -28,22 +28,22 @@
 
       <div v-else class="histories-list">
         <div 
-          v-for="history in histories" 
-          :key="history.id"
+          v-for="historyItem in histories" 
+          :key="historyItem.id"
           class="history-item cursor-pointer p-2 border-round hover:surface-100"
-          :class="{ 'surface-100 border-left-2 border-blue-500': currentHistoryId === history.id }"
-          @click="selectHistory(history.id)"
+          :class="{ 'surface-100 border-left-2 border-blue-500': currentHistoryId === historyItem.id }"
+          @click="selectHistory(historyItem.id)"
         >
           <div class="flex justify-content-between align-items-center">
-            <span class="font-medium">{{ history.title }}</span>
-            <span class="text-xs text-500">{{ history.message_count }} messages</span>
+            <span class="font-medium">{{ historyItem.title }}</span>
+            <span class="text-xs text-500">{{ historyItem.message_count }} messages</span>
           </div>
           <div class="flex gap-2 mt-2">
             <Button 
               icon="pi pi-pencil" 
               size="small" 
               text 
-              @click.stop="editHistory(history)"
+              @click.stop="editHistory(historyItem)"
               v-tooltip.bottom="'Rename History'"
             />
             <Button 
@@ -51,7 +51,7 @@
               size="small" 
               text 
               severity="danger"
-              @click.stop="deleteHistory(history.id)"
+              @click.stop="deleteHistory(historyItem.id)"
               v-tooltip.bottom="'Delete History'"
             />
           </div>
@@ -141,6 +141,7 @@ const loadHistories = async () => {
   try {
     loading.value = true;
     const response = await chatService.getHistories(props.sessionId);
+    
     // Handle ChatService response structure: {data: Array, total: number}
     histories.value = response.data || [];
   } catch (error) {
@@ -190,13 +191,25 @@ const confirmCreateHistory = async () => {
 };
 
 const editHistory = (history) => {
+  if (!history.id) {
+    console.error('History object missing ID:', history);
+    return;
+  }
+  
   editingHistory.value = history;
   editHistoryTitle.value = history.title;
   showEditHistoryDialog.value = true;
 };
 
 const confirmEditHistory = async () => {
-  if (!editHistoryTitle.value.trim() || !editingHistory.value) return;
+  if (!editHistoryTitle.value.trim() || !editingHistory.value) {
+    return;
+  }
+  
+  if (!editingHistory.value.id) {
+    console.error('History object missing ID:', editingHistory.value);
+    return;
+  }
   
   try {
     await chatService.updateHistory(props.sessionId, editingHistory.value.id, {

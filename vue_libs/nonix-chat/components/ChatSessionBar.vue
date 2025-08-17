@@ -9,7 +9,7 @@ const props = defineProps({
   currentSessionId: { type: [String, Number, null], required: false, default: null }
 });
 
-const emit = defineEmits(['sessionSelected', 'sessionAdded', 'sessionRemoved', 'sessionsLoaded', 'error', 'addSession']);
+const emit = defineEmits(['session-selected', 'session-added', 'session-removed', 'sessions-loaded', 'error', 'add-session']);
 
 // Service injection
 const chatService = inject('chat-service');
@@ -44,14 +44,14 @@ const loadSessions = async () => {
     console.log('Processed sessions in ChatSessionBar:', actualSessions);
     
     // Emit sessions loaded event for tab-based architecture
-    emit('sessionsLoaded', response); // Emit the full response for parent to process
+    emit('sessions-loaded', response); // Emit the full response for parent to process
     
     // Don't auto-select here - let parent handle it
   } catch (error) {
     console.error('Failed to load sessions:', error);
     sessions.value = [];
     // Emit empty sessions array even on error
-    emit('sessionsLoaded', []);
+    emit('sessions-loaded', []);
     // Emit error for parent component
     emit('error', {
       message: 'Failed to load sessions',
@@ -72,10 +72,10 @@ const createSession = async (personaId, sessionName) => {
     sessions.value.push(newSession);
     
     // Emit session added event
-    emit('sessionAdded', newSession);
+    emit('session-added', newSession);
     
     // Select the new session
-    emit('sessionSelected', newSession.id);
+    emit('session-selected', newSession.id);
     
     return newSession;
   } catch (error) {
@@ -100,7 +100,7 @@ const deleteSession = async (sessionId) => {
     }
     
     // Emit session removed event
-    emit('sessionRemoved', sessionId);
+    emit('session-removed', sessionId);
     
     return true;
   } catch (error) {
@@ -151,12 +151,12 @@ const getAvatarDisplay = (session) => {
 
 // Handle session selection
 const handleSessionSelected = (sessionId) => {
-  emit('sessionSelected', sessionId);
+  emit('session-selected', sessionId);
 };
 
 // Handle add session (opens persona selection)
 const handleAddSession = () => {
-  emit('addSession');
+  emit('add-session');
 };
 </script>
 
