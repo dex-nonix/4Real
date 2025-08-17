@@ -7,7 +7,15 @@
     header="Select Persona to Chat With"
     :style="{ width: '600px' }"
   >
-    <div class="personas-grid">
+    <div v-if="loading" class="flex justify-content-center p-4">
+      <ProgressSpinner />
+    </div>
+    
+    <div v-else-if="personas.length === 0" class="flex justify-content-center p-4">
+      <span class="text-500">No personas available</span>
+    </div>
+    
+    <div v-else class="personas-grid">
       <div 
         v-for="persona in personas" 
         :key="persona.id"
@@ -45,13 +53,44 @@
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 import Avatar from 'primevue/avatar';
+import ProgressSpinner from 'primevue/progressspinner';
+import { ref, watch } from 'vue';
+import ChatRuntimeService from '../services/ChatRuntimeService.js';
 
 const props = defineProps({
-  visible: { type: Boolean, required: true },
-  personas: { type: Array, required: true, default: () => [] }
+  visible: { type: Boolean, required: true }
 });
 
 const emit = defineEmits(['update:visible', 'personaSelected']);
+
+// Service
+const chatService = new ChatRuntimeService();
+
+// State
+const personas = ref([]);
+const loading = ref(false);
+
+// Load personas when dialog opens
+const loadPersonas = async () => {
+  try {
+    loading.value = true;
+    const response = await chatService.getPersonas();
+    // Handle CRUD response structure: {data: Array, pagination: {...}}
+    personas.value = response.data?.data || response.data || [];
+  } catch (error) {
+    console.error('Failed to load personas:', error);
+    personas.value = [];
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Watch for dialog visibility and load data
+watch(() => props.visible, (newVisible) => {
+  if (newVisible) {
+    loadPersonas();
+  }
+});
 
 const updateVisible = (value) => {
   emit('update:visible', value);

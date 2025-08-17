@@ -3,40 +3,31 @@
     <!-- Persona Selection Dialog -->
     <PersonaSelectionDialog
       v-model:visible="showPersonaDialog"
-      :personas="personas"
       @persona-selected="handlePersonaSelected"
     />
 
-    <!-- History Management Panel -->
-    <Sidebar 
-      v-model:visible="showHistoryPanel" 
-      position="right" 
-      :style="{ width: '400px' }"
-    >
-      <HistoryManagementPanel
-        v-if="currentSession"
-        :histories="currentSession.histories || []"
-        :current-history-id="currentHistoryId"
-        :session-id="currentSessionId"
-        @history-selected="handleHistorySelected"
-        @create-history="handleCreateHistory"
-        @update-history="handleUpdateHistory"
-        @delete-history="handleDeleteHistory"
-      />
-    </Sidebar>
+    <!-- History Management Dialog -->
+    <HistoryManagementDialog
+      v-if="currentSessionId"
+      v-model:visible="showHistoryDialog"
+      :session-id="currentSessionId"
+      @history-selected="handleHistorySelected"
+      @create-history="handleCreateHistory"
+      @update-history="handleUpdateHistory"
+      @delete-history="handleDeleteHistory"
+    />
 
     <Chat
-      :personas="personas"
-      :current-persona-id="currentPersonaId"
+      :sessions="sessions"
       :current-session-id="currentSessionId"
       :current-history-id="currentHistoryId"
       :current-user-id="currentUserId"
-      @persona-selected="handlePersonaSelected"
+      :messages="messages"
       @session-selected="handleSessionSelected"
       @history-selected="handleHistorySelected"
       @sendMessage="handleSendMessage"
       @closeChat="handleCloseChat"
-      @viewHistory="showHistoryPanel = true"
+      @viewHistory="showHistoryDialog = true"
       @renameHistory="handleRenameHistory"
       @addPersona="showPersonaDialog = true"
     />
@@ -47,9 +38,9 @@
 import { ref, computed, onMounted } from 'vue'
 import Chat from './components/Chat.vue'
 import PersonaSelectionDialog from './components/PersonaSelectionDialog.vue'
-import HistoryManagementPanel from './components/HistoryManagementPanel.vue'
-import Sidebar from 'primevue/sidebar'
+import HistoryManagementDialog from './components/HistoryManagementDialog.vue'
 import ChatRuntimeService from './services/ChatRuntimeService.js'
+import { useToast } from 'primevue/usetoast'
 
 const props = defineProps({
   instanceId: { type: String, required: true },
@@ -68,9 +59,12 @@ defineEmits(['update:sessionId','tab-open','tab-close','message-sent','retry','e
 // Backend service
 const chatService = new ChatRuntimeService()
 
-// State
-const personas = ref([])
-const currentPersonaId = ref(null)
+// Toast for error notifications
+const toast = useToast()
+
+// State - FLAT DATA STRUCTURE (NO NESTED CRAP!)
+const sessions = ref([])
+const messages = ref([])
 const currentSessionId = ref(null)
 const currentHistoryId = ref(null)
 const currentUserId = ref('user-self')
@@ -78,183 +72,204 @@ const loading = ref(false)
 
 // UI State
 const showPersonaDialog = ref(false)
-const showHistoryPanel = ref(false)
+const showHistoryDialog = ref(false)
 
 // Computed values
-const currentPersona = computed(() => {
-  return personas.value.find(p => p.id === currentPersonaId.value)
-})
-
 const currentSession = computed(() => {
-  return currentPersona.value?.sessions.find(s => s.id === currentSessionId.value)
+  if (!currentSessionId.value) return null
+  return sessions.value.find(s => s.id === currentSessionId.value)
 })
 
-const currentHistory = computed(() => {
-  return currentSession.value?.histories.find(h => h.id === currentHistoryId.value)
-})
-
-// Load personas from backend
-const loadPersonas = async () => {
+// Load flat data from CRUD endpoints (NO NESTED CRAP!)
+const loadSessions = async () => {
   try {
     loading.value = true
-    const response = await chatService.getPersonas()
-    personas.value = response.data?.data || response.data || []
+    const response = await chatService.getSessions()
+    // Handle CRUD response structure: {data: Array, pagination: {...}}
+    sessions.value = response.data?.data || response.data || []
     
-    if (personas.value.length > 0 && !currentPersonaId.value) {
-      currentPersonaId.value = personas.value[0].id
-      if (personas.value[0].sessions?.length > 0) {
-        currentSessionId.value = personas.value[0].sessions[0].id
-        if (personas.value[0].sessions[0].current_history_id) {
-          currentHistoryId.value = personas.value[0].sessions[0].current_history_id
-        }
-      }
+    if (sessions.value.length > 0 && !currentSessionId.value) {
+      currentSessionId.value = sessions.value[0].id
     }
   } catch (error) {
-    console.error('Failed to load personas:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Failed to Load Sessions',
+      detail: error.message || 'Could not load sessions',
+      life: 5000
+    })
   } finally {
     loading.value = false
   }
 }
 
+const loadMessages = async (historyId) => {
+  try {
+    const response = await chatService.getHistoryMessages(historyId)
+    // Handle CRUD response structure: {data: Array, pagination: {...}}
+    messages.value = response.data?.data || response.data || []
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Failed to Load Messages',
+      detail: error.message || 'Could not load messages',
+      life: 5000
+    })
+  }
+}
+
 // Event handlers
 const handlePersonaSelected = async (persona) => {
-  currentPersonaId.value = persona.id
+  // PersonaSelectionDialog handles everything - just close it
+  showPersonaDialog.value = false
   
-  // If persona has sessions, select the first one
-  if (persona.sessions?.length > 0) {
-    currentSessionId.value = persona.sessions[0].id
-    if (persona.sessions[0].current_history_id) {
-      currentHistoryId.value = persona.sessions[0].current_history_id
-    } else if (persona.sessions[0].histories?.length > 0) {
-      currentHistoryId.value = persona.sessions[0].histories[0].id
-    }
-  } else {
-    // Create new session for this persona
-    try {
-      const response = await chatService.createSession(persona.id, `Chat with ${persona.name}`)
-      const newSession = response.data?.data || response.data
-      currentSessionId.value = newSession.id
-      if (newSession.current_history_id) {
-        currentHistoryId.value = newSession.current_history_id
-      }
-      // Reload personas to get updated session list
-      await loadPersonas()
-    } catch (error) {
-      console.error('Failed to create session:', error)
-    }
+  // CREATE NEW SESSION for this persona
+  try {
+    const sessionResponse = await chatService.createSession(persona.id, `Chat with ${persona.name}`)
+    const newSession = sessionResponse.data
+    
+    // Set as current session
+    currentSessionId.value = newSession.id
+  } catch (error) {
+    // Show error to user instead of swallowing it
+    toast.add({
+      severity: 'error',
+      summary: 'Session Creation Failed',
+      detail: error.message || 'Failed to create new session',
+      life: 5000
+    })
+    return
+  }
+  
+  // Reload sessions to get any new ones
+  try {
+    await loadSessions()
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Session Reload Failed',
+      detail: error.message || 'Failed to reload sessions',
+      life: 5000
+    })
   }
 }
 
 const handleSessionSelected = async (sessionId) => {
   currentSessionId.value = sessionId
-  const session = currentPersona.value?.sessions.find(s => s.id === sessionId)
-  if (session?.current_history_id) {
-    currentHistoryId.value = session.current_history_id
-  } else if (session?.histories?.length > 0) {
-    currentHistoryId.value = session.histories[0].id
-  }
 }
 
 const handleHistorySelected = async (historyId) => {
   currentHistoryId.value = historyId
+  await loadMessages(historyId)
+  
+  // Close history dialog
+  showHistoryDialog.value = false
+  
   // Activate this history in the backend
   try {
-    await chatService.activateHistory(currentSessionId.value, historyId)
+    await chatService.updateSession(currentSessionId.value, {
+      current_history_id: historyId
+    })
   } catch (error) {
-    console.error('Failed to activate history:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Failed to Activate History',
+      detail: error.message || 'Could not activate history',
+      life: 5000
+    })
   }
 }
 
 const handleCreateHistory = async (sessionId, title) => {
   try {
     const response = await chatService.createHistory(sessionId, title)
-    const newHistory = response.data?.data || response.data
+    const newHistory = response.data
     currentHistoryId.value = newHistory.id
-    // Reload personas to get updated history list
-    await loadPersonas()
   } catch (error) {
-    console.error('Failed to create history:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Failed to Create History',
+      detail: error.message || 'Could not create history',
+      life: 5000
+    })
   }
 }
 
-const handleUpdateHistory = async (sessionId, historyId, title) => {
+const handleUpdateHistory = async (historyId, title, summary) => {
   try {
-    await chatService.updateHistory(sessionId, historyId, title)
-    // Reload personas to get updated data
-    await loadPersonas()
+    await chatService.updateHistory(historyId, {
+      title: title,
+      summary: summary
+    })
   } catch (error) {
-    console.error('Failed to update history:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Failed to Update History',
+      detail: error.message || 'Could not update history',
+      life: 5000
+    })
   }
 }
 
-const handleDeleteHistory = async (sessionId, historyId) => {
+const handleDeleteHistory = async (historyId) => {
   try {
-    await chatService.deleteHistory(sessionId, historyId)
-    // Reload personas to get updated data
-    await loadPersonas()
+    await chatService.deleteHistory(historyId)
     
-    // If we deleted the current history, select another one
+    // If we deleted the current history, clear it
     if (currentHistoryId.value === historyId) {
-      const session = currentPersona.value?.sessions.find(s => s.id === sessionId)
-      if (session?.histories?.length > 0) {
-        currentHistoryId.value = session.histories[0].id
-      } else {
-        currentHistoryId.value = null
-      }
+      currentHistoryId.value = null
+      messages.value = []
     }
   } catch (error) {
-    console.error('Failed to delete history:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Failed to Delete History',
+      detail: error.message || 'Could not delete history',
+      life: 5000
+    })
   }
 }
 
-const handleSendMessage = async ({ historyId, text }) => {
+const handleSendMessage = async (messageData) => {
+  if (!currentHistoryId.value) return
+  
   try {
-    // Send message to backend
-    const response = await chatService.sendMessageToHistory(currentSessionId.value, historyId, text)
+    const response = await chatService.sendMessageToHistory(currentHistoryId.value, messageData)
     
-    // Reload personas to get updated message count
-    await loadPersonas()
+    // Reload messages to get the new message
+    await loadMessages(currentHistoryId.value)
     
+    // Emit the message sent event
+    emit('message-sent', response.data)
   } catch (error) {
-    console.error('Failed to send message:', error)
-  }
-}
-
-const handleRenameHistory = async (historyId, newTitle) => {
-  try {
-    await chatService.updateHistory(currentSessionId.value, historyId, newTitle)
-    // Reload personas to get updated data
-    await loadPersonas()
-  } catch (error) {
-    console.error('Failed to rename history:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Failed to Send Message',
+      detail: error.message || 'Could not send message',
+      life: 5000
+    })
   }
 }
 
 const handleCloseChat = () => {
-  console.log('Chat closed')
+  // Handle chat close
+  emit('closeChat')
 }
 
-const handleAddPersona = () => {
-  showPersonaDialog.value = true
+const handleRenameHistory = async (historyId, newTitle) => {
+  await handleUpdateHistory(historyId, newTitle)
 }
 
-// Initialize
+// Initialize - ONLY SESSIONS!
 onMounted(async () => {
-  await loadPersonas()
-  
-  if (props.initialPersonaId) {
-    currentPersonaId.value = props.initialPersonaId
-  }
-  
-  if (props.initialSessionId) {
-    currentSessionId.value = props.initialSessionId
-  }
+  await loadSessions()
 })
 </script>
 
 <style scoped>
-.chat-widget { 
-  width: 100%; 
+.chat-widget {
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 </style>

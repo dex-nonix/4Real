@@ -18,8 +18,8 @@ const getAvatarDisplay = (session) => {
     return { image: session.avatar_url, fallback: null };
   }
   
-  // Try to get initials from session name, or persona name, or fallback
-  const name = session.session_name || session.persona_name || '??';
+  // Use session name for initials since we have flat sessions
+  const name = session.session_name || '??';
   const initials = name.substring(0, 2).toUpperCase();
   return { image: null, fallback: initials };
 };

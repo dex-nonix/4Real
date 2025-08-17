@@ -1,93 +1,96 @@
 import BaseApiService from '@nonix/services/BaseApiService.js'
 
 export default class ChatRuntimeService extends BaseApiService {
-  // Get all personas with their sessions
-  getPersonas() {
-    return this.get('/chat/personas')
+  // Generic CRUD endpoints for flat data (NO NESTED CRAP!)
+  
+  // Get all sessions (flat)
+  async getSessions() {
+    const response = await this.get('/chat-sessions')
+    return response
   }
 
-  // Get all sessions for a specific persona
-  getSessions(personaId) {
-    return this.get(`/chat/personas/${encodeURIComponent(personaId)}/sessions`)
+  // Get sessions for specific persona
+  async getSessionsByPersona(personaId) {
+    const response = await this.get(`/chat-sessions?persona_id=${personaId}`)
+    return response
   }
 
-  // Create new session with persona
-  createSession(personaId, sessionName, sessionIcon) {
-    return this.post(`/chat/personas/${encodeURIComponent(personaId)}/start-chat`, {
+  // Create new session
+  async createSession(personaId, sessionName, sessionIcon) {
+    const response = await this.post('/chat-sessions', {
+      persona_id: personaId,
       session_name: sessionName,
       session_icon: sessionIcon
     })
+    return response
   }
 
-  // Get histories within a session
-  getHistories(sessionId) {
-    return this.get(`/chat-histories?session_id=${encodeURIComponent(sessionId)}`)
+  // Get histories for session (flat)
+  async getHistories(sessionId) {
+    const response = await this.get(`/chat-histories?session_id=${sessionId}`)
+    return response
   }
 
-  // Create new history within session
-  createHistory(sessionId, title) {
-    return this.post(`/chat-histories`, {
+  // Create new history
+  async createHistory(sessionId, title) {
+    const response = await this.post('/chat-histories', {
       session_id: sessionId,
       title: title
     })
+    return response
   }
 
-  // Get messages from specific history
-  getHistoryMessages(sessionId, historyId) {
-    return this.get(`/chat-messages?history_id=${encodeURIComponent(historyId)}`)
+  // Get messages for history (flat)
+  async getHistoryMessages(historyId) {
+    const response = await this.get(`/chat-messages?history_id=${historyId}`)
+    return response
   }
 
-  // Send message to specific history
-  sendMessageToHistory(sessionId, historyId, content) {
-    return this.post(`/chat-messages`, {
+  // Send message to history
+  async sendMessageToHistory(historyId, content) {
+    const response = await this.post('/chat-messages', {
       history_id: historyId,
       role: 'user',
       message_type: 'text',
       content_json: content
     })
+    return response
   }
 
-  // Activate a different history
-  activateHistory(sessionId, historyId) {
-    return this.put(`/chat-sessions/${encodeURIComponent(sessionId)}`, {
-      current_history_id: historyId
-    })
+  // Update session (e.g., set current history)
+  async updateSession(sessionId, data) {
+    const response = await this.put(`/chat-sessions/${sessionId}`, data)
+    return response
   }
 
-  // Update history (rename)
-  updateHistory(sessionId, historyId, title, summary) {
-    return this.put(`/chat-histories/${encodeURIComponent(historyId)}`, {
-      title: title,
-      summary: summary
-    })
+  // Update history
+  async updateHistory(historyId, data) {
+    const response = await this.put(`/chat-histories/${historyId}`, data)
+    return response
   }
 
   // Delete history
-  deleteHistory(sessionId, historyId) {
-    return this.delete(`/chat-histories/${encodeURIComponent(historyId)}`)
+  async deleteHistory(historyId) {
+    const response = await this.delete(`/chat-histories/${historyId}`)
+    return response
   }
 
-  // Legacy methods (keep for compatibility)
-  listSessions(params = {}) {
-    return this.get('/chat-sessions', { query: params })
-  }
-
-  getSession(id) {
-    return this.get(`/chat-sessions/${encodeURIComponent(id)}`)
-  }
-
-  send(sessionId, content) {
-    return this.post(`/chat-sessions/${encodeURIComponent(sessionId)}/send`, { content })
+  // Legacy methods for backward compatibility
+  async getPersonas() {
+    const response = await this.get('/personas')
+    return response
   }
 
   // Persona tools
-  personaTools(personaId) {
-    return this.get(`/chat/personas/${encodeURIComponent(personaId)}/tools`)
+  async personaTools(personaId) {
+    const response = await this.get(`/chat/personas/${encodeURIComponent(personaId)}/tools`)
+    return response
   }
 
   // MCP status
-  mcpStatus() {
-    return this.get('/chat/mcp/servers/status')
+  async mcpStatus() {
+    const response = await this.get('/chat/mcp/servers/status')
+    return response
   }
 }
 
