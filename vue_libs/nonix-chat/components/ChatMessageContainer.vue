@@ -10,6 +10,7 @@ import Button from 'primevue/button';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import chatMessageTypeManager from './ChatMessageTypeManager.js';
+import MessageContainer from './message-types/MessageContainer.vue';
 import TextMessage from './message-types/TextMessage.vue';
 import SystemMessage from './message-types/SystemMessage.vue';
 import ToolMessage from './message-types/ToolMessage.vue';
@@ -38,7 +39,7 @@ const mockupMessages = ref([
   {
     id: 'mock-1',
     message_type: 'text',
-    content_json: 'This is a regular text message from the user',
+    content_json: 'This is a regular text message from the user with some longer content to test text wrapping and layout.',
     role: 'user',
     created_at: '2025-01-27T10:00:00',
     senderId: 'user-1'
@@ -60,15 +61,15 @@ const mockupMessages = ref([
     senderId: 'assistant',
     metadata: {
       toolName: 'File Search',
-      toolParams: { query: 'design files', type: 'ui' },
+      toolParams: { query: 'design files', type: 'ui', recursive: true },
       executionStatus: 'success',
-      result: 'Found 3 design files in the project'
+      result: 'Found 3 design files in the project: design-v1.sketch, design-v2.figma, design-v3.xd'
     }
   },
   {
     id: 'mock-4',
     message_type: 'user',
-    content_json: 'This is a user message with validation',
+    content_json: 'This is a user message with validation metadata and avatar information.',
     role: 'user',
     created_at: '2025-01-27T10:03:00',
     senderId: 'user-2',
@@ -77,6 +78,14 @@ const mockupMessages = ref([
       userAvatar: 'https://randomuser.me/api/portraits/men/32.jpg',
       isValid: true
     }
+  },
+  {
+    id: 'mock-5',
+    message_type: 'text',
+    content_json: 'This is another text message to show multiple messages of the same type.',
+    role: 'user',
+    created_at: '2025-01-27T10:04:00',
+    senderId: 'user-1'
   }
 ]);
 
@@ -282,12 +291,21 @@ const canSendMessage = computed(() => hasHistory.value && inputText.value?.trim(
           Debug: ID={{ message.id }}, Type={{ message.message_type || 'undefined' }}, Role={{ message.role }}, Content={{ message.content || message.content_json || 'no content' }}
         </div>
         
-        <component
-          :is="getMessageComponent(message)"
+        <!-- Use MessageContainer wrapper for consistent styling -->
+        <MessageContainer
           v-if="hasValidMessageType(message)"
           :message="message"
           :currentUserId="currentUserId"
-        />
+        >
+          <template #content>
+            <component
+              :is="getMessageComponent(message)"
+              :message="message"
+              :currentUserId="currentUserId"
+            />
+          </template>
+        </MessageContainer>
+        
         <div v-else class="p-3 text-center text-color-secondary">
           <i class="pi pi-exclamation-triangle mr-2"></i>
           Unknown message type: {{ message.message_type || 'undefined' }}
