@@ -33,20 +33,25 @@ onMounted(() => {
 
 // Get the appropriate component for each message
 const getMessageComponent = (message) => {
-  const messageType = message.type || 'text';
+  const messageType = message.message_type || 'text';
   return chatMessageTypeManager.getMessageType(messageType);
 };
 
 // Check if message has a valid type
 const hasValidMessageType = (message) => {
-  const messageType = message.type || 'text';
+  const messageType = message.message_type || 'text';
   return chatMessageTypeManager.hasMessageType(messageType);
 };
 </script>
 
 <template>
   <div class="flex-1 p-4 overflow-y-auto surface-ground">
-    <div v-for="message in messages" :key="message.id">
+    <div v-if="messages.length === 0" class="text-center text-color-secondary p-4">
+      <i class="pi pi-comments text-4xl mb-2"></i>
+      <p>No messages yet. Start a conversation!</p>
+    </div>
+    
+    <div v-else v-for="message in messages" :key="message.id">
       <component
         :is="getMessageComponent(message)"
         v-if="hasValidMessageType(message)"
@@ -55,7 +60,7 @@ const hasValidMessageType = (message) => {
       />
       <div v-else class="p-3 text-center text-color-secondary">
         <i class="pi pi-exclamation-triangle mr-2"></i>
-        Unknown message type: {{ message.type || 'undefined' }}
+        Unknown message type: {{ message.message_type || 'undefined' }}
       </div>
     </div>
   </div>

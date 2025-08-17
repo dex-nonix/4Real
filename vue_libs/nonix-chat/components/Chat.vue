@@ -7,51 +7,77 @@ import ChatMessages from './ChatMessages.vue';
 import ChatMessageInput from './ChatMessageInput.vue';
 
 const props = defineProps({
-  sessions: { type: Array, required: true },
-  messages: { type: Array, required: true },
+  personas: { type: Array, required: true },  // Changed from sessions
+  currentPersonaId: { type: [String, Number], required: true },
+  currentSessionId: { type: [String, Number], required: true },
+  currentHistoryId: { type: [String, Number], required: true },
   currentUserId: { type: [String, Number], required: true }
 });
 
-const emit = defineEmits(['sendMessage', 'sessionSelected', 'closeChat']);
+const emit = defineEmits(['personaSelected', 'sessionSelected', 'historySelected', 'sendMessage', 'closeChat']);
 
-const selectedSessionId = ref(props.sessions.length > 0 ? props.sessions[0].id : null);
 const newMessage = ref('');
 
-const activeSession = computed(() => {
-  return props.sessions.find(s => s.id === selectedSessionId.value);
+// Computed values
+const currentPersona = computed(() => {
+  return props.personas.find(p => p.id === props.currentPersonaId);
 });
 
-const activeUser = computed(() => activeSession.value?.user);
+const currentSession = computed(() => {
+  return currentPersona.value?.sessions.find(s => s.id === props.currentSessionId);
+});
+
+const currentHistory = computed(() => {
+  return currentSession.value?.histories.find(h => h.id === props.currentHistoryId);
+});
+
+const handlePersonaSelected = (personaId) => {
+  emit('personaSelected', personaId);
+};
 
 const handleSessionSelected = (sessionId) => {
-  selectedSessionId.value = sessionId;
   emit('sessionSelected', sessionId);
+};
+
+const handleHistorySelected = (historyId) => {
+  emit('historySelected', historyId);
 };
 
 const handleSendMessage = (messageText) => {
   emit('sendMessage', {
-    sessionId: selectedSessionId.value,
+    historyId: props.currentHistoryId,
     text: messageText,
   });
 };
 </script>
 
 <template>
-  <div class="flex flex-column overflow-hidden " style="width: 1024px; height: 768px; border: 1px solid var(--surface-border)">
-    <ChatHeader :user="activeUser" @close-chat="emit('closeChat')" />
+  <div class="flex flex-column overflow-hidden" style="width: 1024px; height: 768px; border: 1px solid var(--surface-border)">
+    <ChatHeader 
+      :persona="currentPersona" 
+      :current-session="currentSession"
+      :current-history="currentHistory"
+      @close-chat="emit('closeChat')" 
+    />
 
     <div class="flex flex-row flex-1" style="min-height: 0;">
       <ChatSessionBar
-        :sessions="sessions"
-        :selected-session-id="selectedSessionId"
+        :personas="personas"
+        :current-persona-id="currentPersonaId"
+        :current-session-id="currentSessionId"
+        @persona-selected="handlePersonaSelected"
         @session-selected="handleSessionSelected"
       />
       <div class="flex flex-column flex-1">
         <ChatMessages
-          :messages="messages"
+          :messages="currentHistory?.messages || []"
           :current-user-id="currentUserId"
         />
-        <ChatMessageInput v-model="newMessage" @send-message="handleSendMessage" />
+        <ChatMessageInput 
+          v-model="newMessage" 
+          :current-history-id="currentHistoryId"
+          @send-message="handleSendMessage" 
+        />
       </div>
     </div>
   </div>
