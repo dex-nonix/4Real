@@ -75,6 +75,16 @@ class BaseApiService(ABC):
         request_schema = getattr(method, '_request_schema')
         response_schema = getattr(method, '_response_schema')
         
+        # Provide sensible defaults for missing decorator info
+        if not summary:
+            summary = f"{method.__name__.replace('_', ' ').title()}"
+        if not description:
+            description = f"Endpoint for {method.__name__.replace('_', ' ')}"
+        if not tags:
+            tags = [self.__class__.__name__.replace('Service', '').title()]
+        if not status_codes:
+            status_codes = {200: 'Success', 400: 'Bad Request', 500: 'Internal Server Error'}
+        
         # Build operation object
         operation = {
             "tags": tags,

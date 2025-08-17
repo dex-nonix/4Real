@@ -40,9 +40,11 @@ def create_app() -> Flask:
     def log_error_and_exit(msg, *args, **kwargs):
         print(f"\n\033[91m🔥 CRITICAL ERROR 🔥\033[0m: {msg}", file=sys.stderr)
         sys.stderr.flush()
-        app.logger.error(msg, *args, **kwargs)
+        # Don't call app.logger.error again - this prevents infinite recursion
+        # app.logger.error(msg, *args, **kwargs)
     
-    app.logger.error = log_error_and_exit
+    # Don't replace the logger's error method - this causes infinite recursion
+    # app.logger.error = log_error_and_exit
 
     CORS(app)
     db.init_app(app)
