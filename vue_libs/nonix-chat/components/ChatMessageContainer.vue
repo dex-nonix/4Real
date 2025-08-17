@@ -24,7 +24,7 @@ const props = defineProps({
   availableTools: { type: Array, default: () => [] }
 });
 
-const emit = defineEmits(['sendMessage', 'regenerateResponse', 'showTools']);
+const emit = defineEmits(['sendMessage', 'regenerateResponse', 'showTools', 'error']);
 
 // Service injection
 const chatService = inject('chat-service');
@@ -184,7 +184,7 @@ const loadMessages = async (historyId) => {
     } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
       allMessages = response.data.data;
     } else if (Array.isArray(response)) {
-      allMessages = response;
+      allMessages = [];
     } else {
       allMessages = [];
     }
@@ -210,6 +210,11 @@ const loadMessages = async (historyId) => {
   } catch (error) {
     console.error('Failed to load messages:', error);
     messages.value = [];
+    // Emit error to parent component for toast notification
+    emit('error', {
+      message: 'Failed to load messages',
+      details: error
+    });
   } finally {
     loading.value = false;
   }

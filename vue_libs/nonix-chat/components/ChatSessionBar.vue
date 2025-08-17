@@ -9,7 +9,7 @@ const props = defineProps({
   currentSessionId: { type: [String, Number, null], required: false, default: null }
 });
 
-const emit = defineEmits(['sessionSelected', 'sessionAdded', 'sessionRemoved', 'sessionsLoaded']);
+const emit = defineEmits(['sessionSelected', 'sessionAdded', 'sessionRemoved', 'sessionsLoaded', 'error']);
 
 // Service injection
 const chatService = inject('chat-service');
@@ -44,6 +44,11 @@ const loadSessions = async () => {
     sessions.value = [];
     // Emit empty sessions array even on error
     emit('sessionsLoaded', []);
+    // Emit error for parent component
+    emit('error', {
+      message: 'Failed to load sessions',
+      details: error
+    });
   } finally {
     loading.value = false;
   }
@@ -67,6 +72,10 @@ const createSession = async (personaId, sessionName) => {
     return newSession;
   } catch (error) {
     console.error('Failed to create session:', error);
+    emit('error', {
+      message: 'Failed to create session',
+      details: error
+    });
     throw error;
   }
 };
@@ -88,6 +97,10 @@ const deleteSession = async (sessionId) => {
     return true;
   } catch (error) {
     console.error('Failed to delete session:', error);
+    emit('error', {
+      message: 'Failed to delete session',
+      details: error
+    });
     throw error;
   }
 };
@@ -107,6 +120,10 @@ const updateSession = async (sessionId, data) => {
     return updatedSession;
   } catch (error) {
     console.error('Failed to update session:', error);
+    emit('error', {
+      message: 'Failed to update session',
+      details: error
+    });
     throw error;
   }
 };
