@@ -155,8 +155,6 @@ watch(() => props.selectedSession, (newSession, oldSession) => {
 const loadMessages = async (historyId) => {
   console.log('loadMessages called with historyId:', historyId);
   
-
-  
   if (!historyId || !chatService) {
     console.log('loadMessages early return - historyId:', historyId, 'chatService:', !!chatService);
     return;
@@ -164,8 +162,19 @@ const loadMessages = async (historyId) => {
   
   try {
     loading.value = true;
-    console.log('Calling chatService.getHistoryMessages with:', historyId);
-    const response = await chatService.getHistoryMessages(historyId);
+    
+    // Use the new ChatService method that requires both sessionId and historyId
+    // First get the session ID from the selectedSession prop
+    if (!props.selectedSession?.id) {
+      console.error('No selectedSession available for loadMessages');
+      messages.value = [];
+      return;
+    }
+    
+    const sessionId = props.selectedSession.id;
+    console.log('Calling chatService.getHistoryMessages with sessionId:', sessionId, 'historyId:', historyId);
+    
+    const response = await chatService.getHistoryMessages(sessionId, historyId);
     console.log('Messages response:', response);
     
     // Handle different response structures

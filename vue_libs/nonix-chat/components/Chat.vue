@@ -43,61 +43,61 @@ const handleSessionSelected = async (sessionId) => {
   
   currentSessionId.value = sessionId;
   
-  // Get full session details when session is selected
-  if (sessionId && chatService) {
-    try {
-      const response = await chatService.getSession(sessionId);
-      console.log('Session response:', response);
-      
-      // Handle different response structures for session
-      let sessionData;
-      if (response.data && response.data.data) {
-        sessionData = response.data.data;
-      } else if (response.data) {
-        sessionData = response.data;
-      } else {
-        sessionData = response;
-      }
-      
-      selectedSession.value = sessionData;
-      console.log('Processed session data:', sessionData);
-      
-      // Get history for the selected session
-      if (sessionData.histories && sessionData.histories.length > 0) {
-        currentHistoryId.value = sessionData.histories[0].id;
-        console.log('Using existing history:', currentHistoryId.value);
-      } else {
-        // Create a new history if none exists
+        // Get full session details when session is selected
+      if (sessionId && chatService) {
         try {
-          const historyResponse = await chatService.createHistory(sessionId, 'New Conversation');
-          console.log('History creation response:', historyResponse);
+          const response = await chatService.getSession(sessionId);
+          console.log('Session response:', response);
           
-          // Handle different response structures
-          if (historyResponse.data && historyResponse.data.id) {
-            currentHistoryId.value = historyResponse.data.id;
-          } else if (historyResponse.data && historyResponse.data.data && historyResponse.data.data.id) {
-            currentHistoryId.value = historyResponse.data.data.id;
-          } else if (historyResponse.id) {
-            currentHistoryId.value = historyResponse.id;
+          // Handle different response structures for session
+          let sessionData;
+          if (response.data && response.data.data) {
+            sessionData = response.data.data;
+          } else if (response.data) {
+            sessionData = response.data;
           } else {
-            console.error('Unexpected history response structure:', historyResponse);
-            currentHistoryId.value = null;
+            sessionData = response;
           }
           
-          console.log('Set currentHistoryId to:', currentHistoryId.value);
-        } catch (historyError) {
-          console.error('Failed to create history:', historyError);
+          selectedSession.value = sessionData;
+          console.log('Processed session data:', sessionData);
+          
+          // Get history for the selected session
+          if (sessionData.histories && sessionData.histories.length > 0) {
+            currentHistoryId.value = sessionData.histories[0].id;
+            console.log('Using existing history:', currentHistoryId.value);
+          } else {
+            // Create a new history if none exists
+            try {
+              const historyResponse = await chatService.createHistory(sessionId, 'New Conversation');
+              console.log('History creation response:', historyResponse);
+              
+              // Handle different response structures
+              if (historyResponse.data && historyResponse.data.id) {
+                currentHistoryId.value = historyResponse.data.id;
+              } else if (historyResponse.data && response.data.data && response.data.data.id) {
+                currentHistoryId.value = response.data.data.id;
+              } else if (historyResponse.id) {
+                currentHistoryId.value = historyResponse.id;
+              } else {
+                console.error('Unexpected history response structure:', historyResponse);
+                currentHistoryId.value = null;
+              }
+              
+              console.log('Set currentHistoryId to:', currentHistoryId.value);
+            } catch (historyError) {
+              console.error('Failed to create history:', historyError);
+              currentHistoryId.value = null;
+            }
+          }
+          
+          console.log('Final state - selectedSession:', selectedSession.value, 'currentHistoryId:', currentHistoryId.value);
+        } catch (error) {
+          console.error('Failed to get session details:', error);
+          selectedSession.value = null;
           currentHistoryId.value = null;
         }
-      }
-      
-      console.log('Final state - selectedSession:', selectedSession.value, 'currentHistoryId:', currentHistoryId.value);
-    } catch (error) {
-      console.error('Failed to get session details:', error);
-      selectedSession.value = null;
-      currentHistoryId.value = null;
-    }
-  } else {
+      } else {
     selectedSession.value = null;
     currentHistoryId.value = null;
   }
@@ -126,11 +126,11 @@ const updateSelectedSession = (sessionObject) => {
 };
 
 const handleSendMessage = async (messageData) => {
-  if (!messageData?.historyId || !chatService) return;
+  if (!messageData?.historyId || !chatService || !currentSessionId.value) return;
   
   try {
-    // Send message using the chat service
-    const response = await chatService.sendMessageToHistory(messageData.historyId, messageData.text);
+    // Send message using the chat service (now requires sessionId and historyId)
+    const response = await chatService.sendMessageToHistory(currentSessionId.value, messageData.historyId, messageData.text);
     console.log('Message sent successfully:', response);
     
     // Refresh the current session to get updated data

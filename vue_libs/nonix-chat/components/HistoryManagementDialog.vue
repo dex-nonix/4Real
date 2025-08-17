@@ -141,8 +141,8 @@ const loadHistories = async () => {
   try {
     loading.value = true;
     const response = await chatService.getHistories(props.sessionId);
-    // Handle CRUD response structure: {data: Array, pagination: {...}}
-    histories.value = response.data?.data || response.data || [];
+    // Handle ChatService response structure: {data: Array, total: number}
+    histories.value = response.data || [];
   } catch (error) {
     console.error('Failed to load histories:', error);
     histories.value = [];
@@ -199,7 +199,7 @@ const confirmEditHistory = async () => {
   if (!editHistoryTitle.value.trim() || !editingHistory.value) return;
   
   try {
-    await chatService.updateHistory(editingHistory.value.id, {
+    await chatService.updateHistory(props.sessionId, editingHistory.value.id, {
       title: editHistoryTitle.value.trim()
     });
     editHistoryTitle.value = '';
@@ -213,7 +213,7 @@ const confirmEditHistory = async () => {
 
 const deleteHistory = async (historyId) => {
   try {
-    await chatService.deleteHistory(historyId);
+    await chatService.deleteHistory(props.sessionId, historyId);
     await loadHistories(); // Reload histories
   } catch (error) {
     console.error('Failed to delete history:', error);

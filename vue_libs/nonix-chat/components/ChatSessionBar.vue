@@ -28,8 +28,8 @@ const loadSessions = async () => {
   try {
     loading.value = true;
     const response = await chatService.getSessions();
-    // Handle CRUD response structure: {data: Array, pagination: {...}}
-    sessions.value = response.data?.data || response.data || [];
+    // Handle ChatService response structure: {data: Array, total: number}
+    sessions.value = response.data || [];
     
     // Emit sessions loaded event for tab-based architecture
     emit('sessionsLoaded', sessions.value);

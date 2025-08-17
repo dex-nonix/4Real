@@ -1,29 +1,24 @@
 import BaseApiService from '@nonix/services/BaseApiService.js'
 
 export default class ChatService extends BaseApiService {
-  // Generic CRUD endpoints for flat data (NO NESTED CRAP!)
+  // ChatService endpoints for runtime chat operations (NOT CRUD!)
   
-  // Get all sessions (flat)
+  // Session Management
   async getSessions() {
-    const response = await this.get('/chat-sessions')
+    // Use ChatService endpoint instead of CRUD
+    const response = await this.get('/chat/sessions')
     return response
   }
 
-  // Get single session by ID
   async getSession(sessionId) {
-    const response = await this.get(`/chat-sessions/${sessionId}`)
+    // Use ChatService endpoint instead of CRUD
+    const response = await this.get(`/chat/sessions/${sessionId}`)
     return response
   }
 
-  // Get sessions for specific persona
-  async getSessionsByPersona(personaId) {
-    const response = await this.get(`/chat-sessions?persona_id=${personaId}`)
-    return response
-  }
-
-  // Create new session
   async createSession(personaId, sessionName, sessionIcon) {
-    const response = await this.post('/chat-sessions', {
+    // Use ChatService endpoint instead of CRUD
+    const response = await this.post('/chat/sessions', {
       persona_id: personaId,
       session_name: sessionName,
       session_icon: sessionIcon
@@ -31,79 +26,136 @@ export default class ChatService extends BaseApiService {
     return response
   }
 
-  // Get histories for session (flat)
-  async getHistories(sessionId) {
-    const response = await this.get(`/chat-histories?session_id=${sessionId}`)
+  async updateSession(sessionId, data) {
+    // Use ChatService endpoint instead of CRUD
+    const response = await this.put(`/chat/sessions/${sessionId}`, data)
     return response
   }
 
-  // Create new history
+  async deleteSession(sessionId) {
+    // Use ChatService endpoint instead of CRUD
+    const response = await this.delete(`/chat/sessions/${sessionId}`)
+    return response
+  }
+
+  // History Management
+  async getHistories(sessionId) {
+    // Use ChatService endpoint instead of CRUD
+    const response = await this.get(`/chat/sessions/${sessionId}/histories`)
+    return response
+  }
+
   async createHistory(sessionId, title) {
-    const response = await this.post('/chat-histories', {
-      session_id: sessionId,
+    // Use ChatService endpoint instead of CRUD
+    const response = await this.post(`/chat/sessions/${sessionId}/histories`, {
       title: title
     })
     return response
   }
 
-  // Get messages for history (flat)
-  async getHistoryMessages(historyId) {
-    // Use the simple ChatMessageService with proper filter format
-    const response = await this.get('/chat-messages', { query: { filter_history_id: historyId } })
+  async updateHistory(sessionId, historyId, data) {
+    // Use ChatService endpoint instead of CRUD
+    const response = await this.put(`/chat/sessions/${sessionId}/histories/${historyId}`, data)
     return response
   }
 
-  // Send message to history
-  async sendMessageToHistory(historyId, content) {
-    const response = await this.post('/chat-messages', {
-      history_id: historyId,
-      role: 'user',
-      message_type: 'text',
-      content_json: content
+  async deleteHistory(sessionId, historyId) {
+    // Use ChatService endpoint instead of CRUD
+    const response = await this.delete(`/chat/sessions/${sessionId}/histories/${historyId}`)
+    return response
+  }
+
+  // Message Management
+  async getHistoryMessages(sessionId, historyId) {
+    // Use ChatService endpoint instead of CRUD
+    const response = await this.get(`/chat/sessions/${sessionId}/histories/${historyId}/messages`)
+    return response
+  }
+
+  async sendMessageToHistory(sessionId, historyId, content) {
+    // Use ChatService endpoint instead of CRUD
+    const response = await this.post(`/chat/sessions/${sessionId}/histories/${historyId}/send`, {
+      content: content
     })
     return response
   }
 
-  // Update session (e.g., set current history)
-  async updateSession(sessionId, data) {
-    const response = await this.put(`/chat-sessions/${sessionId}`, data)
-    return response
-  }
-
-  // Delete session
-  async deleteSession(sessionId) {
-    const response = await this.delete(`/chat-sessions/${sessionId}`)
-    return response
-  }
-
-  // Update history
-  async updateHistory(historyId, data) {
-    const response = await this.put(`/chat-histories/${historyId}`, data)
-    return response
-  }
-
-  // Delete history
-  async deleteHistory(historyId) {
-    const response = await this.delete(`/chat-histories/${historyId}`)
-    return response
-  }
-
-  // Legacy methods for backward compatibility
+  // Persona Management
   async getPersonas() {
-    const response = await this.get('/personas')
+    // Use ChatService endpoint (already correct)
+    const response = await this.get('/chat/personas')
     return response
   }
 
-  // Persona tools
+  async getPersonaSessions(personaId) {
+    // Use ChatService endpoint (already correct)
+    const response = await this.get(`/chat/personas/${personaId}/sessions`)
+    return response
+  }
+
+  async startChatWithPersona(personaId, sessionName, sessionIcon) {
+    // Use ChatService endpoint (already correct)
+    const response = await this.post(`/chat/personas/${personaId}/start-chat`, {
+      session_name: sessionName,
+      session_icon: sessionIcon
+    })
+    return response
+  }
+
+  // Tool Management
   async personaTools(personaId) {
-    const response = await this.get(`/chat/personas/${encodeURIComponent(personaId)}/tools`)
+    // Use ChatService endpoint (already correct)
+    const response = await this.get(`/chat/personas/${personaId}/tools`)
     return response
   }
 
-  // MCP status
+  async executeTool(personaId, toolName, toolArgs, historyId, userMessageId) {
+    // Use ChatService endpoint (already correct)
+    const response = await this.post(`/chat/personas/${personaId}/tools/execute`, {
+      tool: toolName,
+      args: toolArgs,
+      history_id: historyId,
+      message_id: userMessageId
+    })
+    return response
+  }
+
+  // MCP Status
   async mcpStatus() {
+    // Use ChatService endpoint (already correct)
     const response = await this.get('/chat/mcp/servers/status')
     return response
+  }
+
+  // Legacy methods for backward compatibility (deprecated - use specific methods above)
+  async getSessionsByPersona(personaId) {
+    console.warn('getSessionsByPersona is deprecated, use getPersonaSessions instead')
+    return this.getPersonaSessions(personaId)
+  }
+
+  // Helper method to get session ID from history ID (for backward compatibility)
+  async getSessionIdFromHistory(historyId) {
+    // Get all sessions and find the one with this history
+    const sessionsResponse = await this.getSessions()
+    if (sessionsResponse.data && sessionsResponse.data.data) {
+      for (const session of sessionsResponse.data.data) {
+        if (session.histories && session.histories.some(h => h.id === historyId)) {
+          return session.id
+        }
+      }
+    }
+    return null
+  }
+
+  // Backward compatibility wrapper for getHistoryMessages with just historyId
+  async getHistoryMessagesByHistoryId(historyId) {
+    console.warn('getHistoryMessagesByHistoryId is deprecated, use getHistoryMessages(sessionId, historyId) instead')
+    const sessionId = await this.getSessionIdFromHistory(historyId)
+    if (!sessionId) {
+      console.error('No session found for history:', historyId)
+      return { data: [] }
+    }
+    return this.getHistoryMessages(sessionId, historyId)
   }
 }
 

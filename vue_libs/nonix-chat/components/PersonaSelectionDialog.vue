@@ -74,8 +74,8 @@ const loadPersonas = async () => {
   try {
     loading.value = true;
     const response = await chatService.getPersonas();
-    // Handle CRUD response structure: {data: Array, pagination: {...}}
-    personas.value = response.data?.data || response.data || [];
+    // Handle ChatService response structure: {data: Array, total: number}
+    personas.value = response.data || [];
   } catch (error) {
     console.error('Failed to load personas:', error);
     personas.value = [];
