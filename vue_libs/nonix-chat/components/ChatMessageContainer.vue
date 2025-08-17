@@ -33,6 +33,64 @@ const messages = ref([]);
 const inputText = ref('');
 const loading = ref(false);
 
+// Temporary mockup data for testing different message types
+const mockupMessages = ref([
+  {
+    id: 'mock-1',
+    message_type: 'text',
+    content_json: 'This is a regular text message from the user',
+    role: 'user',
+    created_at: '2025-01-27T10:00:00',
+    senderId: 'user-1'
+  },
+  {
+    id: 'mock-2',
+    message_type: 'system',
+    content_json: 'User joined the conversation',
+    role: 'system',
+    created_at: '2025-01-27T10:01:00',
+    senderId: 'system'
+  },
+  {
+    id: 'mock-3',
+    message_type: 'tool',
+    content_json: 'Searching for files...',
+    role: 'assistant',
+    created_at: '2025-01-27T10:02:00',
+    senderId: 'assistant',
+    metadata: {
+      toolName: 'File Search',
+      toolParams: { query: 'design files', type: 'ui' },
+      executionStatus: 'success',
+      result: 'Found 3 design files in the project'
+    }
+  },
+  {
+    id: 'mock-4',
+    message_type: 'user',
+    content_json: 'This is a user message with validation',
+    role: 'user',
+    created_at: '2025-01-27T10:03:00',
+    senderId: 'user-2',
+    metadata: {
+      userName: 'John Doe',
+      userAvatar: 'https://randomuser.me/api/portraits/men/32.jpg',
+      isValid: true
+    }
+  }
+]);
+
+// Toggle for mockup vs real data
+const useMockupData = ref(true);
+
+// Watch for toggle changes to reload messages
+watch(useMockupData, (newValue) => {
+  console.log('Mockup toggle changed to:', newValue);
+  if (props.historyId || newValue) {
+    loadMessages(props.historyId);
+  }
+});
+
 // Session-specific input text storage
 const sessionInputTexts = ref(new Map());
 
@@ -84,6 +142,21 @@ watch(() => props.selectedSession, (newSession, oldSession) => {
 // Load messages for specific history
 const loadMessages = async (historyId) => {
   console.log('loadMessages called with historyId:', historyId);
+  
+  // TEMPORARY: Use mockup data for testing
+  if (useMockupData.value) {
+    console.log('Using mockup data for testing');
+    loading.value = true;
+    
+    // Simulate API delay
+    setTimeout(() => {
+      messages.value = [...mockupMessages.value];
+      console.log('Loaded mockup messages:', messages.value);
+      loading.value = false;
+    }, 500);
+    return;
+  }
+  
   if (!historyId || !chatService) {
     console.log('loadMessages early return - historyId:', historyId, 'chatService:', !!chatService);
     return;
@@ -161,6 +234,12 @@ const showTools = () => {
   emit('showTools');
 };
 
+// Reload messages (for testing)
+const reloadMessages = () => {
+  console.log('Manually reloading messages');
+  loadMessages(props.historyId);
+};
+
 // Get the appropriate component for each message
 const getMessageComponent = (message) => {
   const messageType = message.message_type || 'text';
@@ -218,6 +297,29 @@ const canSendMessage = computed(() => hasHistory.value && inputText.value?.trim(
 
     <!-- Message Input Area -->
     <div class="flex align-items-center p-1 border-top-1 surface-border surface-section flex-shrink-0">
+      <!-- Mockup Toggle Button -->
+      <Button 
+        :icon="useMockupData ? 'pi pi-database' : 'pi pi-globe'"
+        :label="useMockupData ? 'Mock' : 'Real'"
+        text 
+        rounded 
+        :severity="useMockupData ? 'warning' : 'success'"
+        @click="useMockupData = !useMockupData"
+        v-tooltip.bottom="useMockupData ? 'Switch to real data' : 'Switch to mockup data'"
+        class="mr-2"
+      />
+      
+      <!-- Reload Button -->
+      <Button 
+        icon="pi pi-refresh"
+        text 
+        rounded 
+        severity="info"
+        @click="reloadMessages"
+        v-tooltip.bottom="'Reload messages'"
+        class="mr-2"
+      />
+      
       <!-- Tools Button -->
       <Button 
         icon="pi pi-box" 

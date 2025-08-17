@@ -13,8 +13,12 @@ const props = defineProps({
   }
 });
 
-const isOwnMessage = computed(() => props.message.senderId === props.currentUserId);
-const userName = computed(() => props.message.metadata?.userName || `User ${props.message.senderId}`);
+// Handle different field names from API
+const messageContent = computed(() => props.message.content || props.message.content_json || props.message.text || 'No content');
+const messageTimestamp = computed(() => props.message.timestamp || props.message.created_at || '');
+const messageSenderId = computed(() => props.message.senderId || props.message.role || '');
+const isOwnMessage = computed(() => messageSenderId.value === props.currentUserId);
+const userName = computed(() => props.message.metadata?.userName || `User ${messageSenderId.value}`);
 const userAvatar = computed(() => props.message.metadata?.userAvatar || null);
 const isValid = computed(() => props.message.metadata?.isValid !== false);
 </script>
@@ -42,7 +46,7 @@ const isValid = computed(() => props.message.metadata?.isValid !== false);
           }"
       >
         <div class="flex align-items-start">
-          <p class="m-0 text-normal" style="hyphens: auto; word-break: break-word;">{{ message.text }}</p>
+          <p class="m-0 text-normal" style="hyphens: auto; word-break: break-word;">{{ messageContent }}</p>
           
           <!-- Validation Indicator -->
           <div v-if="!isOwnMessage" class="ml-2">
@@ -60,7 +64,7 @@ const isValid = computed(() => props.message.metadata?.isValid !== false);
           'justify-content-start': !isOwnMessage
         }"
       >
-         <span class="text-xs text-color-secondary">{{ message.timestamp }}</span>
+         <span class="text-xs text-color-secondary">{{ messageTimestamp }}</span>
          
          <!-- Input Validation Status -->
          <div v-if="!isOwnMessage && !isValid" class="ml-2">

@@ -32,7 +32,7 @@ const toggleMenu = (event, message) => {
 
 const handleCopy = () => {
     if (navigator.clipboard) {
-        navigator.clipboard.writeText(selectedMessage.value.text);
+        navigator.clipboard.writeText(messageContent.value);
     }
     console.log('Copy:', selectedMessage.value);
 };
@@ -47,7 +47,11 @@ const handleDelete = () => {
     // Emit delete event for parent component to handle
 };
 
-const isOwnMessage = computed(() => props.message.senderId === props.currentUserId);
+// Handle different field names from API
+const messageContent = computed(() => props.message.content || props.message.content_json || props.message.text || 'No content');
+const messageTimestamp = computed(() => props.message.timestamp || props.message.created_at || '');
+const messageSenderId = computed(() => props.message.senderId || props.message.role || '');
+const isOwnMessage = computed(() => messageSenderId.value === props.currentUserId);
 </script>
 
 <template>
@@ -61,7 +65,7 @@ const isOwnMessage = computed(() => props.message.senderId === props.currentUser
           }"
       >
         <div class="flex align-items-start">
-          <p class="m-0 text-normal" style="hyphens: auto; word-break: break-word;">{{ message.text }}</p>
+          <p class="m-0 text-normal" style="hyphens: auto; word-break: break-word;">{{ messageContent }}</p>
           <Button
             icon="pi pi-ellipsis-v"
             text rounded severity="secondary"
@@ -78,7 +82,7 @@ const isOwnMessage = computed(() => props.message.senderId === props.currentUser
           'justify-content-start': !isOwnMessage
         }"
       >
-         <span class="text-xs text-color-secondary">{{ message.timestamp }}</span>
+         <span class="text-xs text-color-secondary">{{ messageTimestamp }}</span>
          <i v-if="isOwnMessage && message.status === 'sent'" class="pi pi-check ml-1 text-color-secondary text-sm"></i>
          <i v-if="isOwnMessage && message.status === 'delivered'" class="pi pi-check-circle ml-1 text-color-secondary text-sm"></i>
          <ProgressSpinner
