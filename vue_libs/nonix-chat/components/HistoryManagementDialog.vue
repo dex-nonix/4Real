@@ -110,8 +110,7 @@ import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import ProgressSpinner from 'primevue/progressspinner';
-import { ref, watch } from 'vue';
-import ChatRuntimeService from '../services/ChatRuntimeService.js';
+import { ref, watch, inject } from 'vue';
 
 const props = defineProps({
   visible: { type: Boolean, required: true },
@@ -120,8 +119,8 @@ const props = defineProps({
 
 const emit = defineEmits(['update:visible', 'historySelected', 'createHistory', 'updateHistory', 'deleteHistory']);
 
-// Service
-const chatService = new ChatRuntimeService();
+// Service - injected singleton
+const chatService = inject('chat-runtime');
 
 // State
 const histories = ref([]);

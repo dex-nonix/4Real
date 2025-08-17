@@ -35,11 +35,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, inject } from 'vue'
 import Chat from './components/Chat.vue'
 import PersonaSelectionDialog from './components/PersonaSelectionDialog.vue'
 import HistoryManagementDialog from './components/HistoryManagementDialog.vue'
-import ChatRuntimeService from './services/ChatRuntimeService.js'
 import { useToast } from 'primevue/usetoast'
 
 const props = defineProps({
@@ -56,8 +55,8 @@ const props = defineProps({
 
 defineEmits(['update:sessionId','tab-open','tab-close','message-sent','retry','error'])
 
-// Backend service
-const chatService = new ChatRuntimeService()
+// Backend service - injected singleton
+const chatService = inject('chat-runtime')
 
 // Toast for error notifications
 const toast = useToast()

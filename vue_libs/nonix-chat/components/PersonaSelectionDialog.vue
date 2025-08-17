@@ -54,8 +54,7 @@ import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
 import Avatar from 'primevue/avatar';
 import ProgressSpinner from 'primevue/progressspinner';
-import { ref, watch } from 'vue';
-import ChatRuntimeService from '../services/ChatRuntimeService.js';
+import { ref, watch, inject } from 'vue';
 
 const props = defineProps({
   visible: { type: Boolean, required: true }
@@ -63,8 +62,8 @@ const props = defineProps({
 
 const emit = defineEmits(['update:visible', 'personaSelected']);
 
-// Service
-const chatService = new ChatRuntimeService();
+// Service - injected singleton
+const chatService = inject('chat-runtime');
 
 // State
 const personas = ref([]);

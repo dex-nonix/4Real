@@ -17,12 +17,12 @@ import ToolInvocationLogService from '@/services/ToolInvocationLogService.js'
 import FileCategoryService from '@/services/FileCategoryService.js'
 import FileService from '@/services/FileService.js'
 import FileLinkService from '@/services/FileLinkService.js'
+import ChatRuntimeService from '@nonix-chat/services/ChatRuntimeService.js'
 import Home from "@/views/Home.vue";
 import About from "@/views/About.vue";
 import DynamicFormExample from "@/views/DynamicFormExample.vue";
 import DynamicTableExample from "@/views/DynamicTableExample.vue";
 import Chat from "@/views/Chat.vue";
-import ChatExample from "@nonix-chat/components/ChatExample.vue";
 
 export const appConfig = {
 
@@ -34,7 +34,6 @@ export const appConfig = {
         {path: '/dynamic-form', name: 'dynamic-form', component: DynamicFormExample},
         {path: '/dynamic-table', name: 'dynamic-table', component: DynamicTableExample},
         {path: '/chat', name: 'chat', component: Chat},
-        {path: '/chat2', name: 'chat2', component: ChatExample},
 
         // Dynamic route
         {type: "dynamic", path: '/dashboard', page: 'dashboard'},
@@ -83,6 +82,7 @@ export const appConfig = {
         "file-categories": () => new FileCategoryService(),
         "files": () => new FileService(),
         "file-links": () => new FileLinkService(),
+        "chat-runtime": () => new ChatRuntimeService(),
     },
     use: [],
     layouts: {},
@@ -90,7 +90,7 @@ export const appConfig = {
     displayWidgets: {},
     editWidgets: {},
     dynamicWidgets: {},
-    packages: [
+    packages: [ 
         /*
         {
             service: [],
