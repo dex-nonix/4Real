@@ -162,7 +162,6 @@ const handleSessionSelected = async (sessionId) => {
         const response = await chatService.getSession(sessionId);
         console.log('Session response:', response);
         
-        // ChatService now returns clean data directly
         let sessionData = response;
         
         selectedSession.value = sessionData;
@@ -181,7 +180,6 @@ const handleSessionSelected = async (sessionId) => {
             const historyResponse = await chatService.createHistory(sessionId, 'New Conversation');
             console.log('History creation response:', historyResponse);
             
-            // ChatService now returns clean data directly
             if (historyResponse && historyResponse.id) {
               currentHistoryId.value = historyResponse.id;
             } else {
@@ -226,7 +224,6 @@ const handleSessionsLoaded = (sessionsList) => {
   console.log('Sessions loaded:', sessionsList);
   
   try {
-    // ChatService now returns clean data directly
     let actualSessions = sessionsList || [];
     
     // Validate sessions have proper IDs

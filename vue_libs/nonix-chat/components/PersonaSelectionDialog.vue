@@ -91,7 +91,6 @@ const loadPersonas = async () => {
     const response = await chatService.getPersonas();
     console.log('Personas response:', response);
     
-    // ChatService now returns clean data directly
     let allPersonas = response || [];
     
     // Validate and clean persona data

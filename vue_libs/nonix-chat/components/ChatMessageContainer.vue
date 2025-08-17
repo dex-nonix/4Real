@@ -137,7 +137,6 @@ const loadMessages = async (historyId) => {
     const response = await chatService.getHistoryMessages(sessionId, historyId);
     console.log('Messages response:', response);
     
-    // ChatService now returns clean data directly
     messages.value = response || [];
     
     console.log('Final messages value:', messages.value);

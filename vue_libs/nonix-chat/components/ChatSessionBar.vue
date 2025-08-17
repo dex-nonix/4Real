@@ -30,12 +30,11 @@ const loadSessions = async () => {
     const response = await chatService.getSessions();
     console.log('Raw sessions response:', response);
     
-    // ChatService now returns clean data directly
     sessions.value = response || [];
     console.log('Processed sessions in ChatSessionBar:', response);
     
     // Emit sessions loaded event for tab-based architecture
-    emit('sessions-loaded', response); // Emit the clean data for parent to process
+    emit('sessions-loaded', response);
     
     // Don't auto-select here - let parent handle it
   } catch (error) {
