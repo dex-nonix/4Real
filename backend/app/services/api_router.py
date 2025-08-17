@@ -59,21 +59,28 @@ class APIRouter:
                     # Collect PROCESSED tags (not original tags)
                     if hasattr(method, '_tags'):
                         raw_tags = method._tags
-                        processed_tags = []
-                        for tag in raw_tags:
-                            if isinstance(tag, str):
-                                # Replace __SERVICE_NAME__ marker with actual service name
-                                if tag == "__SERVICE_NAME__":
-                                    processed_tag = service_name.title()
+                        if raw_tags and len(raw_tags) > 0:
+                            processed_tags = []
+                            for tag in raw_tags:
+                                if isinstance(tag, str):
+                                    # Replace __SERVICE_NAME__ marker with actual service name
+                                    if tag == "__SERVICE_NAME__":
+                                        processed_tag = service_name.title()
+                                    else:
+                                        processed_tag = tag.replace('{service_name}', service_name.title())
+                                    processed_tags.append(processed_tag)
                                 else:
-                                    processed_tag = tag.replace('{service_name}', service_name.title())
-                                processed_tags.append(processed_tag)
-                            else:
-                                processed_tags.append(tag)
-                        tags.extend(processed_tags)
+                                    processed_tags.append(tag)
+                            tags.extend(processed_tags)
+                        else:
+                            # If no tags provided, use service name as default
+                            tags.append(service_name.title())
+                    else:
+                        # If no _tags attribute, use service name as default
+                        tags.append(service_name.title())
         
-        # Remove duplicate tags
-        unique_tags = [{"name": tag} for tag in set(tags)]
+        # Remove duplicate tags and sort them alphabetically
+        unique_tags = [{"name": tag} for tag in sorted(set(tags))]
         
         return {
             "openapi": "3.0.0",
@@ -104,7 +111,7 @@ class APIRouter:
             # Get OpenAPI metadata
             raw_summary = getattr(method, '_summary', f"{http_method} {service_name}")
             raw_description = getattr(method, '_description', f"Execute {method.__name__} on {service_name}")
-            raw_tags = getattr(method, '_tags', [service_name.title()])
+            raw_tags = getattr(method, '_tags', None)
             request_dto = getattr(method, '_request_dto', None)
             response_dto = getattr(method, '_response_dto', None)
             status_codes = getattr(method, '_status_codes', {200: 'Success'})
@@ -113,17 +120,21 @@ class APIRouter:
             summary = raw_summary.replace('{service_name}', service_name.title()) if isinstance(raw_summary, str) else raw_summary
             description = raw_description.replace('{service_name}', service_name.title()) if isinstance(raw_description, str) else raw_description
             
-            processed_tags = []
-            for tag in raw_tags:
-                if isinstance(tag, str):
-                    # Replace __SERVICE_NAME__ marker with actual service name
-                    if tag == "__SERVICE_NAME__":
-                        processed_tag = service_name.title()
+            # Handle tags - if no tags provided, use service name as default
+            if raw_tags is None or len(raw_tags) == 0:
+                processed_tags = [service_name.title()]
+            else:
+                processed_tags = []
+                for tag in raw_tags:
+                    if isinstance(tag, str):
+                        # Replace __SERVICE_NAME__ marker with actual service name
+                        if tag == "__SERVICE_NAME__":
+                            processed_tag = service_name.title()
+                        else:
+                            processed_tag = tag.replace('{service_name}', service_name.title())
+                        processed_tags.append(processed_tag)
                     else:
-                        processed_tag = tag.replace('{service_name}', service_name.title())
-                    processed_tags.append(processed_tag)
-                else:
-                    processed_tags.append(tag)
+                        processed_tags.append(tag)
             
             # Build operation object
             operation = {
