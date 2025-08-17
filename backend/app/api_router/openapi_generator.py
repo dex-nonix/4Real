@@ -1,38 +1,15 @@
 from __future__ import annotations
 
-from flask import Blueprint, request, current_app, jsonify
-from functools import wraps
 from typing import Any, Callable, Dict, List
-import logging
-import traceback
-import sys
 import re
 
-class APIRouter:
-    """Blueprint that auto-registers all services and generates OpenAPI documentation."""
+class OpenAPIGenerator:
+    """Handles OpenAPI 3.0 specification generation from registered services."""
 
     def __init__(self) -> None:
-        self.blueprint = Blueprint('api', __name__)
-        self.registered_services: dict[str, Any] = {}
-        self.logger = logging.getLogger(__name__)
-        
-        # Add OpenAPI documentation routes
-        self._add_documentation_routes()
+        pass
 
-    def _add_documentation_routes(self) -> None:
-        """Add OpenAPI documentation endpoints to the blueprint"""
-        
-        @self.blueprint.route('/openapi.json')
-        def openapi_spec():
-            """Return OpenAPI 3.0 specification as JSON"""
-            return jsonify(self.generate_openapi_spec())
-        
-        @self.blueprint.route('/docs')
-        def swagger_ui():
-            """Return Swagger UI HTML page"""
-            return self._generate_swagger_ui()
-
-    def generate_openapi_spec(self) -> Dict[str, Any]:
+    def generate_openapi_spec(self, registered_services: Dict[str, Any]) -> Dict[str, Any]:
         """Generate OpenAPI 3.0 specification from registered services"""
         
         paths = {}
@@ -40,7 +17,7 @@ class APIRouter:
         tags = []
         
         # Process each registered service
-        for service_name, service in self.registered_services.items():
+        for service_name, service in registered_services.items():
             for attr_name in dir(service):
                 method = getattr(service, attr_name)
                 if hasattr(method, '_exposed'):
@@ -207,128 +184,9 @@ class APIRouter:
         
         return parameters
 
-    def _generate_swagger_ui(self) -> str:
-        """Generate Swagger UI HTML page"""
-        return f"""
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Music Metadata API - Swagger UI</title>
-    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
-    <style>
-        html {{ box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }}
-        *, *:before, *:after {{ box-sizing: inherit; }}
-        body {{ margin:0; background: #fafafa; }}
-    </style>
-</head>
-<body>
-    <div id="swagger-ui"></div>
-    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
-    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
-    <script>
-        window.onload = function() {{
-            const ui = SwaggerUIBundle({{
-                url: '/api/openapi.json',
-                dom_id: '#swagger-ui',
-                deepLinking: true,
-                presets: [
-                    SwaggerUIBundle.presets.apis,
-                    SwaggerUIStandalonePreset
-                ],
-                plugins: [
-                    SwaggerUIBundle.plugins.DownloadUrl
-                ],
-                layout: "StandaloneLayout"
-            }});
-        }};
-    </script>
-</body>
-</html>
-        """
-
-    def register_service(self, service_name: str, service_class: type, *args: Any, **kwargs: Any) -> None:
-        """Instantiate a service and create routes for any @expose methods."""
-        service = service_class(*args, **kwargs)
-        self.registered_services[service_name] = service
-
-        for attr_name in dir(service):
-            method = getattr(service, attr_name)
-            if callable(method) and hasattr(method, '_exposed'):
-                self._create_route(service_name, method)
-
-    def register_service_factory(self, service_name: str, factory: Callable[[], Any]) -> None:
-        service = factory()
-        self.registered_services[service_name] = service
-
-        for attr_name in dir(service):
-            method = getattr(service, attr_name)
-            if callable(method) and hasattr(method, '_exposed'):
-                self._create_route(service_name, method)
-
     def _normalize_path(self, service_name: str, path: str) -> str:
         if not path.startswith('/'):
             path = '/' + path
         # Convert `{id}` style placeholders to Flask `<id>`
         flask_path = path.replace('{', '<').replace('}', '>')
         return f'/{service_name}{flask_path}'
-
-    def _create_route(self, service_name: str, method: Callable) -> None:
-        full_path = self._normalize_path(service_name, getattr(method, '_path'))
-        methods = getattr(method, '_methods', ['GET'])
-
-        # Bind the current method into the handler's defaults to avoid late-binding issues
-        def handler_factory(bound_method: Callable) -> Callable:
-            @wraps(bound_method)
-            def handler(**kwargs: Any):
-                try:
-                    # Log the execution start
-                    exec_msg = f"🚀 Executing {service_name}.{bound_method.__name__} with kwargs: {kwargs}"
-                    print(f"\n{exec_msg}")
-                    sys.stdout.flush()
-                    self.logger.info(exec_msg)
-                    
-                    result = bound_method(request, **kwargs)
-                    
-                    # Log successful execution
-                    success_msg = f"✅ Successfully executed {service_name}.{bound_method.__name__}"
-                    print(f"{success_msg}")
-                    sys.stdout.flush()
-                    self.logger.info(success_msg)
-                    
-                    return result
-                    
-                except Exception as e:
-                    # IMMEDIATE ERROR OUTPUT TO TERMINAL
-                    error_msg = f"💥 CRASH in {service_name}.{bound_method.__name__}: {str(e)}"
-                    traceback_msg = f"📋 Full Traceback:\n{traceback.format_exc()}"
-                    
-                    # Print to terminal immediately with colors
-                    print(f"\n\033[91m{error_msg}\033[0m", file=sys.stderr)
-                    print(f"\033[91m{traceback_msg}\033[0m", file=sys.stderr)
-                    sys.stderr.flush()
-                    
-                    # Also log normally
-                    self.logger.error(error_msg)
-                    self.logger.error(traceback_msg)
-                    
-                    # Return a proper error response
-                    from flask import jsonify
-                    return jsonify({
-                        'error': 'Service Error',
-                        'service': service_name,
-                        'method': bound_method.__name__,
-                        'message': str(e),
-                        'traceback': traceback.format_exc() if current_app.config.get('DEBUG') else None
-                    }), 500
-
-            return handler
-
-        endpoint = f"{service_name}:{getattr(method, '__name__', 'endpoint')}:{full_path}"
-        self.blueprint.add_url_rule(full_path, endpoint=endpoint, view_func=handler_factory(method), methods=methods)
-
-    def list_services(self) -> list[str]:
-        return list(self.registered_services.keys())
-
-    def get_service(self, service_name: str) -> Any | None:
-        return self.registered_services.get(service_name)
-

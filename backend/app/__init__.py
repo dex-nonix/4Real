@@ -171,7 +171,7 @@ def create_app() -> Flask:
             app.logger.error(traceback_msg)
             raise  # Re-raise to prevent silent failures
 
-    from .services.api_router import APIRouter
+    from .api_router import APIRouter
     api_router = APIRouter()
 
     with app.app_context():
