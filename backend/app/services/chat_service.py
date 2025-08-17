@@ -79,7 +79,7 @@ class ChatService:
         return query.group_by(ChatSession.id)
 
     # Endpoints
-    @expose('/sessions', methods=['POST'])
+    @expose('/sessions', methods=['POST'], tags=["Chat"])
     def create_session(self, req: Request):
         try:
             payload = req.get_json(silent=True) or {}

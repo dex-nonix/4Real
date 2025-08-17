@@ -104,8 +104,11 @@ class APIRouter:
             processed_tags = []
             for tag in raw_tags:
                 if isinstance(tag, str):
-                    # Replace {service_name} placeholder with actual service name
-                    processed_tag = tag.replace('{service_name}', service_name.title())
+                    # Replace __SERVICE_NAME__ marker with actual service name
+                    if tag == "__SERVICE_NAME__":
+                        processed_tag = service_name.title()
+                    else:
+                        processed_tag = tag.replace('{service_name}', service_name.title())
                     processed_tags.append(processed_tag)
                 else:
                     processed_tags.append(tag)

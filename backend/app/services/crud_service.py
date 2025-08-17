@@ -108,7 +108,7 @@ class CrudService:
         methods=['POST'],
         summary="Create new {service_name}",
         description="Create a new {service_name} with the provided data",
-        tags=["{service_name}"],
+        tags=["__SERVICE_NAME__"],
         status_codes={201: 'Created', 400: 'Validation Error', 500: 'Server Error'}
     )
     def create(self, req: Request):
@@ -119,7 +119,7 @@ class CrudService:
         methods=['GET'],
         summary="List all {service_name}s",
         description="Retrieve a list of all {service_name}s with optional filtering and pagination",
-        tags=["{service_name}"],
+        tags=["__SERVICE_NAME__"],
         status_codes={200: 'Success', 500: 'Server Error'}
     )
     def list_all(self, req: Request):
@@ -130,7 +130,7 @@ class CrudService:
         methods=['GET'],
         summary="Get {service_name} by ID",
         description="Retrieve {service_name} details by their unique identifier",
-        tags=["{service_name}"],
+        tags=["__SERVICE_NAME__"],
         status_codes={200: 'Success', 404: 'Not Found', 500: 'Server Error'}
     )
     def read_one(self, req: Request, id: int):  # noqa: A002 - id is API param name
@@ -141,7 +141,7 @@ class CrudService:
         methods=['PUT'],
         summary="Update {service_name}",
         description="Update an existing {service_name} with new data",
-        tags=["{service_name}"],
+        tags=["__SERVICE_NAME__"],
         status_codes={200: 'Success', 400: 'Validation Error', 404: 'Not Found', 500: 'Server Error'}
     )
     def update(self, req: Request, id: int):  # noqa: A002
@@ -152,7 +152,7 @@ class CrudService:
         methods=['DELETE'],
         summary="Delete {service_name}",
         description="Delete a {service_name} by their unique identifier",
-        tags=["{service_name}"],
+        tags=["__SERVICE_NAME__"],
         status_codes={200: 'Success', 404: 'Not Found', 500: 'Server Error'}
     )
     def delete(self, req: Request, id: int):  # noqa: A002
@@ -163,7 +163,7 @@ class CrudService:
         methods=['GET'],
         summary="Search {service_name}s",
         description="Search {service_name}s by various criteria",
-        tags=["{service_name}"],
+        tags=["__SERVICE_NAME__"],
         status_codes={200: 'Success', 500: 'Server Error'}
     )
     def search(self, req: Request):
@@ -174,7 +174,7 @@ class CrudService:
         methods=['POST'],
         summary="Bulk {service_name} operations",
         description="Perform bulk operations on multiple {service_name}s",
-        tags=["{service_name}"],
+        tags=["__SERVICE_NAME__"],
         status_codes={200: 'Success', 400: 'Validation Error', 500: 'Server Error'}
     )
     def bulk_operations(self, req: Request):
@@ -185,7 +185,7 @@ class CrudService:
         methods=['GET'],
         summary="Get {service_name} selector options",
         description="Get options for {service_name} dropdown selectors",
-        tags=["{service_name}"],
+        tags=["__SERVICE_NAME__"],
         status_codes={200: 'Success', 500: 'Server Error'}
     )
     def selector(self, req: Request):
@@ -196,7 +196,7 @@ class CrudService:
         methods=['GET'],
         summary="Get single {service_name} selector option",
         description="Get a single {service_name} selector option by ID",
-        tags=["{service_name}"],
+        tags=["__SERVICE_NAME__"],
         status_codes={200: 'Success', 404: 'Not Found', 500: 'Server Error'}
     )
     def single_selector(self, req: Request, id: int):  # noqa: A002
