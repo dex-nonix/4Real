@@ -23,36 +23,42 @@ export default class ChatRuntimeService extends BaseApiService {
 
   // Get histories within a session
   getHistories(sessionId) {
-    return this.get(`/chat-sessions/${encodeURIComponent(sessionId)}/histories`)
+    return this.get(`/chat-histories?session_id=${encodeURIComponent(sessionId)}`)
   }
 
   // Create new history within session
   createHistory(sessionId, title) {
-    return this.post(`/chat-sessions/${encodeURIComponent(sessionId)}/histories`, {
+    return this.post(`/chat-histories`, {
+      session_id: sessionId,
       title: title
     })
   }
 
   // Get messages from specific history
   getHistoryMessages(sessionId, historyId) {
-    return this.get(`/chat-sessions/${encodeURIComponent(sessionId)}/histories/${encodeURIComponent(historyId)}/messages`)
+    return this.get(`/chat-messages?history_id=${encodeURIComponent(historyId)}`)
   }
 
   // Send message to specific history
   sendMessageToHistory(sessionId, historyId, content) {
-    return this.post(`/chat-sessions/${encodeURIComponent(sessionId)}/histories/${encodeURIComponent(historyId)}/send`, {
-      content: content
+    return this.post(`/chat-messages`, {
+      history_id: historyId,
+      role: 'user',
+      message_type: 'text',
+      content_json: content
     })
   }
 
   // Activate a different history
   activateHistory(sessionId, historyId) {
-    return this.post(`/chat-sessions/${encodeURIComponent(sessionId)}/histories/${encodeURIComponent(historyId)}/activate`)
+    return this.put(`/chat-sessions/${encodeURIComponent(sessionId)}`, {
+      current_history_id: historyId
+    })
   }
 
   // Update history (rename)
   updateHistory(sessionId, historyId, title, summary) {
-    return this.put(`/chat-sessions/${encodeURIComponent(sessionId)}/histories/${encodeURIComponent(historyId)}`, {
+    return this.put(`/chat-histories/${encodeURIComponent(historyId)}`, {
       title: title,
       summary: summary
     })
@@ -60,7 +66,7 @@ export default class ChatRuntimeService extends BaseApiService {
 
   // Delete history
   deleteHistory(sessionId, historyId) {
-    return this.delete(`/chat-sessions/${encodeURIComponent(sessionId)}/histories/${encodeURIComponent(historyId)}`)
+    return this.delete(`/chat-histories/${encodeURIComponent(historyId)}`)
   }
 
   // Legacy methods (keep for compatibility)

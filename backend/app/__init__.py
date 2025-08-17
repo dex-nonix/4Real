@@ -37,6 +37,7 @@ def create_app() -> Flask:
         from .services.chat_session_service import ChatSessionService
         from .services.chat_message_service import ChatMessageService
         from .services.chat_history_service import ChatHistoryService
+
         from .services.tool_invocation_log_service import ToolInvocationLogService
         from .services.chat_service import ChatService
         from .services.file_category_service import FileCategoryService

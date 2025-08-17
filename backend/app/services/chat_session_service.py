@@ -8,20 +8,20 @@ class ChatSessionService(CrudService):
     model = ChatSession
     config = {
         'filters': {
-            'fields': ['persona_id', 'title', 'created_by'],
+            'fields': ['persona_id', 'session_name', 'session_icon', 'is_active'],
         },
         'sorting': {
             'default_sort': 'created_at',
-            'allowed_fields': ['created_at', 'updated_at', 'title'],
+            'allowed_fields': ['created_at', 'updated_at', 'session_name'],
         },
         'validation': {
-            'required_fields': ['persona_id', 'title'],
+            'required_fields': ['persona_id'],  # session_name is optional
             'unique_fields': [],
         },
         'selector': {
-            'fields': ['title'],
-            'display_format': 'title',
-            'search_fields': ['title', 'created_by'],
+            'fields': ['session_name', 'session_icon'],
+            'display_format': 'session_name',
+            'search_fields': ['session_name'],
             'order_by': 'created_at',
         },
     }

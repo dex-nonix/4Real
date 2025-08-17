@@ -109,32 +109,7 @@ class ChatService:
             db.session.rollback()
             return jsonify({'error': str(exc)}), 500
 
-    @expose('/sessions', methods=['GET'])
-    def list_sessions(self, req: Request):
-        try:
-            persona_id = req.args.get('persona_id')
-            created_by = req.args.get('created_by')
 
-            query = ChatSession.query
-            if persona_id:
-                query = query.filter_by(persona_id=int(persona_id))
-            if created_by:
-                query = query.filter_by(created_by=created_by)
-
-            items = query.order_by(ChatSession.created_at.desc()).all()
-            return jsonify({'data': [s.to_dict() for s in items], 'total': len(items)})
-        except Exception as exc:  # noqa: BLE001
-            return jsonify({'error': str(exc)}), 500
-
-    @expose('/sessions/{id}', methods=['GET'])
-    def get_session(self, req: Request, id: int):  # noqa: A002 - API name
-        try:
-            session = ChatSession.query.filter_by(id=id).first()
-            if not session:
-                return jsonify({'error': 'Not found'}), 404
-            return jsonify({'data': session.to_dict()})
-        except Exception as exc:  # noqa: BLE001
-            return jsonify({'error': str(exc)}), 500
 
     @expose('/sessions/{id}/messages', methods=['GET'])
     def list_messages(self, req: Request, id: int):  # noqa: A002
@@ -430,7 +405,7 @@ class ChatService:
 
     @expose('/personas', methods=['GET'])
     def list_personas(self, req: Request):
-        """List all available personas with their active sessions."""
+        """List all available personas with their active sessions and histories."""
         try:
             personas = Persona.query.filter_by(is_active=True).all()
             result = []
@@ -438,9 +413,37 @@ class ChatService:
                 persona_data = persona.to_dict()
                 # Get active sessions for this persona
                 sessions = ChatSession.query.filter_by(persona_id=persona.id, is_active=True).all()
-                persona_data['sessions'] = [s.to_dict() for s in sessions]
+                sessions_data = []
+                for session in sessions:
+                    session_data = session.to_dict()
+                    # Get histories for this session
+                    histories = ChatHistory.query.filter_by(session_id=session.id).all()
+                    session_data['histories'] = [h.to_dict() for h in histories]
+                    sessions_data.append(session_data)
+                persona_data['sessions'] = sessions_data
                 result.append(persona_data)
             return jsonify({'data': result, 'total': len(result)})
+        except Exception as exc:  # noqa: BLE001
+            return jsonify({'error': str(exc)}), 500
+
+    @expose('/personas/{persona_id}/sessions', methods=['GET'])
+    def get_persona_sessions(self, req: Request, persona_id: int):
+        """Get all sessions for a specific persona."""
+        try:
+            persona = Persona.query.filter_by(id=persona_id, is_active=True).first()
+            if not persona:
+                return jsonify({'error': 'Persona not found or inactive'}), 404
+
+            sessions = ChatSession.query.filter_by(persona_id=persona_id, is_active=True).all()
+            sessions_data = []
+            for session in sessions:
+                session_data = session.to_dict()
+                # Get histories for this session
+                histories = ChatHistory.query.filter_by(session_id=session.id).all()
+                session_data['histories'] = [h.to_dict() for h in histories]
+                sessions_data.append(session_data)
+            
+            return jsonify({'data': sessions_data, 'total': len(sessions_data)})
         except Exception as exc:  # noqa: BLE001
             return jsonify({'error': str(exc)}), 500
 
@@ -511,7 +514,7 @@ class ChatService:
             payload = req.get_json(silent=True) or {}
             tool_name = payload.get('tool')
             tool_args = payload.get('args') or {}
-            session_id = payload.get('session_id')
+            history_id = payload.get('history_id')
             user_message_id = payload.get('message_id')
 
             persona = Persona.query.filter_by(id=persona_id).first()
@@ -522,7 +525,7 @@ class ChatService:
                 return jsonify({'error': 'Tool not allowed'}), 403
 
             log = ToolInvocationLog(
-                session_id=session_id,
+                history_id=history_id,
                 message_id=user_message_id,
                 tool_name=tool_name,
                 input_json=tool_args,
@@ -536,8 +539,8 @@ class ChatService:
             log.output_json = exec_result
             db.session.commit()
 
-            if session_id:
-                tool_msg = ChatMessage(session_id=session_id, role='tool', content_json={'type': 'tool_result', 'tool': tool_name, 'input': tool_args, 'output': exec_result})
+            if history_id:
+                tool_msg = ChatMessage(history_id=history_id, role='tool', message_type='tool_result', content_json={'type': 'tool_result', 'tool': tool_name, 'input': tool_args, 'output': exec_result})
                 db.session.add(tool_msg)
                 db.session.commit()
 
@@ -562,6 +565,19 @@ class ChatService:
             return jsonify({'data': [m.to_dict() for m in msgs], 'total': len(msgs)})
         except Exception as exc:  # noqa: BLE001
             return jsonify({'error': str(exc)}), 500
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     @expose('/mcp/servers/status', methods=['GET'])
     def mcp_status(self, req: Request):
