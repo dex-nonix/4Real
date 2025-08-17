@@ -111,46 +111,6 @@ onMounted(() => {
   chatMessageTypeManager.registerMessageType('user', UserMessage);
 });
 
-// Load messages when historyId changes
-watch(() => props.historyId, async (newHistoryId, oldHistoryId) => {
-  console.log('historyId changed from', oldHistoryId, 'to', newHistoryId);
-  if (newHistoryId) {
-    // Clear existing messages before loading new ones
-    messages.value = [];
-    await loadMessages(newHistoryId);
-  } else {
-    messages.value = [];
-  }
-}, { immediate: true });
-
-// React to selectedSession changes
-watch(() => props.selectedSession, (newSession, oldSession) => {
-  console.log('ChatMessageContainer - selectedSession changed:', newSession);
-  console.log('ChatMessageContainer - historyId:', props.historyId);
-  
-  if (newSession) {
-    // Save input text for previous session if it exists
-    if (oldSession && oldSession.id) {
-      sessionInputTexts.value.set(oldSession.id, inputText.value);
-    }
-    
-    // Load input text for new session
-    if (newSession.id) {
-      inputText.value = sessionInputTexts.value.get(newSession.id) || '';
-    }
-    
-    // Load messages for the new session if we have a history
-    if (props.historyId) {
-      console.log('Loading messages for history:', props.historyId);
-      loadMessages(props.historyId);
-    } else {
-      console.log('No historyId available for message loading');
-    }
-    
-    console.log('Selected session changed:', newSession);
-  }
-}, { immediate: true });
-
 // Load messages for specific history
 const loadMessages = async (historyId) => {
   console.log('loadMessages called with historyId:', historyId);
@@ -219,6 +179,46 @@ const loadMessages = async (historyId) => {
     loading.value = false;
   }
 };
+
+// Load messages when historyId changes
+watch(() => props.historyId, async (newHistoryId, oldHistoryId) => {
+  console.log('historyId changed from', oldHistoryId, 'to', newHistoryId);
+  if (newHistoryId) {
+    // Clear existing messages before loading new ones
+    messages.value = [];
+    await loadMessages(newHistoryId);
+  } else {
+    messages.value = [];
+  }
+}, { immediate: true });
+
+// React to selectedSession changes
+watch(() => props.selectedSession, (newSession, oldSession) => {
+  console.log('ChatMessageContainer - selectedSession changed:', newSession);
+  console.log('ChatMessageContainer - historyId:', props.historyId);
+  
+  if (newSession) {
+    // Save input text for previous session if it exists
+    if (oldSession && oldSession.id) {
+      sessionInputTexts.value.set(oldSession.id, inputText.value);
+    }
+    
+    // Load input text for new session
+    if (newSession.id) {
+      inputText.value = sessionInputTexts.value.get(newSession.id) || '';
+    }
+    
+    // Load messages for the new session if we have a history
+    if (props.historyId) {
+      console.log('Loading messages for history:', props.historyId);
+      loadMessages(props.historyId);
+    } else {
+      console.log('No historyId available for message loading');
+    }
+    
+    console.log('Selected session changed:', newSession);
+  }
+}, { immediate: true });
 
 // Send message
 const onSend = async () => {

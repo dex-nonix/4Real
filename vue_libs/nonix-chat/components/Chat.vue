@@ -110,6 +110,13 @@ const handleSessionSelected = async (sessionId) => {
     return;
   }
   
+  // Prevent selection of invalid session IDs
+  if (!sessionId || typeof sessionId === 'undefined' || sessionId === null) {
+    console.warn('Invalid session ID provided:', sessionId);
+    addWarning('Invalid session ID provided');
+    return;
+  }
+  
   try {
     isLoading.value = true;
     currentSessionId.value = sessionId;
@@ -194,12 +201,45 @@ const handleSessionSelected = async (sessionId) => {
 // Handle sessions loaded from ChatSessionBar
 const handleSessionsLoaded = (sessionsList) => {
   console.log('Sessions loaded:', sessionsList);
-  sessions.value = sessionsList;
   
-  if (sessionsList.length === 0) {
-    addInfo('No chat sessions found');
-  } else {
-    addInfo(`Loaded ${sessionsList.length} chat session(s)`);
+  try {
+    // Handle different response structures
+    let actualSessions = [];
+    if (Array.isArray(sessionsList)) {
+      actualSessions = sessionsList;
+    } else if (sessionsList?.data && Array.isArray(sessionsList.data)) {
+      actualSessions = sessionsList.data;
+    } else if (sessionsList?.data?.data && Array.isArray(sessionsList.data.data)) {
+      actualSessions = sessionsList.data.data;
+    }
+    
+    // Validate sessions have proper IDs
+    actualSessions = actualSessions.filter(session => {
+      if (!session || typeof session.id === 'undefined' || session.id === null) {
+        console.warn('Invalid session found:', session);
+        return false;
+      }
+      return true;
+    });
+    
+    sessions.value = actualSessions;
+    console.log('Processed and validated sessions:', actualSessions);
+    
+    if (actualSessions.length === 0) {
+      addInfo('No valid chat sessions found');
+    } else {
+      addInfo(`Loaded ${actualSessions.length} valid chat session(s)`);
+      
+      // Auto-select first session if none selected
+      if (!currentSessionId.value) {
+        console.log('Auto-selecting first session:', actualSessions[0].id);
+        handleSessionSelected(actualSessions[0].id);
+      }
+    }
+  } catch (error) {
+    console.error('Error processing sessions:', error);
+    addError('Failed to process sessions', error);
+    sessions.value = [];
   }
 };
 
@@ -368,6 +408,7 @@ defineExpose({
           }"
         >
           <ChatMessageContainer
+            v-if="session.id && currentSessionId && selectedSession"
             :session-id="session.id"
             :history-id="currentHistoryId"
             :current-user-id="currentUserId"
@@ -377,10 +418,10 @@ defineExpose({
           />
         </div>
         
-        <!-- Loading state when no sessions -->
-        <div v-if="sessions.length === 0" class="flex flex-column flex-1 justify-content-center align-items-center p-4">
+        <!-- Loading state when no sessions or sessions are being processed -->
+        <div v-if="sessions.length === 0 || isLoading" class="flex flex-column flex-1 justify-content-center align-items-center p-4">
           <i class="pi pi-spin pi-spinner text-4xl text-500 mb-3"></i>
-          <p class="text-500">Loading sessions...</p>
+          <p class="text-500">{{ isLoading ? 'Processing...' : 'Loading sessions...' }}</p>
         </div>
       </div>
     </div>

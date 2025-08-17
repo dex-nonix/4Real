@@ -9,7 +9,7 @@ const props = defineProps({
   currentSessionId: { type: [String, Number, null], required: false, default: null }
 });
 
-const emit = defineEmits(['sessionSelected', 'sessionAdded', 'sessionRemoved', 'sessionsLoaded', 'error']);
+const emit = defineEmits(['sessionSelected', 'sessionAdded', 'sessionRemoved', 'sessionsLoaded', 'error', 'addSession']);
 
 // Service injection
 const chatService = inject('chat-service');
@@ -28,17 +28,25 @@ const loadSessions = async () => {
   try {
     loading.value = true;
     const response = await chatService.getSessions();
+    console.log('Raw sessions response:', response);
+    
     // Handle ChatService response structure: {data: Array, total: number}
-    sessions.value = response.data || [];
+    let actualSessions = [];
+    if (response?.data && Array.isArray(response.data)) {
+      actualSessions = response.data;
+    } else if (response?.data?.data && Array.isArray(response.data.data)) {
+      actualSessions = response.data.data;
+    } else if (Array.isArray(response)) {
+      actualSessions = response;
+    }
+    
+    sessions.value = actualSessions;
+    console.log('Processed sessions in ChatSessionBar:', actualSessions);
     
     // Emit sessions loaded event for tab-based architecture
-    emit('sessionsLoaded', sessions.value);
+    emit('sessionsLoaded', response); // Emit the full response for parent to process
     
-    // If no current session is selected and we have sessions, select the first one
-    if (sessions.value.length > 0 && !props.currentSessionId) {
-      const firstSession = sessions.value[0];
-      emit('sessionSelected', firstSession.id);
-    }
+    // Don't auto-select here - let parent handle it
   } catch (error) {
     console.error('Failed to load sessions:', error);
     sessions.value = [];
