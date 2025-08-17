@@ -10,7 +10,7 @@ const props = defineProps({
   currentHistory: { type: Object, required: false, default: null }
 });
 
-const emit = defineEmits(['viewHistory', 'closeChat', 'renameHistory']);
+const emit = defineEmits(['viewHistory', 'closeChat', 'renameHistory', 'clearMessages']);
 
 const isEditingTitle = ref(false);
 const editedTitle = ref('');
@@ -83,6 +83,8 @@ const getAvatarDisplay = () => {
     <div class="flex align-items-center gap-1">
       <!-- opens a popdown(not dialog) with the list of history, also to delete there and rename the history -->
       <Button icon="pi pi-history" text rounded severity="secondary" @click="emit('viewHistory')" v-tooltip.bottom="'View History'" />
+      <!-- clear all messages in current history -->
+      <Button icon="pi pi-trash" text rounded severity="danger" @click="emit('clearMessages')" v-tooltip.bottom="'Clear Messages'" />
       <!-- optional as its for use when in a sidepane so its optionally shown, but normally hidden -->
       <Button icon="pi pi-times" text rounded severity="secondary" @click="emit('closeChat')" v-tooltip.bottom="'Close Chat'"/>
     </div>

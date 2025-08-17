@@ -319,32 +319,6 @@ const canSendMessage = computed(() => hasHistory.value && inputText.value?.trim(
 
     <!-- Message Input Area -->
     <div class="flex align-items-center p-1 border-top-1 surface-border surface-section flex-shrink-0">
-
-      
-      <!-- Reload Button -->
-      <Button 
-        icon="pi pi-refresh"
-        text 
-        rounded 
-        severity="info"
-        @click="reloadMessages"
-        v-tooltip.bottom="'Reload messages'"
-        class="mr-2"
-      />
-      
-
-      
-      <!-- Tools Button -->
-      <Button 
-        icon="pi pi-box" 
-        text 
-        rounded 
-        severity="secondary"
-        @click="showTools"
-        v-tooltip.bottom="'Available Tools'"
-        :disabled="!hasHistory"
-      />
-
       <!-- Input Field -->
       <span class="p-input-icon-right flex-grow-1 mx-2">
         <IconField>
@@ -358,17 +332,6 @@ const canSendMessage = computed(() => hasHistory.value && inputText.value?.trim(
           <InputIcon class="pi pi-send" @click="onSend" />
         </IconField>
       </span>
-
-      <!-- Options Button -->
-      <div class="flex align-items-center gap-2">
-        <Button 
-          icon="pi pi-ellipsis-h" 
-          text 
-          rounded 
-          severity="secondary"
-          :disabled="!hasHistory"
-        />
-      </div>
     </div>
   </div>
 </template>

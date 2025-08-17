@@ -413,6 +413,16 @@ const handleHistorySelected = async (historyId) => {
   }
 };
 
+// Handle clear messages request
+const handleClearMessages = () => {
+  if (!currentHistoryId.value) {
+    addWarning('No history selected to clear messages from');
+    return;
+  }
+  
+  addInfo('Clear messages functionality not yet implemented');
+};
+
 // Clear errors
 const clearErrors = () => {
   errors.value = [];
@@ -454,6 +464,7 @@ defineExpose({
       @view-history="handleViewHistory"
       @close-chat="handleCloseChat"
       @rename-history="handleRenameHistory"
+      @clear-messages="handleClearMessages"
     />
 
     <div class="flex flex-row flex-1" style="min-height: 0;">
