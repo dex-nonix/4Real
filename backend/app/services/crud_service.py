@@ -103,39 +103,102 @@ class CrudService:
             return jsonify({'error': 'Operation disabled'}), 405
         return handler(*args, **kwargs)
 
-    @expose('/', methods=['POST'])
+    @expose(
+        '/', 
+        methods=['POST'],
+        summary="Create new {service_name}",
+        description="Create a new {service_name} with the provided data",
+        tags=["{service_name}"],
+        status_codes={201: 'Created', 400: 'Validation Error', 500: 'Server Error'}
+    )
     def create(self, req: Request):
         return self._call_if_enabled('create', self._handle_create, req)
 
-    @expose('/', methods=['GET'])
+    @expose(
+        '/', 
+        methods=['GET'],
+        summary="List all {service_name}s",
+        description="Retrieve a list of all {service_name}s with optional filtering and pagination",
+        tags=["{service_name}"],
+        status_codes={200: 'Success', 500: 'Server Error'}
+    )
     def list_all(self, req: Request):
         return self._call_if_enabled('list', self._handle_list, req)
 
-    @expose('/{id}', methods=['GET'])
+    @expose(
+        '/{id}', 
+        methods=['GET'],
+        summary="Get {service_name} by ID",
+        description="Retrieve {service_name} details by their unique identifier",
+        tags=["{service_name}"],
+        status_codes={200: 'Success', 404: 'Not Found', 500: 'Server Error'}
+    )
     def read_one(self, req: Request, id: int):  # noqa: A002 - id is API param name
         return self._call_if_enabled('read', self._handle_read, req, id)
 
-    @expose('/{id}', methods=['PUT'])
+    @expose(
+        '/{id}', 
+        methods=['PUT'],
+        summary="Update {service_name}",
+        description="Update an existing {service_name} with new data",
+        tags=["{service_name}"],
+        status_codes={200: 'Success', 400: 'Validation Error', 404: 'Not Found', 500: 'Server Error'}
+    )
     def update(self, req: Request, id: int):  # noqa: A002
         return self._call_if_enabled('update', self._handle_update, req, id)
 
-    @expose('/{id}', methods=['DELETE'])
+    @expose(
+        '/{id}', 
+        methods=['DELETE'],
+        summary="Delete {service_name}",
+        description="Delete a {service_name} by their unique identifier",
+        tags=["{service_name}"],
+        status_codes={200: 'Success', 404: 'Not Found', 500: 'Server Error'}
+    )
     def delete(self, req: Request, id: int):  # noqa: A002
         return self._call_if_enabled('delete', self._handle_delete, req, id)
 
-    @expose('/search', methods=['GET'])
+    @expose(
+        '/search', 
+        methods=['GET'],
+        summary="Search {service_name}s",
+        description="Search {service_name}s by various criteria",
+        tags=["{service_name}"],
+        status_codes={200: 'Success', 500: 'Server Error'}
+    )
     def search(self, req: Request):
         return self._call_if_enabled('search', self._handle_search, req)
 
-    @expose('/bulk', methods=['POST'])
+    @expose(
+        '/bulk', 
+        methods=['POST'],
+        summary="Bulk {service_name} operations",
+        description="Perform bulk operations on multiple {service_name}s",
+        tags=["{service_name}"],
+        status_codes={200: 'Success', 400: 'Validation Error', 500: 'Server Error'}
+    )
     def bulk_operations(self, req: Request):
         return self._call_if_enabled('bulk', self._handle_bulk, req)
 
-    @expose('/selector', methods=['GET'])
+    @expose(
+        '/selector', 
+        methods=['GET'],
+        summary="Get {service_name} selector options",
+        description="Get options for {service_name} dropdown selectors",
+        tags=["{service_name}"],
+        status_codes={200: 'Success', 500: 'Server Error'}
+    )
     def selector(self, req: Request):
         return self._call_if_enabled('selector', self._handle_selector, req)
 
-    @expose('/selector/{id}', methods=['GET'])
+    @expose(
+        '/selector/{id}', 
+        methods=['GET'],
+        summary="Get single {service_name} selector option",
+        description="Get a single {service_name} selector option by ID",
+        tags=["{service_name}"],
+        status_codes={200: 'Success', 404: 'Not Found', 500: 'Server Error'}
+    )
     def single_selector(self, req: Request, id: int):  # noqa: A002
         return self._call_if_enabled('selector', self._handle_single_selector, req, id)
 

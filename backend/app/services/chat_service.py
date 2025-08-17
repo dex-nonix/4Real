@@ -58,6 +58,26 @@ class ChatService:
             'parameters': mapping.parameters_json or {},
         }
 
+    def _get_sessions_with_history_counts(self, persona_id: int = None, session_id: int = None):
+        """Utility method to get sessions with history counts using single JOIN query."""
+        from sqlalchemy import func
+        
+        query = db.session.query(
+            ChatSession,
+            func.count(ChatHistory.id).label('history_count')
+        ).outerjoin(
+            ChatHistory, ChatSession.id == ChatHistory.session_id
+        ).filter(
+            ChatSession.is_active == True
+        )
+        
+        if persona_id:
+            query = query.filter(ChatSession.persona_id == persona_id)
+        if session_id:
+            query = query.filter(ChatSession.id == session_id)
+            
+        return query.group_by(ChatSession.id)
+
     # Endpoints
     @expose('/sessions', methods=['POST'])
     def create_session(self, req: Request):
@@ -411,14 +431,13 @@ class ChatService:
             result = []
             for persona in personas:
                 persona_data = persona.to_dict()
-                # Get active sessions for this persona
-                sessions = ChatSession.query.filter_by(persona_id=persona.id, is_active=True).all()
+                # Use utility method for single JOIN query with COUNT
+                sessions_with_counts = self._get_sessions_with_history_counts(persona_id=persona.id).all()
+                
                 sessions_data = []
-                for session in sessions:
+                for session, history_count in sessions_with_counts:
                     session_data = session.to_dict()
-                    # Get histories for this session
-                    histories = ChatHistory.query.filter_by(session_id=session.id).all()
-                    session_data['histories'] = [h.to_dict() for h in histories]
+                    session_data['history_count'] = history_count  # Just the count, no objects
                     sessions_data.append(session_data)
                 persona_data['sessions'] = sessions_data
                 result.append(persona_data)
@@ -434,13 +453,13 @@ class ChatService:
             if not persona:
                 return jsonify({'error': 'Persona not found or inactive'}), 404
 
-            sessions = ChatSession.query.filter_by(persona_id=persona_id, is_active=True).all()
+            # Use utility method for single JOIN query with COUNT
+            sessions_with_counts = self._get_sessions_with_history_counts(persona_id=persona_id).all()
+            
             sessions_data = []
-            for session in sessions:
+            for session, history_count in sessions_with_counts:
                 session_data = session.to_dict()
-                # Get histories for this session
-                histories = ChatHistory.query.filter_by(session_id=session.id).all()
-                session_data['histories'] = [h.to_dict() for h in histories]
+                session_data['history_count'] = history_count  # Just the count, no objects
                 sessions_data.append(session_data)
             
             return jsonify({'data': sessions_data, 'total': len(sessions_data)})
@@ -580,13 +599,13 @@ class ChatService:
     def list_sessions(self, req: Request):
         """List all active chat sessions."""
         try:
-            sessions = ChatSession.query.filter_by(is_active=True).all()
+            # Use utility method for single JOIN query with COUNT
+            sessions_with_counts = self._get_sessions_with_history_counts().all()
+            
             result = []
-            for session in sessions:
+            for session, history_count in sessions_with_counts:
                 session_data = session.to_dict()
-                # Get histories for this session
-                histories = ChatHistory.query.filter_by(session_id=session.id).all()
-                session_data['histories'] = [h.to_dict() for h in histories]
+                session_data['history_count'] = history_count  # Just the count, no objects
                 result.append(session_data)
             return jsonify({'data': result, 'total': len(result)})
         except Exception as exc:  # noqa: BLE001
@@ -596,14 +615,15 @@ class ChatService:
     def get_session(self, req: Request, id: int):  # noqa: A002
         """Get a specific chat session by ID."""
         try:
-            session = ChatSession.query.filter_by(id=id, is_active=True).first()
-            if not session:
+            # Use utility method for single JOIN query with COUNT
+            session_with_count = self._get_sessions_with_history_counts(session_id=id).first()
+            
+            if not session_with_count:
                 return jsonify({'error': 'Session not found or inactive'}), 404
             
+            session, history_count = session_with_count
             session_data = session.to_dict()
-            # Get histories for this session
-            histories = ChatHistory.query.filter_by(session_id=session.id).all()
-            session_data['histories'] = [h.to_dict() for h in histories]
+            session_data['history_count'] = history_count  # Just the count, no objects
             
             return jsonify({'data': session_data})
         except Exception as exc:  # noqa: BLE001
