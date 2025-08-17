@@ -225,6 +225,33 @@ class CrudSwaggerGenerator:
             tags = method_info['tags']
             status_codes = method_info['status_codes']
             
+            # Provide sensible defaults for missing decorator info (like BaseApiService does)
+            if not summary:
+                summary = f"{method_name.replace('_', ' ').title()}"
+            if not description:
+                description = f"Endpoint for {method_name.replace('_', ' ')}"
+            if not tags:
+                # Generate proper, readable tag names from service class
+                service_name = self.service.__class__.__name__.replace('Service', '')
+                # Split camelCase into words and capitalize properly
+                import re
+                words = re.findall(r'[A-Z][a-z]*|[A-Z]+(?=[A-Z][a-z]|$)', service_name)
+                if words:
+                    # Handle special cases for better readability
+                    if len(words) == 1:
+                        tag = words[0]
+                    elif words[0] == 'AI' and len(words) > 1:
+                        tag = 'AI ' + ' '.join(words[1:])
+                    elif words[0] == 'MCP' and len(words) > 1:
+                        tag = 'MCP ' + ' '.join(words[1:])
+                    else:
+                        tag = ' '.join(words)
+                else:
+                    tag = service_name
+                tags = [tag]
+            if not status_codes:
+                status_codes = {200: 'Success', 400: 'Bad Request', 500: 'Internal Server Error'}
+            
             # Determine request/response schemas based on method
             request_schema = None
             response_schema = None
