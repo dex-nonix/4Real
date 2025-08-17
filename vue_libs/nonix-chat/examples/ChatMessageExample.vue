@@ -2,35 +2,37 @@
 <!--
   Example component demonstrating the ChatMessageTypeManager system
   Shows how different message types are rendered dynamically
+  Updated to use ChatMessageContainer instead of ChatMessages
 -->
 <script setup>
 import { ref } from 'vue';
-import ChatMessages from './ChatMessages.vue';
+import ChatMessageContainer from '../components/ChatMessageContainer.vue';
 
 const currentUserId = ref('user123');
+const sessionId = ref('example-session');
 
 // Example messages with different types
 const messages = ref([
   {
     id: '1',
-    type: 'text',
-    senderId: 'user123',
-    text: 'Hello! This is a regular text message.',
+    message_type: 'text',
+    sender_id: 'user123',
+    content: 'Hello! This is a regular text message.',
     timestamp: '2024-01-01T10:00:00Z',
     status: 'delivered'
   },
   {
     id: '2',
-    type: 'system',
-    senderId: 'system',
-    text: 'User joined the chat',
+    message_type: 'system',
+    sender_id: 'system',
+    content: 'User joined the chat',
     timestamp: '2024-01-01T10:01:00Z'
   },
   {
     id: '3',
-    type: 'tool',
-    senderId: 'assistant',
-    text: 'Executing search query...',
+    message_type: 'tool',
+    sender_id: 'assistant',
+    content: 'Executing search query...',
     timestamp: '2024-01-01T10:02:00Z',
     metadata: {
       toolName: 'Search Tool',
@@ -41,9 +43,9 @@ const messages = ref([
   },
   {
     id: '4',
-    type: 'user',
-    senderId: 'user456',
-    text: 'This is a user message from another user',
+    message_type: 'user',
+    sender_id: 'user456',
+    content: 'This is a user message from another user',
     timestamp: '2024-01-01T10:03:00Z',
     metadata: {
       userName: 'John Doe',
@@ -53,21 +55,31 @@ const messages = ref([
   },
   {
     id: '5',
-    type: 'text',
-    senderId: 'user123',
-    text: 'This is my own message',
+    message_type: 'text',
+    sender_id: 'user123',
+    content: 'This is my own message',
     timestamp: '2024-01-01T10:04:00Z',
     status: 'sent'
   }
 ]);
 
+// Mock session object for the example
+const mockSession = ref({
+  id: sessionId.value,
+  session_name: 'Example Chat Session',
+  persona: {
+    name: 'Example Persona',
+    description: 'A demo persona for testing'
+  }
+});
+
 // Add new message function for testing
 const addMessage = (type, text) => {
   const newMessage = {
     id: Date.now().toString(),
-    type: type,
-    senderId: type === 'system' ? 'system' : 'user123',
-    text: text,
+    message_type: type,
+    sender_id: type === 'system' ? 'system' : 'user123',
+    content: text,
     timestamp: new Date().toISOString(),
     status: 'sent',
     metadata: type === 'tool' ? {
@@ -82,6 +94,13 @@ const addMessage = (type, text) => {
   };
   
   messages.value.push(newMessage);
+};
+
+// Handle send message event
+const handleSendMessage = (messageData) => {
+  console.log('Message sent:', messageData);
+  // In a real app, this would send to the backend
+  addMessage('text', messageData.text);
 };
 </script>
 
@@ -114,16 +133,18 @@ const addMessage = (type, text) => {
       <span class="ml-3">
         <strong>Types:</strong> 
         <span v-for="type in ['text', 'system', 'tool', 'user']" :key="type" class="ml-2">
-          {{ type }}: {{ messages.filter(m => m.type === type).length }}
+          {{ type }}: {{ messages.filter(m => m.message_type === type).length }}
         </span>
       </span>
     </div>
     
-    <!-- Chat Messages -->
+    <!-- Chat Message Container -->
     <div class="surface-ground border-round" style="height: 500px; overflow: hidden;">
-      <ChatMessages 
-        :messages="messages" 
-        :currentUserId="currentUserId" 
+      <ChatMessageContainer 
+        :session-id="sessionId"
+        :current-user-id="currentUserId"
+        :selected-session="mockSession"
+        @send-message="handleSendMessage"
       />
     </div>
   </div>

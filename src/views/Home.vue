@@ -25,12 +25,12 @@
 
       <div class="grid" style="margin-top: 2rem;">
         <div class="col-12 md:col-6">
-          <h3 class="m-0 mb-2">ChatWidget A</h3>
-          <ChatWidget instance-id="main" />
+          <h3 class="m-0 mb-2">Chat Component A</h3>
+          <Chat />
         </div>
         <div class="col-12 md:col-6">
-          <h3 class="m-0 mb-2">ChatWidget B</h3>
-          <ChatWidget instance-id="side" />
+          <h3 class="m-0 mb-2">Chat Component B</h3>
+          <Chat />
         </div>
       </div>
     </section>
@@ -40,7 +40,7 @@
 <script setup>
 import Button from 'primevue/button'
 import Page from '@nonix/page/Page.vue'
-import ChatWidget from '@nonix-chat/ChatWidget.vue'
+import Chat from '@nonix-chat/Chat.vue'
 </script>
 
 <style scoped>

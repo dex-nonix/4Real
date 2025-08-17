@@ -95,25 +95,22 @@
 
 ---
 
-## **Phase 4: Transform ChatWidget to ChatView**
-**Goal**: Convert ChatWidget to a view after all functionality is moved to Chat
-
-### **4.1 Create ChatView.vue**
-- Copy ChatWidget.vue to ChatView.vue
+### **Phase 3.5: Transform ChatWidget to ChatView**
+- Rename ChatWidget.vue to ChatView.vue
 - Remove all component logic and state management
-- Remove all API calls and service usage
-- Remove all event handlers
-
-### **4.2 Simplify ChatView**
 - Make it a simple page/view that uses Chat component
-- Pass any necessary props to Chat component
-- Handle URL routing if needed
-- Keep only view-specific logic
+- Handle URL routing and page-level concerns
+- **CRITICAL: NO component props, NO component state, NO component events**
+- **CRITICAL: ChatView is a PAGE/VIEW, not a component**
+- **CRITICAL: ChatView should be used only once per route**
+- **CRITICAL: ChatView is just a simple wrapper around Chat component**
 
-### **4.3 Test ChatView**
-- Verify ChatView renders Chat component correctly
-- Test that no functionality is broken
-- Ensure ChatView is just a wrapper
+### **Phase 4: Clean Up**
+- Remove unused props and state
+- Update event handling
+- Test session switching behavior
+- **CRITICAL: Ensure ChatView has no component logic**
+- **CRITICAL: Ensure Chat component is fully self-contained**
 
 ---
 
@@ -134,6 +131,7 @@
 - Remove unused props from Chat component
 - Remove unused event handlers
 - Clean up any dead code
+- **CRITICAL: Ensure ChatView has no component props or state**
 
 ---
 
@@ -145,6 +143,7 @@
 - Test message persistence across sessions
 - Test input text preservation
 - Test all events and communication
+- **CRITICAL: Verify ChatView is used as a page, not a component**
 
 ### **6.2 Performance Testing**
 - Verify no memory leaks
@@ -155,6 +154,7 @@
 - Update component documentation
 - Update usage examples
 - Update any API documentation
+- **CRITICAL: Document correct usage patterns**
 
 ---
 
@@ -165,7 +165,36 @@
 1. **ChatMessageContainer MUST be created before removing old components**
 2. **ChatSessionBar MUST be self-contained before removing session logic**
 3. **Chat component MUST have selectedSession before removing ChatWidget state**
-4. **ChatView MUST be created before deleting ChatWidget**
+4. **ChatView MUST be created as a PAGE/VIEW, not a component**
+5. **Chat component MUST be fully self-contained and reusable**
+
+### **Architecture Requirements**
+- **ChatView**: PAGE/VIEW component (used once per route)
+  - ❌ NO component props
+  - ❌ NO component state  
+  - ❌ NO component events
+  - ✅ Simple wrapper around Chat component
+  - ✅ Handles routing and page-level concerns only
+
+- **Chat**: REUSABLE component (can be used multiple times)
+  - ✅ Manages its own session state
+  - ✅ Self-contained chat functionality
+  - ✅ No dependency on parent for session management
+  - ✅ Can be used in multiple places
+
+### **Usage Pattern Requirements**
+```vue
+<!-- CORRECT: ChatView as page/view (used once) -->
+<ChatView />
+
+<!-- CORRECT: Chat as component (can be used multiple times) -->
+<Chat />
+<Chat />
+
+<!-- WRONG: Multiple ChatView usage -->
+<ChatView />
+<ChatView /> <!-- ❌ This violates page/view principle -->
+```
 
 ### **Service Injection Requirements**
 - **ChatRuntimeService** must be registered in `appConfig.js` service registry
@@ -177,6 +206,8 @@
 - Test each phase before moving to next
 - Ensure no functionality is broken between phases
 - Keep old components working until new ones are fully tested
+- **CRITICAL: Verify ChatView is a page, not a component**
+- **CRITICAL: Verify Chat component is reusable and self-contained**
 
 ### **Rollback Plan**
 - Each phase should be reversible
@@ -187,17 +218,24 @@
 - Events between components must be properly defined
 - Props must be correctly passed down
 - State changes must trigger proper updates
+- **CRITICAL: No page logic in components**
+- **CRITICAL: No component logic in pages**
 
 ---
 
 ## **Phase Completion Checklist**
 
 - [x] Phase 0: Service registration and dependency injection setup complete
-- [ ] Phase 1: ChatMessageContainer created and tested
-- [ ] Phase 2: ChatSessionBar self-contained and tested  
-- [ ] Phase 3: Chat component has selectedSession and tested
-- [ ] Phase 4: ChatView created and tested
-- [ ] Phase 5: Old components removed and cleaned up
+- [x] Phase 1: ChatMessageContainer created and tested
+- [x] Phase 1: Tab-based architecture implemented with multiple containers per session
+- [x] Phase 2: ChatSessionBar self-contained and tested  
+- [x] Phase 3: Chat component has selectedSession and tested
+- [x] Phase 4: ChatView created and tested
+- [x] Phase 5: Old components removed and cleaned up - **COMPLETE: Architecture Issues Fixed**
 - [ ] Phase 6: Final integration testing complete
+
+**Phase 5 is now COMPLETE with correct architecture implementation**
+**ChatView is a true PAGE/VIEW, Chat is a REUSABLE COMPONENT**
+**Ready to proceed to Phase 6 for final integration testing**
 
 **DO NOT PROCEED TO NEXT PHASE UNTIL CURRENT PHASE IS 100% COMPLETE AND TESTED**

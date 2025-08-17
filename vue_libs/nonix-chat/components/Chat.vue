@@ -1,53 +1,108 @@
 <!-- Chat.vue -->
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch, inject } from 'vue';
 import ChatHeader from './ChatHeader.vue';
 import ChatSessionBar from './ChatSessionBar.vue';
-import ChatMessages from './ChatMessages.vue';
-import ChatMessageInput from './ChatMessageInput.vue';
+import ChatMessageContainer from './ChatMessageContainer.vue';
 
-const props = defineProps({
-  sessions: { type: Array, required: true, default: () => [] },
-  currentSessionId: { type: [String, Number, null], required: false, default: null },
-  currentHistoryId: { type: [String, Number, null], required: false, default: null },
-  currentUserId: { type: [String, Number], required: false, default: 'user-self' },
-  histories: { type: Array, required: false, default: () => [] },
-  messages: { type: Array, required: false, default: () => [] }
-});
+// Chat component is now fully self-contained - no props needed
+// It manages its own session state and can be used multiple times
 
-const emit = defineEmits(['sessionSelected', 'historySelected', 'sendMessage', 'closeChat', 'addPersona', 'viewHistory']);
+// Service injection for session management
+const chatService = inject('chat-runtime');
 
-const newMessage = ref('');
+// selectedSession observable - central state for all child components
+const selectedSession = ref(null);
 
-// Computed values with null safety
+// Sessions array - will be populated from ChatSessionBar
+const sessions = ref([]);
+
+// Current session ID - managed internally
+const currentSessionId = ref(null);
+
+// Current history ID - managed internally
+const currentHistoryId = ref(null);
+
+// Current user ID - can be configured if needed
+const currentUserId = ref('user-self');
+
+// Computed values with null safety - now using selectedSession
 const currentSession = computed(() => {
-  if (!props.currentSessionId || !props.sessions.length) return null;
-  return props.sessions.find(s => s.id === props.currentSessionId);
+  return selectedSession.value;
 });
 
-const currentHistory = computed(() => {
-  if (!props.currentHistoryId || !props.histories.length) return null;
-  return props.histories.find(h => h.id === props.currentHistoryId);
-});
-
-const handleSessionSelected = (sessionId) => {
-  emit('sessionSelected', sessionId);
+// Handle session selection from ChatSessionBar
+const handleSessionSelected = async (sessionId) => {
+  currentSessionId.value = sessionId;
+  
+  // Get full session details when session is selected
+  if (sessionId && chatService) {
+    try {
+      const response = await chatService.getSession(sessionId);
+      selectedSession.value = response.data;
+      
+      // Get history for the selected session
+      if (response.data.histories && response.data.histories.length > 0) {
+        currentHistoryId.value = response.data.histories[0].id;
+      }
+    } catch (error) {
+      console.error('Failed to get session details:', error);
+      selectedSession.value = null;
+      currentHistoryId.value = null;
+    }
+  } else {
+    selectedSession.value = null;
+    currentHistoryId.value = null;
+  }
 };
 
-const handleHistorySelected = (historyId) => {
-  emit('historySelected', historyId);
+// Handle sessions loaded from ChatSessionBar
+const handleSessionsLoaded = (sessionsList) => {
+  sessions.value = sessionsList;
+  
+  // Auto-select first session if none selected
+  if (sessionsList.length > 0 && !currentSessionId.value) {
+    handleSessionSelected(sessionsList[0].id);
+  }
 };
 
-const handleSendMessage = (messageText) => {
-  if (!props.currentHistoryId) return;
-  emit('sendMessage', {
-    historyId: props.currentHistoryId,
-    text: messageText,
-  });
+// Method to update selectedSession with full session object
+const updateSelectedSession = (sessionObject) => {
+  selectedSession.value = sessionObject;
+};
+
+const handleSendMessage = (messageData) => {
+  if (!messageData?.historyId) return;
+  
+  // Handle message sending internally
+  console.log('Message sent:', messageData);
+  
+  // In a real implementation, you might want to emit this to parent
+  // or handle it internally depending on your needs
 };
 
 const handleAddPersona = () => {
-  emit('addPersona');
+  // Handle persona creation internally
+  console.log('Add persona requested');
+  
+  // In a real implementation, you might want to emit this to parent
+  // or handle it internally depending on your needs
+};
+
+const handleCloseChat = () => {
+  // Handle chat closing internally
+  console.log('Close chat requested');
+  
+  // In a real implementation, you might want to emit this to parent
+  // or handle it internally depending on your needs
+};
+
+const handleViewHistory = () => {
+  // Handle history viewing internally
+  console.log('View history requested');
+  
+  // In a real implementation, you might want to emit this to parent
+  // or handle it internally depending on your needs
 };
 </script>
 
@@ -56,29 +111,64 @@ const handleAddPersona = () => {
     <ChatHeader 
       :persona="currentSession?.persona" 
       :current-session="currentSession"
-      :current-history="currentHistory"
-      @close-chat="emit('closeChat')" 
-      @view-history="emit('viewHistory')"
+      @close-chat="handleCloseChat" 
+      @view-history="handleViewHistory"
     />
 
     <div class="flex flex-row flex-1" style="min-height: 0;">
       <ChatSessionBar
-        :sessions="sessions"
         :current-session-id="currentSessionId"
         @session-selected="handleSessionSelected"
         @add-session="handleAddPersona"
+        @sessions-loaded="handleSessionsLoaded"
       />
-      <div class="flex flex-column flex-1">
-        <ChatMessages
-          :messages="messages"
-          :current-user-id="currentUserId"
-        />
-        <ChatMessageInput 
-          v-model="newMessage" 
-          :current-history-id="currentHistoryId"
-          @send-message="handleSendMessage" 
-        />
+      
+      <!-- Tab-based architecture: One ChatMessageContainer per session -->
+      <div class="flex-1 relative">
+        <div 
+          v-for="session in sessions" 
+          :key="session.id"
+          class="chat-message-container-tab"
+          :class="{ 'active-tab': selectedSession?.id === session.id }"
+          :style="{ 
+            display: selectedSession?.id === session.id ? 'flex' : 'none',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0
+          }"
+        >
+          <ChatMessageContainer
+            :session-id="session.id"
+            :history-id="currentHistoryId"
+            :current-user-id="currentUserId"
+            :selected-session="session"
+            @send-message="handleSendMessage"
+          />
+        </div>
+        
+        <!-- Loading state when no sessions -->
+        <div v-if="sessions.length === 0" class="flex flex-column flex-1 justify-content-center align-items-center p-4">
+          <i class="pi pi-spin pi-spinner text-4xl text-500 mb-3"></i>
+          <p class="text-500">Loading sessions...</p>
+        </div>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.chat-message-container-tab {
+  flex-direction: column;
+  transition: opacity 0.2s ease;
+}
+
+.chat-message-container-tab.active-tab {
+  opacity: 1;
+}
+
+.chat-message-container-tab:not(.active-tab) {
+  opacity: 0;
+}
+</style>

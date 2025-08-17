@@ -1,28 +1,31 @@
-// Main entry point for nonix-chat library
-// Exporting the working chat components that integrate with backend
+// Nonix Chat Library
+// Main entry point for the chat system
 
-// Main chat components
+// Page/View Components (used once per route)
+export { default as ChatView } from './ChatView.vue'
+
+// Core Reusable Components (can be used multiple times)
 export { default as Chat } from './components/Chat.vue'
-export { default as ChatWidget } from './ChatWidget.vue'
+export { default as ChatSessionBar } from './components/ChatSessionBar.vue'
+export { default as ChatHeader } from './components/ChatHeader.vue'
+export { default as ChatMessageContainer } from './components/ChatMessageContainer.vue'
 
-// Message type components
+// Message Type Components
 export { default as TextMessage } from './components/message-types/TextMessage.vue'
 export { default as SystemMessage } from './components/message-types/SystemMessage.vue'
 export { default as ToolMessage } from './components/message-types/ToolMessage.vue'
 export { default as UserMessage } from './components/message-types/UserMessage.vue'
 
-// Message type manager
+// Dialog Components
+export { default as PersonaSelectionDialog } from './components/PersonaSelectionDialog.vue'
+export { default as HistoryManagementDialog } from './components/HistoryManagementDialog.vue'
+
+// Utilities
 export { default as ChatMessageTypeManager } from './components/ChatMessageTypeManager.js'
 
-// Example components for development and testing
-export { default as ChatExample } from './components/ChatExample.vue'
-export { default as ChatMessageExample } from './components/ChatMessageExample.vue'
-
-// Utility components
-export { default as ChatHeader } from './components/ChatHeader.vue'
-export { default as ChatMessages } from './components/ChatMessages.vue'
-export { default as ChatMessageInput } from './components/ChatMessageInput.vue'
-export { default as ChatSessionBar } from './components/ChatSessionBar.vue'
-
-// Backend service
+// Services
 export { default as ChatRuntimeService } from './services/ChatRuntimeService.js'
+
+// Examples
+export { default as ChatExample } from './examples/ChatExample.vue'
+export { default as ChatMessageExample } from './examples/ChatMessageExample.vue'

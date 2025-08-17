@@ -1,15 +1,115 @@
 <!-- ChatSessionBar.vue -->
 <script setup>
+import { ref, onMounted, inject } from 'vue';
 import Button from 'primevue/button';
 import Divider from 'primevue/divider';
 import Avatar from 'primevue/avatar';
 
 const props = defineProps({
-  sessions: { type: Array, required: true, default: () => [] },
   currentSessionId: { type: [String, Number, null], required: false, default: null }
 });
 
-const emit = defineEmits(['sessionSelected', 'addSession']);
+const emit = defineEmits(['sessionSelected', 'sessionAdded', 'sessionRemoved', 'sessionsLoaded']);
+
+// Service injection
+const chatService = inject('chat-runtime');
+
+// State management - self-contained
+const sessions = ref([]);
+const loading = ref(false);
+
+// Load sessions on mount
+onMounted(async () => {
+  await loadSessions();
+});
+
+// Load all sessions
+const loadSessions = async () => {
+  try {
+    loading.value = true;
+    const response = await chatService.getSessions();
+    // Handle CRUD response structure: {data: Array, pagination: {...}}
+    sessions.value = response.data?.data || response.data || [];
+    
+    // Emit sessions loaded event for tab-based architecture
+    emit('sessionsLoaded', sessions.value);
+    
+    // If no current session is selected and we have sessions, select the first one
+    if (sessions.value.length > 0 && !props.currentSessionId) {
+      const firstSession = sessions.value[0];
+      emit('sessionSelected', firstSession.id);
+    }
+  } catch (error) {
+    console.error('Failed to load sessions:', error);
+    sessions.value = [];
+    // Emit empty sessions array even on error
+    emit('sessionsLoaded', []);
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Create new session
+const createSession = async (personaId, sessionName) => {
+  try {
+    const response = await chatService.createSession(personaId, sessionName);
+    const newSession = response.data;
+    
+    // Add to local sessions
+    sessions.value.push(newSession);
+    
+    // Emit session added event
+    emit('sessionAdded', newSession);
+    
+    // Select the new session
+    emit('sessionSelected', newSession.id);
+    
+    return newSession;
+  } catch (error) {
+    console.error('Failed to create session:', error);
+    throw error;
+  }
+};
+
+// Delete session
+const deleteSession = async (sessionId) => {
+  try {
+    await chatService.deleteSession(sessionId);
+    
+    // Remove from local sessions
+    const index = sessions.value.findIndex(s => s.id === sessionId);
+    if (index !== -1) {
+      sessions.value.splice(index, 1);
+    }
+    
+    // Emit session removed event
+    emit('sessionRemoved', sessionId);
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to delete session:', error);
+    throw error;
+  }
+};
+
+// Update session
+const updateSession = async (sessionId, data) => {
+  try {
+    const response = await chatService.updateSession(sessionId, data);
+    const updatedSession = response.data;
+    
+    // Update local session
+    const index = sessions.value.findIndex(s => s.id === sessionId);
+    if (index !== -1) {
+      sessions.value[index] = updatedSession;
+    }
+    
+    return updatedSession;
+  } catch (error) {
+    console.error('Failed to update session:', error);
+    throw error;
+  }
+};
 
 const getAvatarDisplay = (session) => {
   if (!session) return { image: null, fallback: '??' };
@@ -23,13 +123,27 @@ const getAvatarDisplay = (session) => {
   const initials = name.substring(0, 2).toUpperCase();
   return { image: null, fallback: initials };
 };
+
+// Handle session selection
+const handleSessionSelected = (sessionId) => {
+  emit('sessionSelected', sessionId);
+};
+
+// Handle add session (opens persona selection)
+const handleAddSession = () => {
+  emit('addSession');
+};
 </script>
 
 <template>
   <aside class="h-full surface-section flex-shrink-0 surface-border select-none">
     <div class="flex flex-column h-full">
       <div class="flex flex-column flex-grow-1 overflow-y-auto">
-        <div v-if="sessions.length === 0" class="no-sessions p-3 text-center">
+        <div v-if="loading" class="p-3 text-center">
+          <i class="pi pi-spin pi-spinner text-2xl"></i>
+          <p class="mt-2 text-sm">Loading sessions...</p>
+        </div>
+        <div v-else-if="sessions.length === 0" class="no-sessions p-3 text-center">
           <span class="text-500 text-sm">No sessions available</span>
         </div>
         <div 
@@ -37,7 +151,7 @@ const getAvatarDisplay = (session) => {
           :key="session.id" 
           class="session-item cursor-pointer p-3 hover:surface-200"
           :class="{ 'selected-session': currentSessionId === session.id }"
-          @click="emit('sessionSelected', session.id)"
+          @click="handleSessionSelected(session.id)"
         >
           <Avatar 
             :image="getAvatarDisplay(session).image" 
@@ -55,7 +169,7 @@ const getAvatarDisplay = (session) => {
             icon="pi pi-plus"
             rounded
             severity="secondary"
-            @click="emit('addSession')"
+            @click="handleAddSession"
             v-tooltip.bottom="'Add New Session'"
           />
         </div>

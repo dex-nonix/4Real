@@ -49,8 +49,8 @@
 
 ### **Component Structure**
 ```
-ChatView (page/view that uses Chat component)
-└── Chat (manages selectedSession observable)
+ChatView (PAGE/VIEW - used once per route, handles routing)
+└── Chat (REUSABLE COMPONENT - can be used multiple times)
     ├── ChatSessionBar (loads sessions, emits session-selected)
     ├── ChatHeader (receives selectedSession, shows title/info)
     └── ChatMessageContainer[] (one per session, hide/show like tabs)
@@ -58,13 +58,32 @@ ChatView (page/view that uses Chat component)
         └── ChatMessageInput (input field for selectedSession)
 ```
 
+### **Usage Pattern**
+```vue
+<!-- ChatView.vue - PAGE/VIEW (used once per route) -->
+<template>
+  <div class="chat-page">
+    <Chat /> <!-- Reusable component -->
+  </div>
+</template>
+
+<!-- Other pages can also use Chat component -->
+<template>
+  <div class="some-other-page">
+    <Chat /> <!-- First instance -->
+    <Chat /> <!-- Second instance -->
+  </div>
+</template>
+```
+
 ### **How It Works**
-1. **`Chat`** component has `selectedSession` observable variable
-2. **`ChatSessionBar`** loads sessions and emits `session-selected` with session object
-3. **`Chat`** updates `selectedSession` when event received
-4. **All child components** automatically react to `selectedSession` changes
-5. **No component destruction** - just CSS display: none/block
-6. **All data stays in memory** - messages, input text, everything
+1. **`ChatView`** is a PAGE/VIEW that uses Chat component (used once per route)
+2. **`Chat`** component has `selectedSession` observable variable (reusable)
+3. **`ChatSessionBar`** loads sessions and emits `session-selected` with session object
+4. **`Chat`** updates `selectedSession` when event received
+5. **All child components** automatically react to `selectedSession` changes
+6. **No component destruction** - just CSS display: none/block
+7. **All data stays in memory** - messages, input text, everything
 
 ### **Event Flow (Simple)**
 ```
@@ -90,6 +109,8 @@ Chat forwards events up to parent
 3. **No complex state management** - Each component owns its data
 4. **Tab-like behavior** - Exactly what you want
 5. **Simple events** - Components just tell each other what happened
+6. **Proper separation** - Page logic vs. Component logic
+7. **Reusability** - Chat component can be used anywhere
 
 ## **What Gets Removed**
 - ❌ Local storage
@@ -97,6 +118,8 @@ Chat forwards events up to parent
 - ❌ Data passing through props
 - ❌ Component destruction/recreation
 - ❌ Overcomplicated event bus
+- ❌ Page logic in components
+- ❌ Component logic in pages
 
 ## **What Gets Added**
 - ✅ Simple hide/show logic
@@ -104,6 +127,8 @@ Chat forwards events up to parent
 - ✅ Direct service calls in components
 - ✅ Basic event emission
 - ✅ Memory-based data persistence
+- ✅ Clear page vs. component separation
+- ✅ Reusable chat components
 
 ## **Implementation Steps**
 
@@ -123,13 +148,15 @@ Chat forwards events up to parent
 - Make all child components react to selectedSession changes
 - Handle session-selected events from ChatSessionBar
 - Coordinate visibility based on selectedSession
+- **Make Chat component fully self-contained and reusable**
 
 ### **Phase 3.5: Transform ChatWidget to ChatView**
 - Rename ChatWidget.vue to ChatView.vue
 - Remove all component logic and state management
 - Make it a simple page/view that uses Chat component
 - Handle URL routing and page-level concerns
-- Pass any necessary props to Chat component
+- **NO component props, NO component state, NO component events**
+- **Just a simple wrapper around Chat component**
 
 ### **Phase 4: Clean Up**
 - Remove unused props and state
@@ -144,6 +171,7 @@ Chat forwards events up to parent
 4. **Maintainability**: Easier to modify individual components
 5. **Reusability**: Components can be used independently
 6. **Testing**: Each component can be tested in isolation
+7. **Proper Architecture**: Page logic vs. Component logic clearly separated
 
 ## **No Magic, Just Simple Vue Patterns**
 - Each component loads its own data
@@ -155,8 +183,9 @@ Chat forwards events up to parent
 - No complex state management libraries
 
 ## **Architecture Benefits**
-- **ChatView**: Handles routing, URL params, page-level concerns
-- **Chat**: Pure chat functionality, reusable component
+- **ChatView**: Handles routing, URL params, page-level concerns (USED ONCE)
+- **Chat**: Pure chat functionality, reusable component (CAN BE USED MULTIPLE TIMES)
 - **Separation of Concerns**: View logic vs. Chat logic
 - **Reusability**: Chat component can be used in other views/pages
 - **Clean URLs**: ChatView can handle /chat/:sessionId routing
+- **No Confusion**: Clear distinction between pages and components
