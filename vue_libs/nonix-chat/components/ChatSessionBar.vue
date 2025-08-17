@@ -30,21 +30,12 @@ const loadSessions = async () => {
     const response = await chatService.getSessions();
     console.log('Raw sessions response:', response);
     
-    // Handle ChatService response structure: {data: Array, total: number}
-    let actualSessions = [];
-    if (response?.data && Array.isArray(response.data)) {
-      actualSessions = response.data;
-    } else if (response?.data?.data && Array.isArray(response.data.data)) {
-      actualSessions = response.data.data;
-    } else if (Array.isArray(response)) {
-      actualSessions = response;
-    }
-    
-    sessions.value = actualSessions;
-    console.log('Processed sessions in ChatSessionBar:', actualSessions);
+    // ChatService now returns clean data directly
+    sessions.value = response || [];
+    console.log('Processed sessions in ChatSessionBar:', response);
     
     // Emit sessions loaded event for tab-based architecture
-    emit('sessions-loaded', response); // Emit the full response for parent to process
+    emit('sessions-loaded', response); // Emit the clean data for parent to process
     
     // Don't auto-select here - let parent handle it
   } catch (error) {
@@ -66,7 +57,7 @@ const loadSessions = async () => {
 const createSession = async (personaId, sessionName) => {
   try {
     const response = await chatService.createSession(personaId, sessionName);
-    const newSession = response.data;
+    const newSession = response;
     
     // Add to local sessions
     sessions.value.push(newSession);
@@ -117,7 +108,7 @@ const deleteSession = async (sessionId) => {
 const updateSession = async (sessionId, data) => {
   try {
     const response = await chatService.updateSession(sessionId, data);
-    const updatedSession = response.data;
+    const updatedSession = response;
     
     // Update local session
     const index = sessions.value.findIndex(s => s.id === sessionId);

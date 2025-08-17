@@ -91,15 +91,8 @@ const loadPersonas = async () => {
     const response = await chatService.getPersonas();
     console.log('Personas response:', response);
     
-    // Handle different response structures
-    let allPersonas = [];
-    if (response?.data && Array.isArray(response.data)) {
-      allPersonas = response.data;
-    } else if (response?.data?.data && Array.isArray(response.data.data)) {
-      allPersonas = response.data.data;
-    } else if (Array.isArray(response)) {
-      allPersonas = response;
-    }
+    // ChatService now returns clean data directly
+    let allPersonas = response || [];
     
     // Validate and clean persona data
     personas.value = allPersonas.filter(persona => {

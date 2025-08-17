@@ -7,13 +7,13 @@ export default class ChatService extends BaseApiService {
   async getSessions() {
     // Use ChatService endpoint instead of CRUD
     const response = await this.get('/chat/sessions')
-    return response
+    return response.data  // Return extracted data
   }
 
   async getSession(sessionId) {
     // Use ChatService endpoint instead of CRUD
     const response = await this.get(`/chat/sessions/${sessionId}`)
-    return response
+    return response.data  // Return extracted data
   }
 
   async createSession(personaId, sessionName, sessionIcon) {
@@ -23,26 +23,26 @@ export default class ChatService extends BaseApiService {
       session_name: sessionName,
       session_icon: sessionIcon
     })
-    return response
+    return response.data  // Return extracted data
   }
 
   async updateSession(sessionId, data) {
     // Use ChatService endpoint instead of CRUD
     const response = await this.put(`/chat/sessions/${sessionId}`, data)
-    return response
+    return response.data  // Return extracted data
   }
 
   async deleteSession(sessionId) {
     // Use ChatService endpoint instead of CRUD
     const response = await this.delete(`/chat/sessions/${sessionId}`)
-    return response
+    return response.data  // Return extracted data
   }
 
   // History Management
   async getHistories(sessionId) {
     // Use ChatService endpoint instead of CRUD
     const response = await this.get(`/chat/sessions/${sessionId}/histories`)
-    return response
+    return response.data  // Return extracted data
   }
 
   async createHistory(sessionId, title) {
@@ -50,26 +50,26 @@ export default class ChatService extends BaseApiService {
     const response = await this.post(`/chat/sessions/${sessionId}/histories`, {
       title: title
     })
-    return response
+    return response.data  // Return extracted data
   }
 
   async updateHistory(sessionId, historyId, data) {
     // Use ChatService endpoint instead of CRUD
     const response = await this.put(`/chat/sessions/${sessionId}/histories/${historyId}`, data)
-    return response
+    return response.data  // Return extracted data
   }
 
   async deleteHistory(sessionId, historyId) {
     // Use ChatService endpoint instead of CRUD
     const response = await this.delete(`/chat/sessions/${sessionId}/histories/${historyId}`)
-    return response
+    return response.data  // Return extracted data
   }
 
   // Message Management
   async getHistoryMessages(sessionId, historyId) {
     // Use ChatService endpoint instead of CRUD
     const response = await this.get(`/chat/sessions/${sessionId}/histories/${historyId}/messages`)
-    return response
+    return response.data  // Return extracted data
   }
 
   async sendMessageToHistory(sessionId, historyId, content) {
@@ -77,20 +77,20 @@ export default class ChatService extends BaseApiService {
     const response = await this.post(`/chat/sessions/${sessionId}/histories/${historyId}/send`, {
       content: content
     })
-    return response
+    return response.data  // Return extracted data
   }
 
   // Persona Management
   async getPersonas() {
     // Use ChatService endpoint (already correct)
     const response = await this.get('/chat/personas')
-    return response
+    return response.data  // Return extracted data
   }
 
   async getPersonaSessions(personaId) {
     // Use ChatService endpoint (already correct)
     const response = await this.get(`/chat/personas/${personaId}/sessions`)
-    return response
+    return response.data  // Return extracted data
   }
 
   async startChatWithPersona(personaId, sessionName, sessionIcon) {
@@ -99,14 +99,14 @@ export default class ChatService extends BaseApiService {
       session_name: sessionName,
       session_icon: sessionIcon
     })
-    return response
+    return response.data  // Return extracted data
   }
 
   // Tool Management
   async personaTools(personaId) {
     // Use ChatService endpoint (already correct)
     const response = await this.get(`/chat/personas/${personaId}/tools`)
-    return response
+    return response.data  // Return extracted data
   }
 
   async executeTool(personaId, toolName, toolArgs, historyId, userMessageId) {
@@ -117,14 +117,14 @@ export default class ChatService extends BaseApiService {
       history_id: historyId,
       message_id: userMessageId
     })
-    return response
+    return response.data  // Return extracted data
   }
 
   // MCP Status
   async mcpStatus() {
     // Use ChatService endpoint (already correct)
     const response = await this.get('/chat/mcp/servers/status')
-    return response
+    return response.data  // Return extracted data
   }
 
   // Legacy methods for backward compatibility (deprecated - use specific methods above)
@@ -137,8 +137,8 @@ export default class ChatService extends BaseApiService {
   async getSessionIdFromHistory(historyId) {
     // Get all sessions and find the one with this history
     const sessionsResponse = await this.getSessions()
-    if (sessionsResponse.data && sessionsResponse.data.data) {
-      for (const session of sessionsResponse.data.data) {
+    if (sessionsResponse && Array.isArray(sessionsResponse)) {
+      for (const session of sessionsResponse) {
         if (session.histories && session.histories.some(h => h.id === historyId)) {
           return session.id
         }

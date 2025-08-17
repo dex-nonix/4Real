@@ -142,8 +142,8 @@ const loadHistories = async () => {
     loading.value = true;
     const response = await chatService.getHistories(props.sessionId);
     
-    // Handle ChatService response structure: {data: Array, total: number}
-    histories.value = response.data || [];
+    // ChatService now returns clean data directly
+    histories.value = response || [];
   } catch (error) {
     console.error('Failed to load histories:', error);
     histories.value = [];

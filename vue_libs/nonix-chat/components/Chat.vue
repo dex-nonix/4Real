@@ -162,15 +162,8 @@ const handleSessionSelected = async (sessionId) => {
         const response = await chatService.getSession(sessionId);
         console.log('Session response:', response);
         
-        // Handle different response structures for session
-        let sessionData;
-        if (response.data && response.data.data) {
-          sessionData = response.data.data;
-        } else if (response.data) {
-          sessionData = response.data;
-        } else {
-          sessionData = response;
-        }
+        // ChatService now returns clean data directly
+        let sessionData = response;
         
         selectedSession.value = sessionData;
         console.log('Processed session data:', sessionData);
@@ -188,12 +181,8 @@ const handleSessionSelected = async (sessionId) => {
             const historyResponse = await chatService.createHistory(sessionId, 'New Conversation');
             console.log('History creation response:', historyResponse);
             
-            // Handle different response structures
-            if (historyResponse.data && historyResponse.data.id) {
-              currentHistoryId.value = historyResponse.data.id;
-            } else if (historyResponse.data && response.data.data && response.data.data.id) {
-              currentHistoryId.value = response.data.data.id;
-            } else if (historyResponse.id) {
+            // ChatService now returns clean data directly
+            if (historyResponse && historyResponse.id) {
               currentHistoryId.value = historyResponse.id;
             } else {
               console.error('Unexpected history response structure:', historyResponse);
@@ -237,15 +226,8 @@ const handleSessionsLoaded = (sessionsList) => {
   console.log('Sessions loaded:', sessionsList);
   
   try {
-    // Handle different response structures
-    let actualSessions = [];
-    if (Array.isArray(sessionsList)) {
-      actualSessions = sessionsList;
-    } else if (sessionsList?.data && Array.isArray(sessionsList.data)) {
-      actualSessions = sessionsList.data;
-    } else if (sessionsList?.data?.data && Array.isArray(sessionsList.data.data)) {
-      actualSessions = sessionsList.data.data;
-    }
+    // ChatService now returns clean data directly
+    let actualSessions = sessionsList || [];
     
     // Validate sessions have proper IDs
     actualSessions = actualSessions.filter(session => {
@@ -337,7 +319,7 @@ const refreshSessions = async () => {
     addInfo('Refreshing sessions...');
     // Manually trigger a reload by calling the service
     const response = await chatService.getSessions();
-    if (response?.data) {
+    if (response) {
       handleSessionsLoaded(response);
       console.log('Sessions refreshed via service call');
     }
@@ -356,7 +338,7 @@ const handlePersonaSelected = async (persona) => {
     const response = await chatService.startChatWithPersona(persona.id, `Chat with ${persona.name}`, persona.avatar_url);
     console.log('Persona chat started:', response);
     
-    if (response.data) {
+    if (response) {
       addSuccess(`Chat started with ${persona.name}`);
       
       // Close the persona dialog
@@ -366,9 +348,9 @@ const handlePersonaSelected = async (persona) => {
       await refreshSessions();
       
       // Auto-select the new session if it was created
-      if (response.data.id) {
-        console.log('Auto-selecting newly created session:', response.data.id);
-        await handleSessionSelected(response.data.id);
+      if (response.id) {
+        console.log('Auto-selecting newly created session:', response.id);
+        await handleSessionSelected(response.id);
       }
     }
   } catch (error) {
@@ -402,7 +384,7 @@ const handleRenameHistory = async (historyId, newTitle) => {
     addInfo('Renaming history...');
     const response = await chatService.updateHistory(currentSessionId.value, historyId, { title: newTitle });
     
-    if (response.data) {
+    if (response) {
       addSuccess('History renamed successfully');
       // Refresh the current session to get updated data
       await handleSessionSelected(currentSessionId.value);

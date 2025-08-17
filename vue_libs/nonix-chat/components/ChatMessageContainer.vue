@@ -137,20 +137,8 @@ const loadMessages = async (historyId) => {
     const response = await chatService.getHistoryMessages(sessionId, historyId);
     console.log('Messages response:', response);
     
-    // Handle different response structures
-    let allMessages = [];
-    if (response.data && Array.isArray(response.data)) {
-      allMessages = response.data;
-    } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
-      allMessages = response.data.data;
-    } else if (Array.isArray(response)) {
-      allMessages = [];
-    } else {
-      allMessages = [];
-    }
-    
-    // Just use the messages as returned by the API - no filtering
-    messages.value = allMessages;
+    // ChatService now returns clean data directly
+    messages.value = response || [];
     
     console.log('Final messages value:', messages.value);
     
