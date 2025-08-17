@@ -51,38 +51,36 @@ class OpenAPIGenerator:
                 if 'paths' in service_swagger:
                     paths.update(service_swagger['paths'])
             
-            # Process exposed methods for additional paths (fallback for services without to_swagger)
-            for attr_name in dir(service):
-                method = getattr(service, attr_name)
-                if hasattr(method, '_exposed'):
-                    # All services inherit from BaseApiService and have to_swagger method
-                    service_swagger = service.to_swagger(service_name)
-                    if 'paths' not in service_swagger:
+            # Process exposed methods for additional paths (ONLY for services WITHOUT to_swagger)
+            if not hasattr(service, 'to_swagger'):
+                for attr_name in dir(service):
+                    method = getattr(service, attr_name)
+                    if hasattr(method, '_exposed'):
                         path_info = self._generate_path_info(service_name, method)
                         paths.update(path_info)
-                    
-                    # Collect PROCESSED tags (not original tags)
-                    if hasattr(method, '_tags'):
-                        raw_tags = method._tags
-                        if raw_tags and len(raw_tags) > 0:
-                            processed_tags = []
-                            for tag in raw_tags:
-                                if isinstance(tag, str):
-                                    # Replace __SERVICE_NAME__ marker with actual service name
-                                    if tag == "__SERVICE_NAME__":
-                                        processed_tag = service_name.title()
+                        
+                        # Collect tags from exposed methods
+                        if hasattr(method, '_tags'):
+                            raw_tags = method._tags
+                            if raw_tags and len(raw_tags) > 0:
+                                processed_tags = []
+                                for tag in raw_tags:
+                                    if isinstance(tag, str):
+                                        # Replace __SERVICE_NAME__ marker with actual service name
+                                        if tag == "__SERVICE_NAME__":
+                                            processed_tag = service_name.title()
+                                        else:
+                                            processed_tag = tag.replace('{service_name}', service_name.title())
+                                        processed_tags.append(processed_tag)
                                     else:
-                                        processed_tag = tag.replace('{service_name}', service_name.title())
-                                    processed_tags.append(processed_tag)
-                                else:
-                                    processed_tags.append(tag)
-                            tags.extend(processed_tags)
+                                        processed_tags.append(tag)
+                                tags.extend(processed_tags)
+                            else:
+                                # If no tags provided, use service name as default
+                                tags.append(service_name.title())
                         else:
-                            # If no tags provided, use service name as default
+                            # If no _tags attribute, use service name as default
                             tags.append(service_name.title())
-                    else:
-                        # If no _tags attribute, use service name as default
-                        tags.append(service_name.title())
         
         # Remove duplicate tags and sort them alphabetically
         unique_tags = [{"name": tag} for tag in sorted(set(tags))]
