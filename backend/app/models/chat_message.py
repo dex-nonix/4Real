@@ -9,19 +9,25 @@ class ChatMessage(db.Model):
     __tablename__ = 'chat_messages'
 
     id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(db.Integer, db.ForeignKey('chat_sessions.id'), nullable=False)
+    history_id = db.Column(db.Integer, db.ForeignKey('chat_histories.id'), nullable=False)
     role = db.Column(db.String(50), nullable=False)  # system|user|assistant|tool
-    content_json = db.Column(db.JSON)
+    message_type = db.Column(db.String(50), nullable=False)  # text|tool_call|tool_result|image|file
+    content_json = db.Column(db.JSON)  # Structured content
+    parent_message_id = db.Column(db.Integer, db.ForeignKey('chat_messages.id'), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
 
-    session = db.relationship('ChatSession', backref=db.backref('messages', lazy=True))
+    # Relationships
+    history = db.relationship('ChatHistory', backref=db.backref('messages', lazy=True))
+    parent_message = db.relationship('ChatMessage', remote_side=[id], backref='child_messages')
 
     def to_dict(self) -> dict:
         return {
             'id': self.id,
-            'session_id': self.session_id,
+            'history_id': self.history_id,
             'role': self.role,
+            'message_type': self.message_type,
             'content_json': self.content_json,
+            'parent_message_id': self.parent_message_id,
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }
 

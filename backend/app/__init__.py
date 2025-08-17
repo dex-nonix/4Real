@@ -36,6 +36,7 @@ def create_app() -> Flask:
         from .services.persona_mcp_server_service import PersonaMCPServerService
         from .services.chat_session_service import ChatSessionService
         from .services.chat_message_service import ChatMessageService
+        from .services.chat_history_service import ChatHistoryService
         from .services.tool_invocation_log_service import ToolInvocationLogService
         from .services.chat_service import ChatService
         from .services.file_category_service import FileCategoryService
@@ -57,6 +58,7 @@ def create_app() -> Flask:
         api_router.register_service('persona-mcp-servers', PersonaMCPServerService)
         api_router.register_service('chat-sessions', ChatSessionService)
         api_router.register_service('chat-messages', ChatMessageService)
+        api_router.register_service('chat-histories', ChatHistoryService)
         api_router.register_service('tool-invocation-logs', ToolInvocationLogService)
         api_router.register_service('chat', ChatService)
         api_router.register_service('file-categories', FileCategoryService)

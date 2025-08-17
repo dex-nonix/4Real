@@ -10,6 +10,7 @@ class Persona(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), unique=True, nullable=False)
+    avatar_url = db.Column(db.String(512), nullable=True)  # NEW: Optional avatar
     is_active = db.Column(db.Boolean, nullable=False, server_default=db.text('1'))
     system_prompt = db.Column(db.Text)
     metadata_json = db.Column(db.JSON)
@@ -22,6 +23,7 @@ class Persona(db.Model):
         return {
             'id': self.id,
             'name': self.name,
+            'avatar_url': self.avatar_url,
             'is_active': self.is_active,
             'system_prompt': self.system_prompt,
             'metadata_json': self.metadata_json,

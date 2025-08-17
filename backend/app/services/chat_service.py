@@ -8,6 +8,7 @@ from ..decorators import expose
 from .. import db
 from ..models.chat_session import ChatSession
 from ..models.chat_message import ChatMessage
+from ..models.chat_history import ChatHistory
 from ..models.persona import Persona
 from ..models.internal_tool import InternalTool
 from ..models.persona_tool_access import PersonaToolAccess
@@ -63,21 +64,43 @@ class ChatService:
         try:
             payload = req.get_json(silent=True) or {}
             persona_id = int(payload.get('persona_id'))
-            title = payload.get('title') or 'New Chat'
-            created_by = payload.get('created_by')
-            metadata_json = payload.get('metadata')
+            session_name = payload.get('session_name') or f'Chat with {Persona.query.get(persona_id).name if Persona.query.get(persona_id) else "Persona"}'
+            session_icon = payload.get('session_icon')
 
             persona = Persona.query.filter_by(id=persona_id, is_active=True).first()
             if not persona:
                 return jsonify({'error': 'Persona not found or inactive'}), 404
 
-            session = ChatSession(persona_id=persona_id, title=title, created_by=created_by, metadata_json=metadata_json)
+            session = ChatSession(
+                persona_id=persona_id, 
+                session_name=session_name, 
+                session_icon=session_icon,
+                is_active=True
+            )
             db.session.add(session)
+            db.session.commit()
+
+            # Create initial history for the session
+            history = ChatHistory(
+                session_id=session.id,
+                title='New Conversation',
+                message_count=0
+            )
+            db.session.add(history)
+            db.session.commit()
+
+            # Set this as the current history
+            session.current_history_id = history.id
             db.session.commit()
 
             # Optional initial system message from persona.system_prompt
             if persona.system_prompt:
-                sys_msg = ChatMessage(session_id=session.id, role='system', content_json={'type': 'system', 'text': persona.system_prompt})
+                sys_msg = ChatMessage(
+                    history_id=history.id, 
+                    role='system', 
+                    message_type='text',
+                    content_json={'type': 'system', 'text': persona.system_prompt}
+                )
                 db.session.add(sys_msg)
                 db.session.commit()
 
@@ -116,11 +139,15 @@ class ChatService:
     @expose('/sessions/{id}/messages', methods=['GET'])
     def list_messages(self, req: Request, id: int):  # noqa: A002
         try:
-            session = ChatSession.query.filter_by(id=id).first()
+            session = ChatSession.query.filter_by(id=id, is_active=True).first()
             if not session:
-                return jsonify({'error': 'Not found'}), 404
+                return jsonify({'error': 'Session not found or inactive'}), 404
 
-            msgs = ChatMessage.query.filter_by(session_id=id).order_by(ChatMessage.created_at.asc()).all()
+            # Get messages from current history
+            if not session.current_history_id:
+                return jsonify({'data': [], 'total': 0})
+
+            msgs = ChatMessage.query.filter_by(history_id=session.current_history_id).order_by(ChatMessage.created_at.asc()).all()
             return jsonify({'data': [m.to_dict() for m in msgs], 'total': len(msgs)})
         except Exception as exc:  # noqa: BLE001
             return jsonify({'error': str(exc)}), 500
@@ -128,16 +155,37 @@ class ChatService:
     @expose('/sessions/{id}/send', methods=['POST'])
     def send_message(self, req: Request, id: int):  # noqa: A002
         try:
-            session = ChatSession.query.filter_by(id=id).first()
+            session = ChatSession.query.filter_by(id=id, is_active=True).first()
             if not session:
-                return jsonify({'error': 'Not found'}), 404
+                return jsonify({'error': 'Session not found or inactive'}), 404
+
+            # Get or create current history
+            if not session.current_history_id:
+                history = ChatHistory(
+                    session_id=id,
+                    title='New Conversation',
+                    message_count=0
+                )
+                db.session.add(history)
+                db.session.commit()
+                session.current_history_id = history.id
+                db.session.commit()
+            else:
+                history = ChatHistory.query.get(session.current_history_id)
+                if not history:
+                    return jsonify({'error': 'Current history not found'}), 404
 
             payload = req.get_json(silent=True) or {}
             user_content = payload.get('content')
             if not user_content:
                 return jsonify({'error': 'content required'}), 400
 
-            user_msg = ChatMessage(session_id=id, role='user', content_json=user_content)
+            user_msg = ChatMessage(
+                history_id=history.id, 
+                role='user', 
+                message_type='text',
+                content_json=user_content
+            )
             db.session.add(user_msg)
             db.session.commit()
 
@@ -148,11 +196,11 @@ class ChatService:
 
             # Build chat history for provider call
             history = []
-            system_msgs = ChatMessage.query.filter_by(session_id=id, role='system').order_by(ChatMessage.created_at.asc()).all()
+            system_msgs = ChatMessage.query.filter_by(history_id=history.id, role='system').order_by(ChatMessage.created_at.asc()).all()
             for sm in system_msgs:
                 content = sm.content_json if isinstance(sm.content_json, dict) else {'text': str(sm.content_json)}
                 history.append({'role': 'system', 'content': content})
-            user_msgs = ChatMessage.query.filter(ChatMessage.session_id==id, ChatMessage.id<=user_msg.id).order_by(ChatMessage.created_at.asc()).all()
+            user_msgs = ChatMessage.query.filter(ChatMessage.history_id==history.id, ChatMessage.id<=user_msg.id).order_by(ChatMessage.created_at.asc()).all()
             for um in user_msgs:
                 role = um.role
                 if role not in ('user', 'assistant'):
@@ -181,7 +229,7 @@ class ChatService:
                 tool_args = assistant_output.get('args') or {}
                 if tool_name and tool_name in available_tools:
                     log = ToolInvocationLog(
-                        session_id=id,
+                        history_id=history.id,
                         message_id=user_msg.id,
                         tool_name=tool_name,
                         input_json=tool_args,
@@ -195,12 +243,22 @@ class ChatService:
                     log.output_json = exec_result
                     db.session.commit()
 
-                    tool_msg = ChatMessage(session_id=id, role='tool', content_json={'type': 'tool_result', 'tool': tool_name, 'input': tool_args, 'output': exec_result})
+                    tool_msg = ChatMessage(
+                        history_id=history.id, 
+                        role='tool', 
+                        message_type='tool_result',
+                        content_json={'type': 'tool_result', 'tool': tool_name, 'input': tool_args, 'output': exec_result}
+                    )
                     db.session.add(tool_msg)
                     db.session.commit()
 
                     # Follow-up assistant acknowledgment
-                    asst_msg = ChatMessage(session_id=id, role='assistant', content_json={'type': 'text', 'text': 'Tool executed'})
+                    asst_msg = ChatMessage(
+                        history_id=history.id, 
+                        role='assistant', 
+                        message_type='text',
+                        content_json={'type': 'text', 'text': 'Tool executed'}
+                    )
                     db.session.add(asst_msg)
                     db.session.commit()
                     return jsonify({'data': asst_msg.to_dict()})
@@ -211,8 +269,146 @@ class ChatService:
                     return jsonify({'data': asst_msg.to_dict()})
 
             # Default assistant text message
-            asst_msg = ChatMessage(session_id=id, role='assistant', content_json=assistant_output)
+            asst_msg = ChatMessage(
+                history_id=history.id, 
+                role='assistant', 
+                message_type='text',
+                content_json=assistant_output
+            )
             db.session.add(asst_msg)
+            db.session.commit()
+
+            return jsonify({'data': asst_msg.to_dict()})
+        except Exception as exc:  # noqa: BLE001
+            db.session.rollback()
+            return jsonify({'error': str(exc)}), 500
+
+    @expose('/sessions/{session_id}/histories/{history_id}/send', methods=['POST'])
+    def send_message_to_history(self, req: Request, session_id: int, history_id: int):
+        """Send a message to a specific history within a session."""
+        try:
+            session = ChatSession.query.filter_by(id=session_id, is_active=True).first()
+            if not session:
+                return jsonify({'error': 'Session not found or inactive'}), 404
+
+            history = ChatHistory.query.filter_by(id=history_id, session_id=session_id).first()
+            if not history:
+                return jsonify({'error': 'History not found'}), 404
+
+            payload = req.get_json(silent=True) or {}
+            user_content = payload.get('content')
+            if not user_content:
+                return jsonify({'error': 'content required'}), 400
+
+            user_msg = ChatMessage(
+                history_id=history_id, 
+                role='user', 
+                message_type='text',
+                content_json=user_content
+            )
+            db.session.add(user_msg)
+            db.session.commit()
+
+            # Update history message count
+            history.message_count += 1
+            db.session.commit()
+
+            # Resolve persona and tools
+            persona = session.persona
+            available_tools = { name: {'type': 'internal'} for name in build_persona_tool_map(persona.id).keys() }
+            model_info = self._select_chat_model(persona.id)
+
+            # Build chat history for provider call
+            chat_history = []
+            system_msgs = ChatMessage.query.filter_by(history_id=history_id, role='system').order_by(ChatMessage.created_at.asc()).all()
+            for sm in system_msgs:
+                content = sm.content_json if isinstance(sm.content_json, dict) else {'text': str(sm.content_json)}
+                chat_history.append({'role': 'system', 'content': content})
+            user_msgs = ChatMessage.query.filter(ChatMessage.history_id==history_id, ChatMessage.id<=user_msg.id).order_by(ChatMessage.created_at.asc()).all()
+            for um in user_msgs:
+                role = um.role
+                if role not in ('user', 'assistant'):
+                    continue
+                content = um.content_json if isinstance(um.content_json, dict) else {'text': str(um.content_json)}
+                chat_history.append({'role': role, 'content': content})
+
+            # Resolve model mapping and provider; fallback to placeholder if none
+            assistant_output = None
+            if model_info:
+                from ..models.ai_provider import AIProvider
+                provider = AIProvider.query.filter_by(id=model_info['provider_id'], is_active=True).first()
+                if provider:
+                    try:
+                        # Reconstruct mapping object used for provider call
+                        mapping_obj = AIModelMapping.query.filter_by(id=persona.ai_model_mapping_id, is_active=True).first()
+                        assistant_output = run_chat(provider, mapping_obj, chat_history)
+                    except Exception as exc:  # noqa: BLE001
+                        assistant_output = {'type': 'text', 'text': f'Provider error: {exc}'}
+            if not assistant_output:
+                return jsonify({'error': 'Persona has no active model mapping or provider is unavailable'}), 400
+
+            # If model requested a tool call, execute when allowlisted
+            if isinstance(assistant_output, dict) and (assistant_output.get('type') == 'tool_call' or 'tool' in assistant_output):
+                tool_name = assistant_output.get('tool')
+                tool_args = assistant_output.get('args') or {}
+                if tool_name and tool_name in available_tools:
+                    log = ToolInvocationLog(
+                        history_id=history_id,
+                        message_id=user_msg.id,
+                        tool_name=tool_name,
+                        input_json=tool_args,
+                        status='started'
+                    )
+                    db.session.add(log)
+                    db.session.commit()
+
+                    exec_result = execute_tool(persona.id, tool_name, tool_args)
+                    log.status = 'success' if exec_result.get('status') == 'success' else 'error'
+                    log.output_json = exec_result
+                    db.session.commit()
+
+                    tool_msg = ChatMessage(
+                        history_id=history_id, 
+                        role='tool', 
+                        message_type='tool_result',
+                        content_json={'type': 'tool_result', 'tool': tool_name, 'input': tool_args, 'output': exec_result}
+                    )
+                    db.session.add(tool_msg)
+                    db.session.commit()
+
+                    # Follow-up assistant acknowledgment
+                    asst_msg = ChatMessage(
+                        history_id=history_id, 
+                        role='assistant', 
+                        message_type='text',
+                        content_json={'type': 'text', 'text': 'Tool executed'}
+                    )
+                    db.session.add(asst_msg)
+                    db.session.commit()
+                    return jsonify({'data': asst_msg.to_dict()})
+                else:
+                    asst_msg = ChatMessage(
+                        history_id=history_id, 
+                        role='assistant', 
+                        message_type='text',
+                        content_json={'type': 'text', 'text': f'Tool {tool_name or "(unknown)"} not allowed'}
+                    )
+                    db.session.add(asst_msg)
+                    db.session.commit()
+                    return jsonify({'data': asst_msg.to_dict()})
+
+            # Default assistant text message
+            asst_msg = ChatMessage(
+                history_id=history_id, 
+                role='assistant', 
+                message_type='text',
+                content_json=assistant_output
+            )
+            db.session.add(asst_msg)
+            db.session.commit()
+
+            # Update history message count
+            history.message_count += 1
             db.session.commit()
 
             return jsonify({'data': asst_msg.to_dict()})
@@ -230,6 +426,73 @@ class ChatService:
             mock_req = type('obj', (), {'get_json': lambda self, silent=True: {'content': last_user.content_json}})()
             return self.send_message(mock_req, id)
         except Exception as exc:  # noqa: BLE001
+            return jsonify({'error': str(exc)}), 500
+
+    @expose('/personas', methods=['GET'])
+    def list_personas(self, req: Request):
+        """List all available personas with their active sessions."""
+        try:
+            personas = Persona.query.filter_by(is_active=True).all()
+            result = []
+            for persona in personas:
+                persona_data = persona.to_dict()
+                # Get active sessions for this persona
+                sessions = ChatSession.query.filter_by(persona_id=persona.id, is_active=True).all()
+                persona_data['sessions'] = [s.to_dict() for s in sessions]
+                result.append(persona_data)
+            return jsonify({'data': result, 'total': len(result)})
+        except Exception as exc:  # noqa: BLE001
+            return jsonify({'error': str(exc)}), 500
+
+    @expose('/personas/{persona_id}/start-chat', methods=['POST'])
+    def start_chat_with_persona(self, req: Request, persona_id: int):
+        """Start a new chat session with a persona."""
+        try:
+            persona = Persona.query.filter_by(id=persona_id, is_active=True).first()
+            if not persona:
+                return jsonify({'error': 'Persona not found or inactive'}), 404
+
+            payload = req.get_json(silent=True) or {}
+            session_name = payload.get('session_name') or f'Chat with {persona.name}'
+            session_icon = payload.get('session_icon')
+
+            # Create new session
+            session = ChatSession(
+                persona_id=persona_id,
+                session_name=session_name,
+                session_icon=session_icon,
+                is_active=True
+            )
+            db.session.add(session)
+            db.session.commit()
+
+            # Create initial history
+            history = ChatHistory(
+                session_id=session.id,
+                title='New Conversation',
+                message_count=0
+            )
+            db.session.add(history)
+            db.session.commit()
+
+            # Set as current history
+            session.current_history_id = history.id
+            db.session.commit()
+
+            # Add system message if persona has one
+            if persona.system_prompt:
+                sys_msg = ChatMessage(
+                    history_id=history.id,
+                    role='system',
+                    message_type='text',
+                    content_json={'type': 'system', 'text': persona.system_prompt}
+                )
+                db.session.add(sys_msg)
+                db.session.commit()
+
+            return jsonify({'data': session.to_dict()}), 201
+        except Exception as exc:  # noqa: BLE001
+            db.session.rollback()
             return jsonify({'error': str(exc)}), 500
 
     @expose('/personas/{persona_id}/tools', methods=['GET'])
@@ -281,6 +544,23 @@ class ChatService:
             return jsonify({'data': exec_result})
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
+            return jsonify({'error': str(exc)}), 500
+
+    @expose('/sessions/{session_id}/histories/{history_id}/messages', methods=['GET'])
+    def list_history_messages(self, req: Request, session_id: int, history_id: int):
+        """Get messages from a specific history within a session."""
+        try:
+            session = ChatSession.query.filter_by(id=session_id, is_active=True).first()
+            if not session:
+                return jsonify({'error': 'Session not found or inactive'}), 404
+
+            history = ChatHistory.query.filter_by(id=history_id, session_id=session_id).first()
+            if not history:
+                return jsonify({'error': 'History not found'}), 404
+
+            msgs = ChatMessage.query.filter_by(history_id=history_id).order_by(ChatMessage.created_at.asc()).all()
+            return jsonify({'data': [m.to_dict() for m in msgs], 'total': len(msgs)})
+        except Exception as exc:  # noqa: BLE001
             return jsonify({'error': str(exc)}), 500
 
     @expose('/mcp/servers/status', methods=['GET'])

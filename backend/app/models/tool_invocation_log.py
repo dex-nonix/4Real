@@ -9,23 +9,24 @@ class ToolInvocationLog(db.Model):
     __tablename__ = 'tool_invocation_logs'
 
     id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(db.Integer, db.ForeignKey('chat_sessions.id'), nullable=False)
-    message_id = db.Column(db.Integer, db.ForeignKey('chat_messages.id'))
+    history_id = db.Column(db.Integer, db.ForeignKey('chat_histories.id'), nullable=False)
+    message_id = db.Column(db.Integer, db.ForeignKey('chat_messages.id'), nullable=False)
     tool_name = db.Column(db.String(255), nullable=False)
     input_json = db.Column(db.JSON)
     output_json = db.Column(db.JSON)
-    status = db.Column(db.String(50), nullable=False)
+    status = db.Column(db.String(50), nullable=False)  # started|success|error|timeout
     started_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
     completed_at = db.Column(db.DateTime)
     duration_ms = db.Column(db.Integer)
 
-    session = db.relationship('ChatSession', backref=db.backref('tool_logs', lazy=True))
+    # Relationships
+    history = db.relationship('ChatHistory', backref=db.backref('tool_logs', lazy=True))
     message = db.relationship('ChatMessage', backref=db.backref('tool_logs', lazy=True))
 
     def to_dict(self) -> dict:
         return {
             'id': self.id,
-            'session_id': self.session_id,
+            'history_id': self.history_id,
             'message_id': self.message_id,
             'tool_name': self.tool_name,
             'input_json': self.input_json,
