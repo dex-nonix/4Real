@@ -37,7 +37,7 @@ class OpenAPIGenerator:
             
             # Get service's Swagger definitions via to_swagger() method
             if hasattr(service, 'to_swagger'):
-                service_swagger = service.to_swagger()
+                service_swagger = service.to_swagger(service_name)
                 
                 # Add schemas to components
                 if 'schemas' in service_swagger:

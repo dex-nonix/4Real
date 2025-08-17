@@ -4,10 +4,13 @@ from typing import Dict, Any, List, Callable
 class BaseApiService(ABC):
     """Base class for all API services with Swagger documentation capability."""
     
-    def to_swagger(self) -> Dict[str, Any]:
+    def to_swagger(self, service_name: str = None) -> Dict[str, Any]:
         """
         Return Swagger/OpenAPI definitions for this service.
         Each service can override this to provide custom documentation.
+        
+        Args:
+            service_name: The name of the service (e.g., 'chat', 'artists')
         
         Returns:
             Dict containing OpenAPI components, paths, and schemas
@@ -22,13 +25,18 @@ class BaseApiService(ABC):
             method = getattr(self, method_info['name'])
             swagger_info = self.method_to_swagger(method)
             
-            # Add to paths and schemas
-            path = swagger_info['path']
-            if path not in paths:
-                paths[path] = {}
+            # Add service prefix to path for Swagger (matching API Router behavior)
+            raw_path = swagger_info['path']
+            if service_name:
+                full_path = f"/{service_name}{raw_path}" if not raw_path.startswith(f"/{service_name}") else raw_path
+            else:
+                full_path = raw_path
+            
+            if full_path not in paths:
+                paths[full_path] = {}
             
             for method_name in swagger_info['methods']:
-                paths[path][method_name.lower()] = swagger_info['operation']
+                paths[full_path][method_name.lower()] = swagger_info['operation']
             
             schemas.update(swagger_info.get('schemas', {}))
         
