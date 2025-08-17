@@ -57,8 +57,7 @@ class CrudService(BaseApiService):
             raise ValueError("service_name is required for CRUD service Swagger generation")
         
         # Use the CrudSwaggerGenerator to handle all Swagger generation
-        generator = CrudSwaggerGenerator(self)
-        
+        generator = CrudSwaggerGenerator(self, service_name)
         return generator.generate_swagger(service_name)
 
     def _get_default_config(self) -> Dict[str, Any]:

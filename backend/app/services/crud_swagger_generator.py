@@ -5,9 +5,10 @@ from sqlalchemy import or_, func as sa_func
 class CrudSwaggerGenerator:
     """Generates Swagger documentation for CRUD services."""
 
-    def __init__(self, service):
-        """Initialize with a reference to the service instance."""
+    def __init__(self, service, service_name: str):
+        """Initialize with a reference to the service instance and service name."""
         self.service = service
+        self.service_name = service_name
 
     def method_to_swagger(self, method: Callable) -> Dict[str, Any]:
         """ONLY CRUD service overrides this - adds dynamic model schemas."""
@@ -231,24 +232,8 @@ class CrudSwaggerGenerator:
             if not description:
                 description = f"Endpoint for {method_name.replace('_', ' ')}"
             if not tags:
-                # Generate proper, readable tag names from service class
-                service_name = self.service.__class__.__name__.replace('Service', '')
-                # Split camelCase into words and capitalize properly
-                import re
-                words = re.findall(r'[A-Z][a-z]*|[A-Z]+(?=[A-Z][a-z]|$)', service_name)
-                if words:
-                    # Handle special cases for better readability
-                    if len(words) == 1:
-                        tag = words[0]
-                    elif words[0] == 'AI' and len(words) > 1:
-                        tag = 'AI ' + ' '.join(words[1:])
-                    elif words[0] == 'MCP' and len(words) > 1:
-                        tag = 'MCP ' + ' '.join(words[1:])
-                    else:
-                        tag = ' '.join(words)
-                else:
-                    tag = service_name
-                tags = [tag]
+                # Use the service_name from constructor - no manipulation
+                tags = [self.service_name]
             if not status_codes:
                 status_codes = {200: 'Success', 400: 'Bad Request', 500: 'Internal Server Error'}
             
@@ -362,5 +347,5 @@ class CrudSwaggerGenerator:
         return {
             'schemas': schemas,
             'paths': paths,
-            'tags': [service_name.title()]  # Tags come from service_name, not class name
+            'tags': [service_name]  # Use service_name directly - no manipulation
         } 
