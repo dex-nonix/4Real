@@ -90,7 +90,7 @@ const mockupMessages = ref([
 ]);
 
 // Toggle for mockup vs real data
-const useMockupData = ref(true);
+const useMockupData = ref(true); // Start with mockup data to ensure messages are visible
 
 // Watch for toggle changes to reload messages
 watch(useMockupData, (newValue) => {
@@ -112,8 +112,11 @@ onMounted(() => {
 });
 
 // Load messages when historyId changes
-watch(() => props.historyId, async (newHistoryId) => {
+watch(() => props.historyId, async (newHistoryId, oldHistoryId) => {
+  console.log('historyId changed from', oldHistoryId, 'to', newHistoryId);
   if (newHistoryId) {
+    // Clear existing messages before loading new ones
+    messages.value = [];
     await loadMessages(newHistoryId);
   } else {
     messages.value = [];
@@ -152,19 +155,7 @@ watch(() => props.selectedSession, (newSession, oldSession) => {
 const loadMessages = async (historyId) => {
   console.log('loadMessages called with historyId:', historyId);
   
-  // TEMPORARY: Use mockup data for testing
-  if (useMockupData.value) {
-    console.log('Using mockup data for testing');
-    loading.value = true;
-    
-    // Simulate API delay
-    setTimeout(() => {
-      messages.value = [...mockupMessages.value];
-      console.log('Loaded mockup messages:', messages.value);
-      loading.value = false;
-    }, 500);
-    return;
-  }
+
   
   if (!historyId || !chatService) {
     console.log('loadMessages early return - historyId:', historyId, 'chatService:', !!chatService);
@@ -178,15 +169,19 @@ const loadMessages = async (historyId) => {
     console.log('Messages response:', response);
     
     // Handle different response structures
+    let allMessages = [];
     if (response.data && Array.isArray(response.data)) {
-      messages.value = response.data;
+      allMessages = response.data;
     } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
-      messages.value = response.data.data;
+      allMessages = response.data.data;
     } else if (Array.isArray(response)) {
-      messages.value = response;
+      allMessages = response;
     } else {
-      messages.value = [];
+      allMessages = [];
     }
+    
+    // Just use the messages as returned by the API - no filtering
+    messages.value = allMessages;
     
     console.log('Final messages value:', messages.value);
     
@@ -199,7 +194,8 @@ const loadMessages = async (historyId) => {
         content: messages.value[0].content,
         content_json: messages.value[0].content_json,
         role: messages.value[0].role,
-        timestamp: messages.value[0].timestamp
+        timestamp: messages.value[0].timestamp,
+        history_id: messages.value[0].history_id
       });
     }
   } catch (error) {
@@ -249,6 +245,8 @@ const reloadMessages = () => {
   loadMessages(props.historyId);
 };
 
+
+
 // Get the appropriate component for each message
 const getMessageComponent = (message) => {
   const messageType = message.message_type || 'text';
@@ -275,6 +273,11 @@ const canSendMessage = computed(() => hasHistory.value && inputText.value?.trim(
   <div class="flex flex-column flex-1" style="min-height: 0;">
     <!-- Messages Display Area -->
     <div class="flex-1 p-4 overflow-y-auto surface-ground">
+      <!-- Simple debug info -->
+      <div class="p-2 surface-100 text-xs mb-2 border-round">
+        History ID: {{ props.historyId || 'null' }} | Messages: {{ messages.length }}
+      </div>
+      
       <div v-if="loading" class="text-center p-4">
         <i class="pi pi-spin pi-spinner text-2xl"></i>
         <p class="mt-2">Loading messages...</p>
@@ -315,17 +318,7 @@ const canSendMessage = computed(() => hasHistory.value && inputText.value?.trim(
 
     <!-- Message Input Area -->
     <div class="flex align-items-center p-1 border-top-1 surface-border surface-section flex-shrink-0">
-      <!-- Mockup Toggle Button -->
-      <Button 
-        :icon="useMockupData ? 'pi pi-database' : 'pi pi-globe'"
-        :label="useMockupData ? 'Mock' : 'Real'"
-        text 
-        rounded 
-        :severity="useMockupData ? 'warning' : 'success'"
-        @click="useMockupData = !useMockupData"
-        v-tooltip.bottom="useMockupData ? 'Switch to real data' : 'Switch to mockup data'"
-        class="mr-2"
-      />
+
       
       <!-- Reload Button -->
       <Button 
@@ -337,6 +330,8 @@ const canSendMessage = computed(() => hasHistory.value && inputText.value?.trim(
         v-tooltip.bottom="'Reload messages'"
         class="mr-2"
       />
+      
+
       
       <!-- Tools Button -->
       <Button 
