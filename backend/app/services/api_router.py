@@ -56,9 +56,21 @@ class APIRouter:
                         schema_name = method._response_dto.__name__
                         components["schemas"][schema_name] = method._response_dto.model_json_schema()
                     
-                    # Collect tags
+                    # Collect PROCESSED tags (not original tags)
                     if hasattr(method, '_tags'):
-                        tags.extend(method._tags)
+                        raw_tags = method._tags
+                        processed_tags = []
+                        for tag in raw_tags:
+                            if isinstance(tag, str):
+                                # Replace __SERVICE_NAME__ marker with actual service name
+                                if tag == "__SERVICE_NAME__":
+                                    processed_tag = service_name.title()
+                                else:
+                                    processed_tag = tag.replace('{service_name}', service_name.title())
+                                processed_tags.append(processed_tag)
+                            else:
+                                processed_tags.append(tag)
+                        tags.extend(processed_tags)
         
         # Remove duplicate tags
         unique_tags = [{"name": tag} for tag in set(tags)]
