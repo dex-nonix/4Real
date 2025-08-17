@@ -7,28 +7,31 @@ import ChatMessages from './ChatMessages.vue';
 import ChatMessageInput from './ChatMessageInput.vue';
 
 const props = defineProps({
-  personas: { type: Array, required: true },  // Changed from sessions
-  currentPersonaId: { type: [String, Number], required: true },
-  currentSessionId: { type: [String, Number], required: true },
-  currentHistoryId: { type: [String, Number], required: true },
-  currentUserId: { type: [String, Number], required: true }
+  personas: { type: Array, required: true, default: () => [] },
+  currentPersonaId: { type: [String, Number, null], required: false, default: null },
+  currentSessionId: { type: [String, Number, null], required: false, default: null },
+  currentHistoryId: { type: [String, Number, null], required: false, default: null },
+  currentUserId: { type: [String, Number], required: false, default: 'user-self' }
 });
 
-const emit = defineEmits(['personaSelected', 'sessionSelected', 'historySelected', 'sendMessage', 'closeChat']);
+const emit = defineEmits(['personaSelected', 'sessionSelected', 'historySelected', 'sendMessage', 'closeChat', 'addPersona']);
 
 const newMessage = ref('');
 
-// Computed values
+// Computed values with null safety
 const currentPersona = computed(() => {
+  if (!props.currentPersonaId || !props.personas.length) return null;
   return props.personas.find(p => p.id === props.currentPersonaId);
 });
 
 const currentSession = computed(() => {
-  return currentPersona.value?.sessions.find(s => s.id === props.currentSessionId);
+  if (!currentPersona.value || !props.currentSessionId) return null;
+  return currentPersona.value.sessions?.find(s => s.id === props.currentSessionId);
 });
 
 const currentHistory = computed(() => {
-  return currentSession.value?.histories.find(h => h.id === props.currentHistoryId);
+  if (!currentSession.value || !props.currentHistoryId) return null;
+  return currentSession.value.histories?.find(h => h.id === props.currentHistoryId);
 });
 
 const handlePersonaSelected = (personaId) => {
@@ -44,10 +47,15 @@ const handleHistorySelected = (historyId) => {
 };
 
 const handleSendMessage = (messageText) => {
+  if (!props.currentHistoryId) return;
   emit('sendMessage', {
     historyId: props.currentHistoryId,
     text: messageText,
   });
+};
+
+const handleAddPersona = () => {
+  emit('addPersona');
 };
 </script>
 
@@ -67,6 +75,7 @@ const handleSendMessage = (messageText) => {
         :current-session-id="currentSessionId"
         @persona-selected="handlePersonaSelected"
         @session-selected="handleSessionSelected"
+        @addPersona="handleAddPersona"
       />
       <div class="flex flex-column flex-1">
         <ChatMessages

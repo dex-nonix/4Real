@@ -8,7 +8,7 @@ import InputIcon from 'primevue/inputicon';
 const message = defineModel();
 
 const props = defineProps({
-  currentHistoryId: { type: [String, Number], required: true },
+  currentHistoryId: { type: [String, Number, null], required: false, default: null },
   availableTools: { type: Array, default: () => [] }
 });
 

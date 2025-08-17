@@ -5,9 +5,9 @@ import Button from 'primevue/button';
 import { ref } from 'vue';
 
 const props = defineProps({
-  persona: { type: Object, required: true },
-  currentSession: { type: Object, required: true },
-  currentHistory: { type: Object, required: true }
+  persona: { type: Object, required: false, default: null },
+  currentSession: { type: Object, required: false, default: null },
+  currentHistory: { type: Object, required: false, default: null }
 });
 
 const emit = defineEmits(['viewHistory', 'closeChat', 'renameHistory']);
@@ -16,11 +16,13 @@ const isEditingTitle = ref(false);
 const editedTitle = ref('');
 
 const startEditing = () => {
+  if (!props.currentHistory) return;
   editedTitle.value = props.currentHistory.title;
   isEditingTitle.value = true;
 };
 
 const saveTitle = () => {
+  if (!props.currentHistory) return;
   emit('renameHistory', props.currentHistory.id, editedTitle.value);
   isEditingTitle.value = false;
 };
@@ -29,13 +31,17 @@ const cancelEditing = () => {
   isEditingTitle.value = false;
 };
 
-// Avatar fallback logic
+// Avatar fallback logic with null safety
 const getAvatarDisplay = () => {
+  if (!props.persona) {
+    return { image: null, fallback: '??' };
+  }
+  
   if (props.persona.avatar_url) {
     return { image: props.persona.avatar_url, fallback: null };
   }
   // Use first 2 characters of persona name
-  const initials = props.persona.name.substring(0, 2).toUpperCase();
+  const initials = props.persona.name?.substring(0, 2).toUpperCase() || '??';
   return { image: null, fallback: initials };
 };
 </script>
@@ -51,9 +57,12 @@ const getAvatarDisplay = () => {
         shape="circle" 
       />
       <div class="flex flex-column">
-        <span class="font-bold text-900">{{ persona.name }}</span>
-        <div v-if="!isEditingTitle" class="text-sm text-500 cursor-pointer hover:text-700" @click="startEditing">
+        <span class="font-bold text-900">{{ persona?.name || 'No Persona Selected' }}</span>
+        <div v-if="!isEditingTitle && currentHistory" class="text-sm text-500 cursor-pointer hover:text-700" @click="startEditing">
           {{ currentHistory.title }}
+        </div>
+        <div v-else-if="!currentHistory" class="text-sm text-500">
+          No history selected
         </div>
         <div v-else class="flex align-items-center gap-2">
           <input 

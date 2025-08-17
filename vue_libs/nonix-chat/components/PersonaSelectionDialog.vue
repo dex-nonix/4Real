@@ -1,7 +1,8 @@
 <!-- PersonaSelectionDialog.vue -->
 <template>
   <Dialog 
-    v-model:visible="visible" 
+    :visible="visible" 
+    @update:visible="updateVisible"
     modal 
     header="Select Persona to Chat With"
     :style="{ width: '600px' }"
@@ -51,6 +52,10 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:visible', 'personaSelected']);
+
+const updateVisible = (value) => {
+  emit('update:visible', value);
+};
 
 const close = () => {
   emit('update:visible', false);

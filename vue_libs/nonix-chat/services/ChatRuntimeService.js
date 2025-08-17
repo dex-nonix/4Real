@@ -1,21 +1,19 @@
 import BaseApiService from '@nonix/services/BaseApiService.js'
 
 export default class ChatRuntimeService extends BaseApiService {
-  basePath() { return '/chat' }
-
   // Get all personas with their sessions
   getPersonas() {
-    return this.get('/personas')
+    return this.get('/chat/personas')
   }
 
   // Get all sessions for a specific persona
   getSessions(personaId) {
-    return this.get(`/personas/${encodeURIComponent(personaId)}/sessions`)
+    return this.get(`/chat/personas/${encodeURIComponent(personaId)}/sessions`)
   }
 
   // Create new session with persona
   createSession(personaId, sessionName, sessionIcon) {
-    return this.post(`/personas/${encodeURIComponent(personaId)}/start-chat`, {
+    return this.post(`/chat/personas/${encodeURIComponent(personaId)}/start-chat`, {
       session_name: sessionName,
       session_icon: sessionIcon
     })
@@ -84,12 +82,12 @@ export default class ChatRuntimeService extends BaseApiService {
 
   // Persona tools
   personaTools(personaId) {
-    return this.get(`/personas/${encodeURIComponent(personaId)}/tools`)
+    return this.get(`/chat/personas/${encodeURIComponent(personaId)}/tools`)
   }
 
   // MCP status
   mcpStatus() {
-    return this.get('/mcp/servers/status')
+    return this.get('/chat/mcp/servers/status')
   }
 }
 

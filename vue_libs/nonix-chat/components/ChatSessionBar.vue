@@ -6,9 +6,9 @@ import Avatar from 'primevue/avatar';
 import { ref } from 'vue';
 
 const props = defineProps({
-  personas: { type: Array, required: true },
-  currentPersonaId: { type: [String, Number], required: true },
-  currentSessionId: { type: [String, Number], required: true }
+  personas: { type: Array, required: true, default: () => [] },
+  currentPersonaId: { type: [String, Number, null], required: false, default: null },
+  currentSessionId: { type: [String, Number, null], required: false, default: null }
 });
 
 const emit = defineEmits(['personaSelected', 'sessionSelected', 'addPersona']);
@@ -24,10 +24,12 @@ const togglePersona = (personaId) => {
 };
 
 const getAvatarDisplay = (persona) => {
+  if (!persona) return { image: null, fallback: '??' };
+  
   if (persona.avatar_url) {
     return { image: persona.avatar_url, fallback: null };
   }
-  const initials = persona.name.substring(0, 2).toUpperCase();
+  const initials = persona.name?.substring(0, 2).toUpperCase() || '??';
   return { image: null, fallback: initials };
 };
 </script>

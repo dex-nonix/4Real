@@ -38,6 +38,7 @@
       @closeChat="handleCloseChat"
       @viewHistory="showHistoryPanel = true"
       @renameHistory="handleRenameHistory"
+      @addPersona="showPersonaDialog = true"
     />
   </div>
 </template>
@@ -231,6 +232,10 @@ const handleRenameHistory = async (historyId, newTitle) => {
 
 const handleCloseChat = () => {
   console.log('Chat closed')
+}
+
+const handleAddPersona = () => {
+  showPersonaDialog.value = true
 }
 
 // Initialize

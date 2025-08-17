@@ -566,19 +566,6 @@ class ChatService:
         except Exception as exc:  # noqa: BLE001
             return jsonify({'error': str(exc)}), 500
 
-
-
-
-
-
-
-
-
-
-
-
-
-
     @expose('/mcp/servers/status', methods=['GET'])
     def mcp_status(self, req: Request):
         try:

@@ -97,8 +97,8 @@ import { ref } from 'vue';
 
 const props = defineProps({
   histories: { type: Array, required: true, default: () => [] },
-  currentHistoryId: { type: [String, Number], required: true },
-  sessionId: { type: [String, Number], required: true }
+  currentHistoryId: { type: [String, Number, null], required: false, default: null },
+  sessionId: { type: [String, Number, null], required: false, default: null }
 });
 
 const emit = defineEmits(['historySelected', 'createHistory', 'updateHistory', 'deleteHistory']);
