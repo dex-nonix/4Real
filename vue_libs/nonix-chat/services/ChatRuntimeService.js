@@ -69,6 +69,12 @@ export default class ChatRuntimeService extends BaseApiService {
     return response
   }
 
+  // Delete session
+  async deleteSession(sessionId) {
+    const response = await this.delete(`/chat-sessions/${sessionId}`)
+    return response
+  }
+
   // Update history
   async updateHistory(historyId, data) {
     const response = await this.put(`/chat-histories/${historyId}`, data)

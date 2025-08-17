@@ -55,6 +55,9 @@ watch(() => props.historyId, async (newHistoryId) => {
 
 // React to selectedSession changes
 watch(() => props.selectedSession, (newSession, oldSession) => {
+  console.log('ChatMessageContainer - selectedSession changed:', newSession);
+  console.log('ChatMessageContainer - historyId:', props.historyId);
+  
   if (newSession) {
     // Save input text for previous session if it exists
     if (oldSession && oldSession.id) {
@@ -68,7 +71,10 @@ watch(() => props.selectedSession, (newSession, oldSession) => {
     
     // Load messages for the new session if we have a history
     if (props.historyId) {
+      console.log('Loading messages for history:', props.historyId);
       loadMessages(props.historyId);
+    } else {
+      console.log('No historyId available for message loading');
     }
     
     console.log('Selected session changed:', newSession);
@@ -77,13 +83,43 @@ watch(() => props.selectedSession, (newSession, oldSession) => {
 
 // Load messages for specific history
 const loadMessages = async (historyId) => {
-  if (!historyId || !chatService) return;
+  console.log('loadMessages called with historyId:', historyId);
+  if (!historyId || !chatService) {
+    console.log('loadMessages early return - historyId:', historyId, 'chatService:', !!chatService);
+    return;
+  }
   
   try {
     loading.value = true;
+    console.log('Calling chatService.getHistoryMessages with:', historyId);
     const response = await chatService.getHistoryMessages(historyId);
-    // Handle CRUD response structure: {data: Array, pagination: {...}}
-    messages.value = response.data?.data || response.data || [];
+    console.log('Messages response:', response);
+    
+    // Handle different response structures
+    if (response.data && Array.isArray(response.data)) {
+      messages.value = response.data;
+    } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      messages.value = response.data.data;
+    } else if (Array.isArray(response)) {
+      messages.value = response;
+    } else {
+      messages.value = [];
+    }
+    
+    console.log('Final messages value:', messages.value);
+    
+    // Debug: Log individual message details
+    if (messages.value.length > 0) {
+      console.log('First message details:', messages.value[0]);
+      console.log('Message structure:', {
+        id: messages.value[0].id,
+        message_type: messages.value[0].message_type,
+        content: messages.value[0].content,
+        content_json: messages.value[0].content_json,
+        role: messages.value[0].role,
+        timestamp: messages.value[0].timestamp
+      });
+    }
   } catch (error) {
     console.error('Failed to load messages:', error);
     messages.value = [];
@@ -128,13 +164,18 @@ const showTools = () => {
 // Get the appropriate component for each message
 const getMessageComponent = (message) => {
   const messageType = message.message_type || 'text';
-  return chatMessageTypeManager.getMessageType(messageType);
+  console.log('Getting component for message type:', messageType, 'message:', message);
+  const component = chatMessageTypeManager.getMessageType(messageType);
+  console.log('Returned component:', component);
+  return component;
 };
 
 // Check if message has a valid type
 const hasValidMessageType = (message) => {
   const messageType = message.message_type || 'text';
-  return chatMessageTypeManager.hasMessageType(messageType);
+  const hasType = chatMessageTypeManager.hasMessageType(messageType);
+  console.log('Message type validation:', messageType, 'hasType:', hasType);
+  return hasType;
 };
 
 // Computed values
@@ -157,6 +198,11 @@ const canSendMessage = computed(() => hasHistory.value && inputText.value?.trim(
       </div>
       
       <div v-else v-for="message in messages" :key="message.id">
+        <!-- Debug info for each message -->
+        <div class="p-2 surface-200 text-xs mb-1">
+          Debug: ID={{ message.id }}, Type={{ message.message_type || 'undefined' }}, Role={{ message.role }}, Content={{ message.content || message.content_json || 'no content' }}
+        </div>
+        
         <component
           :is="getMessageComponent(message)"
           v-if="hasValidMessageType(message)"
