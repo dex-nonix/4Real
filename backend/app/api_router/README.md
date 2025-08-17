@@ -81,10 +81,14 @@ spec = generator.generate_openapi_spec(services, "chat")
 
 ### 3. SwaggerUIGenerator (`swagger_ui_generator.py`)
 
-Generates the Swagger UI HTML interface for API exploration.
+Generates the Swagger UI HTML interface for API exploration with advanced service filtering.
 
 **Features:**
 - Modern Swagger UI 5.9.0
+- **Service Filtering Interface** - Filter services without reloading
+- **Quick Filter Buttons** - Pre-defined service combinations
+- **Persistent State** - Remembers your filter preferences
+- **Real-time Filtering** - Apply filters instantly
 - Responsive design
 - Deep linking support
 - Download URL plugin
@@ -147,8 +151,9 @@ class MyService:
 
 ### Dynamic Service Filtering
 
-The OpenAPI endpoint now supports query parameter filtering:
+The OpenAPI endpoint now supports query parameter filtering, and the Swagger UI provides an intuitive interface for this:
 
+#### **Backend Filtering (Query Parameters)**
 ```
 # All services
 GET /api/openapi.json
@@ -162,6 +167,14 @@ GET /api/openapi.json?services=chat,artists,albums
 # Services with spaces (automatically handled)
 GET /api/openapi.json?services=chat, artists , albums
 ```
+
+#### **Frontend Filtering (Swagger UI)**
+The Swagger UI now includes:
+- **Filter Input Field** - Type service names and press Enter or click Apply
+- **Quick Filter Buttons** - One-click access to common service combinations
+- **Real-time Updates** - No page reloads, instant filtering
+- **Persistent State** - Your filter preferences are saved across sessions
+- **Current Filter Display** - Shows what's currently being filtered
 
 ### Tag Processing
 

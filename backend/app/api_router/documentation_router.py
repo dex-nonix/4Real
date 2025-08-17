@@ -29,13 +29,19 @@ class DocumentationRouter:
             # Get service filter from query parameter
             service_filter = request.args.get('services', None)
             
+            # Debug logging
+            print(f"🔍 OpenAPI request - services filter: {service_filter}")
+            
             # We need to get the registered services from the main router
             router = APIRouter.get_instance()
             if router:
-                return jsonify(self.openapi_generator.generate_openapi_spec(
+                print(f"📋 Found {len(router.registered_services)} registered services")
+                result = self.openapi_generator.generate_openapi_spec(
                     router.registered_services, 
                     service_filter
-                ))
+                )
+                print(f"✅ Generated OpenAPI spec with {len(result.get('paths', {}))} paths")
+                return jsonify(result)
             return jsonify({"error": "No services registered"}), 500
         
         @self.blueprint.route('/docs')

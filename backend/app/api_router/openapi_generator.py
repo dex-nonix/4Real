@@ -25,12 +25,15 @@ class OpenAPIGenerator:
         allowed_services = None
         if service_filter:
             allowed_services = [s.strip().lower() for s in service_filter.split(',')]
+            print(f"🎯 Filtering services: {allowed_services}")
         
         # Process each registered service
         for service_name, service in registered_services.items():
             # Skip services not in filter if filter is specified
             if allowed_services and service_name.lower() not in allowed_services:
+                print(f"⏭️  Skipping service '{service_name}' (not in filter)")
                 continue
+            print(f"✅ Processing service '{service_name}'")
             for attr_name in dir(service):
                 method = getattr(service, attr_name)
                 if hasattr(method, '_exposed'):

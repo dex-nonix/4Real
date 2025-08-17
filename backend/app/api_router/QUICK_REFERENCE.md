@@ -17,6 +17,7 @@ app.register_blueprint(router.blueprint, url_prefix='/api')
 
 ## Service Filtering (New Feature!)
 
+### **Backend Filtering (Query Parameters)**
 Filter OpenAPI documentation to focus on specific services:
 
 ```
@@ -32,6 +33,13 @@ GET /api/openapi.json?services=chat,artists,albums
 # Services with spaces (auto-trimmed)
 GET /api/openapi.json?services=chat, artists , albums
 ```
+
+### **Frontend Filtering (Swagger UI)**
+The Swagger UI now has a built-in filtering interface:
+- **Filter Input** - Type service names and press Enter
+- **Quick Buttons** - Click for common service combinations
+- **No Reloads** - Instant filtering without page refresh
+- **Persistent** - Your filters are saved across sessions
 
 ## @expose Decorator
 
