@@ -70,12 +70,10 @@ const handleAddPersona = () => {
 
     <div class="flex flex-row flex-1" style="min-height: 0;">
       <ChatSessionBar
-        :personas="personas"
-        :current-persona-id="currentPersonaId"
+        :sessions="currentPersona?.sessions || []"
         :current-session-id="currentSessionId"
-        @persona-selected="handlePersonaSelected"
         @session-selected="handleSessionSelected"
-        @addPersona="handleAddPersona"
+        @add-session="handleAddPersona"
       />
       <div class="flex flex-column flex-1">
         <ChatMessages
