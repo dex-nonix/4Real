@@ -4,6 +4,12 @@
 
 The API Router system is a modular, auto-documenting Flask API framework that automatically generates OpenAPI 3.0 specifications and Swagger UI documentation. It provides a clean separation of concerns between routing, documentation generation, and service management.
 
+**🚀 NEW: Enhanced Swagger Generation**
+- **BaseApiService** - Base class for all services with automatic Swagger generation
+- **CrudService** - Automatic schema generation from models and configs
+- **Enhanced @expose** - Direct schema definition in decorators
+- **No DTOs required** - Schemas defined directly or generated automatically
+
 ## Architecture
 
 ```
@@ -14,6 +20,11 @@ api_router/
 ├── swagger_ui_generator.py  # Swagger UI HTML generation
 ├── documentation_router.py  # Documentation endpoint management
 └── README.md               # This documentation
+
+services/
+├── base_api_service.py      # 🚀 NEW: Base class for all services
+├── crud_service.py          # 🚀 ENHANCED: Automatic schema generation
+└── [other services]         # Custom services with manual schemas
 ```
 
 ## Core Components
@@ -49,19 +60,78 @@ blueprint = router.blueprint
 - `list_services()`: Get list of registered service names
 - `get_service(service_name)`: Get a specific service instance
 
-### 2. OpenAPIGenerator (`openapi_generator.py`)
+### 2. BaseApiService (`base_api_service.py`) 🚀 NEW!
+
+Base class for all API services that provides automatic Swagger documentation generation.
+
+**Key Features:**
+- **Automatic Swagger generation** from `@expose` decorators
+- **Default `method_to_swagger()`** implementation for all subclasses
+- **No override required** for most services
+- **Clean architecture** with separation of concerns
+
+**Usage:**
+```python
+from app.services.base_api_service import BaseApiService
+
+class MyService(BaseApiService):
+    # Automatically gets to_swagger() method
+    # Automatically gets method_to_swagger() method
+    # No override needed for basic functionality
+    
+    @expose('/items', methods=['GET'], tags=['Items'])
+    def list_items(self, request):
+        return {'items': []}
+```
+
+### 3. CrudService (`crud_service.py`) 🚀 ENHANCED!
+
+Enhanced CRUD service that automatically generates schemas from models and configurations.
+
+**Key Features:**
+- **Automatic schema generation** from SQLAlchemy models
+- **Config-driven validation** and field requirements
+- **Override of `method_to_swagger()`** for dynamic model schemas
+- **Create/Update/Response schemas** generated automatically
+
+**Usage:**
+```python
+from app.services.crud_service import CrudService
+
+class ArtistService(CrudService):
+    model = Artist  # Automatically generates schemas
+    config = {
+        'validation': {
+            'required_fields': ['name'],
+            'unique_fields': ['name']
+        },
+        'filters': {
+            'fields': ['name', 'abbreviation']
+        }
+    }
+    # Automatically gets:
+    # - ArtistServiceCreate schema
+    # - ArtistServiceUpdate schema  
+    # - ArtistServiceResponse schema
+```
+
+**Automatic Schema Generation:**
+- **Create Schema**: Model fields excluding ID, timestamps
+- **Update Schema**: Model fields excluding ID, timestamps  
+- **Response Schema**: All model fields with proper types
+
+### 4. OpenAPIGenerator (`openapi_generator.py`)
 
 Handles the generation of OpenAPI 3.0 specifications from registered services.
 
 **Key Features:**
-- Automatic schema extraction from DTOs
-- Dynamic tag processing
-- Path parameter extraction
-- Service filtering support
+- **Service-aware schema generation** via `to_swagger()` method
+- **Automatic schema extraction** from `@expose` decorators
+- **Dynamic tag processing**
+- **Path parameter extraction**
+- **Service filtering support**
 
-**Service Filtering:**
-The OpenAPI generator now supports filtering services by name:
-
+**Service Integration:**
 ```python
 # Generate spec for all services
 spec = generator.generate_openapi_spec(services)
@@ -79,7 +149,7 @@ spec = generator.generate_openapi_spec(services, "chat")
 - Whitespace is automatically trimmed
 - Examples: `"chat"`, `"chat,artists"`, `"chat, artists, albums"`
 
-### 3. SwaggerUIGenerator (`swagger_ui_generator.py`)
+### 5. SwaggerUIGenerator (`swagger_ui_generator.py`)
 
 Generates the Swagger UI HTML interface for API exploration with advanced service filtering.
 
@@ -93,7 +163,7 @@ Generates the Swagger UI HTML interface for API exploration with advanced servic
 - Deep linking support
 - Download URL plugin
 
-### 4. DocumentationRouter (`documentation_router.py`)
+### 6. DocumentationRouter (`documentation_router.py`)
 
 Manages documentation endpoints and integrates the OpenAPI and Swagger UI generators.
 
@@ -103,12 +173,47 @@ Manages documentation endpoints and integrates the OpenAPI and Swagger UI genera
 
 ## Service Registration
 
+### **NEW: Service Architecture**
+
+#### **BaseApiService** (All Services)
+```python
+from app.services.base_api_service import BaseApiService
+
+class MyService(BaseApiService):
+    # Automatically gets Swagger generation
+    # No override needed for basic functionality
+    pass
+```
+
+#### **CrudService** (CRUD Operations)
+```python
+from app.services.crud_service import CrudService
+
+class ArtistService(CrudService):
+    model = Artist  # Automatic schema generation
+    config = {
+        'validation': {
+            'required_fields': ['name'],
+            'unique_fields': ['name']
+        }
+    }
+    # Gets automatic Create/Update/Response schemas!
+```
+
+#### **Custom Services** (Special Logic)
+```python
+class ChatService(BaseApiService):
+    # Can override method_to_swagger() if needed
+    # Usually just uses @expose decorator for schemas
+    pass
+```
+
 ### Basic Service Registration
 
 ```python
 from app.api_router import APIRouter
 
-class MyService:
+class MyService(BaseApiService):
     @expose(path='/items', methods=['GET'])
     def get_items(self, request):
         return {'items': []}
@@ -118,7 +223,41 @@ router = APIRouter()
 router.register_service('my-service', MyService)
 ```
 
-### Service with DTOs
+### Service with Direct Schemas 🚀 NEW!
+
+```python
+class MyService(BaseApiService):
+    @expose(
+        path='/items',
+        methods=['POST'],
+        summary='Create a new item',
+        description='Creates a new item with the provided details',
+        tags=['__SERVICE_NAME__', 'items'],
+        # 🚀 NEW: Direct schema definition
+        request_schema={
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "description": "Item name"},
+                "description": {"type": "string", "description": "Item description"}
+            },
+            "required": ["name"]
+        },
+        response_schema={
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer"},
+                "name": {"type": "string"},
+                "description": {"type": "string"}
+            }
+        },
+        status_codes={200: 'Success', 201: 'Created'}
+    )
+    def create_item(self, request):
+        # Implementation here
+        pass
+```
+
+### Legacy DTO Support (Still Works)
 
 ```python
 from pydantic import BaseModel
@@ -132,15 +271,16 @@ class ItemResponseDTO(BaseModel):
     name: str
     description: str
 
-class MyService:
+class MyService(BaseApiService):
     @expose(
         path='/items',
         methods=['POST'],
-        request_dto=CreateItemDTO,
-        response_dto=ItemResponseDTO,
         summary='Create a new item',
         description='Creates a new item with the provided details',
-        tags=['__SERVICE_NAME__', 'items']
+        tags=['__SERVICE_NAME__', 'items'],
+        request_dto=CreateItemDTO,
+        response_dto=ItemResponseDTO,
+        status_codes={200: 'Success', 201: 'Created'}
     )
     def create_item(self, request):
         # Implementation here
@@ -148,6 +288,51 @@ class MyService:
 ```
 
 ## API Documentation Features
+
+### **NEW: Enhanced Schema Generation**
+
+#### **Automatic CRUD Schemas**
+CRUD services automatically generate schemas from models:
+
+```python
+class ArtistService(CrudService):
+    model = Artist
+    config = {
+        'validation': {
+            'required_fields': ['name'],
+            'unique_fields': ['name']
+        }
+    }
+    
+    # Automatically gets:
+    # - ArtistServiceCreate: {name: string, abbreviation: string, persona: string}
+    # - ArtistServiceUpdate: {name: string, abbreviation: string, persona: string}  
+    # - ArtistServiceResponse: {id: integer, name: string, abbreviation: string, persona: string, created_at: string, updated_at: string}
+```
+
+#### **Manual Schema Definition**
+Custom services define schemas in `@expose` decorator:
+
+```python
+@expose(
+    request_schema={
+        "type": "object",
+        "properties": {
+            "persona_id": {"type": "integer"},
+            "session_name": {"type": "string"}
+        },
+        "required": ["persona_id"]
+    },
+    response_schema={
+        "type": "object",
+        "properties": {
+            "id": {"type": "integer"},
+            "persona_id": {"type": "integer"},
+            "session_name": {"type": "string"}
+        }
+    }
+)
+```
 
 ### Dynamic Service Filtering
 
@@ -188,14 +373,6 @@ The system automatically processes tags with special markers:
 @expose(tags=['__SERVICE_NAME__', 'core'])  # → ['Chat', 'core']
 @expose(tags=['{service_name}-operations']) # → ['Chat-operations']
 ```
-
-### Automatic Schema Generation
-
-DTOs are automatically included in the OpenAPI specification:
-
-- Request DTOs appear in request body schemas
-- Response DTOs appear in response schemas
-- All schemas are properly referenced and documented
 
 ## Error Handling
 
@@ -259,81 +436,105 @@ No specific environment variables are required, but the system respects Flask's 
 
 ### 1. Service Organization
 
-- Use descriptive service names
-- Group related functionality in single services
-- Keep services focused on single domains
+- **Use BaseApiService** for all services
+- **Extend CrudService** for CRUD operations
+- **Keep services focused** on single domains
+- **Use descriptive service names**
 
-### 2. Documentation
+### 2. Schema Definition
 
-- Always provide meaningful summaries and descriptions
-- Use appropriate tags for grouping
-- Include request/response DTOs for complex operations
+- **CRUD services**: Let automatic generation handle schemas
+- **Custom services**: Use `request_schema`/`response_schema` in decorator
+- **Legacy support**: DTOs still work if needed
+- **Always provide meaningful** summaries and descriptions
 
-### 3. Error Handling
+### 3. Documentation
+
+- **Use appropriate tags** for grouping
+- **Include request/response schemas** for complex operations
+- **CRUD services**: Schemas generated automatically
+- **Custom services**: Define schemas in decorator
+
+### 4. Error Handling
 
 - Let the router handle common errors
 - Provide meaningful error messages in your services
 - Use appropriate HTTP status codes
 
-### 4. Performance
+### 5. Performance
 
 - Use service filtering to reduce OpenAPI spec size
 - Implement caching for expensive operations
 - Monitor service execution times
+- CRUD services automatically optimize schema generation
 
 ## Examples
 
-### Complete Service Example
+### Complete CRUD Service Example 🚀 NEW!
 
 ```python
-from app.api_router import expose
-from pydantic import BaseModel
+from app.services.crud_service import CrudService
 
-class UserCreateDTO(BaseModel):
-    username: str
-    email: str
-
-class UserResponseDTO(BaseModel):
-    id: int
-    username: str
-    email: str
-
-class UserService:
-    def __init__(self):
-        self.users = []
-        self.next_id = 1
-
-    @expose(
-        path='/users',
-        methods=['GET'],
-        summary='List all users',
-        description='Retrieve a list of all registered users',
-        tags=['__SERVICE_NAME__', 'users'],
-        response_dto=UserResponseDTO
-    )
-    def list_users(self, request):
-        return [UserResponseDTO(**user) for user in self.users]
-
-    @expose(
-        path='/users',
-        methods=['POST'],
-        summary='Create user',
-        description='Create a new user account',
-        tags=['__SERVICE_NAME__', 'users'],
-        request_dto=UserCreateDTO,
-        response_dto=UserResponseDTO,
-        status_codes={201: 'User created successfully'}
-    )
-    def create_user(self, request):
-        data = request.get_json()
-        user = {
-            'id': self.next_id,
-            'username': data['username'],
-            'email': data['email']
+class ArtistService(CrudService):
+    model = Artist
+    config = {
+        'validation': {
+            'required_fields': ['name'],
+            'unique_fields': ['name']
+        },
+        'filters': {
+            'fields': ['name', 'abbreviation']
+        },
+        'sorting': {
+            'default_sort': 'name',
+            'allowed_fields': ['name', 'abbreviation', 'created_at']
         }
-        self.users.append(user)
-        self.next_id += 1
-        return UserResponseDTO(**user), 201
+    }
+    
+    # 🚀 Automatically gets:
+    # - Create schema (excludes id, created_at, updated_at)
+    # - Update schema (excludes id, created_at, updated_at)  
+    # - Response schema (includes all fields)
+    # - All CRUD operations with proper schemas
+```
+
+### Complete Custom Service Example
+
+```python
+from app.services.base_api_service import BaseApiService
+
+class ChatService(BaseApiService):
+    @expose(
+        path='/sessions',
+        methods=['POST'],
+        summary='Create chat session',
+        description='Create a new chat session with a persona',
+        tags=['Chat', 'Sessions'],
+        status_codes={201: 'Session created', 400: 'Bad request'},
+        # 🚀 Direct schema definition
+        request_schema={
+            "type": "object",
+            "properties": {
+                "persona_id": {"type": "integer", "description": "Persona ID"},
+                "session_name": {"type": "string", "description": "Session name"},
+                "session_icon": {"type": "string", "description": "Session icon"}
+            },
+            "required": ["persona_id"]
+        },
+        response_schema={
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer"},
+                "persona_id": {"type": "integer"},
+                "session_name": {"type": "string"},
+                "is_active": {"type": "boolean"},
+                "created_at": {"type": "string", "format": "date-time"}
+            }
+        }
+    )
+    def create_session(self, request):
+        # Implementation here
+        pass
 ```
 
 ### Registration
@@ -342,7 +543,8 @@ class UserService:
 from app.api_router import APIRouter
 
 router = APIRouter()
-router.register_service('users', UserService)
+router.register_service('artists', ArtistService)  # CRUD service
+router.register_service('chat', ChatService)       # Custom service
 ```
 
 ## Troubleshooting
@@ -351,20 +553,25 @@ router.register_service('users', UserService)
 
 1. **Service not appearing in OpenAPI spec**
    - Check that methods have `@expose` decorator
-   - Verify service is properly registered
+   - Verify service extends `BaseApiService`
    - Check for import errors
 
-2. **DTO schemas not appearing**
-   - Ensure DTOs inherit from `pydantic.BaseModel`
-   - Check that `request_dto` and `response_dto` are properly set
-   - Verify DTO import paths
+2. **CRUD schemas not appearing**
+   - Ensure service extends `CrudService`
+   - Verify `model` and `config` are properly set
+   - Check that model has proper SQLAlchemy fields
 
-3. **Routes not working**
+3. **Custom schemas not working**
+   - Use `request_schema`/`response_schema` in `@expose` decorator
+   - Ensure schemas follow OpenAPI 3.0 format
+   - Check for syntax errors in schema definitions
+
+4. **Routes not working**
    - Check Flask blueprint registration
    - Verify URL prefix configuration
    - Check for route conflicts
 
-4. **Filtering not working**
+5. **Filtering not working**
    - Verify query parameter format (`?services=name1,name2`)
    - Check service names match exactly (case-insensitive)
    - Ensure no extra spaces in parameter values
@@ -376,6 +583,47 @@ Enable Flask debug mode for detailed error information:
 ```python
 app.config['DEBUG'] = True
 ```
+
+## Migration Guide
+
+### From Old System to New System
+
+1. **Update service inheritance**:
+   ```python
+   # OLD
+   class MyService:
+       pass
+   
+   # NEW
+   from app.services.base_api_service import BaseApiService
+   class MyService(BaseApiService):
+       pass
+   ```
+
+2. **Update CRUD services**:
+   ```python
+   # OLD
+   class ArtistService:
+       pass
+   
+   # NEW
+   from app.services.crud_service import CrudService
+   class ArtistService(CrudService):
+       model = Artist
+       config = {...}
+   ```
+
+3. **Update schema definitions**:
+   ```python
+   # OLD (DTOs)
+   @expose(request_dto=MyDTO, response_dto=MyDTO)
+   
+   # NEW (Direct schemas)
+   @expose(
+       request_schema={"type": "object", "properties": {...}},
+       response_schema={"type": "object", "properties": {...}}
+   )
+   ```
 
 ## Future Enhancements
 
@@ -389,6 +637,8 @@ Planned features for upcoming versions:
 - API versioning support
 - Rate limiting integration
 - Authentication/authorization hooks
+- **Enhanced schema validation** and generation
+- **Model relationship schemas** for CRUD services
 
 ## Contributing
 
@@ -399,6 +649,9 @@ When contributing to the API router system:
 3. Update documentation for any API changes
 4. Follow the existing code style and patterns
 5. Ensure backward compatibility
+6. **Use BaseApiService** for new services
+7. **Extend CrudService** for CRUD operations
+8. **Define schemas in decorators** for custom services
 
 ## License
 
