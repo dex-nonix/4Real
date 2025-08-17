@@ -29,13 +29,20 @@ class DocumentationRouter:
             # Get service filter from query parameter
             service_filter = request.args.get('services', None)
             
-            # Debug logging
-            print(f"🔍 OpenAPI request - services filter: {service_filter}")
+            # Debug logging - MORE DETAILED
+            print(f"🔍 OpenAPI request received!")
+            print(f"🔍 Full request URL: {request.url}")
+            print(f"🔍 Query parameters: {dict(request.args)}")
+            print(f"🔍 Services filter: {service_filter}")
+            print(f"🔍 Request method: {request.method}")
             
             # We need to get the registered services from the main router
             router = APIRouter.get_instance()
             if router:
-                print(f"📋 Found {len(router.registered_services)} registered services")
+                print(f"📋 Found {len(router.registered_services)} registered services:")
+                for service_name in router.registered_services.keys():
+                    print(f"   - {service_name}")
+                
                 result = self.openapi_generator.generate_openapi_spec(
                     router.registered_services, 
                     service_filter
@@ -47,7 +54,12 @@ class DocumentationRouter:
         @self.blueprint.route('/docs')
         def swagger_ui():
             """Return Swagger UI HTML page"""
-            return self.swagger_ui_generator.generate_swagger_ui()
+            from flask import request
+            
+            # Get current filter from URL query parameter
+            current_filter = request.args.get('services', None)
+            
+            return self.swagger_ui_generator.generate_swagger_ui(current_filter)
 
     def generate_openapi_spec(self, registered_services: dict[str, Any], service_filter: str = None) -> dict[str, Any]:
         """Generate OpenAPI specification for external use"""
