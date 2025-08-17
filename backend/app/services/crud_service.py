@@ -34,6 +34,65 @@ class CrudService(BaseApiService):
         # Apply default values for any missing config keys (no generic fallback when entirely missing)
         self.config = self._apply_default_config_values(self.config)
 
+    def _get_default_config(self):
+        """Default CRUD configuration"""
+        return {
+            'operations': {
+                'create': True,      # Enable POST /
+                'read': True,        # Enable GET / and GET /{id}
+                'update': True,      # Enable PUT /{id}
+                'delete': True,      # Enable DELETE /{id}
+                'list': True,        # Enable GET / (list all)
+                'search': True,      # Enable GET /search
+                'bulk': True,        # Enable POST /bulk
+                'selector': True     # Enable GET /selector and /selector/{id} (optimized for dropdowns)
+            },
+            'filters': {
+                'enabled': True,     # Enable filtering
+                'fields': [],        # Fields that can be filtered
+                'operators': ['eq', 'ne', 'gt', 'lt', 'like', 'in']
+            },
+            'pagination': {
+                'enabled': True,     # Enable pagination
+                'default_page_size': 20,
+                'max_page_size': 100
+            },
+            'sorting': {
+                'enabled': True,     # Enable sorting
+                'default_sort': 'id',
+                'allowed_fields': []
+            },
+            'validation': {
+                'enabled': True,     # Enable validation
+                'required_fields': [],
+                'unique_fields': []
+            },
+            'selector': {
+                'enabled': True,     # Enable selector optimization
+                'fields': ['name'],  # Extra fields to return. NOTE: 'id' is ALWAYS included automatically
+                'display_format': None,    # Custom display format (e.g., 'firstName + " " + lastName')
+                'search_fields': ['name'], # Fields to search in for selector
+                'limit': 100,              # Max items for selector (performance)
+                'order_by': 'name'         # How to order selector items
+            }
+        }
+
+    def _apply_default_config_values(self, provided_config):
+        """Fill only missing keys from defaults; do not create a config when absent."""
+        defaults = self._get_default_config()
+
+        def merge(dst, src_defaults):
+            for key, def_value in src_defaults.items():
+                if key not in dst:
+                    dst[key] = def_value
+                else:
+                    cur_value = dst[key]
+                    if isinstance(cur_value, dict) and isinstance(def_value, dict):
+                        dst[key] = merge(cur_value, def_value)
+            return dst
+
+        return merge(dict(provided_config), defaults)
+
     def to_swagger(self) -> Dict[str, Any]:
         """Generate Swagger documentation for CRUD operations from model + config."""
         

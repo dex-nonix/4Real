@@ -4,7 +4,6 @@ from typing import Dict, Any, List, Callable
 class BaseApiService(ABC):
     """Base class for all API services with Swagger documentation capability."""
     
-    @abstractmethod
     def to_swagger(self) -> Dict[str, Any]:
         """
         Return Swagger/OpenAPI definitions for this service.
@@ -13,7 +12,31 @@ class BaseApiService(ABC):
         Returns:
             Dict containing OpenAPI components, paths, and schemas
         """
-        pass
+        # Default implementation using the working method_to_swagger
+        exposed_methods = self.get_exposed_methods()
+        
+        paths = {}
+        schemas = {}
+        
+        for method_info in exposed_methods:
+            method = getattr(self, method_info['name'])
+            swagger_info = self.method_to_swagger(method)
+            
+            # Add to paths and schemas
+            path = swagger_info['path']
+            if path not in paths:
+                paths[path] = {}
+            
+            for method_name in swagger_info['methods']:
+                paths[path][method_name.lower()] = swagger_info['operation']
+            
+            schemas.update(swagger_info.get('schemas', {}))
+        
+        return {
+            'schemas': schemas,
+            'paths': paths,
+            'tags': []
+        }
     
     def get_exposed_methods(self) -> List[Dict[str, Any]]:
         """Get all @expose methods with their metadata."""

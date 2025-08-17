@@ -107,42 +107,8 @@ def my_method(self, request):
     pass
 ```
 
-### **NEW: Direct Schema Definition** 🚀
+### **Direct Schema Definition** 🚀
 ```python
-@expose(
-    path='/items',
-    methods=['POST'],
-    tags=['Items'],
-    request_schema={
-        "type": "object",
-        "properties": {
-            "name": {"type": "string", "description": "Item name"},
-            "description": {"type": "string", "description": "Item description"}
-        },
-        "required": ["name"]
-    },
-    response_schema={
-        "type": "object",
-        "properties": {
-            "id": {"type": "integer"},
-            "name": {"type": "string"},
-            "description": {"type": "string"}
-        }
-    }
-)
-def create_item(self, request):
-    pass
-```
-
-### **Legacy DTO Support** (Still Works)
-```python
-from pydantic import BaseModel
-
-class CreateItemDTO(BaseModel):
-    field: str
-    optional_field: str | None = None
-
-# Use in @expose decorator
 @expose(
     path='/items',
     methods=['POST'],
@@ -168,4 +134,94 @@ class CreateItemDTO(BaseModel):
 
 ## Special Tag Markers
 
-- `
+- `__SERVICE_NAME__` → Replaced with actual service name
+- `{service_name}` → Replaced with service name in title case
+
+## Automatic Schema Generation
+
+### **CRUD Services** (Automatic!)
+CRUD services automatically generate schemas from models:
+
+- **Create Schema** - Generated from model fields (excludes ID, timestamps)
+- **Update Schema** - Generated from model fields (excludes ID, timestamps)
+- **Response Schema** - Generated from model fields (includes all fields)
+
+### **Custom Services** (Manual)
+Custom services define schemas in `@expose` decorator:
+
+```python
+@expose(
+    request_schema={"type": "object", "properties": {...}},
+    response_schema={"type": "object", "properties": {...}}
+)
+```
+
+## Error Handling
+
+Errors are automatically caught and logged:
+- Terminal output with emojis
+- Structured JSON responses
+- Full tracebacks in debug mode
+
+## Key Endpoints
+
+- `/api/openapi.json` - OpenAPI specification (filterable)
+- `/api/docs` - Swagger UI interface
+
+## Common Patterns
+
+### **CRUD Service** (Automatic Schemas!)
+```python
+class ArtistService(CrudService):
+    model = Artist
+    config = {
+        'validation': {
+            'required_fields': ['name'],
+            'unique_fields': ['name']
+        }
+    }
+    # Automatically gets Create/Update/Response schemas!
+```
+
+### **Custom Service** (Manual Schemas)
+```python
+class ChatService(BaseApiService):
+    @expose(
+        path='/sessions',
+        methods=['POST'],
+        tags=['Chat'],
+        request_schema={
+            "type": "object",
+            "properties": {
+                "persona_id": {"type": "integer"},
+                "session_name": {"type": "string"}
+            },
+            "required": ["persona_id"]
+        },
+        response_schema={
+            "type": "object",
+            "properties": {
+                "id": {"type": "integer"},
+                "persona_id": {"type": "integer"},
+                "session_name": {"type": "string"}
+            }
+        }
+    )
+    def create_session(self, request):
+        pass
+```
+
+## Troubleshooting
+
+- **Service not showing**: Check `@expose` decorator
+- **Schemas not working**: Use `request_schema`/`response_schema` in decorator
+- **CRUD schemas missing**: Ensure service extends `CrudService` with model/config
+- **Filtering not working**: Check query parameter format
+- **Routes not working**: Verify blueprint registration
+
+## Performance Tips
+
+- Use service filtering to reduce OpenAPI spec size
+- Keep services focused and lightweight
+- Use appropriate HTTP methods and status codes
+- CRUD services automatically optimize schema generation
