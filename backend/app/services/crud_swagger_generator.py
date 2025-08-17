@@ -312,4 +312,28 @@ class CrudSwaggerGenerator:
                 "schema": {"type": openapi_type}
             })
         
-        return parameters 
+        return parameters
+
+    def generate_swagger(self, service_name: str) -> Dict[str, Any]:
+        """Generate complete Swagger documentation for CRUD operations."""
+        
+        # Get exposed methods from the service instance
+        exposed_methods = self.service.get_exposed_methods()
+        
+        # Generate paths from exposed methods
+        raw_paths = self._generate_crud_paths(exposed_methods)
+        
+        # Add service prefix to ALL paths (service_name is permanent, no fallback)
+        paths = {}
+        for raw_path, path_info in raw_paths.items():
+            full_path = f"/{service_name}{raw_path}" if not raw_path.startswith(f"/{service_name}") else raw_path
+            paths[full_path] = path_info
+        
+        # Generate schemas from model
+        schemas = self._generate_model_schemas()
+        
+        return {
+            'schemas': schemas,
+            'paths': paths,
+            'tags': [service_name.title()]  # Tags come from service_name, not class name
+        } 

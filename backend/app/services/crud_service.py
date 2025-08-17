@@ -1,6 +1,4 @@
 from __future__ import annotations
-import logging
-
 
 from typing import Any, Dict, List, Optional, Callable
 from datetime import datetime, date
@@ -10,9 +8,7 @@ from sqlalchemy import or_, func as sa_func
 from .. import db
 from ..decorators import expose
 from .base_api_service import BaseApiService
-
-# Set up logging
-logger = logging.getLogger(__name__)
+from .crud_swagger_generator import CrudSwaggerGenerator
 
 
 class CrudService(BaseApiService):
@@ -34,54 +30,14 @@ class CrudService(BaseApiService):
         # Apply default values for any missing config keys (no generic fallback when entirely missing)
         self.config = self._apply_default_config_values(self.config)
 
-    def _get_default_config(self):
-        """Default CRUD configuration"""
-        return {
-            'operations': {
-                'create': True,      # Enable POST /
-                'read': True,        # Enable GET / and GET /{id}
-                'update': True,      # Enable PUT /{id}
-                'delete': True,      # Enable DELETE /{id}
-                'list': True,        # Enable GET / (list all)
-                'search': True,      # Enable GET /search
-                'bulk': True,        # Enable POST /bulk
-                'selector': True     # Enable GET /selector and /selector/{id} (optimized for dropdowns)
-            },
-            'filters': {
-                'enabled': True,     # Enable filtering
-                'fields': [],        # Fields that can be filtered
-                'operators': ['eq', 'ne', 'gt', 'lt', 'like', 'in']
-            },
-            'pagination': {
-                'enabled': True,     # Enable pagination
-                'default_page_size': 20,
-                'max_page_size': 100
-            },
-            'sorting': {
-                'enabled': True,     # Enable sorting
-                'default_sort': 'id',
-                'allowed_fields': []
-            },
-            'validation': {
-                'enabled': True,     # Enable validation
-                'required_fields': [],
-                'unique_fields': []
-            },
-            'selector': {
-                'enabled': True,     # Enable selector optimization
-                'fields': ['name'],  # Extra fields to return. NOTE: 'id' is ALWAYS included automatically
-                'display_format': None,    # Custom display format (e.g., 'firstName + " " + lastName')
-                'search_fields': ['name'], # Fields to search in for selector
-                'limit': 100,              # Max items for selector (performance)
-                'order_by': 'name'         # How to order selector items
-            }
-        }
+    def _apply_default_config_values(self, provided_config: Dict[str, Any]) -> Dict[str, Any]:
+        """Fill in only missing keys from the default config; keep provided values as-is.
 
-    def _apply_default_config_values(self, provided_config):
-        """Fill only missing keys from defaults; do not create a config when absent."""
+        This does NOT create a config if none was provided; caller must supply one.
+        """
         defaults = self._get_default_config()
 
-        def merge(dst, src_defaults):
+        def merge(dst: Dict[str, Any], src_defaults: Dict[str, Any]) -> Dict[str, Any]:
             for key, def_value in src_defaults.items():
                 if key not in dst:
                     dst[key] = def_value
@@ -93,326 +49,443 @@ class CrudService(BaseApiService):
 
         return merge(dict(provided_config), defaults)
 
-    def to_swagger(self) -> Dict[str, Any]:
+    def to_swagger(self, service_name: str) -> Dict[str, Any]:
         """Generate Swagger documentation for CRUD operations from model + config."""
         
-        # Get exposed methods info
-        exposed_methods = self.get_exposed_methods()
+        # Validate service_name immediately (no default, no fallback)
+        if not service_name:
+            raise ValueError("service_name is required for CRUD service Swagger generation")
         
-        # Generate schemas from model
-        schemas = self._generate_model_schemas()
+        # Use the CrudSwaggerGenerator to handle all Swagger generation
+        generator = CrudSwaggerGenerator(self)
         
-        # Generate paths from exposed methods
-        paths = self._generate_crud_paths(exposed_methods)
-        
-        return {
-            'schemas': schemas,
-            'paths': paths,
-            'tags': [self.__class__.__name__.replace('Service', '').title()]
-        }
-    
-    def _generate_model_schemas(self) -> Dict[str, Any]:
-        """Generate OpenAPI schemas from service.model + service.config."""
-        if not hasattr(self, 'model'):
-            return {}
-            
-        model = self.model
-        config = self.config
-        
-        # Create schemas for different operations
-        schemas = {}
-        
-        # Create schema
-        create_schema = self._build_create_schema(model, config)
-        if create_schema:
-            schemas[f"{self.__class__.__name__}Create"] = create_schema
-        
-        # Update schema
-        update_schema = self._build_update_schema(model, config)
-        if update_schema:
-            schemas[f"{self.__class__.__name__}Update"] = update_schema
-        
-        # Response schema
-        response_schema = self._build_response_schema(model, config)
-        if response_schema:
-            schemas[f"{self.__class__.__name__}Response"] = response_schema
-        
-        return schemas
-    
-    def _build_create_schema(self, model: Any, config: Dict[str, Any]) -> Dict[str, Any]:
-        """Build schema for create operations."""
-        schema = {
-            "type": "object",
-            "properties": {},
-            "required": []
-        }
-        
-        required_fields = config.get('validation', {}).get('required_fields', [])
-        
-        for column in model.__table__.columns:
-            # Skip ID and timestamps for create
-            if column.name in ['id', 'created_at', 'updated_at']:
-                continue
-                
-            # Add field to schema
-            field_schema = self._column_to_openapi_schema(column)
-            schema["properties"][column.name] = field_schema
-            
-            # Mark as required if in config
-            if column.name in required_fields:
-                schema["required"].append(column.name)
-        
-        return schema
-    
-    def _build_update_schema(self, model: Any, config: Dict[str, Any]) -> Dict[str, Any]:
-        """Build schema for update operations."""
-        schema = {
-            "type": "object",
-            "properties": {},
-            "required": []
-        }
-        
-        # All fields are optional for updates
-        for column in model.__table__.columns:
-            # Skip ID and timestamps for update
-            if column.name in ['id', 'created_at', 'updated_at']:
-                continue
-                
-            # Add field to schema
-            field_schema = self._column_to_openapi_schema(column)
-            schema["properties"][column.name] = field_schema
-        
-        return schema
-    
-    def _build_response_schema(self, model: Any, config: Dict[str, Any]) -> Dict[str, Any]:
-        """Build schema for response operations."""
-        schema = {
-            "type": "object",
-            "properties": {},
-            "required": []
-        }
-        
-        required_fields = config.get('validation', {}).get('required_fields', [])
-        
-        for column in model.__table__.columns:
-            # Add field to schema
-            field_schema = self._column_to_openapi_schema(column)
-            schema["properties"][column.name] = field_schema
-            
-            # Mark as required if in config or if it's a core field
-            if column.name in required_fields or column.name in ['id', 'created_at', 'updated_at']:
-                schema["required"].append(column.name)
-        
-        return schema
-    
-    def _column_to_openapi_schema(self, column: Any) -> Dict[str, Any]:
-        """Convert SQLAlchemy column to OpenAPI schema."""
-        # Map SQLAlchemy types to OpenAPI types
-        type_mapping = {
-            'String': 'string',
-            'Text': 'string',
-            'Integer': 'integer',
-            'BigInteger': 'integer',
-            'Float': 'number',
-            'Numeric': 'number',
-            'Boolean': 'boolean',
-            'Date': 'string',
-            'DateTime': 'string',
-            'Time': 'string',
-            'JSON': 'object'
-        }
-        
-        column_type = type(column.type).__name__
-        openapi_type = type_mapping.get(column_type, 'string')
-        
-        schema = {"type": openapi_type}
-        
-        # Add format for date/time
-        if column_type in ['Date', 'DateTime', 'Time']:
-            schema["format"] = column_type.lower()
-        
-        # Add length constraints
-        if hasattr(column.type, 'length'):
-            schema["maxLength"] = column.type.length
-        
-        # Add description
-        schema["description"] = f"{column.name} field"
-        
-        return schema
-    
-    def _generate_crud_paths(self, exposed_methods: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Generate OpenAPI paths from exposed methods."""
-        paths = {}
-        
-        for method_info in exposed_methods:
-            method_name = method_info['name']
-            path = method_info['path']
-            methods = method_info['methods']
-            summary = method_info['summary']
-            description = method_info['description']
-            tags = method_info['tags']
-            status_codes = method_info['status_codes']
-            
-            # Determine request/response schemas based on method
-            request_schema = None
-            response_schema = None
-            
-            if method_name == 'create':
-                request_schema = {"$ref": f"#/components/schemas/{self.__class__.__name__}Create"}
-                response_schema = {"$ref": f"#/components/schemas/{self.__class__.__name__}Response"}
-            elif method_name in ['read_one', 'list_all', 'search', 'selector']:
-                response_schema = {"$ref": f"#/components/schemas/{self.__class__.__name__}Response"}
-            elif method_name == 'update':
-                request_schema = {"$ref": f"#/components/schemas/{self.__class__.__name__}Update"}
-                response_schema = {"$ref": f"#/components/schemas/{self.__class__.__name__}Response"}
-            
-            # Build operation object
-            operation = {
-                "tags": tags,
-                "summary": summary,
-                "description": description,
-                "responses": {}
-            }
-            
-            # Add request body if POST/PUT/PATCH
-            if any(m in ['POST', 'PUT', 'PATCH'] for m in methods) and request_schema:
-                operation["requestBody"] = {
-                    "required": True,
-                    "content": {
-                        "application/json": {
-                            "schema": request_schema
-                        }
-                    }
-                }
-            
-            # Add responses
-            for status_code, description_text in status_codes.items():
-                response_obj = {"description": description_text}
-                
-                if response_schema and status_code in [200, 201]:
-                    response_obj["content"] = {
-                        "application/json": {
-                            "schema": response_schema
-                        }
-                    }
-                
-                operation["responses"][str(status_code)] = response_obj
-            
-            # Add path parameters if they exist
-            if '{' in path:
-                operation["parameters"] = self._extract_path_parameters(path)
-            
-            # Add to paths
-            for method in methods:
-                method_lower = method.lower()
-                if path not in paths:
-                    paths[path] = {}
-                paths[path][method_lower] = operation
-        
-        return paths
-    
-    def _extract_path_parameters(self, path: str) -> List[Dict[str, Any]]:
-        """Extract path parameters from Flask-style path"""
-        parameters = []
-        # Find all <param> placeholders
-        import re
-        matches = re.findall(r'<([^>]+)>', path)
-        
-        for param in matches:
-            # Handle type hints like <int:id>
-            if ':' in param:
-                param_type, param_name = param.split(':', 1)
-                # Map Flask types to OpenAPI types
-                openapi_type = {
-                    'int': 'integer',
-                    'float': 'number',
-                    'string': 'string',
-                    'path': 'string'
-                }.get(param_type, 'string')
-            else:
-                param_name = param
-                openapi_type = 'string'
-            
-            parameters.append({
-                "name": param_name,
-                "in": "path",
-                "required": True,
-                "schema": {"type": openapi_type}
-            })
-        
-        return parameters
+        return generator.generate_swagger(service_name)
 
-    def method_to_swagger(self, method: Callable) -> Dict[str, Any]:
-        """ONLY CRUD service overrides this - adds dynamic model schemas."""
-        
-        # Get base method info from BaseApiService
-        method_info = super().method_to_swagger(method)
-        method_name = method.__name__
-        
-        # Add model-based schemas for CRUD operations
-        if hasattr(self, 'model') and hasattr(self, 'config'):
-            model = self.model
-            config = self.config
-            
-            # Generate schemas based on method type
-            if method_name == 'create':
-                create_schema = self._build_create_schema(model, config)
-                method_info['schemas'] = {
-                    f"{self.__class__.__name__}Create": create_schema
+    def _get_default_config(self) -> Dict[str, Any]:
+        return {
+            'operations': {
+                'create': True,
+                'read': True,
+                'update': True,
+                'delete': True,
+                'list': True,
+                'search': True,
+                'bulk': True,
+                'selector': True,
+            },
+            'filters': {
+                'enabled': True,
+                'fields': [],
+                'operators': ['eq', 'ne', 'gt', 'lt', 'like', 'in'],
+            },
+            'pagination': {
+                'enabled': True,
+                'default_page_size': 20,
+                'max_page_size': 100,
+            },
+            'sorting': {
+                'enabled': True,
+                'default_sort': 'id',
+                'allowed_fields': [],
+            },
+            'validation': {
+                'enabled': True,
+                'required_fields': [],
+                'unique_fields': [],
+            },
+            'selector': {
+                'enabled': True,
+                'fields': ['name'],  # Extra fields; 'id' is always included
+                'display_format': None,
+                'search_fields': ['name'],
+                'limit': 100,
+                'order_by': 'name',
+            },
+        }
+
+    # Explicit decorated methods; disabled ops return 405
+    def _is_enabled(self, op: str) -> bool:
+        return bool(self.config.get('operations', {}).get(op, False))
+
+    def _call_if_enabled(self, op: str, handler, *args, **kwargs):
+        if not self._is_enabled(op):
+            return jsonify({'error': 'Operation disabled'}), 405
+        return handler(*args, **kwargs)
+
+    @expose('/', methods=['POST'])
+    def create(self, req: Request):
+        return self._call_if_enabled('create', self._handle_create, req)
+
+    @expose('/', methods=['GET'])
+    def list_all(self, req: Request):
+        return self._call_if_enabled('list', self._handle_list, req)
+
+    @expose('/{id}', methods=['GET'])
+    def read_one(self, req: Request, id: int):  # noqa: A002 - id is API param name
+        return self._call_if_enabled('read', self._handle_read, req, id)
+
+    @expose('/{id}', methods=['PUT'])
+    def update(self, req: Request, id: int):  # noqa: A002
+        return self._call_if_enabled('update', self._handle_update, req, id)
+
+    @expose('/{id}', methods=['DELETE'])
+    def delete(self, req: Request, id: int):  # noqa: A002
+        return self._call_if_enabled('delete', self._handle_delete, req, id)
+
+    @expose('/search', methods=['GET'])
+    def search(self, req: Request):
+        return self._call_if_enabled('search', self._handle_search, req)
+
+    @expose('/bulk', methods=['POST'])
+    def bulk_operations(self, req: Request):
+        return self._call_if_enabled('bulk', self._handle_bulk, req)
+
+    @expose('/selector', methods=['GET'])
+    def selector(self, req: Request):
+        return self._call_if_enabled('selector', self._handle_selector, req)
+
+    @expose('/selector/{id}', methods=['GET'])
+    def single_selector(self, req: Request, id: int):  # noqa: A002
+        return self._call_if_enabled('selector', self._handle_single_selector, req, id)
+
+    # Handlers
+    def _handle_create(self, req: Request):
+        try:
+            data = req.get_json(silent=True) or {}
+
+            if self.config['validation']['enabled']:
+                errors = self._validate_create_data(data)
+                if errors:
+                    return jsonify({'errors': errors}), 400
+
+            instance = self.model(**data)
+            db.session.add(instance)
+            db.session.commit()
+            return jsonify({'message': 'Created successfully', 'data': self._serialize(instance)}), 201
+        except Exception as exc:  # noqa: BLE001
+            db.session.rollback()
+            return jsonify({'error': str(exc)}), 500
+
+    def _handle_list(self, req: Request):
+        try:
+            query = self.model.query
+
+            if self.config['filters']['enabled']:
+                query = self._apply_filters(query, req.args)
+
+            if self.config['sorting']['enabled']:
+                query = self._apply_sorting(query, req.args)
+
+            if self.config['pagination']['enabled']:
+                page = int(req.args.get('page', 1))
+                per_page = min(
+                    int(req.args.get('per_page', self.config['pagination']['default_page_size'])),
+                    self.config['pagination']['max_page_size'],
+                )
+
+                # Flask-SQLAlchemy 3.x: use db.paginate instead of Query.paginate
+                pagination = db.paginate(query, page=page, per_page=per_page, error_out=False)
+                return jsonify({
+                    'data': [self._serialize(item) for item in pagination.items],
+                    'pagination': {
+                        'page': page,
+                        'per_page': per_page,
+                        'total': pagination.total,
+                        'pages': pagination.pages,
+                        'has_next': pagination.has_next,
+                        'has_prev': pagination.has_prev,
+                    },
+                })
+
+            items = query.all()
+            return jsonify({'data': [self._serialize(item) for item in items], 'total': len(items)})
+        except Exception as exc:  # noqa: BLE001
+            return jsonify({'error': str(exc)}), 500
+
+    def _handle_read(self, req: Request, id: int):  # noqa: A002 - id is API param name
+        try:
+            instance = self.model.query.filter_by(id=id).first()
+            if not instance:
+                return jsonify({'error': 'Not found'}), 404
+            return jsonify({'data': self._serialize(instance)})
+        except Exception as exc:  # noqa: BLE001
+            return jsonify({'error': str(exc)}), 500
+
+    def _handle_update(self, req: Request, id: int):  # noqa: A002
+        try:
+            instance = self.model.query.filter_by(id=id).first()
+            if not instance:
+                return jsonify({'error': 'Not found'}), 404
+
+            data = req.get_json(silent=True) or {}
+            if self.config['validation']['enabled']:
+                errors = self._validate_update_data(data, instance)
+                if errors:
+                    return jsonify({'errors': errors}), 400
+
+            for key, value in data.items():
+                if hasattr(instance, key):
+                    setattr(instance, key, value)
+
+            db.session.commit()
+            return jsonify({'message': 'Updated successfully', 'data': self._serialize(instance)})
+        except Exception as exc:  # noqa: BLE001
+            db.session.rollback()
+            return jsonify({'error': str(exc)}), 500
+
+    def _handle_delete(self, req: Request, id: int):  # noqa: A002
+        try:
+            instance = self.model.query.filter_by(id=id).first()
+            if not instance:
+                return jsonify({'error': 'Not found'}), 404
+            db.session.delete(instance)
+            db.session.commit()
+            return jsonify({'message': 'Deleted successfully'})
+        except Exception as exc:  # noqa: BLE001
+            db.session.rollback()
+            return jsonify({'error': str(exc)}), 500
+
+    def _handle_search(self, req: Request):
+        try:
+            query_text = req.args.get('q', '')
+            fields_param = req.args.get('fields', '')
+            fields = [f for f in fields_param.split(',') if f] if fields_param else []
+
+            if not query_text:
+                return jsonify({'error': 'Search query required'}), 400
+
+            base_query = self.model.query
+            conditions = []
+            if fields:
+                for field in fields:
+                    if hasattr(self.model, field):
+                        conditions.append(getattr(self.model, field).ilike(f'%{query_text}%'))
+            else:
+                for column in self.model.__table__.columns:
+                    # Heuristic: use ilike for textual columns
+                    if hasattr(column.type, 'length') or column.type.python_type is str:  # type: ignore[attr-defined]
+                        conditions.append(column.ilike(f'%{query_text}%'))  # type: ignore[arg-type]
+
+            if conditions:
+                base_query = base_query.filter(or_(*conditions))
+
+            if self.config['pagination']['enabled']:
+                page = int(req.args.get('page', 1))
+                per_page = min(
+                    int(req.args.get('per_page', self.config['pagination']['default_page_size'])),
+                    self.config['pagination']['max_page_size'],
+                )
+                # Flask-SQLAlchemy 3.x: use db.paginate instead of Query.paginate
+                pagination = db.paginate(base_query, page=page, per_page=per_page, error_out=False)
+                return jsonify({
+                    'data': [self._serialize(item) for item in pagination.items],
+                    'pagination': {
+                        'page': page,
+                        'per_page': per_page,
+                        'total': pagination.total,
+                        'pages': pagination.pages,
+                    },
+                })
+
+            items = base_query.all()
+            return jsonify({'data': [self._serialize(item) for item in items], 'total': len(items)})
+        except Exception as exc:  # noqa: BLE001
+            return jsonify({'error': str(exc)}), 500
+
+    def _handle_bulk(self, req: Request):
+        try:
+            payload = req.get_json(silent=True) or {}
+            operation = payload.get('operation')
+            ids: List[int] = payload.get('ids', [])
+
+            if not operation or not ids:
+                return jsonify({'error': 'Operation and IDs required'}), 400
+
+            if operation == 'delete':
+                items = self.model.query.filter(self.model.id.in_(ids)).all()
+                for item in items:
+                    db.session.delete(item)
+                db.session.commit()
+                return jsonify({'message': f'Deleted {len(items)} records successfully'})
+            elif operation == 'update':
+                update_data: Dict[str, Any] = payload.get('data', {})
+                items = self.model.query.filter(self.model.id.in_(ids)).all()
+                for item in items:
+                    for key, value in update_data.items():
+                        if hasattr(item, key):
+                            setattr(item, key, value)
+                db.session.commit()
+                return jsonify({'message': f'Updated {len(items)} records successfully'})
+            else:
+                return jsonify({'error': 'Invalid operation'}), 400
+        except Exception as exc:  # noqa: BLE001
+            db.session.rollback()
+            return jsonify({'error': str(exc)}), 500
+
+    def _handle_selector(self, req: Request):
+        try:
+            query = self.model.query
+            search_query = req.args.get('q', '')
+            selector_cfg = self.config['selector']
+
+            if search_query and selector_cfg['search_fields']:
+                conditions = []
+                for field_name in selector_cfg['search_fields']:
+                    if hasattr(self.model, field_name):
+                        conditions.append(getattr(self.model, field_name).ilike(f'%{search_query}%'))
+                if conditions:
+                    query = query.filter(or_(*conditions))
+
+            order_field = selector_cfg['order_by']
+            if hasattr(self.model, order_field):
+                query = query.order_by(getattr(self.model, order_field).asc())
+
+            items = query.limit(selector_cfg['limit']).all()
+
+            selector_data = []
+            for item in items:
+                selector_item = {
+                    'id': getattr(item, 'id'),
+                    'value': getattr(item, 'id'),
+                    'label': self._format_selector_label(item),
                 }
-                
-                # Override request body with model schema
-                method_info['operation']["requestBody"] = {
-                    "required": True,
-                    "content": {
-                        "application/json": {
-                            "schema": {"$ref": f"#/components/schemas/{self.__class__.__name__}Create"}
-                        }
-                    }
-                }
-                
-            elif method_name in ['read_one', 'list_all', 'search', 'selector']:
-                response_schema = self._build_response_schema(model, config)
-                method_info['schemas'] = {
-                    f"{self.__class__.__name__}Response": response_schema
-                }
-                
-                # Override response content with model schema
-                for status_code in [200, 201]:
-                    if str(status_code) in method_info['operation']["responses"]:
-                        method_info['operation']["responses"][str(status_code)]["content"] = {
-                            "application/json": {
-                                "schema": {"$ref": f"#/components/schemas/{self.__class__.__name__}Response"}
-                            }
-                        }
-            
-            elif method_name == 'update':
-                # Add update and response schemas
-                update_schema = self._build_update_schema(model, config)
-                response_schema = self._build_response_schema(model, config)
-                method_info['schemas'] = {
-                    f"{self.__class__.__name__}Update": update_schema,
-                    f"{self.__class__.__name__}Response": response_schema
-                }
-                
-                # Override request body with model schema
-                method_info['operation']["requestBody"] = {
-                    "required": True,
-                    "content": {
-                        "application/json": {
-                            "schema": {"$ref": f"#/components/schemas/{self.__class__.__name__}Update"}
-                        }
-                    }
-                }
-                
-                # Override response content with model schema
-                for status_code in [200, 201]:
-                    if str(status_code) in method_info['operation']["responses"]:
-                        method_info['operation']["responses"][str(status_code)]["content"] = {
-                            "application/json": {
-                                "schema": {"$ref": f"#/components/schemas/{self.__class__.__name__}Response"}
-                            }
-                        }
-        
-        return method_info
+                for field_name in selector_cfg['fields']:
+                    if field_name != 'id' and hasattr(item, field_name):
+                        selector_item[field_name] = getattr(item, field_name)
+                selector_data.append(selector_item)
+
+            return jsonify({'data': selector_data, 'total': len(selector_data)})
+        except Exception as exc:  # noqa: BLE001
+            return jsonify({'error': str(exc)}), 500
+
+    def _handle_single_selector(self, req: Request, id: int):  # noqa: A002
+        try:
+            instance = self.model.query.filter_by(id=id).first()
+            if not instance:
+                return jsonify({'error': 'Not found'}), 404
+            selector_item = {
+                'id': getattr(instance, 'id'),
+                'value': getattr(instance, 'id'),
+                'label': self._format_selector_label(instance),
+            }
+            for field_name in self.config['selector']['fields']:
+                if field_name != 'id' and hasattr(instance, field_name):
+                    selector_item[field_name] = getattr(instance, field_name)
+            return jsonify({'data': selector_item})
+        except Exception as exc:  # noqa: BLE001
+            return jsonify({'error': str(exc)}), 500
+
+    # Helpers
+    def _format_selector_label(self, item: Any) -> str:
+        display_format: Optional[str] = self.config['selector'].get('display_format')
+        if display_format:
+            label = display_format
+            for field_name in self.config['selector']['fields']:
+                if field_name != 'id' and hasattr(item, field_name):
+                    label = label.replace(field_name, str(getattr(item, field_name)))
+            label = label.replace(' + " " + ', ' ')
+            return label.strip()
+
+        for field_name in self.config['selector']['fields']:
+            if field_name != 'id' and hasattr(item, field_name):
+                return str(getattr(item, field_name))
+        return str(getattr(item, 'id'))
+
+    def _apply_filters(self, query, args)  :  # type: ignore[no-untyped-def]
+        for key, value in args.items():
+            if key.startswith('filter_'):
+                field_name = key[7:]
+                if not hasattr(self.model, field_name):
+                    continue
+                field = getattr(self.model, field_name)
+                if ':' in value:
+                    operator, filter_value = value.split(':', 1)
+                    if operator == 'eq':
+                        query = query.filter(field == self._coerce_value(field, filter_value))
+                    elif operator == 'ne':
+                        query = query.filter(field != self._coerce_value(field, filter_value))
+                    elif operator == 'gt':
+                        query = query.filter(field > self._coerce_value(field, filter_value))
+                    elif operator == 'lt':
+                        query = query.filter(field < self._coerce_value(field, filter_value))
+                    elif operator == 'like':
+                        query = query.filter(field.ilike(f'%{filter_value}%'))
+                    elif operator == 'in':
+                        values = [self._coerce_value(field, v) for v in filter_value.split(',') if v]
+                        query = query.filter(field.in_(values))
+                    elif operator == 'between':
+                        parts = [p for p in filter_value.split(',') if p]
+                        if len(parts) >= 2:
+                            low = self._coerce_value(field, parts[0])
+                            high = self._coerce_value(field, parts[1])
+                            query = query.filter(field.between(low, high))
+                else:
+                    query = query.filter(field == self._coerce_value(field, value))
+        return query
+
+    def _coerce_value(self, field, raw: str):  # type: ignore[no-untyped-def]
+        """Best-effort coercion of string filter values to the column's python_type."""
+        try:
+            column = field.property.columns[0]
+            py_type = getattr(column.type, 'python_type', None)
+        except Exception:  # noqa: BLE001
+            py_type = None
+
+        if py_type is None or py_type is str:
+            return raw
+
+        # Datetime/date handling
+        try:
+            if py_type is datetime:
+                return datetime.fromisoformat(raw)
+            if py_type is date:
+                return date.fromisoformat(raw)
+        except Exception:  # noqa: BLE001
+            pass
+
+        # Generic cast
+        try:
+            return py_type(raw)  # type: ignore[call-arg]
+        except Exception:  # noqa: BLE001
+            return raw
+
+    def _apply_sorting(self, query, args):  # type: ignore[no-untyped-def]
+        sort_field = args.get('sort', self.config['sorting']['default_sort'])
+        sort_order = args.get('order', 'asc')
+        if hasattr(self.model, sort_field):
+            field = getattr(self.model, sort_field)
+            query = query.order_by(field.desc() if str(sort_order).lower() == 'desc' else field.asc())
+        return query
+
+    def _validate_create_data(self, data: Dict[str, Any]) -> List[str]:
+        errors: List[str] = []
+        for field in self.config['validation']['required_fields']:
+            if field not in data or data[field] in (None, ''):
+                errors.append(f'{field} is required')
+
+        for field in self.config['validation']['unique_fields']:
+            if field in data:
+                existing = self.model.query.filter(getattr(self.model, field) == data[field]).first()
+                if existing:
+                    errors.append(f'{field} must be unique')
+        return errors
+
+    def _validate_update_data(self, data: Dict[str, Any], instance: Any) -> List[str]:
+        errors: List[str] = []
+        for field in self.config['validation']['unique_fields']:
+            if field in data:
+                existing = self.model.query.filter(
+                    getattr(self.model, field) == data[field], self.model.id != instance.id
+                ).first()
+                if existing:
+                    errors.append(f'{field} must be unique')
+        return errors
+
+    def _serialize(self, instance: Any) -> Dict[str, Any]:
+        if hasattr(instance, 'to_dict'):
+            return instance.to_dict()
+        result: Dict[str, Any] = {}
+        for column in instance.__table__.columns:  # type: ignore[attr-defined]
+            result[column.name] = getattr(instance, column.name)
+        return result
 

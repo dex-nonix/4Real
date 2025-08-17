@@ -55,8 +55,9 @@ class OpenAPIGenerator:
             for attr_name in dir(service):
                 method = getattr(service, attr_name)
                 if hasattr(method, '_exposed'):
-                    # Only generate paths if service doesn't provide them via to_swagger
-                    if not hasattr(service, 'to_swagger') or 'paths' not in service.to_swagger():
+                    # All services inherit from BaseApiService and have to_swagger method
+                    service_swagger = service.to_swagger(service_name)
+                    if 'paths' not in service_swagger:
                         path_info = self._generate_path_info(service_name, method)
                         paths.update(path_info)
                     
