@@ -19,6 +19,10 @@ class Persona(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
     updated_at = db.Column(db.DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
+    # Relationships
+    artist = db.relationship('Artist', foreign_keys=[artist_id], backref=db.backref('personas', lazy=True))
+    ai_model_mapping = db.relationship('AIModelMapping', foreign_keys=[ai_model_mapping_id], backref=db.backref('personas', lazy=True))
+
     def to_dict(self) -> dict:
         return {
             'id': self.id,

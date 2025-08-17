@@ -18,9 +18,9 @@ class ChatSession(db.Model):
     updated_at = db.Column(db.DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    persona = db.relationship('Persona', backref=db.backref('chat_sessions', lazy=True))
+    persona = db.relationship('Persona', foreign_keys=[persona_id], backref=db.backref('chat_sessions', lazy=True))
     current_history = db.relationship('ChatHistory', foreign_keys=[current_history_id])
-    histories = db.relationship('ChatHistory', backref='session', lazy=True)
+    # histories relationship is handled by backref in ChatHistory model
 
     def to_dict(self) -> dict:
         return {

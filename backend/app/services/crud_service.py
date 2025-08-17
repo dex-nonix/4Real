@@ -1,4 +1,6 @@
 from __future__ import annotations
+import logging
+
 
 from typing import Any, Dict, List, Optional
 from datetime import datetime, date
@@ -7,6 +9,9 @@ from sqlalchemy import or_, func as sa_func
 
 from .. import db
 from ..decorators import expose
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 
 class CrudService:
@@ -150,6 +155,7 @@ class CrudService:
             return jsonify({'message': 'Created successfully', 'data': self._serialize(instance)}), 201
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
+            logger.error(f"Error in create operation: {str(exc)}", exc_info=True)
             return jsonify({'error': str(exc)}), 500
 
     def _handle_list(self, req: Request):
@@ -186,6 +192,7 @@ class CrudService:
             items = query.all()
             return jsonify({'data': [self._serialize(item) for item in items], 'total': len(items)})
         except Exception as exc:  # noqa: BLE001
+            logger.error(f"Error in list operation: {str(exc)}", exc_info=True)
             return jsonify({'error': str(exc)}), 500
 
     def _handle_read(self, req: Request, id: int):  # noqa: A002 - id is API param name
@@ -195,6 +202,7 @@ class CrudService:
                 return jsonify({'error': 'Not found'}), 404
             return jsonify({'data': self._serialize(instance)})
         except Exception as exc:  # noqa: BLE001
+            logger.error(f"Error in read operation for id {id}: {str(exc)}", exc_info=True)
             return jsonify({'error': str(exc)}), 500
 
     def _handle_update(self, req: Request, id: int):  # noqa: A002
@@ -217,6 +225,7 @@ class CrudService:
             return jsonify({'message': 'Updated successfully', 'data': self._serialize(instance)})
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
+            logger.error(f"Error in update operation for id {id}: {str(exc)}", exc_info=True)
             return jsonify({'error': str(exc)}), 500
 
     def _handle_delete(self, req: Request, id: int):  # noqa: A002
@@ -229,6 +238,7 @@ class CrudService:
             return jsonify({'message': 'Deleted successfully'})
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
+            logger.error(f"Error in delete operation for id {id}: {str(exc)}", exc_info=True)
             return jsonify({'error': str(exc)}), 500
 
     def _handle_search(self, req: Request):
@@ -276,6 +286,7 @@ class CrudService:
             items = base_query.all()
             return jsonify({'data': [self._serialize(item) for item in items], 'total': len(items)})
         except Exception as exc:  # noqa: BLE001
+            logger.error(f"Error in search operation: {str(exc)}", exc_info=True)
             return jsonify({'error': str(exc)}), 500
 
     def _handle_bulk(self, req: Request):
@@ -306,6 +317,7 @@ class CrudService:
                 return jsonify({'error': 'Invalid operation'}), 400
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
+            logger.error(f"Error in bulk operation '{operation}': {str(exc)}", exc_info=True)
             return jsonify({'error': str(exc)}), 500
 
     def _handle_selector(self, req: Request):
@@ -342,6 +354,7 @@ class CrudService:
 
             return jsonify({'data': selector_data, 'total': len(selector_data)})
         except Exception as exc:  # noqa: BLE001
+            logger.error(f"Error in selector operation: {str(exc)}", exc_info=True)
             return jsonify({'error': str(exc)}), 500
 
     def _handle_single_selector(self, req: Request, id: int):  # noqa: A002
@@ -359,6 +372,7 @@ class CrudService:
                     selector_item[field_name] = getattr(instance, field_name)
             return jsonify({'data': selector_item})
         except Exception as exc:  # noqa: BLE001
+            logger.error(f"Error in single selector operation for id {id}: {str(exc)}", exc_info=True)
             return jsonify({'error': str(exc)}), 500
 
     # Helpers

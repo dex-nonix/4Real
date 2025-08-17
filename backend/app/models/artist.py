@@ -16,6 +16,9 @@ class Artist(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
     updated_at = db.Column(db.DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
+    # Relationships
+    # personas relationship is handled by backref in Persona model
+
     def to_dict(self) -> dict:
         return {
             'id': self.id,

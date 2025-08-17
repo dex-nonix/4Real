@@ -17,8 +17,8 @@ class ChatMessage(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
 
     # Relationships
-    history = db.relationship('ChatHistory', backref=db.backref('messages', lazy=True))
-    parent_message = db.relationship('ChatMessage', remote_side=[id], backref='child_messages')
+    history = db.relationship('ChatHistory', foreign_keys=[history_id], backref=db.backref('messages', lazy=True))
+    parent_message = db.relationship('ChatMessage', foreign_keys=[parent_message_id], remote_side=[id], backref='child_messages')
 
     def to_dict(self) -> dict:
         return {

@@ -19,6 +19,9 @@ class AIProvider(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
     updated_at = db.Column(db.DateTime, nullable=False, server_default=func.now(), onupdate=func.now()) 
 
+    # Relationships
+    # model_mappings relationship is handled by backref in AIModelMapping model
+
     def to_dict(self) -> dict:
         return {
             'id': self.id,
