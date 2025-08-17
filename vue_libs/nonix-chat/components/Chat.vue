@@ -9,7 +9,7 @@ import ChatMessageContainer from './ChatMessageContainer.vue';
 // It manages its own session state and can be used multiple times
 
 // Service injection for session management
-const chatService = inject('chat-runtime');
+const chatService = inject('chat-service');
 
 // selectedSession observable - central state for all child components
 const selectedSession = ref(null);

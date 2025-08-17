@@ -120,7 +120,7 @@ const props = defineProps({
 const emit = defineEmits(['update:visible', 'historySelected', 'createHistory', 'updateHistory', 'deleteHistory']);
 
 // Service - injected singleton
-const chatService = inject('chat-runtime');
+const chatService = inject('chat-service');
 
 // State
 const histories = ref([]);

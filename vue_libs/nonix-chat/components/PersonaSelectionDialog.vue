@@ -63,7 +63,7 @@ const props = defineProps({
 const emit = defineEmits(['update:visible', 'personaSelected']);
 
 // Service - injected singleton
-const chatService = inject('chat-runtime');
+const chatService = inject('chat-service');
 
 // State
 const personas = ref([]);

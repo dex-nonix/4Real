@@ -27,7 +27,7 @@ const props = defineProps({
 const emit = defineEmits(['sendMessage', 'regenerateResponse', 'showTools']);
 
 // Service injection
-const chatService = inject('chat-runtime');
+const chatService = inject('chat-service');
 
 // State management - session-specific
 const messages = ref([]);

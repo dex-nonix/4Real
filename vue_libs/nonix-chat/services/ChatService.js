@@ -1,6 +1,6 @@
 import BaseApiService from '@nonix/services/BaseApiService.js'
 
-export default class ChatRuntimeService extends BaseApiService {
+export default class ChatService extends BaseApiService {
   // Generic CRUD endpoints for flat data (NO NESTED CRAP!)
   
   // Get all sessions (flat)
@@ -48,7 +48,8 @@ export default class ChatRuntimeService extends BaseApiService {
 
   // Get messages for history (flat)
   async getHistoryMessages(historyId) {
-    const response = await this.get(`/chat-messages?history_id=${historyId}`)
+    // Use the simple ChatMessageService with proper filter format
+    const response = await this.get('/chat-messages', { query: { filter_history_id: historyId } })
     return response
   }
 

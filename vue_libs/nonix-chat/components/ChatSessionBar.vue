@@ -12,7 +12,7 @@ const props = defineProps({
 const emit = defineEmits(['sessionSelected', 'sessionAdded', 'sessionRemoved', 'sessionsLoaded']);
 
 // Service injection
-const chatService = inject('chat-runtime');
+const chatService = inject('chat-service');
 
 // State management - self-contained
 const sessions = ref([]);

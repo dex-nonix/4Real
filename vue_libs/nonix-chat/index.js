@@ -24,7 +24,7 @@ export { default as HistoryManagementDialog } from './components/HistoryManageme
 export { default as ChatMessageTypeManager } from './components/ChatMessageTypeManager.js'
 
 // Services
-export { default as ChatRuntimeService } from './services/ChatRuntimeService.js'
+export { default as ChatService } from './services/ChatService.js'
 
 // Examples
 export { default as ChatExample } from './examples/ChatExample.vue'

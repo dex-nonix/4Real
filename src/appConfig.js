@@ -17,7 +17,7 @@ import ToolInvocationLogService from '@/services/ToolInvocationLogService.js'
 import FileCategoryService from '@/services/FileCategoryService.js'
 import FileService from '@/services/FileService.js'
 import FileLinkService from '@/services/FileLinkService.js'
-import ChatRuntimeService from '@nonix-chat/services/ChatRuntimeService.js'
+import ChatService from '@nonix-chat/services/ChatService.js'
 import Home from "@/views/Home.vue";
 import About from "@/views/About.vue";
 import DynamicFormExample from "@/views/DynamicFormExample.vue";
@@ -82,7 +82,7 @@ export const appConfig = {
         "file-categories": () => new FileCategoryService(),
         "files": () => new FileService(),
         "file-links": () => new FileLinkService(),
-        "chat-runtime": () => new ChatRuntimeService(),
+        "chat-service": () => new ChatService(),
     },
     use: [],
     layouts: {},
