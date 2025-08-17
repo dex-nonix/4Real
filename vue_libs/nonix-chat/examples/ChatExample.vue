@@ -1,7 +1,8 @@
 <!-- ChatExample.vue -->
 <script setup>
 import { ref } from 'vue';
-import Chat from './Chat.vue';
+import Chat from "../components/Chat.vue";
+
 
 const CURRENT_USER_ID = 'user-self';
 

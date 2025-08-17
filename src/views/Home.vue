@@ -40,7 +40,7 @@
 <script setup>
 import Button from 'primevue/button'
 import Page from '@nonix/page/Page.vue'
-import Chat from '@nonix-chat/Chat.vue'
+import Chat from '@nonix-chat/components/Chat.vue'
 </script>
 
 <style scoped>

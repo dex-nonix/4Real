@@ -9,6 +9,12 @@ export default class ChatRuntimeService extends BaseApiService {
     return response
   }
 
+  // Get single session by ID
+  async getSession(sessionId) {
+    const response = await this.get(`/chat-sessions/${sessionId}`)
+    return response
+  }
+
   // Get sessions for specific persona
   async getSessionsByPersona(personaId) {
     const response = await this.get(`/chat-sessions?persona_id=${personaId}`)
