@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional, Dict, Any, Type
+from typing import Callable, List, Optional, Dict, Any
 
 
 def expose(
@@ -8,9 +8,7 @@ def expose(
     description: Optional[str] = None,
     tags: Optional[List[str]] = None,
     status_codes: Optional[Dict[int, str]] = None,
-    request_dto: Optional[Type] = None,
-    response_dto: Optional[Type] = None,
-    # 🚀 NEW: Direct schema definition
+    # 🚀 Direct schema definition
     request_schema: Optional[Dict[str, Any]] = None,
     response_schema: Optional[Dict[str, Any]] = None
 ) -> Callable:
@@ -23,8 +21,6 @@ def expose(
         summary: Short description for OpenAPI
         description: Detailed description for OpenAPI
         tags: API grouping tags (e.g., ['Artists'])
-        request_dto: DTO class for request validation (legacy)
-        response_dto: DTO class for response schema (legacy)
         status_codes: HTTP status codes and descriptions
         request_schema: Direct OpenAPI schema for request body
         response_schema: Direct OpenAPI schema for response body
@@ -42,11 +38,9 @@ def expose(
         setattr(func, '_summary', summary)
         setattr(func, '_description', description)
         setattr(func, '_tags', tags or [])
-        setattr(func, '_request_dto', request_dto)
-        setattr(func, '_response_dto', response_dto)
         setattr(func, '_status_codes', status_codes or {200: 'Success'})
         
-        # 🚀 NEW: Direct schema support
+        # 🚀 Direct schema support
         setattr(func, '_request_schema', request_schema)
         setattr(func, '_response_schema', response_schema)
         

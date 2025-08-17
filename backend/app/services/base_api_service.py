@@ -30,8 +30,6 @@ class BaseApiService(ABC):
                     'description': getattr(method, '_description'),
                     'tags': getattr(method, '_tags', []),
                     'status_codes': getattr(method, '_status_codes', {}),
-                    'request_dto': getattr(method, '_request_dto'),
-                    'response_dto': getattr(method, '_response_dto'),
                     'request_schema': getattr(method, '_request_schema'),
                     'response_schema': getattr(method, '_response_schema')
                 }

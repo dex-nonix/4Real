@@ -60,15 +60,6 @@ class OpenAPIGenerator:
                         path_info = self._generate_path_info(service_name, method)
                         paths.update(path_info)
                     
-                    # Add DTO schemas to components (backward compatibility)
-                    if hasattr(method, '_request_dto') and method._request_dto:
-                        schema_name = method._request_dto.__name__
-                        components["schemas"][schema_name] = method._request_dto.model_json_schema()
-                    
-                    if hasattr(method, '_response_dto') and method._response_dto:
-                        schema_name = method._response_dto.__name__
-                        components["schemas"][schema_name] = method._response_dto.model_json_schema()
-                    
                     # Collect PROCESSED tags (not original tags)
                     if hasattr(method, '_tags'):
                         raw_tags = method._tags
@@ -125,8 +116,6 @@ class OpenAPIGenerator:
             raw_summary = getattr(method, '_summary', f"{http_method} {service_name}")
             raw_description = getattr(method, '_description', f"Execute {method.__name__} on {service_name}")
             raw_tags = getattr(method, '_tags', None)
-            request_dto = getattr(method, '_request_dto', None)
-            response_dto = getattr(method, '_response_dto', None)
             status_codes = getattr(method, '_status_codes', {200: 'Success'})
             
             # Process dynamic fields - replace {service_name} with actual service name
@@ -158,12 +147,13 @@ class OpenAPIGenerator:
             }
             
             # Add request body if POST/PUT/PATCH
-            if method_lower in ['post', 'put', 'patch'] and request_dto:
+            request_schema = getattr(method, '_request_schema', None)
+            if method_lower in ['post', 'put', 'patch'] and request_schema:
                 operation["requestBody"] = {
                     "required": True,
                     "content": {
                         "application/json": {
-                            "schema": {"$ref": f"#/components/schemas/{request_dto.__name__}"}
+                            "schema": request_schema
                         }
                     }
                 }
@@ -173,10 +163,11 @@ class OpenAPIGenerator:
                 response_obj = {"description": description_text}
                 
                 # Add response schema if available
-                if response_dto and status_code in [200, 201]:
+                response_schema = getattr(method, '_response_schema', None)
+                if response_schema and status_code in [200, 201]:
                     response_obj["content"] = {
                         "application/json": {
-                            "schema": {"$ref": f"#/components/schemas/{response_dto.__name__}"}
+                            "schema": response_schema
                         }
                     }
                 

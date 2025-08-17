@@ -257,34 +257,37 @@ class MyService(BaseApiService):
         pass
 ```
 
-### Legacy DTO Support (Still Works)
+### **Legacy DTO Support (Still Works)**
 
 ```python
 from pydantic import BaseModel
 
 class CreateItemDTO(BaseModel):
-    name: str
-    description: str
+    field: str
+    optional_field: str | None = None
 
-class ItemResponseDTO(BaseModel):
-    id: int
-    name: str
-    description: str
-
-class MyService(BaseApiService):
-    @expose(
-        path='/items',
-        methods=['POST'],
-        summary='Create a new item',
-        description='Creates a new item with the provided details',
-        tags=['__SERVICE_NAME__', 'items'],
-        request_dto=CreateItemDTO,
-        response_dto=ItemResponseDTO,
-        status_codes={200: 'Success', 201: 'Created'}
-    )
-    def create_item(self, request):
-        # Implementation here
-        pass
+# Use in @expose decorator
+@expose(
+    path='/items',
+    methods=['POST'],
+    tags=['Items'],
+    request_schema={
+        "type": "object",
+        "properties": {
+            "field": {"type": "string"},
+            "optional_field": {"type": "string"}
+        },
+        "required": ["field"]
+    },
+    response_schema={
+        "type": "object",
+        "properties": {
+            "id": {"type": "integer"},
+            "field": {"type": "string"},
+            "optional_field": {"type": "string"}
+        }
+    }
+)
 ```
 
 ## API Documentation Features
@@ -620,8 +623,25 @@ app.config['DEBUG'] = True
    
    # NEW (Direct schemas)
    @expose(
-       request_schema={"type": "object", "properties": {...}},
-       response_schema={"type": "object", "properties": {...}}
+       path='/items',
+       methods=['POST'],
+       tags=['Items'],
+       request_schema={
+           "type": "object",
+           "properties": {
+               "name": {"type": "string"},
+               "description": {"type": "string"}
+           },
+           "required": ["name"]
+       },
+       response_schema={
+           "type": "object",
+           "properties": {
+               "id": {"type": "integer"},
+               "name": {"type": "string"},
+               "description": {"type": "string"}
+           }
+       }
    )
    ```
 
