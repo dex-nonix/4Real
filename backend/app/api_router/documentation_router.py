@@ -23,12 +23,19 @@ class DocumentationRouter:
         @self.blueprint.route('/openapi.json')
         def openapi_spec():
             """Return OpenAPI 3.0 specification as JSON"""
-            # We need to get the registered services from the main router
-            # This will be set by the main APIRouter
+            from flask import request
             from .api_router import APIRouter
+            
+            # Get service filter from query parameter
+            service_filter = request.args.get('services', None)
+            
+            # We need to get the registered services from the main router
             router = APIRouter.get_instance()
             if router:
-                return jsonify(self.openapi_generator.generate_openapi_spec(router.registered_services))
+                return jsonify(self.openapi_generator.generate_openapi_spec(
+                    router.registered_services, 
+                    service_filter
+                ))
             return jsonify({"error": "No services registered"}), 500
         
         @self.blueprint.route('/docs')
@@ -36,6 +43,6 @@ class DocumentationRouter:
             """Return Swagger UI HTML page"""
             return self.swagger_ui_generator.generate_swagger_ui()
 
-    def generate_openapi_spec(self, registered_services: dict[str, Any]) -> dict[str, Any]:
+    def generate_openapi_spec(self, registered_services: dict[str, Any], service_filter: str = None) -> dict[str, Any]:
         """Generate OpenAPI specification for external use"""
-        return self.openapi_generator.generate_openapi_spec(registered_services)
+        return self.openapi_generator.generate_openapi_spec(registered_services, service_filter)
