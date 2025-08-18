@@ -2,6 +2,12 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict
 
+# Import all tool functions
+from .tools.artist_tools import artist_list_albums, artist_get_info
+from .tools.album_tools import album_list_tracks, album_get_info
+from .tools.file_tools import file_list_artist_files, file_read_lyrics
+from .tools.music_tools import track_list_by_album, style_list_all, track_get_info
+
 
 class InternalToolRegistry:
     """Minimal in-process registry mapping qualified tool names to callables."""
@@ -25,14 +31,14 @@ class InternalToolRegistry:
         try:
             result = func(**(args or {})) if args else func()
             return {'status': 'success', 'result': result}
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc: # noqa: BLE001
             return {'status': 'error', 'error': str(exc)}
 
 
 registry = InternalToolRegistry()
 
 
-# Example built-ins (can be extended)
+# Admin tools
 def _admin_system_info() -> dict:
     import platform, os
     return {
@@ -41,7 +47,24 @@ def _admin_system_info() -> dict:
         'cwd': os.getcwd(),
     }
 
-
+# Register admin tools
 registry.register('admin:system_info', _admin_system_info)
+
+# Register artist tools
+registry.register('artist:list_albums', artist_list_albums)
+registry.register('artist:get_info', artist_get_info)
+
+# Register album tools
+registry.register('album:list_tracks', album_list_tracks)
+registry.register('album:get_info', album_get_info)
+
+# Register file tools
+registry.register('file:list_artist_files', file_list_artist_files)
+registry.register('file:read_lyrics', file_read_lyrics)
+
+# Register music tools
+registry.register('track:list_by_album', track_list_by_album)
+registry.register('track:get_info', track_get_info)
+registry.register('style:list_all', style_list_all)
 
 
