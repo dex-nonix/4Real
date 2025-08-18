@@ -137,7 +137,9 @@ const loadMessages = async (historyId) => {
     const response = await chatService.getHistoryMessages(sessionId, historyId);
     console.log('Messages response:', response);
     
-    messages.value = response || [];
+    // Backend returns {data: [...], total: X} - extract the actual messages array
+    const messagesData = response?.data || response || [];
+    messages.value = messagesData;
     
     console.log('Final messages value:', messages.value);
     
