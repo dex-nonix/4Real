@@ -24,7 +24,7 @@ const props = defineProps({
   availableTools: { type: Array, default: () => [] }
 });
 
-const emit = defineEmits(['sendMessage', 'regenerateResponse', 'showTools', 'error']);
+const emit = defineEmits(['sendMessage', 'regenerateResponse', 'error', 'deleteMessage']);
 
 // Service injection
 const chatService = inject('chat-service');
@@ -34,60 +34,6 @@ const messages = ref([]);
 const inputText = ref('');
 const loading = ref(false);
 
-// Temporary mockup data for testing different message types
-const mockupMessages = ref([
-  {
-    id: 'mock-1',
-    message_type: 'text',
-    content_json: 'This is a regular text message from the user with some longer content to test text wrapping and layout.',
-    role: 'user',
-    created_at: '2025-01-27T10:00:00',
-    senderId: 'user-1'
-  },
-  {
-    id: 'mock-2',
-    message_type: 'system',
-    content_json: 'User joined the conversation',
-    role: 'system',
-    created_at: '2025-01-27T10:01:00',
-    senderId: 'system'
-  },
-  {
-    id: 'mock-3',
-    message_type: 'tool',
-    content_json: 'Searching for files...',
-    role: 'assistant',
-    created_at: '2025-01-27T10:02:00',
-    senderId: 'assistant',
-    metadata: {
-      toolName: 'File Search',
-      toolParams: { query: 'design files', type: 'ui', recursive: true },
-      executionStatus: 'success',
-      result: 'Found 3 design files in the project: design-v1.sketch, design-v2.figma, design-v3.xd'
-    }
-  },
-  {
-    id: 'mock-4',
-    message_type: 'user',
-    content_json: 'This is a user message with validation metadata and avatar information.',
-    role: 'user',
-    created_at: '2025-01-27T10:03:00',
-    senderId: 'user-2',
-    metadata: {
-      userName: 'John Doe',
-      userAvatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-      isValid: true
-    }
-  },
-  {
-    id: 'mock-5',
-    message_type: 'text',
-    content_json: 'This is another text message to show multiple messages of the same type.',
-    role: 'user',
-    created_at: '2025-01-27T10:04:00',
-    senderId: 'user-1'
-  }
-]);
 
 // Toggle for mockup vs real data
 const useMockupData = ref(true); // Start with mockup data to ensure messages are visible
@@ -139,7 +85,9 @@ const loadMessages = async (historyId) => {
     
     // Backend returns {data: [...], total: X} - extract the actual messages array
     const messagesData = response?.data || response || [];
-    messages.value = messagesData;
+    
+    // Force Vue to detect the change by creating a new array
+    messages.value = [...messagesData];
     
     console.log('Final messages value:', messages.value);
     
@@ -237,18 +185,44 @@ const onSend = async () => {
   }
 };
 
-// Show tools
-const showTools = () => {
-  emit('showTools');
+// Handle message deletion
+const handleDeleteMessage = async (messageData) => {
+  if (!messageData?.messageId || !props.historyId || !chatService || !props.selectedSession?.id) {
+    console.error('Cannot delete message: Missing required data', messageData);
+    return;
+  }
+  
+  try {
+    console.log('Deleting message:', messageData);
+    
+    // Call the backend to delete the message
+    const response = await chatService.deleteMessage(
+      props.selectedSession.id, 
+      props.historyId, 
+      messageData.messageId
+    );
+    
+    if (response) {
+      console.log('Message deleted successfully:', response);
+      
+      // Remove the message from local state immediately
+      messages.value = messages.value.filter(msg => msg.id !== messageData.messageId);
+      
+      // Emit success to parent for toast notification
+      emit('deleteMessage', { success: true, messageData, response });
+    }
+  } catch (error) {
+    console.error('Failed to delete message:', error);
+    // Emit error to parent for toast notification
+    emit('deleteMessage', { success: false, messageData, error });
+  }
 };
 
-// Reload messages (for testing)
-const reloadMessages = () => {
-  console.log('Manually reloading messages');
-  loadMessages(props.historyId);
+// Clear local messages (for when backend clears them)
+const clearLocalMessages = () => {
+  messages.value = [];
+  console.log('Local messages cleared');
 };
-
-
 
 // Get the appropriate component for each message
 const getMessageComponent = (message) => {
@@ -269,7 +243,6 @@ const hasValidMessageType = (message) => {
 
 // Computed values
 const hasHistory = computed(() => !!props.historyId);
-const canSendMessage = computed(() => hasHistory.value && inputText.value?.trim());
 </script>
 
 <template>
@@ -308,6 +281,7 @@ const canSendMessage = computed(() => hasHistory.value && inputText.value?.trim(
               :is="getMessageComponent(message)"
               :message="message"
               :currentUserId="currentUserId"
+              @delete-message="handleDeleteMessage"
             />
           </template>
         </MessageContainer>

@@ -49,7 +49,7 @@
               {{ (persona.system_prompt || '').substring(0, 100) }}{{ (persona.system_prompt || '').length > 100 ? '...' : '' }}
             </p>
             <div class="flex align-items-center gap-2">
-              <span class="text-xs text-500">{{ persona.sessions?.length || 0 }} active sessions</span>
+              <span class="text-xs text-500">{{ persona.active_sessions_count || 0 }} active sessions</span>
               <i v-if="persona.is_active" class="pi pi-check-circle text-green-500"></i>
             </div>
           </div>
@@ -91,7 +91,8 @@ const loadPersonas = async () => {
     const response = await chatService.getPersonas();
     console.log('Personas response:', response);
     
-    let allPersonas = response || [];
+    // Backend returns {data: [...], total: X} - extract the actual personas array
+    let allPersonas = response?.data || response || [];
     
     // Validate and clean persona data
     personas.value = allPersonas.filter(persona => {
@@ -99,6 +100,14 @@ const loadPersonas = async () => {
         console.warn('Invalid persona found:', persona);
         return false;
       }
+      
+      // Debug: Log the actual persona structure
+      console.log('Processing persona:', {
+        id: persona.id,
+        name: persona.name,
+        active_sessions_count: persona.active_sessions_count,
+        sessions: persona.sessions
+      });
       
       // Ensure required fields exist with defaults
       if (!persona.name) {

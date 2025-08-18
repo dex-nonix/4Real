@@ -6,6 +6,7 @@ from ...decorators import expose
 from ... import db
 from ...models.chat_session import ChatSession
 from ...models.chat_history import ChatHistory
+from ...models.chat_message import ChatMessage
 
 
 class ChatHistoryMixin:
@@ -178,6 +179,52 @@ class ChatHistoryMixin:
             db.session.delete(history)
             db.session.commit()
             return jsonify({'message': 'History deleted successfully'})
+        except Exception as exc:  # noqa: BLE001
+            db.session.rollback()
+            return jsonify({'error': str(exc)}), 500 
+
+    @expose(
+        '/sessions/{id}/histories/{history_id}/messages', 
+        methods=['DELETE'],
+        status_codes={200: 'OK', 400: 'Bad Request', 404: 'Not Found'},
+        response_schema={
+            "type": "object",
+            "properties": {
+                "message": {"type": "string"},
+                "deleted_count": {"type": "integer"}
+            }
+        }
+    )
+    def clear_history_messages(self, req: Request, id: int, history_id: int):
+        """Clear all messages in a specific history."""
+        try:
+            session = ChatSession.query.filter_by(id=id, is_active=True).first()
+            if not session:
+                return jsonify({'error': 'Session not found or inactive'}), 404
+
+            history = ChatHistory.query.filter_by(id=history_id, session_id=id).first()
+            if not history:
+                return jsonify({'error': 'History not found'}), 404
+
+            # Get count of messages to be deleted
+            message_count = ChatMessage.query.filter_by(history_id=history_id).count()
+            
+            if message_count == 0:
+                return jsonify({'message': 'No messages to clear', 'deleted_count': 0})
+
+            # Delete all messages in this history
+            ChatMessage.query.filter_by(history_id=history_id).delete()
+            
+            # Reset message count in history
+            history.message_count = 0
+            
+            db.session.commit()
+            
+            return jsonify({
+                'message': f'Cleared {message_count} messages successfully',
+                'deleted_count': message_count
+            })
+            
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
             return jsonify({'error': str(exc)}), 500 

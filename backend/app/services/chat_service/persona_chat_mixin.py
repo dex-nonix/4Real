@@ -44,14 +44,31 @@ class PersonaChatMixin:
         }
     )
     def list_personas(self, req: Request):
-        """List all available personas - FLAT STRUCTURE, NO NESTING."""
+        """List all available personas with active session counts."""
         try:
-            personas = Persona.query.filter_by(is_active=True).all()
+            # Use INNER JOIN to get personas with their active session counts
+            from sqlalchemy import func
+            
+            # Query personas with session counts using JOIN
+            personas_with_counts = db.session.query(
+                Persona,
+                func.count(ChatSession.id).label('session_count')
+            ).outerjoin(
+                ChatSession, 
+                (Persona.id == ChatSession.persona_id) & (ChatSession.is_active == True)
+            ).filter(
+                Persona.is_active == True
+            ).group_by(
+                Persona.id
+            ).all()
+            
             result = []
-            for persona in personas:
-                # Return only persona data - NO nested sessions!
+            for persona, session_count in personas_with_counts:
+                # Get persona data and add session count
                 persona_data = persona.to_dict()
+                persona_data['active_sessions_count'] = session_count
                 result.append(persona_data)
+                
             return jsonify({'data': result, 'total': len(result)})
         except Exception as exc:  # noqa: BLE001
             return jsonify({'error': str(exc)}), 500 

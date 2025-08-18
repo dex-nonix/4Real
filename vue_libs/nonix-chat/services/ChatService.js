@@ -72,9 +72,21 @@ export default class ChatService extends BaseApiService {
     return response.data  // Return extracted data
   }
 
+  async clearHistoryMessages(sessionId, historyId) {
+    // Use ChatService endpoint to clear all messages in a history
+    const response = await this.delete(`/chat/sessions/${sessionId}/histories/${historyId}/messages`)
+    return response.data  // Return extracted data
+  }
+
+  async deleteMessage(sessionId, historyId, messageId) {
+    // Use ChatService endpoint to delete a specific message
+    const response = await this.delete(`/chat/sessions/${sessionId}/histories/${historyId}/messages/${messageId}`)
+    return response.data  // Return extracted data
+  }
+
   async sendMessageToHistory(sessionId, historyId, content) {
-    // Use ChatService endpoint instead of CRUD
-    const response = await this.post(`/chat/sessions/${sessionId}/histories/${historyId}/send`, {
+    // Use ChatService endpoint that processes message and generates AI response
+    const response = await this.post(`/chat/sessions/${sessionId}/send`, {
       content: content
     })
     return response.data  // Return extracted data

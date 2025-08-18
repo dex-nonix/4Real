@@ -9,6 +9,7 @@ import HistoryManagementDialog from './HistoryManagementDialog.vue';
 import Button from 'primevue/button';
 import ProgressSpinner from 'primevue/progressspinner';
 import { useToast } from 'primevue/usetoast';
+import { nextTick } from 'vue';
 
 // Chat component is now fully self-contained - no props needed
 // It manages its own session state and can be used multiple times
@@ -18,6 +19,9 @@ const chatService = inject('chat-service');
 
 // Toast service - Toast component is already in root app
 const toast = useToast();
+
+// Ref to ChatMessageContainer for direct method calls
+const chatMessageContainerRef = ref(null);
 
 
 // FLAT STATE MANAGEMENT - NO NESTING, NO GLOBAL CACHE
@@ -107,6 +111,19 @@ const addWarning = (message) => {
     });
   }
   console.warn('Chat Warning:', message);
+};
+
+// Force refresh of messages display
+const refreshMessages = async () => {
+  if (chatMessageContainerRef.value && chatMessageContainerRef.value.loadMessages) {
+    try {
+      await chatMessageContainerRef.value.loadMessages(currentHistoryId.value);
+      addInfo('Messages refreshed');
+    } catch (error) {
+      console.error('Failed to refresh messages:', error);
+      addWarning('Could not refresh messages display');
+    }
+  }
 };
 
 // Handle session selection from ChatSessionBar - FLAT DATA LOADING
@@ -277,10 +294,9 @@ const handleSendMessage = async (messageData) => {
     console.log('Message sent successfully:', response);
     addSuccess('Message sent successfully');
     
-    // Refresh the current session to get updated data
-    if (currentSessionId.value) {
-      await handleSessionSelected(currentSessionId.value);
-    }
+    // Refresh messages to show the AI response
+    await refreshMessages();
+    
   } catch (error) {
     console.error('Failed to send message:', error);
     addError('Failed to send message', error);
@@ -377,7 +393,21 @@ const handleViewHistory = async () => {
 // Handle chat close request
 const handleCloseChat = () => {
   console.log('Close chat requested');
-  addInfo('Close chat functionality not yet implemented');
+  
+  try {
+    // Clear current session and reset state
+    selectedSession.value = null;
+    selectedHistory.value = null;
+    currentSessionId.value = null;
+    currentHistoryId.value = null;
+    
+    addSuccess('Chat closed successfully');
+    addInfo('Select a new session to continue chatting');
+    
+  } catch (error) {
+    console.error('Failed to close chat:', error);
+    addError('Failed to close chat', error);
+  }
 };
 
 // Handle history rename request - FLAT DATA
@@ -417,6 +447,10 @@ const handleHistorySelected = async (historyId) => {
     showHistoryDialog.value = false;
     
     addSuccess('History selected successfully');
+    
+    // Refresh messages for the new history
+    await refreshMessages();
+    
   } catch (error) {
     console.error('Failed to select history:', error);
     addError('Failed to select history', error);
@@ -424,13 +458,48 @@ const handleHistorySelected = async (historyId) => {
 };
 
 // Handle clear messages request
-const handleClearMessages = () => {
+const handleClearMessages = async () => {
   if (!currentHistoryId.value) {
     addWarning('No history selected to clear messages from');
     return;
   }
   
-  addInfo('Clear messages functionality not yet implemented');
+  try {
+    addInfo('Clearing all messages...');
+    
+    // Call the backend to clear messages for this history
+    const response = await chatService.clearHistoryMessages(currentSessionId.value, currentHistoryId.value);
+    
+    if (response) {
+      addSuccess(`Messages cleared successfully! Deleted ${response.deleted_count || 0} messages.`);
+      
+      // Clear the local messages display immediately
+      if (chatMessageContainerRef.value && chatMessageContainerRef.value.clearLocalMessages) {
+        chatMessageContainerRef.value.clearLocalMessages();
+        addInfo('Messages display cleared');
+      } else {
+        addWarning('Could not clear messages display - manual refresh may be needed');
+      }
+      
+    } else {
+      addError('Failed to clear messages: No response from backend');
+    }
+    
+  } catch (error) {
+    console.error('Failed to clear messages:', error);
+    addError('Failed to clear messages', error);
+  }
+};
+
+// Handle message deletion
+const handleDeleteMessage = async (deleteResult) => {
+  if (deleteResult.success) {
+    addSuccess('Message deleted successfully');
+    console.log('Message deleted:', deleteResult.messageData);
+  } else {
+    addError('Failed to delete message', deleteResult.error);
+    console.error('Message deletion failed:', deleteResult.error);
+  }
 };
 
 // Clear errors
@@ -515,11 +584,13 @@ defineExpose({
         <!-- Chat Message Container - FLAT DATA -->
         <div v-if="currentSessionId && selectedSession" class="flex-1">
           <ChatMessageContainer
+            ref="chatMessageContainerRef"
             :session-id="currentSessionId"
             :history-id="currentHistoryId"
             :current-user-id="currentUserId"
             :selected-session="selectedSession"
             @send-message="handleSendMessage"
+            @delete-message="handleDeleteMessage"
             @error="(errorData) => addError(errorData.message, errorData.details)"
           />
         </div>

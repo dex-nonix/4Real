@@ -481,3 +481,53 @@ class ChatMessageMixin:
             return jsonify({'data': [m.to_dict() for m in msgs], 'total': len(msgs)})
         except Exception as exc:  # noqa: BLE001
             return jsonify({'error': str(exc)}), 500 
+
+    @expose(
+        '/sessions/{session_id}/histories/{history_id}/messages/{message_id}', 
+        methods=['DELETE'],
+        status_codes={200: 'OK', 400: 'Bad Request', 404: 'Not Found'},
+        response_schema={
+            "type": "object",
+            "properties": {
+                "message": {"type": "string"},
+                "deleted_message_id": {"type": "integer"}
+            }
+        }
+    )
+    def delete_message(self, req: Request, session_id: int, history_id: int, message_id: int):
+        """Delete a specific message from a history."""
+        try:
+            # Verify session exists and is active
+            session = ChatSession.query.filter_by(id=session_id, is_active=True).first()
+            if not session:
+                return jsonify({'error': 'Session not found or inactive'}), 404
+
+            # Verify history exists and belongs to session
+            history = ChatHistory.query.filter_by(id=history_id, session_id=session_id).first()
+            if not history:
+                return jsonify({'error': 'History not found'}), 404
+
+            # Find and delete the specific message
+            message = ChatMessage.query.filter_by(id=message_id, history_id=history_id).first()
+            if not message:
+                return jsonify({'error': 'Message not found'}), 404
+
+            # Store message ID before deletion for response
+            deleted_message_id = message.id
+            
+            # Delete the message
+            db.session.delete(message)
+            
+            # Update history message count
+            history.message_count = max(0, history.message_count - 1)
+            
+            db.session.commit()
+            
+            return jsonify({
+                'message': 'Message deleted successfully',
+                'deleted_message_id': deleted_message_id
+            })
+            
+        except Exception as exc:  # noqa: BLE001
+            db.session.rollback()
+            return jsonify({'error': str(exc)}), 500 
