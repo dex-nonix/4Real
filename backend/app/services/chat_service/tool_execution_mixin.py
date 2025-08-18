@@ -9,6 +9,7 @@ from ...models.mcp_server import MCPServer
 from ...models.tool_invocation_log import ToolInvocationLog
 from ...models.chat_message import ChatMessage
 from ..tool_runtime import build_persona_tool_map, execute_tool, list_persona_tools
+from datetime import datetime
 
 
 class ToolExecutionMixin:
@@ -111,15 +112,18 @@ class ToolExecutionMixin:
                 db.session.commit()
 
             if history_id:
+                # Create a proper tool message that matches ToolMessage component expectations
                 tool_msg = ChatMessage(
                     history_id=history_id, 
                     role='tool', 
-                    message_type='tool_result', 
+                    message_type='tool',  # Changed from 'tool_result' to 'tool'
                     content_json={
-                        'type': 'tool_result', 
-                        'tool': tool_name, 
-                        'input': tool_args, 
-                        'output': exec_result
+                        'toolName': tool_name,
+                        'toolParams': tool_args,
+                        'executionStatus': 'success' if exec_result.get('status') == 'success' else 'error',
+                        'result': exec_result,
+                        'executedBy': 'user',  # Mark as user-executed
+                        'executionTime': datetime.utcnow().isoformat()
                     }
                 )
                 db.session.add(tool_msg)

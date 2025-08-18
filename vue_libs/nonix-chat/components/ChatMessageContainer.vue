@@ -297,15 +297,52 @@ const executeToolWithForm = async (formData) => {
     
     console.log('Tool executed successfully:', response);
     
+    // Create a tool message locally to show in chat immediately
+    const toolMessage = {
+      id: Date.now(), // Temporary ID
+      message_type: 'tool',
+      role: 'tool',
+      content_json: {
+        toolName: selectedTool.value.name,
+        toolParams: args,
+        executionStatus: response.data?.status === 'success' ? 'success' : 'error',
+        result: response.data,
+        executedBy: 'user',
+        executionTime: new Date().toISOString()
+      },
+      created_at: new Date().toISOString()
+    };
+    
+    // Add the tool message to the local messages array
+    messages.value.push(toolMessage);
+    
     // Close tool form
     showToolsDialog.value = false;
     selectedTool.value = null;
     
-    // Refresh messages to show tool result
+    // Refresh messages to get the official backend message (optional)
     await loadMessages(props.historyId);
     
   } catch (error) {
     console.error('Tool execution failed:', error);
+    
+    // Create an error tool message
+    const errorToolMessage = {
+      id: Date.now(),
+      message_type: 'tool',
+      role: 'tool',
+      content_json: {
+        toolName: selectedTool.value?.name || 'Unknown Tool',
+        toolParams: args || {},
+        executionStatus: 'error',
+        result: { error: error.message || 'Tool execution failed' },
+        executedBy: 'user',
+        executionTime: new Date().toISOString()
+      },
+      created_at: new Date().toISOString()
+    };
+    
+    messages.value.push(errorToolMessage);
   }
 };
 
