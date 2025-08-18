@@ -52,12 +52,12 @@ class ToolExecutionMixin:
         request_schema={
             "type": "object",
             "properties": {
-                "tool": {"type": "string", "description": "Tool name to execute"},
+                "tool_name": {"type": "string", "description": "Tool name to execute"},
                 "args": {"type": "object", "description": "Tool arguments", "additionalProperties": True},
                 "history_id": {"type": "integer", "description": "History ID for logging"},
                 "message_id": {"type": "integer", "description": "Message ID for logging"}
             },
-            "required": ["tool"]
+            "required": ["tool_name"]
         },
         response_schema={
             "type": "object",
@@ -77,7 +77,7 @@ class ToolExecutionMixin:
         """Execute a tool for a specific persona."""
         try:
             payload = req.get_json(silent=True) or {}
-            tool_name = payload.get('tool')
+            tool_name = payload.get('tool_name')  # Changed from 'tool' to 'tool_name'
             tool_args = payload.get('args') or {}
             history_id = payload.get('history_id')
             user_message_id = payload.get('message_id')
@@ -89,20 +89,26 @@ class ToolExecutionMixin:
             if tool_name not in tools:
                 return jsonify({'error': 'Tool not allowed'}), 403
 
-            log = ToolInvocationLog(
-                history_id=history_id,
-                message_id=user_message_id,
-                tool_name=tool_name,
-                input_json=tool_args,
-                status='started'
-            )
-            db.session.add(log)
-            db.session.commit()
+            # Only create log entry if we have required fields
+            log = None
+            if history_id is not None:
+                log = ToolInvocationLog(
+                    history_id=history_id,
+                    message_id=user_message_id or 0,  # Use 0 as default if None
+                    tool_name=tool_name,
+                    input_json=tool_args,
+                    status='started'
+                )
+                db.session.add(log)
+                db.session.commit()
 
             exec_result = execute_tool(persona.id, tool_name, tool_args)
-            log.status = 'success' if exec_result.get('status') == 'success' else 'error'
-            log.output_json = exec_result
-            db.session.commit()
+            
+            # Update log if it exists
+            if log:
+                log.status = 'success' if exec_result.get('status') == 'success' else 'error'
+                log.output_json = exec_result
+                db.session.commit()
 
             if history_id:
                 tool_msg = ChatMessage(

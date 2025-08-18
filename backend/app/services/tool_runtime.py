@@ -67,6 +67,7 @@ def execute_tool(persona_id: int, tool_name: str, args: Dict[str, Any] | None = 
     func = tool_map.get(tool_name)
     if not callable(func):
         return {'status': 'error', 'error': 'Tool not allowed or not found'}
+    
     try:
         result = func(**(args or {})) if (args) else func()
         return {'status': 'success', 'result': result}
