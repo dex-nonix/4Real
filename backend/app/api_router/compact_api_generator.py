@@ -49,7 +49,15 @@ class CompactApiGenerator:
             header = "# COMPACT API OVERVIEW - All Services\n"
         
         header += f"# Generated at: {datetime.now().isoformat()}\n"
-        header += f"# Total endpoints: {self._count_total_endpoints(openapi_spec)}\n\n"
+        header += f"# Total endpoints: {self._count_total_endpoints(openapi_spec)}\n"
+        
+        # Add link to full OpenAPI JSON
+        if service_filter:
+            header += f"# Full OpenAPI: /api/openapi.json?services={service_filter}\n"
+        else:
+            header += "# Full OpenAPI: /api/openapi.json\n"
+        
+        header += "\n"
         
         # Process paths
         paths = openapi_spec.get('paths', {})

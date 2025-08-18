@@ -11,9 +11,9 @@ The API Router system is a modular, auto-documenting Flask API framework that au
 - **No DTOs required** - Schemas defined directly or generated automatically
 
 **🚀 NEW: Compact API Generator**
-- **Compact YAML Overviews** - Human-readable API summaries instead of verbose OpenAPI specs
-- **Auto-Discovery** - Automatically finds all services without hardcoding
-- **Dynamic Categorization** - Groups endpoints by path patterns intelligently
+- **Compact YAML Overviews** - Human-readable API summaries converted from full OpenAPI specs
+- **OpenAPI Integration** - Leverages existing OpenAPIGenerator for consistency
+- **Dynamic Categorization** - Groups endpoints by service and logical sections
 - **Quick Reference** - Perfect for development, code reviews, and onboarding
 
 ## Architecture
@@ -25,7 +25,7 @@ api_router/
 ├── openapi_generator.py     # OpenAPI 3.0 specification generation
 ├── swagger_ui_generator.py  # Swagger UI HTML generation
 ├── documentation_router.py  # Documentation endpoint management
-├── compact_api_generator.py # 🚀 NEW: Compact YAML generator
+├── compact_api_generator.py # 🚀 NEW: Compact YAML generator (converts OpenAPI)
 └── README.md               # This documentation
 
 services/
@@ -45,7 +45,7 @@ The main router class that handles service registration, route creation, and req
 - Built-in error handling and logging
 - Service lifecycle management
 - Blueprint integration with Flask
-- **🚀 NEW: Compact API generator integration**
+- **🚀 NEW: Compact API generator integration (converts OpenAPI specs)**
 
 **Usage:**
 ```python
@@ -70,24 +70,25 @@ blueprint = router.blueprint
 
 ### 2. CompactApiGenerator (`compact_api_generator.py`) 🚀 NEW!
 
-Generates compact, human-readable YAML overviews of all API endpoints for quick reference.
+Generates compact, human-readable YAML overviews by converting the full OpenAPI specification into a simplified format.
 
 **Key Features:**
-- **Uses Registered Services** - Works with services already registered in ApiRouter
-- **Dynamic Categorization** - Groups endpoints by path patterns intelligently
-- **No Hardcoding** - Works with any service structure
+- **OpenAPI Integration** - Works with the existing OpenAPIGenerator to convert full specs
+- **Dynamic Categorization** - Groups endpoints by service and logical sections
+- **Service Filtering** - Supports filtering by service names via query parameters
 - **Clean YAML Output** - Perfect for quick API reference
-- **Simple & Reliable** - No filesystem scanning or import issues
+- **Consistent with Full Spec** - Always in sync with the complete OpenAPI documentation
 
 **Endpoints:**
-- **`/api/overview`** - Overview of all registered services
+- **`/api/overview`** - Overview of all services
 - **`/api/overview?services=chat,artist`** - Filtered overview of specific services
 
 **Example Output:**
 ```yaml
 # COMPACT API OVERVIEW - All Services
 # Generated at: 2024-01-15T10:30:00
-# Services found: 3
+# Total endpoints: 25
+# Full OpenAPI: /api/openapi.json
 
 # CHAT SERVICE
 chat:
@@ -126,11 +127,11 @@ artist:
 - **Onboarding** - New developers understanding API structure
 
 **How It Works:**
-1. **Gets registered services** from `api_router.registered_services`
-2. **Filters by query parameter** if specified (`?services=chat,artist`)
-3. **Groups endpoints** by first path segment (e.g., `/sessions` → `sessions` section)
-4. **Generates clean YAML** with method, path, and description
-5. **No filesystem scanning** - only works with actually registered services
+1. **Leverages OpenAPIGenerator** - Uses the existing OpenAPI spec generation
+2. **Applies service filtering** - Filters by query parameter if specified (`?services=chat,artist`)
+3. **Converts to compact format** - Transforms verbose OpenAPI spec into readable YAML
+4. **Groups by service and section** - Organizes endpoints logically by path structure
+5. **Maintains consistency** - Always reflects the current OpenAPI specification
 
 ### 3. BaseApiService (`base_api_service.py`) 🚀 NEW!
 
@@ -242,6 +243,20 @@ Manages documentation endpoints and integrates the OpenAPI and Swagger UI genera
 **Endpoints:**
 - `/api/openapi.json` - OpenAPI specification (supports filtering)
 - `/api/docs` - Swagger UI interface
+
+### 8. CompactApiGenerator Integration 🚀 NEW!
+
+The CompactApiGenerator is automatically integrated into the APIRouter system and provides the `/api/overview` endpoint. It works by:
+
+1. **Leveraging OpenAPIGenerator** - Uses the existing OpenAPI spec generation
+2. **Converting to Compact Format** - Transforms verbose OpenAPI specs into readable YAML
+3. **Maintaining Consistency** - Always reflects the current OpenAPI specification
+4. **Supporting Service Filtering** - Works with the same filtering system as OpenAPI endpoints
+
+**Integration Points:**
+- Automatically added to the APIRouter blueprint
+- Uses the same service filtering as OpenAPI endpoints
+- Maintains consistency with full OpenAPI documentation
 
 ## Service Registration
 
@@ -391,7 +406,8 @@ Returns raw YAML content with proper `text/yaml` content type.
 - **Easy Navigation** - Grouped by logical sections
 - **Minimal Noise** - No verbose schema details
 - **Human Readable** - Simple YAML structure
-- **Fast Generation** - No complex schema processing
+- **Consistent with Full Spec** - Always matches OpenAPI documentation
+- **Service Filtering** - Filter by specific services when needed
 - **Version Control Friendly** - Small, focused changes
 
 ### **NEW: Enhanced Schema Generation**
@@ -573,7 +589,7 @@ No specific environment variables are required, but the system respects Flask's 
 - Implement caching for expensive operations
 - Monitor service execution times
 - CRUD services automatically optimize schema generation
-- **Compact overviews** are fast and lightweight
+- **Compact overviews** leverage existing OpenAPI generation for consistency
 
 ## Examples
 
@@ -688,6 +704,8 @@ router.register_service('chat', ChatService)       # Custom service
    - Verify services have `to_swagger` method
    - Ensure services are properly registered in ApiRouter
    - Check that services have `get_exposed_methods()` method
+   - Verify OpenAPIGenerator is working correctly
+   - Check that the `/api/overview` endpoint is accessible
 
 ### Debug Mode
 
