@@ -122,7 +122,7 @@ export default class ChatService extends BaseApiService {
   async executeTool(personaId, toolName, toolArgs, historyId, userMessageId) {
     
     const response = await this.post(`/chat/personas/${personaId}/tools/execute`, {
-      tool: toolName,
+      tool_name: toolName,
       args: toolArgs,
       history_id: historyId,
       message_id: userMessageId

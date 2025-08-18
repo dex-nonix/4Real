@@ -14,6 +14,7 @@ import SystemMessage from './message-types/SystemMessage.vue';
 import ToolMessage from './message-types/ToolMessage.vue';
 import UserMessage from './message-types/UserMessage.vue';
 import Dialog from 'primevue/dialog';
+import ToolExecutionDialog from './ToolExecutionDialog.vue';
 
 const props = defineProps({
   sessionId: { type: [String, Number, null], required: true },
@@ -65,6 +66,8 @@ const sessionInputTexts = ref(new Map());
 const showToolsDialog = ref(false);
 const availableTools = ref([]);
 const toolsLoading = ref(false);
+const selectedTool = ref(null);
+const toolExecutionDialogRef = ref(null);
 
 // Register all message types with the manager
 onMounted(() => {
@@ -259,6 +262,45 @@ const executeTool = async (toolName) => {
   }
 };
 
+// Select tool and show parameter form
+const selectTool = (toolName) => {
+  selectedTool.value = toolName;
+  if (toolExecutionDialogRef.value) {
+    toolExecutionDialogRef.value.openDialog(toolName);
+  }
+};
+
+// Execute tool with form data
+const executeToolWithForm = async () => {
+  if (!selectedTool.value || !props.selectedSession?.persona_id || !props.historyId || !chatService) {
+    console.error('Cannot execute tool: Missing required data');
+    return;
+  }
+  
+  try {
+    // Execute tool using the existing ChatService
+    const response = await chatService.executeTool(
+      props.selectedSession.persona_id,
+      selectedTool.value,
+      {}, // Default empty args
+      props.historyId,
+      null // message_id is optional
+    );
+    
+    console.log('Tool executed successfully:', response);
+    
+    // Close tool form
+    showToolsDialog.value = false;
+    selectedTool.value = null;
+    
+    // Refresh messages to show tool result
+    await loadMessages(props.historyId);
+    
+  } catch (error) {
+    console.error('Tool execution failed:', error);
+  }
+};
+
 // Clear local messages (for when backend clears them)
 const clearLocalMessages = () => {
   messages.value = [];
@@ -409,8 +451,8 @@ defineExpose({
             <Button 
               icon="pi pi-play" 
               size="small" 
-              @click="executeTool(tool)"
-              :label="'Execute'"
+              @click="selectTool(tool)"
+              :label="'Select'"
               severity="primary"
             />
           </div>
@@ -421,6 +463,13 @@ defineExpose({
         <p class="text-500">No tools available for this persona</p>
       </div>
     </Dialog>
+
+    <!-- Tool Execution Dialog -->
+    <ToolExecutionDialog
+      ref="toolExecutionDialogRef"
+      :selected-tool="selectedTool"
+      @execute-tool="executeToolWithForm"
+    />
   </div>
 </template>
 
