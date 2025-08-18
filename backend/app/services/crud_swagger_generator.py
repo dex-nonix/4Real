@@ -296,32 +296,27 @@ class CrudSwaggerGenerator:
         return paths
     
     def _extract_path_parameters(self, path: str) -> List[Dict[str, Any]]:
-        """Extract path parameters from Flask-style path"""
+        """Extract path parameters from {param} patterns used by @expose decorator"""
         parameters = []
-        # Find all <param> placeholders
-        import re
-        matches = re.findall(r'<([^>]+)>', path)
         
-        for param in matches:
-            # Handle type hints like <int:id>
-            if ':' in param:
-                param_type, param_name = param.split(':', 1)
-                # Map Flask types to OpenAPI types
-                openapi_type = {
-                    'int': 'integer',
-                    'float': 'number',
-                    'string': 'string',
-                    'path': 'string'
-                }.get(param_type, 'string')
-            else:
-                param_name = param
-                openapi_type = 'string'
+        # Find all {param_name} patterns in the path
+        import re
+        matches = re.findall(r'\{([^}]+)\}', path)
+        
+        for param_name in matches:
+            # Determine parameter type based on common naming conventions
+            param_type = "integer"  # Default to integer for IDs
+            if param_name in ['name', 'title', 'description', 'content', 'session_name', 'session_icon']:
+                param_type = "string"
+            elif param_name in ['is_active', 'allow']:
+                param_type = "boolean"
             
             parameters.append({
                 "name": param_name,
                 "in": "path",
                 "required": True,
-                "schema": {"type": openapi_type}
+                "schema": {"type": param_type},
+                "description": f"{param_name.replace('_', ' ').title()}"
             })
         
         return parameters
