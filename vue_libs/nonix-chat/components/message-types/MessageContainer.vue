@@ -53,16 +53,6 @@ const getMessageTypeColor = (messageType) => {
           'surface-400 text-900': isOwnMessage
         }"
       >
-        <!-- Message Type Indicator -->
-        <div class="flex align-items-center mb-2">
-          <i 
-            :class="[getMessageTypeIcon(message.message_type), getMessageTypeColor(message.message_type), 'mr-2']"
-          ></i>
-          <span class="text-xs text-500 font-medium">
-            {{ message.message_type?.toUpperCase() || 'MESSAGE' }}
-          </span>
-        </div>
-        
         <!-- Message Content Slot -->
         <div class="message-content">
           <slot name="content"></slot>
@@ -77,7 +67,7 @@ const getMessageTypeColor = (messageType) => {
           'justify-content-start': !isOwnMessage
         }"
       >
-        <span class="text-xs text-500">{{ messageTimestamp }}</span>
+        <span class="text-xs text-400">{{ messageTimestamp }}</span>
         
         <!-- Message Status Indicators -->
         <div v-if="isOwnMessage" class="ml-2">

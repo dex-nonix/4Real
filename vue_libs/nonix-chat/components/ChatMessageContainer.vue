@@ -24,7 +24,7 @@ const props = defineProps({
   availableTools: { type: Array, default: () => [] }
 });
 
-const emit = defineEmits(['sendMessage', 'regenerateResponse', 'error', 'deleteMessage']);
+const emit = defineEmits(['sendMessage', 'regenerateResponse', 'showTools', 'deleteMessage', 'error']);
 
 // Service injection
 const chatService = inject('chat-service');
@@ -33,17 +33,6 @@ const chatService = inject('chat-service');
 const messages = ref([]);
 const inputText = ref('');
 const loading = ref(false);
-
-
-// Toggle for mockup vs real data
-const useMockupData = ref(true); // Start with mockup data to ensure messages are visible
-
-// Watch for toggle changes to reload messages
-watch(useMockupData, (newValue) => {
-  if (props.historyId || newValue) {
-    loadMessages(props.historyId);
-  }
-});
 
 // Session-specific input text storage
 const sessionInputTexts = ref(new Map());
@@ -66,14 +55,12 @@ const loadMessages = async (historyId) => {
     loading.value = true;
     
     // Use the new ChatService method that requires both sessionId and historyId
-    // First get the session ID from the selectedSession prop
     if (!props.selectedSession?.id) {
       messages.value = [];
       return;
     }
     
     const sessionId = props.selectedSession.id;
-    
     const response = await chatService.getHistoryMessages(sessionId, historyId);
     
     // Backend returns {data: [...], total: X} - extract the actual messages array
@@ -81,6 +68,8 @@ const loadMessages = async (historyId) => {
     
     // Force Vue to detect the change by creating a new array
     messages.value = [...messagesData];
+    
+    console.log('Messages loaded successfully:', messages.value.length);
     
   } catch (error) {
     console.error('Failed to load messages:', error);
@@ -95,16 +84,9 @@ const loadMessages = async (historyId) => {
   }
 };
 
-// Trigger refresh from parent
-const triggerRefresh = async () => {
-  await loadMessages(props.historyId);
-};
-
 // Load messages when historyId changes
-watch(() => props.historyId, async (newHistoryId, oldHistoryId) => {
+watch(() => props.historyId, async (newHistoryId) => {
   if (newHistoryId) {
-    // Clear existing messages before loading new ones
-    messages.value = [];
     await loadMessages(newHistoryId);
   } else {
     messages.value = [];
@@ -113,7 +95,6 @@ watch(() => props.historyId, async (newHistoryId, oldHistoryId) => {
 
 // React to selectedSession changes
 watch(() => props.selectedSession, (newSession, oldSession) => {
-  
   if (newSession) {
     // Save input text for previous session if it exists
     if (oldSession && oldSession.id) {
@@ -129,7 +110,6 @@ watch(() => props.selectedSession, (newSession, oldSession) => {
     if (props.historyId) {
       loadMessages(props.historyId);
     }
-    
   }
 }, { immediate: true });
 
@@ -169,7 +149,6 @@ const handleDeleteMessage = async (messageData) => {
   }
   
   try {
-    
     // Call the backend to delete the message
     const response = await chatService.deleteMessage(
       props.selectedSession.id, 
@@ -178,7 +157,6 @@ const handleDeleteMessage = async (messageData) => {
     );
     
     if (response) {
-      
       // Remove the message from local state immediately
       messages.value = messages.value.filter(msg => msg.id !== messageData.messageId);
       
@@ -190,6 +168,11 @@ const handleDeleteMessage = async (messageData) => {
     // Emit error to parent for toast notification
     emit('deleteMessage', { success: false, messageData, error });
   }
+};
+
+// Show tools
+const showTools = () => {
+  emit('showTools');
 };
 
 // Clear local messages (for when backend clears them)
@@ -213,13 +196,14 @@ const hasValidMessageType = (message) => {
 
 // Computed values
 const hasHistory = computed(() => !!props.historyId);
+const canSendMessage = computed(() => hasHistory.value && inputText.value?.trim());
 
 // Expose methods for parent component
 defineExpose({
   loadMessages,
   clearLocalMessages,
   refreshMessages: () => loadMessages(props.historyId),
-  triggerRefresh: triggerRefresh
+  triggerRefresh: () => loadMessages(props.historyId)
 });
 </script>
 
@@ -253,16 +237,22 @@ defineExpose({
             />
           </template>
         </MessageContainer>
-        
-        <div v-else class="p-3 text-center text-color-secondary">
-          <i class="pi pi-exclamation-triangle mr-2"></i>
-          Unknown message type: {{ message.message_type || 'undefined' }}
-        </div>
       </div>
     </div>
 
     <!-- Message Input Area -->
     <div class="flex align-items-center p-1 border-top-1 surface-border surface-section flex-shrink-0">
+      <!-- Tools Button -->
+      <Button 
+        icon="pi pi-box" 
+        text 
+        rounded 
+        severity="secondary"
+        @click="showTools"
+        v-tooltip.bottom="'Available Tools'"
+        :disabled="!hasHistory"
+      />
+
       <!-- Input Field -->
       <span class="p-input-icon-right flex-grow-1 mx-2">
         <IconField>
@@ -276,6 +266,17 @@ defineExpose({
           <InputIcon class="pi pi-send" @click="onSend" />
         </IconField>
       </span>
+
+      <!-- Options Button -->
+      <div class="flex align-items-center gap-2">
+        <Button 
+          icon="pi pi-ellipsis-h" 
+          text 
+          rounded 
+          severity="secondary"
+          :disabled="!hasHistory"
+        />
+      </div>
     </div>
   </div>
 </template>

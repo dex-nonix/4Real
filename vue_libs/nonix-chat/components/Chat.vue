@@ -558,10 +558,6 @@ defineExpose({
       
       <!-- Tab-based architecture: One ChatMessageContainer per session -->
       <div class="flex-1 relative">
-        <!-- Debug info -->
-        <div v-if="true" class="p-2 surface-100 text-xs">
-          Debug: currentSessionId={{ currentSessionId }}, currentHistoryId={{ currentHistoryId }}, selectedSession={{ selectedSession?.id }}
-        </div>
         
         <!-- Error display -->
         <div v-if="errors.length > 0" class="p-2 surface-100 border-round">
