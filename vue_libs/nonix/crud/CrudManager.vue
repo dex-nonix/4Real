@@ -192,8 +192,7 @@ export default {
       selectedEntities: [],
       deleting: false,
       bulkDeleting: false,
-      isEditing: false,
-      submitting: false
+      isEditing: false
     }
   },
 
@@ -360,8 +359,6 @@ export default {
     },
 
     async handleFormSubmit(formData) {
-      if (this.submitting) return
-      this.submitting = true
       try {
         const baseEntity = this.editingEntity || this.currentEntity || null
         const payload = this.buildEditablePayload(formData, baseEntity)
@@ -386,8 +383,6 @@ export default {
         this.notifyError(detail)
         // eslint-disable-next-line no-console
         console.error('Form submission error:', error)
-      } finally {
-        this.submitting = false
       }
     },
 
