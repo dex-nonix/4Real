@@ -83,7 +83,7 @@ class PersonaChatMixin:
             return jsonify({'error': str(exc)}), 500 
 
     @expose(
-        '/personas/<int:persona_id>', 
+        '/personas/{int:persona_id}', 
         methods=['GET'],
         status_codes={200: 'OK', 404: 'Not Found'},
         response_schema=PERSONA_SCHEMA
