@@ -2,7 +2,8 @@
 <script setup>
 import Avatar from 'primevue/avatar';
 import Button from 'primevue/button';
-import { ref } from 'vue';
+import Menu from 'primevue/menu';
+import { ref, h } from 'vue';
 
 const props = defineProps({
   persona: { type: Object, required: false, default: null },
@@ -10,10 +11,11 @@ const props = defineProps({
   currentHistory: { type: Object, required: false, default: null }
 });
 
-const emit = defineEmits(['viewHistory', 'closeChat', 'renameHistory', 'clearMessages']);
+const emit = defineEmits(['viewHistory', 'closeChat', 'renameHistory', 'clearMessages', 'deleteSession']);
 
 const isEditingTitle = ref(false);
 const editedTitle = ref('');
+const deleteMenu = ref();
 
 const startEditing = () => {
   if (!props.currentHistory) return;
@@ -31,6 +33,15 @@ const cancelEditing = () => {
   isEditingTitle.value = false;
 };
 
+const toggleDeleteMenu = (event) => {
+  console.log('Toggle menu clicked', event);
+  if (deleteMenu.value) {
+    deleteMenu.value.toggle(event);
+  } else {
+    console.error('deleteMenu ref is null');
+  }
+};
+
 // Avatar fallback logic with null safety
 const getAvatarDisplay = () => {
   if (!props.persona) {
@@ -44,6 +55,82 @@ const getAvatarDisplay = () => {
   const initials = props.persona.name?.substring(0, 2).toUpperCase() || '??';
   return { image: null, fallback: initials };
 };
+
+// Custom item component that transforms in the menu
+const CustomMenuItem = {
+  name: 'CustomMenuItem',
+  props: ['item'],
+  data() {
+    return {
+      showConfirm: false
+    };
+  },
+  render() {
+    if (!this.showConfirm) {
+      return h('div', {
+        class: 'flex align-items-center gap-2 p-2 cursor-pointer',
+        onClick: (event) => {
+          event.stopPropagation();
+          this.showConfirm = true;
+        }
+      }, [
+        h('i', { class: this.item.icon }),
+        h('span', this.item.label)
+      ]);
+    } else {
+      return h('div', {
+        class: 'flex align-items-center gap-2 p-2'
+      }, [
+        h('span', {
+          class: 'text-sm text-red-500 mr-2'
+        }, `${this.item.label}?`),
+        h('button', {
+          class: 'p-button p-button-sm p-button-danger mr-1',
+          onClick: (event) => {
+            event.stopPropagation();
+            this.confirm();
+          }
+        }, '✓'),
+        h('button', {
+          class: 'p-button p-button-sm p-button-secondary',
+          onClick: (event) => {
+            event.stopPropagation();
+            this.cancel();
+          }
+        }, '✗')
+      ]);
+    }
+  },
+  methods: {
+    confirm() {
+      this.item.command();
+      this.showConfirm = false;
+      // Emit event to close menu
+      this.$emit('close-menu');
+    },
+    cancel() {
+      this.showConfirm = false;
+    }
+  }
+};
+
+// Menu items for delete dropdown - FIXED, NEVER CHANGE
+const deleteMenuItems = [
+  {
+    label: 'Clear Messages',
+    icon: 'pi pi-trash',
+    command: () => emit('clearMessages')
+  },
+  {
+    label: 'Delete Session',
+    icon: 'pi pi-times',
+    command: () => {
+      if (props.currentSession?.id) {
+        emit('deleteSession', props.currentSession.id);
+      }
+    }
+  }
+];
 </script>
 
 <template>
@@ -83,8 +170,29 @@ const getAvatarDisplay = () => {
     <div class="flex align-items-center gap-1">
       <!-- opens a popdown(not dialog) with the list of history, also to delete there and rename the history -->
       <Button icon="pi pi-history" text rounded severity="secondary" @click="emit('viewHistory')" v-tooltip.bottom="'View History'" />
-      <!-- clear all messages in current history -->
-      <Button icon="pi pi-trash" text rounded severity="danger" @click="emit('clearMessages')" v-tooltip.bottom="'Clear Messages'" />
+      <!-- delete button with dropdown menu -->
+      <div class="relative" ref="deleteButtonRef">
+        <Button 
+          icon="pi pi-trash" 
+          text 
+          rounded 
+          severity="danger" 
+          @click="(event) => { console.log('Button clicked'); toggleDeleteMenu(event); }" 
+          v-tooltip.bottom="'Delete Options'"
+          aria-haspopup="true"
+          aria-controls="delete_menu"
+        />
+        <Menu 
+          ref="deleteMenu" 
+          id="delete_menu" 
+          :model="deleteMenuItems" 
+          :popup="true"
+        >
+          <template #item="{ item }">
+            <component :is="CustomMenuItem" :item="item" @close-menu="deleteMenu.hide()" />
+          </template>
+        </Menu>
+      </div>
       <!-- optional as its for use when in a sidepane so its optionally shown, but normally hidden -->
       <Button icon="pi pi-times" text rounded severity="secondary" @click="emit('closeChat')" v-tooltip.bottom="'Close Chat'"/>
     </div>
