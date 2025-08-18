@@ -162,13 +162,12 @@ const handleSessionSelected = async (sessionId) => {
         const sessionData = response?.data || response;
         selectedSession.value = sessionData;
         console.log('Processed session data:', sessionData);
-        console.log('🔧 Session current_history_id:', sessionData.current_history_id);
         addSuccess(`Session "${sessionData.session_name || 'Unnamed'}" loaded successfully`);
         
         // Set current history ID from session data (flat reference)
         if (sessionData.current_history_id) {
           currentHistoryId.value = sessionData.current_history_id;
-          console.log('🔧 Set currentHistoryId to:', currentHistoryId.value);
+          console.log('Set currentHistoryId to:', currentHistoryId.value);
           addInfo(`Using existing history: ${currentHistoryId.value}`);
         } else {
           // Create a new history if none exists
@@ -601,10 +600,6 @@ defineExpose({
             @clear-all-errors="clearErrors"
             @copy-error="copyError"
           />
-          <!-- Debug info -->
-          <div class="text-xs text-500 p-2">
-            Debug: currentHistoryId = {{ currentHistoryId }}, selectedSession.persona_id = {{ selectedSession?.persona_id }}
-          </div>
         </div>
         
         <!-- Loading state when no session selected -->
