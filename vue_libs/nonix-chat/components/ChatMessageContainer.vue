@@ -90,6 +90,7 @@ const loadMessages = async (historyId) => {
     messages.value = [...messagesData];
     
     console.log('Final messages value:', messages.value);
+    console.log('Messages loaded successfully, count:', messages.value.length);
     
     // Debug: Log individual message details
     if (messages.value.length > 0) {
@@ -115,6 +116,12 @@ const loadMessages = async (historyId) => {
   } finally {
     loading.value = false;
   }
+};
+
+// Trigger refresh from parent
+const triggerRefresh = async () => {
+  console.log('Trigger refresh called, refreshing messages...');
+  await loadMessages(props.historyId);
 };
 
 // Load messages when historyId changes
@@ -243,15 +250,35 @@ const hasValidMessageType = (message) => {
 
 // Computed values
 const hasHistory = computed(() => !!props.historyId);
+
+// Expose methods for parent component
+defineExpose({
+  loadMessages,
+  clearLocalMessages,
+  refreshMessages: () => loadMessages(props.historyId),
+  triggerRefresh: triggerRefresh
+});
 </script>
 
 <template>
   <div class="flex flex-column flex-1" style="min-height: 0;">
     <!-- Messages Display Area -->
     <div class="flex-1 p-4 overflow-y-auto surface-ground">
-      <!-- Simple debug info -->
-      <div class="p-2 surface-100 text-xs mb-2 border-round">
-        History ID: {{ props.historyId || 'null' }} | Messages: {{ messages.length }}
+      <!-- Header with refresh button -->
+      <div class="flex align-items-center justify-content-between mb-3">
+        <div class="p-2 surface-100 text-xs border-round">
+          History ID: {{ props.historyId || 'null' }} | Messages: {{ messages.length }}
+        </div>
+        <Button
+          icon="pi pi-refresh"
+          size="small"
+          text
+          rounded
+          :loading="loading"
+          @click="() => loadMessages(props.historyId)"
+          class="p-button-sm"
+          title="Refresh messages"
+        />
       </div>
       
       <div v-if="loading" class="text-center p-4">

@@ -115,14 +115,21 @@ const addWarning = (message) => {
 
 // Force refresh of messages display
 const refreshMessages = async () => {
+  console.log('refreshMessages called, currentHistoryId:', currentHistoryId.value);
+  console.log('chatMessageContainerRef:', chatMessageContainerRef.value);
+  
   if (chatMessageContainerRef.value && chatMessageContainerRef.value.loadMessages) {
     try {
+      console.log('Calling loadMessages on ChatMessageContainer');
       await chatMessageContainerRef.value.loadMessages(currentHistoryId.value);
-      addInfo('Messages refreshed');
+      addInfo('Messages refreshed successfully');
     } catch (error) {
       console.error('Failed to refresh messages:', error);
       addWarning('Could not refresh messages display');
     }
+  } else {
+    console.error('ChatMessageContainer ref not available or loadMessages method missing');
+    addError('Cannot refresh messages - component not ready');
   }
 };
 
@@ -294,7 +301,7 @@ const handleSendMessage = async (messageData) => {
     console.log('Message sent successfully:', response);
     addSuccess('Message sent successfully');
     
-    // Refresh messages to show the AI response
+    // Simple refresh after sending
     await refreshMessages();
     
   } catch (error) {
@@ -591,6 +598,7 @@ defineExpose({
             :selected-session="selectedSession"
             @send-message="handleSendMessage"
             @delete-message="handleDeleteMessage"
+            @refresh-messages="refreshMessages"
             @error="(errorData) => addError(errorData.message, errorData.details)"
           />
         </div>
