@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Callable
+import re
 
 class BaseApiService(ABC):
     """Base class for all API services with Swagger documentation capability."""
@@ -68,6 +69,33 @@ class BaseApiService(ABC):
         
         return exposed_methods
     
+    def _extract_path_parameters(self, path: str) -> List[Dict[str, Any]]:
+        """Extract path parameters from URL pattern like {param_name}."""
+        parameters = []
+        
+        # Find all {param_name} patterns in the path
+        param_pattern = r'\{([^}]+)\}'
+        matches = re.findall(param_pattern, path)
+        
+        for param_name in matches:
+            # Determine parameter type based on common naming conventions
+            param_type = "integer"  # Default to integer for IDs
+            if param_name in ['name', 'title', 'description', 'content', 'session_name', 'session_icon']:
+                param_type = "string"
+            elif param_name in ['is_active', 'allow']:
+                param_type = "boolean"
+            
+            parameter = {
+                "name": param_name,
+                "in": "path",
+                "required": True,
+                "schema": {"type": param_type},
+                "description": f"{param_name.replace('_', ' ').title()}"
+            }
+            parameters.append(parameter)
+        
+        return parameters
+    
     def method_to_swagger(self, method: Callable, service_name: str) -> Dict[str, Any]:
         """DEFAULT: Convert @expose method to Swagger format. ALL subclasses use this by default."""
         
@@ -93,6 +121,9 @@ class BaseApiService(ABC):
         if not status_codes:
             status_codes = {200: 'Success', 400: 'Bad Request', 500: 'Internal Server Error'}
         
+        # 🚀 NEW: Extract path parameters from URL pattern
+        path_parameters = self._extract_path_parameters(path)
+        
         # Build operation object
         operation = {
             "tags": tags,
@@ -100,6 +131,10 @@ class BaseApiService(ABC):
             "description": description,
             "responses": {}
         }
+        
+        # 🚀 NEW: Add path parameters if any exist
+        if path_parameters:
+            operation["parameters"] = path_parameters
         
         # 🚀 NEW: Add request body if schema provided
         if request_schema:
