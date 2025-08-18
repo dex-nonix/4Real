@@ -115,12 +115,8 @@ const addWarning = (message) => {
 
 // Force refresh of messages display
 const refreshMessages = async () => {
-  console.log('refreshMessages called, currentHistoryId:', currentHistoryId.value);
-  console.log('chatMessageContainerRef:', chatMessageContainerRef.value);
-  
   if (chatMessageContainerRef.value && chatMessageContainerRef.value.loadMessages) {
     try {
-      console.log('Calling loadMessages on ChatMessageContainer');
       await chatMessageContainerRef.value.loadMessages(currentHistoryId.value);
       addInfo('Messages refreshed successfully');
     } catch (error) {

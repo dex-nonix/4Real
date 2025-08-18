@@ -40,7 +40,6 @@ const useMockupData = ref(true); // Start with mockup data to ensure messages ar
 
 // Watch for toggle changes to reload messages
 watch(useMockupData, (newValue) => {
-  console.log('Mockup toggle changed to:', newValue);
   if (props.historyId || newValue) {
     loadMessages(props.historyId);
   }
@@ -59,10 +58,7 @@ onMounted(() => {
 
 // Load messages for specific history
 const loadMessages = async (historyId) => {
-  console.log('loadMessages called with historyId:', historyId);
-  
   if (!historyId || !chatService) {
-    console.log('loadMessages early return - historyId:', historyId, 'chatService:', !!chatService);
     return;
   }
   
@@ -72,16 +68,13 @@ const loadMessages = async (historyId) => {
     // Use the new ChatService method that requires both sessionId and historyId
     // First get the session ID from the selectedSession prop
     if (!props.selectedSession?.id) {
-      console.error('No selectedSession available for loadMessages');
       messages.value = [];
       return;
     }
     
     const sessionId = props.selectedSession.id;
-    console.log('Calling chatService.getHistoryMessages with sessionId:', sessionId, 'historyId:', historyId);
     
     const response = await chatService.getHistoryMessages(sessionId, historyId);
-    console.log('Messages response:', response);
     
     // Backend returns {data: [...], total: X} - extract the actual messages array
     const messagesData = response?.data || response || [];
@@ -89,22 +82,6 @@ const loadMessages = async (historyId) => {
     // Force Vue to detect the change by creating a new array
     messages.value = [...messagesData];
     
-    console.log('Final messages value:', messages.value);
-    console.log('Messages loaded successfully, count:', messages.value.length);
-    
-    // Debug: Log individual message details
-    if (messages.value.length > 0) {
-      console.log('First message details:', messages.value[0]);
-      console.log('Message structure:', {
-        id: messages.value[0].id,
-        message_type: messages.value[0].message_type,
-        content: messages.value[0].content,
-        content_json: messages.value[0].content_json,
-        role: messages.value[0].role,
-        timestamp: messages.value[0].timestamp,
-        history_id: messages.value[0].history_id
-      });
-    }
   } catch (error) {
     console.error('Failed to load messages:', error);
     messages.value = [];
@@ -120,13 +97,11 @@ const loadMessages = async (historyId) => {
 
 // Trigger refresh from parent
 const triggerRefresh = async () => {
-  console.log('Trigger refresh called, refreshing messages...');
   await loadMessages(props.historyId);
 };
 
 // Load messages when historyId changes
 watch(() => props.historyId, async (newHistoryId, oldHistoryId) => {
-  console.log('historyId changed from', oldHistoryId, 'to', newHistoryId);
   if (newHistoryId) {
     // Clear existing messages before loading new ones
     messages.value = [];
@@ -138,8 +113,6 @@ watch(() => props.historyId, async (newHistoryId, oldHistoryId) => {
 
 // React to selectedSession changes
 watch(() => props.selectedSession, (newSession, oldSession) => {
-  console.log('ChatMessageContainer - selectedSession changed:', newSession);
-  console.log('ChatMessageContainer - historyId:', props.historyId);
   
   if (newSession) {
     // Save input text for previous session if it exists
@@ -154,13 +127,9 @@ watch(() => props.selectedSession, (newSession, oldSession) => {
     
     // Load messages for the new session if we have a history
     if (props.historyId) {
-      console.log('Loading messages for history:', props.historyId);
       loadMessages(props.historyId);
-    } else {
-      console.log('No historyId available for message loading');
     }
     
-    console.log('Selected session changed:', newSession);
   }
 }, { immediate: true });
 
@@ -200,7 +169,6 @@ const handleDeleteMessage = async (messageData) => {
   }
   
   try {
-    console.log('Deleting message:', messageData);
     
     // Call the backend to delete the message
     const response = await chatService.deleteMessage(
@@ -210,7 +178,6 @@ const handleDeleteMessage = async (messageData) => {
     );
     
     if (response) {
-      console.log('Message deleted successfully:', response);
       
       // Remove the message from local state immediately
       messages.value = messages.value.filter(msg => msg.id !== messageData.messageId);
@@ -228,15 +195,12 @@ const handleDeleteMessage = async (messageData) => {
 // Clear local messages (for when backend clears them)
 const clearLocalMessages = () => {
   messages.value = [];
-  console.log('Local messages cleared');
 };
 
 // Get the appropriate component for each message
 const getMessageComponent = (message) => {
   const messageType = message.message_type || 'text';
-  console.log('Getting component for message type:', messageType, 'message:', message);
   const component = chatMessageTypeManager.getMessageType(messageType);
-  console.log('Returned component:', component);
   return component;
 };
 
@@ -244,7 +208,6 @@ const getMessageComponent = (message) => {
 const hasValidMessageType = (message) => {
   const messageType = message.message_type || 'text';
   const hasType = chatMessageTypeManager.hasMessageType(messageType);
-  console.log('Message type validation:', messageType, 'hasType:', hasType);
   return hasType;
 };
 
@@ -264,23 +227,6 @@ defineExpose({
   <div class="flex flex-column flex-1" style="min-height: 0;">
     <!-- Messages Display Area -->
     <div class="flex-1 p-4 overflow-y-auto surface-ground">
-      <!-- Header with refresh button -->
-      <div class="flex align-items-center justify-content-between mb-3">
-        <div class="p-2 surface-100 text-xs border-round">
-          History ID: {{ props.historyId || 'null' }} | Messages: {{ messages.length }}
-        </div>
-        <Button
-          icon="pi pi-refresh"
-          size="small"
-          text
-          rounded
-          :loading="loading"
-          @click="() => loadMessages(props.historyId)"
-          class="p-button-sm"
-          title="Refresh messages"
-        />
-      </div>
-      
       <div v-if="loading" class="text-center p-4">
         <i class="pi pi-spin pi-spinner text-2xl"></i>
         <p class="mt-2">Loading messages...</p>
@@ -292,11 +238,6 @@ defineExpose({
       </div>
       
       <div v-else v-for="message in messages" :key="message.id">
-        <!-- Debug info for each message -->
-        <div class="p-2 surface-200 text-xs mb-1">
-          Debug: ID={{ message.id }}, Type={{ message.message_type || 'undefined' }}, Role={{ message.role }}, Content={{ message.content || message.content_json || 'no content' }}
-        </div>
-        
         <!-- Use MessageContainer wrapper for consistent styling -->
         <MessageContainer
           v-if="hasValidMessageType(message)"
