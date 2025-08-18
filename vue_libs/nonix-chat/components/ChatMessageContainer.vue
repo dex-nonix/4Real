@@ -15,6 +15,8 @@ import ToolMessage from './message-types/ToolMessage.vue';
 import UserMessage from './message-types/UserMessage.vue';
 import Dialog from 'primevue/dialog';
 import ToolExecutionDialog from './ToolExecutionDialog.vue';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
 
 const props = defineProps({
   sessionId: { type: [String, Number, null], required: true },
@@ -271,18 +273,24 @@ const selectTool = (toolData) => {
 };
 
 // Execute tool with form data
-const executeToolWithForm = async () => {
+const executeToolWithForm = async (formData) => {
   if (!selectedTool.value || !props.selectedSession?.persona_id || !props.historyId || !chatService) {
     console.error('Cannot execute tool: Missing required data');
     return;
   }
   
   try {
+    console.log('🔧 Executing tool with form data:', formData);
+    
+    // Extract the actual form data from DynamicForm's submit event
+    const args = formData.__full || formData.args || {};
+    console.log('🔧 Extracted args:', args);
+    
     // Execute tool using the existing ChatService
     const response = await chatService.executeTool(
       props.selectedSession.persona_id,
-      selectedTool.value,
-      {}, // Default empty args
+      selectedTool.value.name, // Use the tool name from the selectedTool object
+      args, // Use the extracted form data
       props.historyId,
       null // message_id is optional
     );
@@ -439,29 +447,48 @@ defineExpose({
       v-model:visible="showToolsDialog" 
       header="Available Tools" 
       modal 
-      :style="{ width: '600px' }"
+      :style="{ width: '90vw', maxWidth: '700px' }"
+      class="p-dialog-sm"
     >
-      <div v-if="availableTools.length > 0" class="tools-list">
-        <div v-for="tool in availableTools" :key="tool.name" class="tool-item p-3 surface-100 border-round mb-2">
-          <div class="flex align-items-center gap-3">
-            <i class="pi pi-wrench text-primary"></i>
-            <div class="flex-1">
-              <div class="font-mono text-sm">{{ tool.name }}</div>
-              <div class="text-xs text-600">{{ tool.description }}</div>
-            </div>
-            <Button 
-              icon="pi pi-play" 
-              size="small" 
-              @click="selectTool(tool)"
-              :label="'Select'"
-              severity="primary"
-            />
-          </div>
-        </div>
+      <div v-if="availableTools.length > 0">
+        <DataTable 
+          :value="availableTools" 
+          class="p-datatable-sm"
+          :showGridlines="true"
+          stripedRows
+          responsiveLayout="scroll"
+        >
+          <Column field="name" header="Tool" style="width: 40%">
+            <template #body="{ data }">
+              <div class="font-mono text-sm">{{ data.name }}</div>
+            </template>
+          </Column>
+          
+          <Column field="description" header="Description" style="width: 45%">
+            <template #body="{ data }">
+              <div class="text-xs text-600">{{ data.description }}</div>
+            </template>
+          </Column>
+          
+          <Column header="Action" style="width: 15%">
+            <template #body="{ data }">
+              <Button 
+                icon="pi pi-play" 
+                size="small" 
+                @click="selectTool(data)"
+                severity="primary"
+                class="p-button-sm"
+                text
+                rounded
+              />
+            </template>
+          </Column>
+        </DataTable>
       </div>
-      <div v-else class="text-center p-4">
-        <i class="pi pi-info-circle text-2xl text-500 mb-2"></i>
-        <p class="text-500">No tools available for this persona</p>
+      
+      <div v-else class="text-center p-3">
+        <i class="pi pi-info-circle text-2xl text-500"></i>
+        <p class="text-500 text-sm mt-2">No tools available for this persona</p>
       </div>
     </Dialog>
 

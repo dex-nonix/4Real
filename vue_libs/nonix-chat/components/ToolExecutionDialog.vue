@@ -2,83 +2,42 @@
 <template>
   <Dialog 
     v-model:visible="dialogVisible" 
-    :header="`Configure Tool: ${selectedTool?.name || 'Unknown Tool'}`" 
+    :header="`${selectedTool?.name || 'Tool'}`" 
     modal 
-    :style="{ width: '500px' }"
+    :style="{ width: '90vw', maxWidth: '500px' }"
+    class="p-dialog-sm"
   >
     <div v-if="selectedTool" class="tool-form">
       <!-- Tool Description -->
-      <div class="mb-3">
-        <p class="text-600 mb-3">{{ selectedTool.description }}</p>
-      </div>
+      <p class="text-600 mb-3 text-sm">{{ selectedTool.description }}</p>
 
-      <!-- Dynamic Parameters Form -->
-      <div v-if="selectedTool.parameters && selectedTool.parameters.length > 0" class="mb-3">
-        <label class="block text-900 font-medium mb-2">Tool Parameters</label>
-        
-        <div class="space-y-3">
-          <div v-for="param in selectedTool.parameters" :key="param.name" class="parameter-field">
-            <label class="block text-700 text-sm mb-1">
-              {{ param.name }}
-              <span v-if="param.required" class="text-red-500">*</span>
-              <span v-else class="text-500 text-xs">(optional)</span>
-            </label>
-            
-            <!-- Input based on parameter type -->
-            <InputText 
-              v-if="param.type.includes('int')"
-              v-model="toolFormData[param.name]" 
-              :placeholder="`Enter ${param.name}${param.default ? ` (default: ${param.default})` : ''}`"
-              class="w-full"
-              type="number"
-            />
-            <InputText 
-              v-else
-              v-model="toolFormData[param.name]" 
-              :placeholder="`Enter ${param.name}${param.default ? ` (default: ${param.default})` : ''}`"
-              class="w-full"
-              type="text"
-            />
-            
-            <!-- Parameter info -->
-            <div class="text-xs text-500 mt-1">
-              Type: {{ param.type.replace('<class \'', '').replace('\'>', '') }}
-              <span v-if="param.default !== null"> | Default: {{ param.default }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- Dynamic Form for Parameters -->
+      <DynamicForm 
+        v-if="selectedTool.parameters && selectedTool.parameters.length > 0"
+        :config="formConfig"
+        :initial-data="toolFormData"
+        :mode="'edit'"
+        :compact="false"
+        :submit-label="'Execute Tool'"
+        @submit="executeTool"
+        @cancel="closeDialog"
+        @field-change="updateFormData"
+      />
       
-      <!-- No Parameters Message -->
-      <div v-else class="text-center p-4">
-        <i class="pi pi-check-circle text-2xl text-500 mb-2"></i>
-        <p class="text-500">No parameters needed for this tool.</p>
+      <!-- No Parameters -->
+      <div v-else class="text-center p-3">
+        <i class="pi pi-check-circle text-2xl text-500"></i>
+        <p class="text-500 text-sm mt-2">No parameters needed</p>
       </div>
     </div>
-
-    <template #footer>
-      <div class="flex justify-content-end gap-2">
-        <Button 
-          label="Cancel" 
-          severity="secondary" 
-          @click="closeDialog"
-        />
-        <Button 
-          label="Execute Tool" 
-          severity="primary" 
-          @click="executeTool"
-          :disabled="!selectedTool"
-        />
-      </div>
-    </template>
   </Dialog>
 </template>
 
 <script setup>
-import { ref, defineExpose, defineEmits } from 'vue';
+import { ref, defineExpose, defineEmits, computed } from 'vue';
 import Dialog from 'primevue/dialog';
-import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
+import DynamicForm from '@nonix/dynamic-form/DynamicForm.vue';
 
 // Props
 const props = defineProps({
@@ -91,6 +50,29 @@ const emit = defineEmits(['execute-tool']);
 // Reactive state for dialog visibility
 const dialogVisible = ref(false);
 const toolFormData = ref({});
+
+// Dynamic form configuration computed from tool parameters
+const formConfig = computed(() => {
+  if (!props.selectedTool?.parameters) return { fields: [] };
+  
+  const config = {
+    fields: props.selectedTool.parameters.map(param => ({
+      key: param.name,
+      label: param.name,
+      type: param.type.includes('int') ? 'number' : 'text',
+      required: param.required,
+      props: {
+        placeholder: param.name,
+        ...(param.default !== null && { default: param.default })
+      }
+    }))
+  };
+  
+  console.log('🔧 Form config generated:', config);
+  console.log('🔧 Tool parameters:', props.selectedTool.parameters);
+  
+  return config;
+});
 
 // Functions to control the dialog
 const openDialog = (toolData) => {
@@ -111,10 +93,25 @@ const closeDialog = () => {
   toolFormData.value = {};
 };
 
-const executeTool = () => {
+const updateFormData = (fieldChange) => {
+  console.log('🔧 Field change:', fieldChange);
+  if (fieldChange.key && fieldChange.value !== undefined) {
+    toolFormData.value[fieldChange.key] = fieldChange.value;
+    console.log('🔧 Updated toolFormData:', toolFormData.value);
+  }
+};
+
+const executeTool = (submitData) => {
+  console.log('🔧 Submit data received:', submitData);
+  console.log('🔧 Changed values:', submitData.changedValues);
+  console.log('🔧 Full form data:', submitData.__full);
+  
+  // Use the changedValues (the actual form data) or fall back to full form data
+  const args = submitData.changedValues || submitData.__full || {};
+  
   emit('execute-tool', {
     tool: props.selectedTool.name,
-    args: toolFormData.value
+    args: args
   });
   closeDialog();
 };
@@ -127,31 +124,26 @@ defineExpose({
 </script>
 
 <style scoped>
-.space-y-3 > * + * {
-  margin-top: 0.75rem;
+:deep(.p-dialog) {
+  margin: 1rem;
 }
 
-.mt-2 {
-  margin-top: 0.5rem;
+:deep(.p-datatable) {
+  font-size: 0.875rem;
 }
 
-.mb-1 {
-  margin-bottom: 0.25rem;
+:deep(.p-datatable .p-datatable-thead > tr > th) {
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
-.mb-2 {
-  margin-bottom: 0.5rem;
+:deep(.p-datatable .p-datatable-tbody > tr > td) {
+  padding: 0.5rem;
 }
 
-.mb-3 {
-  margin-bottom: 0.75rem;
-}
-
-.block {
-  display: block;
-}
-
-.w-full {
-  width: 100%;
+:deep(.p-inputtext-sm) {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
 }
 </style>
