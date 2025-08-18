@@ -13,6 +13,7 @@ import TextMessage from './message-types/TextMessage.vue';
 import SystemMessage from './message-types/SystemMessage.vue';
 import ToolMessage from './message-types/ToolMessage.vue';
 import UserMessage from './message-types/UserMessage.vue';
+import Dialog from 'primevue/dialog';
 
 const props = defineProps({
   sessionId: { type: [String, Number, null], required: true },
@@ -59,6 +60,11 @@ const loading = ref(false);
 
 // Session-specific input text storage
 const sessionInputTexts = ref(new Map());
+
+// Tools state
+const showToolsDialog = ref(false);
+const availableTools = ref([]);
+const toolsLoading = ref(false);
 
 // Register all message types with the manager
 onMounted(() => {
@@ -194,8 +200,54 @@ const handleDeleteMessage = async (messageData) => {
 };
 
 // Show tools
-const showTools = () => {
-  emit('showTools');
+const showTools = async () => {
+  try {
+    toolsLoading.value = true;
+    showToolsDialog.value = true;
+    
+    // Load tools for the current persona
+    if (props.selectedSession?.persona_id && chatService) {
+      const toolsData = await chatService.personaTools(props.selectedSession.persona_id);
+      availableTools.value = Array.isArray(toolsData) ? toolsData : [];
+    } else {
+      availableTools.value = [];
+    }
+  } catch (error) {
+    console.error('Failed to load tools:', error);
+    availableTools.value = [];
+  } finally {
+    toolsLoading.value = false;
+  }
+};
+
+// Execute tool
+const executeTool = async (toolName) => {
+  if (!props.selectedSession?.persona_id || !props.historyId || !chatService) {
+    console.error('Cannot execute tool: Missing required data');
+    return;
+  }
+  
+  try {
+    // Execute tool using the existing ChatService
+    const response = await chatService.executeTool(
+      props.selectedSession.persona_id,
+      toolName,
+      {}, // Default empty args
+      props.historyId,
+      null // message_id is optional
+    );
+    
+    console.log('Tool executed successfully:', response);
+    
+    // Close tools dialog
+    showToolsDialog.value = false;
+    
+    // Refresh messages to show tool result
+    await loadMessages(props.historyId);
+    
+  } catch (error) {
+    console.error('Tool execution failed:', error);
+  }
 };
 
 // Clear local messages (for when backend clears them)
@@ -325,6 +377,36 @@ defineExpose({
       :errors="props.errors"
       @update:visible="showErrorDialog = $event"
     />
+
+    <!-- Tools Dialog -->
+    <Dialog 
+      v-model:visible="showToolsDialog" 
+      header="Available Tools" 
+      modal 
+      :style="{ width: '600px' }"
+    >
+      <div v-if="availableTools.length > 0" class="tools-list">
+        <div v-for="tool in availableTools" :key="tool" class="tool-item p-3 surface-100 border-round mb-2">
+          <div class="flex align-items-center gap-3">
+            <i class="pi pi-wrench text-primary"></i>
+            <div class="flex-1">
+              <span class="font-mono text-sm">{{ tool }}</span>
+            </div>
+            <Button 
+              icon="pi pi-play" 
+              size="small" 
+              @click="executeTool(tool)"
+              :label="'Execute'"
+              severity="primary"
+            />
+          </div>
+        </div>
+      </div>
+      <div v-else class="text-center p-4">
+        <i class="pi pi-info-circle text-2xl text-500 mb-2"></i>
+        <p class="text-500">No tools available for this persona</p>
+      </div>
+    </Dialog>
   </div>
 </template>
 

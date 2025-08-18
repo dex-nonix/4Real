@@ -373,7 +373,7 @@ const handleViewHistory = async () => {
     showHistoryDialog.value = true;
     // Dialog component receives historiesData and manages its own state
   } catch (error) {
-    console.error('Failed to load histories:', error);
+    console.error('Failed to load histories', error);
     addError('Failed to load histories', error);
   }
 };
