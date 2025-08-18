@@ -43,7 +43,7 @@ class BaseApiService(ABC):
         return {
             'schemas': schemas,
             'paths': paths,
-            'tags': []
+            'tags': [service_name]  # ONLY ONE TAG - THE SERVICE NAME
         }
     
     def get_exposed_methods(self) -> List[Dict[str, Any]]:
