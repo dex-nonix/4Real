@@ -1,12 +1,5 @@
 <template>
-  <Dialog 
-    :visible="visible" 
-    modal 
-    header="Error Log" 
-    :style="{ width: '80vw', maxWidth: '800px' }"
-    :closable="true"
-    @update:visible="$emit('update:visible', $event)"
-  >
+  <Dialog v-model:visible="dialogVisible" modal header="Error Log" :style="{ width: '80vw', maxWidth: '800px' }">
     <div class="flex flex-column gap-3">
       <!-- Action Bar -->
       <div class="flex justify-content-between align-items-center">
@@ -81,7 +74,7 @@
                 v-tooltip.left="'Copy Error'"
               />
               <Button 
-                icon="pi pi-trash" 
+                icon="pi pi-times" 
                 size="small" 
                 text 
                 rounded
@@ -94,24 +87,43 @@
         </Column>
       </DataTable>
     </div>
+
+    <template #footer>
+      <Button label="Close" icon="pi pi-times" @click="closeDialog" class="p-button-text" />
+    </template>
   </Dialog>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, defineExpose } from 'vue';
 import Dialog from 'primevue/dialog';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Button from 'primevue/button';
 
+// Props
 const props = defineProps({
-  visible: { type: Boolean, required: true },
   errors: { type: Array, required: true }
 });
 
-const emit = defineEmits(['close', 'delete-error', 'clear-all', 'copy-error']);
-
+// Reactive state for dialog visibility
+const dialogVisible = ref(false);
 const selectedErrors = ref([]);
+
+// Functions to control the dialog
+const openDialog = () => {
+  dialogVisible.value = true;
+};
+
+const closeDialog = () => {
+  dialogVisible.value = false;
+};
+
+// Expose functions to the parent component
+defineExpose({
+  openDialog,
+  closeDialog
+});
 
 const formatTime = (timestamp) => {
   if (!timestamp) return 'Unknown';
@@ -128,17 +140,9 @@ const truncateDetails = (details) => {
   return text.length > 50 ? text.substring(0, 50) + '...' : text;
 };
 
-// Error handling methods - emit to parent
-const deleteError = (errorId) => {
-  emit('delete-error', errorId);
-};
-
-const clearAll = () => {
-  emit('clear-all');
-};
-
 const copyError = (error) => {
-  emit('copy-error', error);
+  const errorText = `Error: ${error.message}\nTime: ${formatTime(error.timestamp)}\nDetails: ${error.details || 'No details'}`;
+  navigator.clipboard.writeText(errorText);
 };
 
 const copySelected = () => {
@@ -149,7 +153,14 @@ const copySelected = () => {
   ).join('\n\n');
   
   navigator.clipboard.writeText(errorTexts);
-  emit('copy-error', selectedErrors.value);
+};
+
+const deleteError = (errorId) => {
+  // This will be handled by parent via ref
+};
+
+const clearAll = () => {
+  // This will be handled by parent via ref
 };
 </script>
 

@@ -4,6 +4,9 @@ import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
+import Menu from 'primevue/menu';
+import Badge from 'primevue/badge';
+import ErrorDialog from './ErrorDialog.vue';
 import chatMessageTypeManager from './ChatMessageTypeManager.js';
 import MessageContainer from './message-types/MessageContainer.vue';
 import TextMessage from './message-types/TextMessage.vue';
@@ -16,13 +19,38 @@ const props = defineProps({
   historyId: { type: [String, Number, null], required: false, default: null },
   currentUserId: { type: [String, Number], required: true, default: 'user-self' },
   selectedSession: { type: Object, required: false, default: null },
-  availableTools: { type: Array, default: () => [] }
+  availableTools: { type: Array, default: () => [] },
+  errors: { type: Array, required: false, default: () => [] }
 });
 
 const emit = defineEmits(['sendMessage', 'regenerateResponse', 'showTools', 'deleteMessage', 'error']);
 
 // Service injection
 const chatService = inject('chat-service');
+
+// Error management
+const showErrorDialog = ref(false);
+const moreMenu = ref();
+
+// Show error dialog
+const showErrors = () => {
+  showErrorDialog.value = true;
+};
+
+// Toggle more menu
+const toggleMoreMenu = (event) => {
+  moreMenu.value.toggle(event);
+};
+
+// Menu items
+const moreMenuItems = computed(() => [
+  {
+    label: 'Show Errors',
+    icon: 'pi pi-exclamation-triangle',
+    command: showErrors,
+    badge: props.errors.length > 0 ? props.errors.length : null
+  }
+]);
 
 // State management - session-specific
 const messages = ref([]);
@@ -263,14 +291,40 @@ defineExpose({
       </span>
 
       <!-- Options Button -->
-      <Button 
-        icon="pi pi-ellipsis-h" 
-        text 
-        rounded 
-        severity="secondary"
-        :disabled="!hasHistory"
-      />
+      <div class="relative">
+        <Button 
+          icon="pi pi-ellipsis-h" 
+          text 
+          rounded 
+          severity="secondary"
+          :disabled="!hasHistory"
+          @click="toggleMoreMenu"
+          aria-haspopup="true"
+          aria-controls="more_menu"
+        />
+        <Badge 
+          v-if="props.errors.length > 0" 
+          :value="props.errors.length" 
+          severity="danger" 
+          class="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2"
+        />
+      </div>
     </div>
+
+    <!-- More Menu -->
+    <Menu 
+      ref="moreMenu" 
+      id="more_menu" 
+      :model="moreMenuItems" 
+      :popup="true"
+    />
+
+    <!-- Error Dialog -->
+    <ErrorDialog
+      :visible="showErrorDialog"
+      :errors="props.errors"
+      @update:visible="showErrorDialog = $event"
+    />
   </div>
 </template>
 
