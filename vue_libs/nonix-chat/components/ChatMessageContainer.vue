@@ -208,17 +208,17 @@ defineExpose({
 </script>
 
 <template>
-  <div class="flex flex-column flex-1" style="min-height: 0;">
-    <!-- Messages Display Area -->
-    <div class="flex-1 p-4 overflow-y-auto surface-ground">
-      <div v-if="loading" class="text-center p-4">
-        <i class="pi pi-spin pi-spinner text-2xl"></i>
-        <p class="mt-2">Loading messages...</p>
-      </div>
-      
-      <div v-else-if="messages.length === 0" class="text-center text-color-secondary p-4">
+  <div class="chat-container">
+    <!-- Messages Area - Takes remaining space and scrolls -->
+    <div class="messages-area">
+      <div v-if="messages.length === 0 && !loading" class="text-center text-color-secondary p-4">
         <i class="pi pi-comments text-4xl mb-2"></i>
         <p>No messages yet. Start a conversation!</p>
+      </div>
+      
+      <div v-else-if="loading" class="text-center text-color-secondary p-4">
+        <i class="pi pi-spin pi-spinner text-2xl"></i>
+        <p class="mt-2">Loading messages...</p>
       </div>
       
       <div v-else v-for="message in messages" :key="message.id">
@@ -240,8 +240,8 @@ defineExpose({
       </div>
     </div>
 
-    <!-- Message Input Area -->
-    <div class="flex align-items-center p-1 border-top-1 surface-border surface-section flex-shrink-0">
+    <!-- Input Area - Fixed at bottom -->
+    <div class="input-area">
       <!-- Tools Button -->
       <Button 
         icon="pi pi-box" 
@@ -268,32 +268,38 @@ defineExpose({
       </span>
 
       <!-- Options Button -->
-      <div class="flex align-items-center gap-2">
-        <Button 
-          icon="pi pi-ellipsis-h" 
-          text 
-          rounded 
-          severity="secondary"
-          :disabled="!hasHistory"
-        />
-      </div>
+      <Button 
+        icon="pi pi-ellipsis-h" 
+        text 
+        rounded 
+        severity="secondary"
+        :disabled="!hasHistory"
+      />
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Ensure proper flexbox behavior */
-.flex-1 {
-  flex: 1 1 auto;
+/* Normal, working flexbox layout */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
-/* Message area scrolling */
-.overflow-y-auto {
+/* Messages area - normal flex behavior */
+.messages-area {
+  flex: 1;
   overflow-y: auto;
+  padding: 1rem;
 }
 
-/* Input area stays at bottom */
-.flex-shrink-0 {
-  flex-shrink: 0;
+/* Input area - normal fixed position */
+.input-area {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  border-top: 1px solid var(--surface-border);
+  background: var(--surface-section);
 }
 </style>

@@ -545,7 +545,7 @@ defineExpose({
       @clear-messages="handleClearMessages"
     />
 
-    <div class="flex flex-row flex-1" style="min-height: 0;">
+    <div class="flex flex-row flex-1" style="min-height: 0; height: 100%;">
       <ChatSessionBar
         :current-session-id="currentSessionId"
         @session-selected="handleSessionSelected"
@@ -557,7 +557,7 @@ defineExpose({
       />
       
       <!-- Tab-based architecture: One ChatMessageContainer per session -->
-      <div class="flex-1 relative">
+      <div class="flex-1 relative" style="height: 100%; min-height: 0;">
         
         <!-- Error display -->
         <div v-if="errors.length > 0" class="p-2 surface-100 border-round">
@@ -581,7 +581,7 @@ defineExpose({
         </div>
         
         <!-- Chat Message Container - FLAT DATA -->
-        <div v-if="currentSessionId && selectedSession" class="flex-1">
+        <div v-if="currentSessionId && selectedSession" class="flex-1 d-flex flex-column" style="height: 100%; min-height: 0;">
           <ChatMessageContainer
             ref="chatMessageContainerRef"
             :session-id="currentSessionId"
