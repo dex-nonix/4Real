@@ -4,7 +4,7 @@ import Avatar from 'primevue/avatar';
 import Button from 'primevue/button';
 import Menu from 'primevue/menu';
 import ConfirmMenuItem from './ConfirmMenuItem.vue';
-import { ref, inject } from 'vue';
+import { ref, inject, watch } from 'vue';
 
 const props = defineProps({
   persona: { type: Object, required: false, default: null },
@@ -16,6 +16,29 @@ const emit = defineEmits(['viewHistory', 'closeChat', 'renameHistory', 'clearMes
 
 // Service injection
 const chatService = inject('chat-service');
+
+// Local persona state
+const localPersona = ref(null);
+
+// Watch for session changes and load persona data
+watch(() => props.currentSession, async (newSession) => {
+  if (newSession?.persona_id) {
+    try {
+      console.log('Loading persona for session:', newSession.persona_id);
+      const response = await chatService.getPersona(newSession.persona_id);
+      const personaData = response?.data || response;
+      if (personaData) {
+        localPersona.value = personaData;
+        console.log('Persona loaded:', personaData.name);
+      }
+    } catch (error) {
+      console.error('Failed to load persona:', error);
+      localPersona.value = null;
+    }
+  } else {
+    localPersona.value = null;
+  }
+}, { immediate: true });
 
 const isEditingTitle = ref(false);
 const editedTitle = ref('');
@@ -85,15 +108,15 @@ const handleDeleteSession = async () => {
 
 // Avatar fallback logic with null safety
 const getAvatarDisplay = () => {
-  if (!props.persona) {
+  if (!localPersona.value) {
     return { image: null, fallback: '??' };
   }
   
-  if (props.persona.avatar_url) {
-    return { image: props.persona.avatar_url, fallback: null };
+  if (localPersona.value.avatar_url) {
+    return { image: localPersona.value.avatar_url, fallback: null };
   }
   // Use first 2 characters of persona name
-  const initials = props.persona.name?.substring(0, 2).toUpperCase() || '??';
+  const initials = localPersona.value.name?.substring(0, 2).toUpperCase() || '??';
   return { image: null, fallback: initials };
 };
 
@@ -123,7 +146,7 @@ const deleteMenuItems = [
         shape="circle" 
       />
       <div class="flex flex-column">
-        <span class="font-bold text-900">{{ persona?.name || 'No Persona Selected' }}</span>
+        <span class="font-bold text-900">{{ localPersona?.name || 'No Persona Selected' }}</span>
         <div v-if="!isEditingTitle && currentHistory" class="text-sm text-500 cursor-pointer hover:text-700" @click="startEditing">
           {{ currentHistory.title }}
         </div>
@@ -147,9 +170,7 @@ const deleteMenuItems = [
     </div>
 
     <div class="flex align-items-center gap-1">
-      <!-- opens a popdown(not dialog) with the list of history, also to delete there and rename the history -->
       <Button icon="pi pi-history" text rounded severity="secondary" @click="emit('viewHistory')" v-tooltip.bottom="'View History'" />
-      <!-- delete button with dropdown menu -->
       <div class="relative" ref="deleteButtonRef">
         <Button 
           icon="pi pi-trash" 
@@ -172,7 +193,6 @@ const deleteMenuItems = [
           </template>
         </Menu>
       </div>
-      <!-- optional as its for use when in a sidepane so its optionally shown, but normally hidden -->
       <Button icon="pi pi-times" text rounded severity="secondary" @click="emit('closeChat')" v-tooltip.bottom="'Close Chat'"/>
     </div>
   </header>
