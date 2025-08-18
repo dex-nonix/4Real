@@ -30,18 +30,20 @@ const loadSessions = async () => {
     const response = await chatService.getSessions();
     console.log('Raw sessions response:', response);
     
-    sessions.value = response || [];
-    console.log('Processed sessions in ChatSessionBar:', response);
+    // Backend returns {data: [...], total: X} - extract just the data array
+    const sessionsData = response?.data || [];
+    sessions.value = sessionsData;
+    console.log('Processed sessions in ChatSessionBar:', sessionsData);
     
-    // Emit sessions loaded event for tab-based architecture
+    // Emit sessions loaded event for tab-based architecture - send the FULL response
     emit('sessions-loaded', response);
     
     // Don't auto-select here - let parent handle it
   } catch (error) {
     console.error('Failed to load sessions:', error);
     sessions.value = [];
-    // Emit empty sessions array even on error
-    emit('sessions-loaded', []);
+    // Emit empty response structure even on error
+    emit('sessions-loaded', { data: [], total: 0 });
     // Emit error for parent component
     emit('error', {
       message: 'Failed to load sessions',

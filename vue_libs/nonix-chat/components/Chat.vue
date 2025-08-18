@@ -6,19 +6,19 @@ import ChatSessionBar from './ChatSessionBar.vue';
 import ChatMessageContainer from './ChatMessageContainer.vue';
 import PersonaSelectionDialog from './PersonaSelectionDialog.vue';
 import HistoryManagementDialog from './HistoryManagementDialog.vue';
-import Toast from 'primevue/toast';
-import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
 import ProgressSpinner from 'primevue/progressspinner';
+import { useToast } from 'primevue/usetoast';
 
 // Chat component is now fully self-contained - no props needed
 // It manages its own session state and can be used multiple times
 
-// Toast service for user feedback
-const toast = useToast();
-
 // Service injection for session management
 const chatService = inject('chat-service');
+
+// Toast service - Toast component is already in root app
+const toast = useToast();
+
 
 // FLAT STATE MANAGEMENT - NO NESTING, NO GLOBAL CACHE
 // SELECTED ITEMS (single objects, no nesting)
@@ -54,13 +54,15 @@ const addError = (message, details = null) => {
   };
   errors.value.push(error);
   
-  // Show toast notification
-  toast.add({
-    severity: 'error',
-    summary: 'Error',
-    detail: message,
-    life: 5000
-  });
+  // Show toast notification using global toast service
+  if (toast) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: message,
+      life: 5000
+    });
+  }
   
   // Log to console
   console.error('Chat Error:', message, details);
@@ -72,32 +74,38 @@ const addError = (message, details = null) => {
 };
 
 const addSuccess = (message) => {
-  toast.add({
-    severity: 'success',
-    summary: 'Success',
-    detail: message,
-    life: 3000
-  });
+  if (toast) {
+    toast.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: message,
+      life: 3000
+    });
+  }
   console.log('Chat Success:', message);
 };
 
 const addInfo = (message) => {
-  toast.add({
-    severity: 'info',
-    summary: 'Info',
-    detail: message,
-    life: 3000
-  });
+  if (toast) {
+    toast.add({
+      severity: 'info',
+      summary: 'Info',
+      detail: message,
+      life: 3000
+    });
+  }
   console.log('Chat Info:', message);
 };
 
 const addWarning = (message) => {
-  toast.add({
-    severity: 'warn',
-    summary: 'Warning',
-    detail: message,
-    life: 4000
-  });
+  if (toast) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Warning',
+      detail: message,
+      life: 4000
+    });
+  }
   console.warn('Chat Warning:', message);
 };
 
@@ -190,7 +198,15 @@ const handleSessionsLoaded = (sessionsList) => {
   console.log('Sessions loaded:', sessionsList);
   
   try {
-    let actualSessions = sessionsList || [];
+    // Backend ALWAYS returns {data: [...], total: X} - extract the data array
+    let actualSessions = [];
+    
+    if (sessionsList && sessionsList.data && Array.isArray(sessionsList.data)) {
+      actualSessions = sessionsList.data;
+    } else {
+      console.warn('Invalid sessions response structure:', sessionsList);
+      actualSessions = [];
+    }
     
     // Validate sessions have proper IDs
     actualSessions = actualSessions.filter(session => {
@@ -434,9 +450,6 @@ defineExpose({
 </script>
 
 <template>
-  <!-- Toast notifications for user feedback -->
-  <Toast />
-  
   <div class="flex flex-column overflow-hidden" style="width: 1024px; height: 768px; border: 1px solid var(--surface-border)">
     <ChatHeader 
       :persona="currentPersona" 

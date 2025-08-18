@@ -19,10 +19,15 @@
           size="small" 
           @click="createNewHistory"
           label="New Chat"
+          :disabled="!sessionId"
         />
       </div>
 
-      <div v-if="histories.length === 0" class="flex justify-content-center p-4">
+      <div v-if="!sessionId" class="flex justify-content-center p-4">
+        <span class="text-500">Please select a session to view history</span>
+      </div>
+
+      <div v-else-if="histories.length === 0" class="flex justify-content-center p-4">
         <span class="text-500">No conversation history available</span>
       </div>
 
@@ -114,7 +119,7 @@ import { ref, watch, inject } from 'vue';
 
 const props = defineProps({
   visible: { type: Boolean, required: true },
-  sessionId: { type: [String, Number], required: true }
+  sessionId: { type: [String, Number, null], required: false, default: null }
 });
 
 const emit = defineEmits(['update:visible', 'historySelected', 'createHistory', 'updateHistory', 'deleteHistory']);
@@ -136,7 +141,11 @@ const editingHistory = ref(null);
 
 // Load histories when dialog opens
 const loadHistories = async () => {
-  if (!props.sessionId) return;
+  if (!props.sessionId) {
+    console.log('No session ID provided, skipping history load');
+    histories.value = [];
+    return;
+  }
   
   try {
     loading.value = true;
@@ -155,6 +164,9 @@ const loadHistories = async () => {
 watch(() => props.visible, (newVisible) => {
   if (newVisible && props.sessionId) {
     loadHistories();
+  } else if (newVisible && !props.sessionId) {
+    console.log('Dialog opened but no session ID, showing empty state');
+    histories.value = [];
   }
 });
 
@@ -173,10 +185,19 @@ const selectHistory = (historyId) => {
 };
 
 const createNewHistory = () => {
+  if (!props.sessionId) {
+    console.warn('Cannot create history: no session ID');
+    return;
+  }
   showNewHistoryDialog.value = true;
 };
 
 const confirmCreateHistory = async () => {
+  if (!props.sessionId) {
+    console.warn('Cannot create history: no session ID');
+    return;
+  }
+  
   if (!newHistoryTitle.value.trim()) return;
   
   try {
