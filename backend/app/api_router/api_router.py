@@ -9,6 +9,7 @@ from typing import Any, Callable
 from flask import Blueprint, request, current_app
 
 from .documentation_router import DocumentationRouter
+from .compact_api_generator import CompactApiGenerator
 
 
 class APIRouter:
@@ -23,6 +24,9 @@ class APIRouter:
 
         # Add documentation routes
         self.documentation_router = DocumentationRouter(self.blueprint)
+        
+        # Add compact API generator
+        self.compact_generator = CompactApiGenerator(self)
 
         # Store instance for documentation access
         APIRouter._instance = self

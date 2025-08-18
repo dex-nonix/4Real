@@ -10,6 +10,12 @@ The API Router system is a modular, auto-documenting Flask API framework that au
 - **Enhanced @expose** - Direct schema definition in decorators
 - **No DTOs required** - Schemas defined directly or generated automatically
 
+**🚀 NEW: Compact API Generator**
+- **Compact YAML Overviews** - Human-readable API summaries instead of verbose OpenAPI specs
+- **Auto-Discovery** - Automatically finds all services without hardcoding
+- **Dynamic Categorization** - Groups endpoints by path patterns intelligently
+- **Quick Reference** - Perfect for development, code reviews, and onboarding
+
 ## Architecture
 
 ```
@@ -19,6 +25,7 @@ api_router/
 ├── openapi_generator.py     # OpenAPI 3.0 specification generation
 ├── swagger_ui_generator.py  # Swagger UI HTML generation
 ├── documentation_router.py  # Documentation endpoint management
+├── compact_api_generator.py # 🚀 NEW: Compact YAML generator
 └── README.md               # This documentation
 
 services/
@@ -38,6 +45,7 @@ The main router class that handles service registration, route creation, and req
 - Built-in error handling and logging
 - Service lifecycle management
 - Blueprint integration with Flask
+- **🚀 NEW: Compact API generator integration**
 
 **Usage:**
 ```python
@@ -60,7 +68,71 @@ blueprint = router.blueprint
 - `list_services()`: Get list of registered service names
 - `get_service(service_name)`: Get a specific service instance
 
-### 2. BaseApiService (`base_api_service.py`) 🚀 NEW!
+### 2. CompactApiGenerator (`compact_api_generator.py`) 🚀 NEW!
+
+Generates compact, human-readable YAML overviews of all API endpoints for quick reference.
+
+**Key Features:**
+- **Uses Registered Services** - Works with services already registered in ApiRouter
+- **Dynamic Categorization** - Groups endpoints by path patterns intelligently
+- **No Hardcoding** - Works with any service structure
+- **Clean YAML Output** - Perfect for quick API reference
+- **Simple & Reliable** - No filesystem scanning or import issues
+
+**Endpoints:**
+- **`/api/overview`** - Overview of all registered services
+- **`/api/overview?services=chat,artist`** - Filtered overview of specific services
+
+**Example Output:**
+```yaml
+# COMPACT API OVERVIEW - All Services
+# Generated at: 2024-01-15T10:30:00
+# Services found: 3
+
+# CHAT SERVICE
+chat:
+  sessions:
+    GET /sessions                    # List all sessions
+    POST /sessions                   # Create session
+    GET /sessions/{id}              # Get session by ID
+    PUT /sessions/{id}              # Update session
+    DELETE /sessions/{id}           # Delete session
+    
+  personas:
+    GET /personas                    # List all personas
+    GET /personas/{persona_id}/sessions  # Get persona sessions
+    POST /personas/{persona_id}/start-chat  # Start chat with persona
+    
+  messages:
+    GET /sessions/{id}/messages     # Get session messages
+    POST /sessions/{id}/send        # Send message
+    POST /sessions/{id}/retry       # Retry last message
+
+# ARTIST SERVICE
+artist:
+  artists:
+    GET /artists                     # List all artists
+    POST /artists                    # Create artist
+    GET /artists/{id}               # Get artist by ID
+    PUT /artists/{id}               # Update artist
+    DELETE /artists/{id}            # Delete artist
+```
+
+**Use Cases:**
+- **Development** - Quick API reference during coding
+- **Code Reviews** - Overview of API changes
+- **Documentation** - Simple endpoint listing
+- **Testing** - Quick endpoint discovery
+- **Onboarding** - New developers understanding API structure
+
+**How It Works:**
+1. **Gets registered services** from `api_router.registered_services`
+2. **Filters by query parameter** if specified (`?services=chat,artist`)
+3. **Groups endpoints** by first path segment (e.g., `/sessions` → `sessions` section)
+4. **Generates clean YAML** with method, path, and description
+5. **No filesystem scanning** - only works with actually registered services
+
+### 3. BaseApiService (`base_api_service.py`) 🚀 NEW!
 
 Base class for all API services that provides automatic Swagger documentation generation.
 
@@ -84,7 +156,7 @@ class MyService(BaseApiService):
         return {'items': []}
 ```
 
-### 3. CrudService (`crud_service.py`) 🚀 ENHANCED!
+### 4. CrudService (`crud_service.py`) 🚀 ENHANCED!
 
 Enhanced CRUD service that automatically generates schemas from models and configurations.
 
@@ -120,7 +192,7 @@ class ArtistService(CrudService):
 - **Update Schema**: Model fields excluding ID, timestamps  
 - **Response Schema**: All model fields with proper types
 
-### 4. OpenAPIGenerator (`openapi_generator.py`)
+### 5. OpenAPIGenerator (`openapi_generator.py`)
 
 Handles the generation of OpenAPI 3.0 specifications from registered services.
 
@@ -149,7 +221,7 @@ spec = generator.generate_openapi_spec(services, "chat")
 - Whitespace is automatically trimmed
 - Examples: `"chat"`, `"chat,artists"`, `"chat, artists, albums"`
 
-### 5. SwaggerUIGenerator (`swagger_ui_generator.py`)
+### 6. SwaggerUIGenerator (`swagger_ui_generator.py`)
 
 Generates the Swagger UI HTML interface for API exploration with advanced service filtering.
 
@@ -163,7 +235,7 @@ Generates the Swagger UI HTML interface for API exploration with advanced servic
 - Deep linking support
 - Download URL plugin
 
-### 6. DocumentationRouter (`documentation_router.py`)
+### 7. DocumentationRouter (`documentation_router.py`)
 
 Manages documentation endpoints and integrates the OpenAPI and Swagger UI generators.
 
@@ -291,6 +363,36 @@ class CreateItemDTO(BaseModel):
 ```
 
 ## API Documentation Features
+
+### **NEW: Compact API Overviews** 🚀 NEW!
+
+The Compact API Generator provides quick, human-readable overviews of your API structure:
+
+#### **All Services Overview**
+```
+GET /api/overview
+```
+Returns compact YAML overview of all discovered services.
+
+#### **Single Service Overview**
+```
+GET /api/overview/{service_name}
+```
+Returns compact YAML overview of a specific service.
+
+#### **Raw YAML Output**
+```
+GET /api/overview/{service_name}/yaml
+```
+Returns raw YAML content with proper `text/yaml` content type.
+
+#### **Benefits:**
+- **Quick Reference** - See all endpoints at a glance
+- **Easy Navigation** - Grouped by logical sections
+- **Minimal Noise** - No verbose schema details
+- **Human Readable** - Simple YAML structure
+- **Fast Generation** - No complex schema processing
+- **Version Control Friendly** - Small, focused changes
 
 ### **NEW: Enhanced Schema Generation**
 
@@ -457,6 +559,7 @@ No specific environment variables are required, but the system respects Flask's 
 - **Include request/response schemas** for complex operations
 - **CRUD services**: Schemas generated automatically
 - **Custom services**: Define schemas in decorator
+- **Use compact overviews** for quick reference during development
 
 ### 4. Error Handling
 
@@ -470,6 +573,7 @@ No specific environment variables are required, but the system respects Flask's 
 - Implement caching for expensive operations
 - Monitor service execution times
 - CRUD services automatically optimize schema generation
+- **Compact overviews** are fast and lightweight
 
 ## Examples
 
@@ -579,6 +683,12 @@ router.register_service('chat', ChatService)       # Custom service
    - Check service names match exactly (case-insensitive)
    - Ensure no extra spaces in parameter values
 
+6. **Compact overview not working**
+   - Check that services extend `BaseApiService`
+   - Verify services have `to_swagger` method
+   - Ensure services are properly registered in ApiRouter
+   - Check that services have `get_exposed_methods()` method
+
 ### Debug Mode
 
 Enable Flask debug mode for detailed error information:
@@ -659,6 +769,8 @@ Planned features for upcoming versions:
 - Authentication/authorization hooks
 - **Enhanced schema validation** and generation
 - **Model relationship schemas** for CRUD services
+- **Enhanced compact overviews** with more categorization options
+- **Service health monitoring** and status endpoints
 
 ## Contributing
 
@@ -672,6 +784,7 @@ When contributing to the API router system:
 6. **Use BaseApiService** for new services
 7. **Extend CrudService** for CRUD operations
 8. **Define schemas in decorators** for custom services
+9. **Keep compact overviews** generic and auto-discovering
 
 ## License
 
