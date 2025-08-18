@@ -138,15 +138,17 @@ const handleSessionSelected = async (sessionId) => {
         const response = await chatService.getSession(sessionId);
         console.log('Session response:', response);
         
-        selectedSession.value = response;
-        console.log('Processed session data:', response);
-        addSuccess(`Session "${response.session_name || 'Unnamed'}" loaded successfully`);
+        // Backend returns {data: {...}} - extract the actual session data
+        const sessionData = response?.data || response;
+        selectedSession.value = sessionData;
+        console.log('Processed session data:', sessionData);
+        addSuccess(`Session "${sessionData.session_name || 'Unnamed'}" loaded successfully`);
         
         // Set current history ID from session data (flat reference)
-        if (response.current_history_id) {
-          currentHistoryId.value = response.current_history_id;
+        if (sessionData.current_history_id) {
+          currentHistoryId.value = sessionData.current_history_id;
           console.log('Set currentHistoryId to:', currentHistoryId.value);
-          addInfo(`Using existing history: ${response.current_history_id}`);
+          addInfo(`Using existing history: ${currentHistoryId.value}`);
         } else {
           // Create a new history if none exists
           try {
@@ -154,8 +156,10 @@ const handleSessionSelected = async (sessionId) => {
             const historyResponse = await chatService.createHistory(sessionId, 'New Conversation');
             console.log('History creation response:', historyResponse);
             
-            if (historyResponse && historyResponse.id) {
-              currentHistoryId.value = historyResponse.id;
+            // Backend returns {data: {...}} - extract the actual history data
+            const historyData = historyResponse?.data || historyResponse;
+            if (historyData && historyData.id) {
+              currentHistoryId.value = historyData.id;
             } else {
               console.error('Unexpected history response structure:', historyResponse);
               currentHistoryId.value = null;
@@ -317,19 +321,26 @@ const handlePersonaSelected = async (persona) => {
     console.log('Persona chat started:', response);
     
     if (response) {
-      addSuccess(`Chat started with ${persona.name}`);
+      // Backend returns {data: {...}} - extract the actual session data
+      const sessionData = response?.data || response;
       
-      // Close the persona dialog
-      showPersonaDialog.value = false;
-      
-      // Set the new session as selected
-      selectedSession.value = response;
-      currentSessionId.value = response.id;
-      
-      // Auto-select the new session
-      if (response.id) {
-        console.log('Auto-selecting newly created session:', response.id);
-        await handleSessionSelected(response.id);
+      if (sessionData) {
+        addSuccess(`Chat started with ${persona.name}`);
+        
+        // Close the persona dialog
+        showPersonaDialog.value = false;
+        
+        // Set the new session as selected
+        selectedSession.value = sessionData;
+        currentSessionId.value = sessionData.id;
+        
+        // Auto-select the new session
+        if (sessionData.id) {
+          console.log('Auto-selecting newly created session:', sessionData.id);
+          await handleSessionSelected(sessionData.id);
+        }
+      } else {
+        addError('Failed to start chat: Invalid response structure');
       }
     }
   } catch (error) {
