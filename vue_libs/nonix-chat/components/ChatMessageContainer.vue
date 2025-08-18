@@ -201,19 +201,37 @@ const handleDeleteMessage = async (messageData) => {
 
 // Show tools
 const showTools = async () => {
+  console.log('🔧 showTools called');
+  console.log('🔧 props.selectedSession:', props.selectedSession);
+  console.log('🔧 props.selectedSession?.persona_id:', props.selectedSession?.persona_id);
+  console.log('🔧 chatService available:', !!chatService);
+  
   try {
     toolsLoading.value = true;
     showToolsDialog.value = true;
     
     // Load tools for the current persona
     if (props.selectedSession?.persona_id && chatService) {
+      console.log('🔧 Calling chatService.personaTools with persona_id:', props.selectedSession.persona_id);
       const toolsData = await chatService.personaTools(props.selectedSession.persona_id);
-      availableTools.value = Array.isArray(toolsData) ? toolsData : [];
+      console.log('🔧 Tools data received:', toolsData);
+      
+      // Backend returns {data: Array} - extract the actual tools array
+      let toolsArray = [];
+      if (toolsData && toolsData.data && Array.isArray(toolsData.data)) {
+        toolsArray = toolsData.data;
+      } else if (Array.isArray(toolsData)) {
+        toolsArray = toolsData;
+      }
+      
+      availableTools.value = toolsArray;
+      console.log('🔧 Final availableTools:', availableTools.value);
     } else {
+      console.log('🔧 No persona_id or chatService, setting empty tools');
       availableTools.value = [];
     }
   } catch (error) {
-    console.error('Failed to load tools:', error);
+    console.error('🔧 Failed to load tools:', error);
     availableTools.value = [];
   } finally {
     toolsLoading.value = false;
@@ -317,6 +335,11 @@ defineExpose({
 
     <!-- Input Area - Fixed at bottom -->
     <div class="input-area">
+      <!-- Debug info -->
+      <div class="text-xs text-500 mr-2">
+        Debug: historyId = {{ props.historyId }}, persona_id = {{ props.selectedSession?.persona_id }}
+      </div>
+      
       <!-- Tools Button -->
       <Button 
         icon="pi pi-box" 
