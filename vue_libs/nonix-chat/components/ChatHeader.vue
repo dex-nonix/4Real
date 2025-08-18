@@ -4,7 +4,7 @@ import Avatar from 'primevue/avatar';
 import Button from 'primevue/button';
 import Menu from 'primevue/menu';
 import ConfirmMenuItem from './ConfirmMenuItem.vue';
-import { ref } from 'vue';
+import { ref, inject } from 'vue';
 
 const props = defineProps({
   persona: { type: Object, required: false, default: null },
@@ -13,6 +13,9 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['viewHistory', 'closeChat', 'renameHistory', 'clearMessages', 'deleteSession']);
+
+// Service injection
+const chatService = inject('chat-service');
 
 const isEditingTitle = ref(false);
 const editedTitle = ref('');
@@ -43,6 +46,44 @@ const toggleDeleteMenu = (event) => {
   }
 };
 
+// Handle session deletion directly in ChatHeader
+const handleDeleteSession = async () => {
+  if (!props.currentSession?.id) {
+    console.error('No session to delete');
+    return;
+  }
+
+  try {
+    console.log('Deleting session:', props.currentSession.id);
+    const response = await chatService.deleteSession(props.currentSession.id);
+    console.log('Session deletion response:', response);
+    
+    if (response && response.message) {
+      // Emit success with session info for parent to handle
+      emit('deleteSession', { 
+        success: true, 
+        sessionId: props.currentSession.id, 
+        response 
+      });
+    } else {
+      // Emit error
+      emit('deleteSession', { 
+        success: false, 
+        sessionId: props.currentSession.id, 
+        error: 'Failed to delete session' 
+      });
+    }
+  } catch (error) {
+    console.error('Failed to delete session:', error);
+    // Emit error
+    emit('deleteSession', { 
+      success: false, 
+      sessionId: props.currentSession.id, 
+      error 
+    });
+  }
+};
+
 // Avatar fallback logic with null safety
 const getAvatarDisplay = () => {
   if (!props.persona) {
@@ -67,11 +108,7 @@ const deleteMenuItems = [
   {
     label: 'Delete Session',
     icon: 'pi pi-times',
-    command: () => {
-      if (props.currentSession?.id) {
-        emit('deleteSession', props.currentSession.id);
-      }
-    }
+    command: handleDeleteSession
   }
 ];
 </script>

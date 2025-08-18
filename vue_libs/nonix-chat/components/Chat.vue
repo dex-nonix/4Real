@@ -505,6 +505,27 @@ const handleDeleteMessage = async (deleteResult) => {
   }
 };
 
+// Handle session deletion from ChatHeader
+const handleDeleteSession = async (deleteResult) => {
+  if (deleteResult.success) {
+    addSuccess('Session deleted successfully');
+    console.log('Session deleted:', deleteResult.sessionId);
+    
+    // Clear current session state
+    selectedSession.value = null;
+    currentSessionId.value = null;
+    currentHistoryId.value = null;
+    
+    // Refresh the session list to show updated state
+    // This will trigger a refresh in ChatSessionBar
+    addInfo('Session list will refresh automatically');
+    
+  } else {
+    addError('Failed to delete session', deleteResult.error);
+    console.error('Session deletion failed:', deleteResult.error);
+  }
+};
+
 // Clear errors
 const clearErrors = () => {
   errors.value = [];
@@ -543,6 +564,7 @@ defineExpose({
       @close-chat="handleCloseChat"
       @rename-history="handleRenameHistory"
       @clear-messages="handleClearMessages"
+      @delete-session="handleDeleteSession"
     />
 
     <div class="flex flex-row flex-1" style="min-height: 0; height: 100%;">
