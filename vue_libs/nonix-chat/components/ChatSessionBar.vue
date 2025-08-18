@@ -150,6 +150,14 @@ const handleSessionSelected = (sessionId) => {
 const handleAddSession = () => {
   emit('add-session');
 };
+
+// Expose methods for parent component
+defineExpose({
+  loadSessions,
+  createSession,
+  deleteSession,
+  updateSession
+});
 </script>
 
 <template>

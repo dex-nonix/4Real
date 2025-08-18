@@ -23,6 +23,9 @@ const toast = useToast();
 // Ref to ChatMessageContainer for direct method calls
 const chatMessageContainerRef = ref(null);
 
+// Ref to ChatSessionBar for direct method calls
+const chatSessionBarRef = ref(null);
+
 
 // FLAT STATE MANAGEMENT - NO NESTING, NO GLOBAL CACHE
 // SELECTED ITEMS (single objects, no nesting)
@@ -279,6 +282,12 @@ const handleSessionRemoved = (sessionId) => {
     currentSessionId.value = null;
     addInfo('Current session cleared');
   }
+  
+  // Refresh the session list in ChatSessionBar
+  if (chatSessionBarRef.value && chatSessionBarRef.value.loadSessions) {
+    chatSessionBarRef.value.loadSessions();
+    addInfo('Session list refreshed after deletion');
+  }
 };
 
 // Handle message sending - FLAT DATA
@@ -516,9 +525,24 @@ const handleDeleteSession = async (deleteResult) => {
     currentSessionId.value = null;
     currentHistoryId.value = null;
     
-    // Refresh the session list to show updated state
-    // This will trigger a refresh in ChatSessionBar
-    addInfo('Session list will refresh automatically');
+    // Debug: Check what we have
+    console.log('ChatSessionBar ref:', chatSessionBarRef.value);
+    console.log('ChatSessionBar methods:', chatSessionBarRef.value ? Object.getOwnPropertyNames(chatSessionBarRef.value) : 'No ref');
+    
+    // Actually refresh the session list in ChatSessionBar
+    if (chatSessionBarRef.value && chatSessionBarRef.value.loadSessions) {
+      try {
+        console.log('Calling loadSessions on ChatSessionBar...');
+        await chatSessionBarRef.value.loadSessions();
+        addInfo('Session list refreshed successfully');
+      } catch (error) {
+        console.error('Failed to refresh session list:', error);
+        addWarning('Session list refresh failed, but session was deleted');
+      }
+    } else {
+      console.error('ChatSessionBar ref or loadSessions method not available');
+      addWarning('Could not refresh session list - component not ready');
+    }
     
   } else {
     addError('Failed to delete session', deleteResult.error);
@@ -569,6 +593,7 @@ defineExpose({
 
     <div class="flex flex-row flex-1" style="min-height: 0; height: 100%;">
       <ChatSessionBar
+        ref="chatSessionBarRef"
         :current-session-id="currentSessionId"
         @session-selected="handleSessionSelected"
         @add-session="handleAddPersona"
