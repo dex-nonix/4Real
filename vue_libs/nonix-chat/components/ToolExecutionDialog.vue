@@ -12,14 +12,12 @@
       <p class="text-600 mb-3 text-sm">{{ selectedTool.description }}</p>
 
       <!-- Dynamic Form for Parameters -->
-      <DynamicForm 
+      <DynamicForm
         v-if="selectedTool.parameters && selectedTool.parameters.length > 0"
         :config="formConfig"
         :initial-data="toolFormData"
-        :mode="'edit'"
-        :compact="false"
         :submit-label="'Execute Tool'"
-        @submit="executeTool"
+        @submit="handleFormSubmit"
         @cancel="closeDialog"
       />
       
@@ -35,6 +33,7 @@
 <script setup>
 import { ref, defineExpose, defineEmits, computed } from 'vue';
 import Dialog from 'primevue/dialog';
+import Button from 'primevue/button';
 import DynamicForm from '@nonix/dynamic-form/DynamicForm.vue';
 
 // Props
@@ -52,23 +51,24 @@ const toolFormData = ref({});
 // Dynamic form configuration computed from tool parameters
 const formConfig = computed(() => {
   if (!props.selectedTool?.parameters) return { fields: [] };
-  
+
   const config = {
     fields: props.selectedTool.parameters.map(param => ({
-      key: param.name,
-      label: param.name,
-      type: param.type.includes('int') ? 'number' : 'text',
-      required: param.required,
+      key: param.name,                    // REQUIRED: unique identifier
+      type: 'text',                       // REQUIRED: widget type
+      label: param.name,                  // REQUIRED: display label
+      required: param.required,           // OPTIONAL: validation
       props: {
         placeholder: param.name,
+        class: 'w-full',
         ...(param.default !== null && { default: param.default })
       }
     }))
   };
-  
+
   console.log('🔧 Form config generated:', config);
   console.log('🔧 Tool parameters:', props.selectedTool.parameters);
-  
+
   return config;
 });
 
@@ -91,12 +91,21 @@ const closeDialog = () => {
   toolFormData.value = {};
 };
 
-const executeTool = (submitData) => {
-  console.log('🔧 Submit data received:', submitData);
+const handleFormSubmit = (formData) => {
+  console.log('🔧 Form submitted with data:', formData);
   
-  // The submitData contains the form data directly
-  // Based on working examples, it should have the form values
-  const args = submitData || {};
+  // Extract the actual form data from the submit event
+  let args = {};
+  
+  if (formData && typeof formData === 'object') {
+    // Use changedValues if available, otherwise fall back to __full
+    if (formData.__full) {
+      args = { ...formData.__full };
+    } else if (Object.keys(formData).length > 0) {
+      args = { ...formData };
+    }
+  }
+  
   console.log('🔧 Final args to send:', args);
   
   emit('execute-tool', {
