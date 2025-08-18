@@ -1,36 +1,77 @@
 <script setup>
-import { ref, computed, onMounted, inject, watch } from 'vue';
-import InputText from 'primevue/inputtext';
+import { ref, computed, onMounted, inject, nextTick } from 'vue';
 import Button from 'primevue/button';
+import InputText from 'primevue/inputtext';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
-import chatMessageTypeManager from './ChatMessageTypeManager.js';
+import Menu from 'primevue/menu';
+import Badge from 'primevue/badge';
+import ErrorDialog from './ErrorDialog.vue';
 import MessageContainer from './message-types/MessageContainer.vue';
 import TextMessage from './message-types/TextMessage.vue';
 import SystemMessage from './message-types/SystemMessage.vue';
 import ToolMessage from './message-types/ToolMessage.vue';
 import UserMessage from './message-types/UserMessage.vue';
+import chatMessageTypeManager from './ChatMessageTypeManager.js';
 
 const props = defineProps({
-  sessionId: { type: [String, Number, null], required: true },
-  historyId: { type: [String, Number, null], required: false, default: null },
-  currentUserId: { type: [String, Number], required: true, default: 'user-self' },
-  selectedSession: { type: Object, required: false, default: null },
-  availableTools: { type: Array, default: () => [] }
+  sessionId: { type: [String, Number], required: true },
+  historyId: { type: [String, Number], required: true },
+  currentUserId: { type: String, required: true },
+  selectedSession: { type: Object, required: true },
+  errors: { type: Array, required: false, default: () => [] }
 });
 
-const emit = defineEmits(['sendMessage', 'regenerateResponse', 'showTools', 'deleteMessage', 'error']);
+const emit = defineEmits(['send-message', 'delete-message', 'refresh-messages', 'error', 'delete-error', 'clear-all-errors', 'copy-error', 'showTools']);
 
 // Service injection
 const chatService = inject('chat-service');
+
+// Error management
+const showErrorDialog = ref(false);
+const moreMenu = ref();
+
+// Show error dialog
+const showErrors = () => {
+  showErrorDialog.value = true;
+};
+
+// Toggle more menu
+const toggleMoreMenu = (event) => {
+  moreMenu.value.toggle(event);
+};
+
+// Menu items
+const moreMenuItems = computed(() => [
+  {
+    label: 'Show Errors',
+    icon: 'pi pi-exclamation-triangle',
+    command: showErrors,
+    badge: props.errors.length > 0 ? props.errors.length : null
+  }
+]);
+
+// Error handling methods - emit to parent
+const deleteError = (errorId) => {
+  emit('delete-error', errorId);
+};
+
+const clearAllErrors = () => {
+  emit('clear-all-errors');
+};
+
+const copyError = (error) => {
+  emit('copy-error', error);
+};
 
 // State management - session-specific
 const messages = ref([]);
 const inputText = ref('');
 const loading = ref(false);
+const hasHistory = computed(() => !!props.historyId);
 
-// Session-specific input text storage
-const sessionInputTexts = ref(new Map());
+// Session input text storage
+const sessionInputTexts = new Map();
 
 // Register all message types with the manager
 onMounted(() => {
@@ -40,73 +81,34 @@ onMounted(() => {
   chatMessageTypeManager.registerMessageType('user', UserMessage);
 });
 
-// Load messages for specific history
+// Load messages for a specific history
 const loadMessages = async (historyId) => {
-  if (!historyId || !chatService) {
-    return;
-  }
+  if (!historyId || !chatService) return;
   
   try {
     loading.value = true;
+    const response = await chatService.getHistoryMessages(props.sessionId, historyId);
     
-    // Use the new ChatService method that requires both sessionId and historyId
-    if (!props.selectedSession?.id) {
+    if (response && response.data) {
+      messages.value = response.data;
+    } else {
       messages.value = [];
-      return;
     }
-    
-    const sessionId = props.selectedSession.id;
-    const response = await chatService.getHistoryMessages(sessionId, historyId);
-    
-    // Backend returns {data: [...], total: X} - extract the actual messages array
-    const messagesData = response?.data || response || [];
-    
-    // Force Vue to detect the change by creating a new array
-    messages.value = [...messagesData];
-    
-    console.log('Messages loaded successfully:', messages.value.length);
-    
   } catch (error) {
     console.error('Failed to load messages:', error);
     messages.value = [];
-    // Emit error to parent component for toast notification
-    emit('error', {
-      message: 'Failed to load messages',
-      details: error
-    });
+    emit('error', { message: 'Failed to load messages', details: error });
   } finally {
     loading.value = false;
   }
 };
 
-// Load messages when historyId changes
-watch(() => props.historyId, async (newHistoryId) => {
-  if (newHistoryId) {
-    await loadMessages(newHistoryId);
-  } else {
-    messages.value = [];
+// Load messages on mount
+onMounted(async () => {
+  if (props.historyId) {
+    await loadMessages(props.historyId);
   }
-}, { immediate: true });
-
-// React to selectedSession changes
-watch(() => props.selectedSession, (newSession, oldSession) => {
-  if (newSession) {
-    // Save input text for previous session if it exists
-    if (oldSession && oldSession.id) {
-      sessionInputTexts.value.set(oldSession.id, inputText.value);
-    }
-    
-    // Load input text for new session
-    if (newSession.id) {
-      inputText.value = sessionInputTexts.value.get(newSession.id) || '';
-    }
-    
-    // Load messages for the new session if we have a history
-    if (props.historyId) {
-      loadMessages(props.historyId);
-    }
-  }
-}, { immediate: true });
+});
 
 // Send message
 const onSend = async () => {
@@ -120,11 +122,11 @@ const onSend = async () => {
     
     // Save current input text for this session before clearing
     if (props.selectedSession?.id) {
-      sessionInputTexts.value.set(props.selectedSession.id, inputText.value);
+      sessionInputTexts.set(props.selectedSession.id, inputText.value);
     }
     
     // Emit event for parent component
-    emit('sendMessage', messageData);
+    emit('send-message', messageData);
     
     // Clear input after sending
     inputText.value = '';
@@ -156,12 +158,12 @@ const handleDeleteMessage = async (messageData) => {
       messages.value = messages.value.filter(msg => msg.id !== messageData.messageId);
       
       // Emit success to parent for toast notification
-      emit('deleteMessage', { success: true, messageData, response });
+      emit('delete-message', { success: true, messageData, response });
     }
   } catch (error) {
     console.error('Failed to delete message:', error);
     // Emit error to parent for toast notification
-    emit('deleteMessage', { success: false, messageData, error });
+    emit('delete-message', { success: false, messageData, error });
   }
 };
 
@@ -177,28 +179,21 @@ const clearLocalMessages = () => {
 
 // Get the appropriate component for each message
 const getMessageComponent = (message) => {
-  const messageType = message.message_type || 'text';
-  const component = chatMessageTypeManager.getMessageType(messageType);
-  return component;
+  return chatMessageTypeManager.getComponent(message.type);
 };
 
-// Check if message has a valid type
+// Check if message has valid type
 const hasValidMessageType = (message) => {
-  const messageType = message.message_type || 'text';
-  const hasType = chatMessageTypeManager.hasMessageType(messageType);
-  return hasType;
+  return chatMessageTypeManager.hasValidType(message.type);
 };
 
 // Computed values
-const hasHistory = computed(() => !!props.historyId);
 const canSendMessage = computed(() => hasHistory.value && inputText.value?.trim());
 
 // Expose methods for parent component
 defineExpose({
   loadMessages,
-  clearLocalMessages,
-  refreshMessages: () => loadMessages(props.historyId),
-  triggerRefresh: () => loadMessages(props.historyId)
+  clearLocalMessages
 });
 </script>
 
@@ -263,14 +258,43 @@ defineExpose({
       </span>
 
       <!-- Options Button -->
-      <Button 
-        icon="pi pi-ellipsis-h" 
-        text 
-        rounded 
-        severity="secondary"
-        :disabled="!hasHistory"
-      />
+      <div class="relative">
+        <Button 
+          icon="pi pi-ellipsis-h" 
+          text 
+          rounded 
+          severity="secondary"
+          :disabled="!hasHistory"
+          @click="toggleMoreMenu"
+          aria-haspopup="true"
+          aria-controls="more_menu"
+        />
+        <Badge 
+          v-if="props.errors.length > 0" 
+          :value="props.errors.length" 
+          severity="danger" 
+          class="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2"
+        />
+      </div>
     </div>
+
+    <!-- More Menu -->
+    <Menu 
+      ref="moreMenu" 
+      id="more_menu" 
+      :model="moreMenuItems" 
+      :popup="true"
+    />
+
+    <!-- Error Dialog -->
+    <ErrorDialog
+      :visible="showErrorDialog"
+      :errors="props.errors"
+      @update:visible="showErrorDialog = $event"
+      @delete-error="deleteError"
+      @clear-all="clearAllErrors"
+      @copy-error="copyError"
+    />
   </div>
 </template>
 

@@ -516,6 +516,20 @@ const clearErrors = () => {
   addInfo('Error log cleared');
 };
 
+// Delete single error
+const deleteError = (errorId) => {
+  const index = errors.value.findIndex(e => e.id === errorId);
+  if (index !== -1) {
+    errors.value.splice(index, 1);
+    addSuccess('Error removed from log');
+  }
+};
+
+// Copy error to clipboard
+const copyError = (error) => {
+  addInfo('Error details copied to clipboard');
+};
+
 // Export methods for parent components
 defineExpose({
   handleSessionSelected,
@@ -563,21 +577,6 @@ defineExpose({
       <!-- Tab-based architecture: One ChatMessageContainer per session -->
       <div class="flex-1 relative" style="height: 100%; min-height: 0;">
         
-        <!-- Error display -->
-        <div v-if="errors.length > 0" class="p-2 surface-100 border-round">
-          <div class="flex align-items-center justify-content-between mb-2">
-            <h4 class="m-0 text-red-500">Errors ({{ errors.length }})</h4>
-            <Button label="Clear" size="small" severity="secondary" @click="clearErrors" />
-          </div>
-          <div v-for="error in errors.slice(-3)" :key="error.id" class="p-2 mb-2 surface-200 border-round">
-            <div class="text-red-600 font-semibold">{{ error.message }}</div>
-            <div v-if="error.details" class="text-xs text-500 mt-1">
-              {{ typeof error.details === 'object' ? JSON.stringify(error.details, null, 2) : error.details }}
-            </div>
-            <div class="text-xs text-400 mt-1">{{ new Date(error.timestamp).toLocaleTimeString() }}</div>
-          </div>
-        </div>
-        
         <!-- Loading indicator -->
         <div v-if="isLoading" class="flex justify-content-center align-items-center p-4">
           <ProgressSpinner style="width: 50px; height: 50px" />
@@ -592,10 +591,14 @@ defineExpose({
             :history-id="currentHistoryId"
             :current-user-id="currentUserId"
             :selected-session="selectedSession"
+            :errors="errors"
             @send-message="handleSendMessage"
             @delete-message="handleDeleteMessage"
             @refresh-messages="refreshMessages"
             @error="(errorData) => addError(errorData.message, errorData.details)"
+            @delete-error="deleteError"
+            @clear-all-errors="clearErrors"
+            @copy-error="copyError"
           />
         </div>
         
