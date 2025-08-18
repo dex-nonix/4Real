@@ -59,14 +59,13 @@ const handleDeleteSession = async () => {
     console.log('Session deletion response:', response);
     
     if (response && response.message) {
-      // Emit success with session info for parent to handle
+      // Simple success event - let parent handle UI updates
       emit('deleteSession', { 
         success: true, 
-        sessionId: props.currentSession.id, 
-        response 
+        sessionId: props.currentSession.id 
       });
     } else {
-      // Emit error
+      // Simple error event
       emit('deleteSession', { 
         success: false, 
         sessionId: props.currentSession.id, 
@@ -75,7 +74,7 @@ const handleDeleteSession = async () => {
     }
   } catch (error) {
     console.error('Failed to delete session:', error);
-    // Emit error
+    // Simple error event
     emit('deleteSession', { 
       success: false, 
       sessionId: props.currentSession.id, 

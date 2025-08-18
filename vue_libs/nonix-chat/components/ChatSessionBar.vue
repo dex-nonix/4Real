@@ -1,6 +1,6 @@
 <!-- ChatSessionBar.vue -->
 <script setup>
-import { ref, onMounted, inject } from 'vue';
+import { ref, onMounted, inject, watch } from 'vue';
 import Button from 'primevue/button';
 import Divider from 'primevue/divider';
 import Avatar from 'primevue/avatar';
@@ -22,6 +22,15 @@ const loading = ref(false);
 onMounted(async () => {
   await loadSessions();
 });
+
+// Auto-refresh sessions when currentSessionId changes (e.g., when session is deleted)
+watch(() => props.currentSessionId, async (newId, oldId) => {
+  // If we had a session selected and now we don't, refresh the list
+  if (oldId && !newId) {
+    console.log('Session cleared, refreshing session list...');
+    await loadSessions();
+  }
+}, { immediate: false });
 
 // Load all sessions
 const loadSessions = async () => {
@@ -80,31 +89,6 @@ const createSession = async (personaId, sessionName) => {
   }
 };
 
-// Delete session
-const deleteSession = async (sessionId) => {
-  try {
-    await chatService.deleteSession(sessionId);
-    
-    // Remove from local sessions
-    const index = sessions.value.findIndex(s => s.id === sessionId);
-    if (index !== -1) {
-      sessions.value.splice(index, 1);
-    }
-    
-    // Emit session removed event
-    emit('session-removed', sessionId);
-    
-    return true;
-  } catch (error) {
-    console.error('Failed to delete session:', error);
-    emit('error', {
-      message: 'Failed to delete session',
-      details: error
-    });
-    throw error;
-  }
-};
-
 // Update session
 const updateSession = async (sessionId, data) => {
   try {
@@ -155,7 +139,6 @@ const handleAddSession = () => {
 defineExpose({
   loadSessions,
   createSession,
-  deleteSession,
   updateSession
 });
 </script>

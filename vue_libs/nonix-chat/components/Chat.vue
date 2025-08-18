@@ -23,9 +23,6 @@ const toast = useToast();
 // Ref to ChatMessageContainer for direct method calls
 const chatMessageContainerRef = ref(null);
 
-// Ref to ChatSessionBar for direct method calls
-const chatSessionBarRef = ref(null);
-
 
 // FLAT STATE MANAGEMENT - NO NESTING, NO GLOBAL CACHE
 // SELECTED ITEMS (single objects, no nesting)
@@ -269,27 +266,6 @@ const handleSessionAdded = (newSession) => {
   addSuccess(`New session "${newSession.session_name || 'Unnamed'}" created successfully`);
 };
 
-// Handle session removed from ChatSessionBar
-const handleSessionRemoved = (sessionId) => {
-  console.log('Session removed:', sessionId);
-  addSuccess('Session removed successfully');
-  
-  // If the removed session was selected, clear selection
-  if (currentSessionId.value === sessionId) {
-    selectedSession.value = null;
-    selectedHistory.value = null;
-    currentHistoryId.value = null;
-    currentSessionId.value = null;
-    addInfo('Current session cleared');
-  }
-  
-  // Refresh the session list in ChatSessionBar
-  if (chatSessionBarRef.value && chatSessionBarRef.value.loadSessions) {
-    chatSessionBarRef.value.loadSessions();
-    addInfo('Session list refreshed after deletion');
-  }
-};
-
 // Handle message sending - FLAT DATA
 const handleSendMessage = async (messageData) => {
   if (!messageData?.historyId || !chatService || !currentSessionId.value) {
@@ -525,24 +501,8 @@ const handleDeleteSession = async (deleteResult) => {
     currentSessionId.value = null;
     currentHistoryId.value = null;
     
-    // Debug: Check what we have
-    console.log('ChatSessionBar ref:', chatSessionBarRef.value);
-    console.log('ChatSessionBar methods:', chatSessionBarRef.value ? Object.getOwnPropertyNames(chatSessionBarRef.value) : 'No ref');
-    
-    // Actually refresh the session list in ChatSessionBar
-    if (chatSessionBarRef.value && chatSessionBarRef.value.loadSessions) {
-      try {
-        console.log('Calling loadSessions on ChatSessionBar...');
-        await chatSessionBarRef.value.loadSessions();
-        addInfo('Session list refreshed successfully');
-      } catch (error) {
-        console.error('Failed to refresh session list:', error);
-        addWarning('Session list refresh failed, but session was deleted');
-      }
-    } else {
-      console.error('ChatSessionBar ref or loadSessions method not available');
-      addWarning('Could not refresh session list - component not ready');
-    }
+    // ChatSessionBar will auto-refresh when it detects the change
+    addInfo('Session state cleared, sidebar will update automatically');
     
   } else {
     addError('Failed to delete session', deleteResult.error);
@@ -561,7 +521,6 @@ defineExpose({
   handleSessionSelected,
   handleSessionsLoaded,
   handleSessionAdded,
-  handleSessionRemoved,
   handleSendMessage,
   handleAddPersona,
   handlePersonaSelected,
@@ -593,13 +552,11 @@ defineExpose({
 
     <div class="flex flex-row flex-1" style="min-height: 0; height: 100%;">
       <ChatSessionBar
-        ref="chatSessionBarRef"
         :current-session-id="currentSessionId"
         @session-selected="handleSessionSelected"
         @add-session="handleAddPersona"
         @sessions-loaded="handleSessionsLoaded"
         @session-added="handleSessionAdded"
-        @session-removed="handleSessionRemoved"
         @error="(errorData) => addError(errorData.message, errorData.details)"
       />
       
