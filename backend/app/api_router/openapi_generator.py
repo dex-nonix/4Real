@@ -51,8 +51,7 @@ class OpenAPIGenerator:
                 if 'paths' in service_swagger:
                     paths.update(service_swagger['paths'])
             
-            # Process exposed methods for additional paths (ONLY for services WITHOUT to_swagger)
-            if not hasattr(service, 'to_swagger'):
+
                 for attr_name in dir(service):
                     method = getattr(service, attr_name)
                     if hasattr(method, '_exposed'):
@@ -76,14 +75,43 @@ class OpenAPIGenerator:
                                         processed_tags.append(tag)
                                 tags.extend(processed_tags)
                             else:
-                                # If no tags provided, use service name as default
-                                tags.append(service_name.title())
+                                # If no tags provided, use service name as default (lowercase like CRUD services)
+                                tags.append(service_name)
                         else:
-                            # If no _tags attribute, use service name as default
-                            tags.append(service_name.title())
+                            # If no _tags attribute, use service name as default (lowercase like CRUD services)
+                            tags.append(service_name)
         
-        # Remove duplicate tags and sort them alphabetically
-        unique_tags = [{"name": tag} for tag in sorted(set(tags))]
+        # Remove duplicate tags and sort them alphabetically by lowercase
+        print(f"🔍 DEBUG: Final tags list before sorting: {tags}")
+        
+        # Convert to set to remove duplicates, then sort by lowercase
+        print(f"🔍 DEBUG: Raw tags before set: {tags}")
+        print(f"🔍 DEBUG: Tags after set(): {set(tags)}")
+        
+        # Force the sorting to work - sort by lowercase service names
+        unique_tag_names = list(set(tags))
+        print(f"🔍 DEBUG: Tags before sorting: {unique_tag_names}")
+        
+        # Sort alphabetically by lowercase - this should put "chat" before "ai-analysis-results"
+        unique_tag_names.sort(key=lambda x: x.lower())
+        print(f"🔍 DEBUG: Tags after lambda sort: {unique_tag_names}")
+        
+        # Double-check the sorting worked
+        if len(unique_tag_names) > 1:
+            first_tag = unique_tag_names[0].lower()
+            second_tag = unique_tag_names[1].lower()
+            print(f"🔍 DEBUG: First tag '{first_tag}' vs Second tag '{second_tag}' - should be alphabetical")
+            if first_tag > second_tag:
+                print(f"🔍 DEBUG: SORTING FAILED! '{first_tag}' > '{second_tag}'")
+                # Force correct order
+                unique_tag_names.sort(key=str.lower)
+                print(f"🔍 DEBUG: After forced sort: {unique_tag_names}")
+        
+        # Create the final format
+        unique_tags = [{"name": tag} for tag in unique_tag_names]
+        print(f"🔍 DEBUG: Final unique_tags: {unique_tags}")
+        
+
         
         return {
             "openapi": "3.0.0",

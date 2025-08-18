@@ -83,7 +83,6 @@ class ChatService(BaseApiService):
     @expose(
         '/sessions', 
         methods=['POST'], 
-        tags=["Chat"],
         status_codes={201: 'Created', 400: 'Bad Request'},
         # 🚀 NEW: Define request/response types in decorator
         request_schema={

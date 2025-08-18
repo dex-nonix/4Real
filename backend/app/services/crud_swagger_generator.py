@@ -10,11 +10,11 @@ class CrudSwaggerGenerator:
         self.service = service
         self.service_name = service_name
 
-    def method_to_swagger(self, method: Callable) -> Dict[str, Any]:
+    def method_to_swagger(self, method: Callable, service_name: str) -> Dict[str, Any]:
         """ONLY CRUD service overrides this - adds dynamic model schemas."""
         
         # Get base method info from BaseApiService
-        method_info = self.service.__class__.__bases__[0]().method_to_swagger(method)
+        method_info = self.service.__class__.__bases__[0]().method_to_swagger(method, service_name)
         method_name = method.__name__
         
         # Add model-based schemas for CRUD operations

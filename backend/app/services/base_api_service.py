@@ -23,7 +23,7 @@ class BaseApiService(ABC):
         
         for method_info in exposed_methods:
             method = getattr(self, method_info['name'])
-            swagger_info = self.method_to_swagger(method)
+            swagger_info = self.method_to_swagger(method, service_name)
             
             # Add service prefix to path for Swagger (matching API Router behavior)
             raw_path = swagger_info['path']
@@ -68,7 +68,7 @@ class BaseApiService(ABC):
         
         return exposed_methods
     
-    def method_to_swagger(self, method: Callable) -> Dict[str, Any]:
+    def method_to_swagger(self, method: Callable, service_name: str) -> Dict[str, Any]:
         """DEFAULT: Convert @expose method to Swagger format. ALL subclasses use this by default."""
         
         # Extract ALL info from @expose decorator
@@ -88,8 +88,8 @@ class BaseApiService(ABC):
             summary = f"{method.__name__.replace('_', ' ').title()}"
         if not description:
             description = f"Endpoint for {method.__name__.replace('_', ' ')}"
-        if not tags:
-            tags = [self.__class__.__name__.replace('Service', '').title()]
+        # SERVICE NAME IS THE ONLY TAG - ALL SERVICES HAVE A NAME
+        tags = [service_name]
         if not status_codes:
             status_codes = {200: 'Success', 400: 'Bad Request', 500: 'Internal Server Error'}
         
