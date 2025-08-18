@@ -2,123 +2,57 @@
 <template>
   <Dialog 
     v-model:visible="dialogVisible" 
-    :header="`Configure Tool: ${selectedTool}`" 
+    :header="`Configure Tool: ${selectedTool?.name || 'Unknown Tool'}`" 
     modal 
     :style="{ width: '500px' }"
   >
     <div v-if="selectedTool" class="tool-form">
-      <!-- Dynamic form based on tool type -->
+      <!-- Tool Description -->
       <div class="mb-3">
+        <p class="text-600 mb-3">{{ selectedTool.description }}</p>
+      </div>
+
+      <!-- Dynamic Parameters Form -->
+      <div v-if="selectedTool.parameters && selectedTool.parameters.length > 0" class="mb-3">
         <label class="block text-900 font-medium mb-2">Tool Parameters</label>
         
-        <!-- Artist tools -->
-        <div v-if="selectedTool.startsWith('artist:')" class="space-y-3">
-          <div v-if="selectedTool === 'artist:get_info'">
-            <label class="block text-700 text-sm mb-1">Artist ID</label>
+        <div class="space-y-3">
+          <div v-for="param in selectedTool.parameters" :key="param.name" class="parameter-field">
+            <label class="block text-700 text-sm mb-1">
+              {{ param.name }}
+              <span v-if="param.required" class="text-red-500">*</span>
+              <span v-else class="text-500 text-xs">(optional)</span>
+            </label>
+            
+            <!-- Input based on parameter type -->
             <InputText 
-              v-model="toolFormData.artist_id" 
-              placeholder="Enter artist ID (e.g., 1)" 
+              v-if="param.type.includes('int')"
+              v-model="toolFormData[param.name]" 
+              :placeholder="`Enter ${param.name}${param.default ? ` (default: ${param.default})` : ''}`"
               class="w-full"
               type="number"
             />
-          </div>
-          <div v-if="selectedTool === 'artist:list_albums'">
-            <label class="block text-700 text-sm mb-1">Artist ID</label>
             <InputText 
-              v-model="toolFormData.artist_id" 
-              placeholder="Enter artist ID (e.g., 1)" 
+              v-else
+              v-model="toolFormData[param.name]" 
+              :placeholder="`Enter ${param.name}${param.default ? ` (default: ${param.default})` : ''}`"
               class="w-full"
-              type="number"
+              type="text"
             />
-            <label class="block text-700 text-sm mb-1 mt-2">Page</label>
-            <InputText 
-              v-model="toolFormData.page" 
-              placeholder="Page number (default: 1)" 
-              class="w-full"
-              type="number"
-            />
-            <label class="block text-700 text-sm mb-1 mt-2">Page Size</label>
-            <InputText 
-              v-model="toolFormData.page_size" 
-              placeholder="Items per page (default: 20)" 
-              class="w-full"
-              type="number"
-            />
+            
+            <!-- Parameter info -->
+            <div class="text-xs text-500 mt-1">
+              Type: {{ param.type.replace('<class \'', '').replace('\'>', '') }}
+              <span v-if="param.default !== null"> | Default: {{ param.default }}</span>
+            </div>
           </div>
         </div>
-
-        <!-- Album tools -->
-        <div v-if="selectedTool.startsWith('album:')" class="space-y-3">
-          <div v-if="selectedTool === 'album:get_info'">
-            <label class="block text-700 text-sm mb-1">Album ID</label>
-            <InputText 
-              v-model="toolFormData.album_id" 
-              placeholder="Enter album ID" 
-              class="w-full"
-              type="number"
-            />
-          </div>
-          <div v-if="selectedTool === 'album:list_tracks'">
-            <label class="block text-700 text-sm mb-1">Album ID</label>
-            <InputText 
-              v-model="toolFormData.album_id" 
-              placeholder="Enter album ID" 
-              class="w-full"
-              type="number"
-            />
-          </div>
-        </div>
-
-        <!-- File tools -->
-        <div v-if="selectedTool.startsWith('file:')" class="space-y-3">
-          <div v-if="selectedTool === 'file:list_artist_files'">
-            <label class="block text-700 text-sm mb-1">Artist ID</label>
-            <InputText 
-              v-model="toolFormData.artist_id" 
-              placeholder="Enter artist ID" 
-              class="w-full"
-              type="number"
-            />
-          </div>
-          <div v-if="selectedTool === 'file:read_lyrics'">
-            <label class="block text-700 text-sm mb-1">File ID</label>
-            <InputText 
-              v-model="toolFormData.file_id" 
-              placeholder="Enter file ID" 
-              class="w-full"
-              type="number"
-            />
-          </div>
-        </div>
-
-        <!-- Track tools -->
-        <div v-if="selectedTool.startsWith('track:')" class="space-y-3">
-          <div v-if="selectedTool === 'track:get_info'">
-            <label class="block text-700 text-sm mb-1">Track ID</label>
-            <InputText 
-              v-model="toolFormData.track_id" 
-              placeholder="Enter track ID" 
-              class="w-full"
-              type="number"
-            />
-          </div>
-          <div v-if="selectedTool === 'track:list_by_album'">
-            <label class="block text-700 text-sm mb-1">Album ID</label>
-            <InputText 
-              v-model="toolFormData.album_id" 
-              placeholder="Enter album ID" 
-              class="w-full"
-              type="number"
-            />
-          </div>
-        </div>
-
-        <!-- Style tools -->
-        <div v-if="selectedTool.startsWith('style:')" class="space-y-3">
-          <div v-if="selectedTool === 'style:list_all'">
-            <p class="text-500 text-sm">No parameters needed for this tool.</p>
-          </div>
-        </div>
+      </div>
+      
+      <!-- No Parameters Message -->
+      <div v-else class="text-center p-4">
+        <i class="pi pi-check-circle text-2xl text-500 mb-2"></i>
+        <p class="text-500">No parameters needed for this tool.</p>
       </div>
     </div>
 
@@ -148,7 +82,7 @@ import Button from 'primevue/button';
 
 // Props
 const props = defineProps({
-  selectedTool: { type: String, required: false, default: null }
+  selectedTool: { type: Object, required: false, default: null }
 });
 
 // Emits
@@ -159,8 +93,16 @@ const dialogVisible = ref(false);
 const toolFormData = ref({});
 
 // Functions to control the dialog
-const openDialog = (toolName) => {
+const openDialog = (toolData) => {
+  // Initialize form data with default values from tool signature
   toolFormData.value = {};
+  if (toolData && toolData.parameters) {
+    for (const param of toolData.parameters) {
+      if (param.default !== null) {
+        toolFormData.value[param.name] = param.default;
+      }
+    }
+  }
   dialogVisible.value = true;
 };
 
@@ -171,7 +113,7 @@ const closeDialog = () => {
 
 const executeTool = () => {
   emit('execute-tool', {
-    tool: props.selectedTool,
+    tool: props.selectedTool.name,
     args: toolFormData.value
   });
   closeDialog();

@@ -54,8 +54,62 @@ def build_persona_tool_map(persona_id: int) -> Dict[str, Callable[..., Any]]:
     return tools
 
 
-def list_persona_tools(persona_id: int) -> list[str]:
-    return sorted(list(build_persona_tool_map(persona_id).keys()))
+def list_persona_tools(persona_id: int) -> list[dict]:
+    """Return tool signatures for a persona with artist_id filtered out if applicable."""
+    persona = Persona.query.filter_by(id=persona_id).first()
+    artist_id = getattr(persona, 'artist_id', None) if persona else None
+    
+    tools_info = []
+    active_tools = InternalTool.query.filter_by(is_active=True).all()
+    patterns = PersonaToolAccess.query.filter_by(persona_id=persona_id, allow=True).all()
+    
+    for tool in active_tools:
+        qname = tool.qualified_name
+        if not any(_pattern_matches(p.pattern, qname) for p in patterns):
+            continue
+            
+        func = internal_tool_registry.get(qname)
+        if not callable(func):
+            continue
+            
+        # Analyze function signature
+        try:
+            sig = inspect.signature(func)
+            params = []
+            
+            for param_name, param in sig.parameters.items():
+                # Skip artist_id if persona has artist_id (it will be pre-bound)
+                if artist_id is not None and param_name == 'artist_id':
+                    continue
+                    
+                param_info = {
+                    'name': param_name,
+                    'type': str(param.annotation) if param.annotation != inspect.Parameter.empty else 'any',
+                    'required': param.default == inspect.Parameter.empty,
+                    'default': param.default if param.default != inspect.Parameter.empty else None
+                }
+                params.append(param_info)
+            
+            tool_info = {
+                'name': qname,
+                'description': tool.description or f'Execute {qname}',
+                'parameters': params,
+                'has_artist_id_bound': artist_id is not None and any(p.name == 'artist_id' for p in sig.parameters.values())
+            }
+            
+            tools_info.append(tool_info)
+            
+        except Exception:  # noqa: BLE001
+            # Fallback to basic info if signature analysis fails
+            tool_info = {
+                'name': qname,
+                'description': tool.description or f'Execute {qname}',
+                'parameters': [],
+                'has_artist_id_bound': False
+            }
+            tools_info.append(tool_info)
+    
+    return sorted(tools_info, key=lambda x: x['name'])
 
 
 def execute_tool(persona_id: int, tool_name: str, args: Dict[str, Any] | None = None) -> Dict[str, Any]:

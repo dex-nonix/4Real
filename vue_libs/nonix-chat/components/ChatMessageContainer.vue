@@ -263,10 +263,10 @@ const executeTool = async (toolName) => {
 };
 
 // Select tool and show parameter form
-const selectTool = (toolName) => {
-  selectedTool.value = toolName;
+const selectTool = (toolData) => {
+  selectedTool.value = toolData;
   if (toolExecutionDialogRef.value) {
-    toolExecutionDialogRef.value.openDialog(toolName);
+    toolExecutionDialogRef.value.openDialog(toolData);
   }
 };
 
@@ -442,11 +442,12 @@ defineExpose({
       :style="{ width: '600px' }"
     >
       <div v-if="availableTools.length > 0" class="tools-list">
-        <div v-for="tool in availableTools" :key="tool" class="tool-item p-3 surface-100 border-round mb-2">
+        <div v-for="tool in availableTools" :key="tool.name" class="tool-item p-3 surface-100 border-round mb-2">
           <div class="flex align-items-center gap-3">
             <i class="pi pi-wrench text-primary"></i>
             <div class="flex-1">
-              <span class="font-mono text-sm">{{ tool }}</span>
+              <div class="font-mono text-sm">{{ tool.name }}</div>
+              <div class="text-xs text-600">{{ tool.description }}</div>
             </div>
             <Button 
               icon="pi pi-play" 
