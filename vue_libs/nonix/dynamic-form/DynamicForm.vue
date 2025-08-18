@@ -1,6 +1,6 @@
 <template>
   <div class="dynamic-form p-fluid" :class="formClasses">
-    <form @submit.prevent="handleSubmit">
+    <form @submit.stop.prevent="handleSubmit">
       <div class="form-fields formgrid grid gap-3" :class="fieldsLayout">
         <div
           v-for="(item, idx) in effectiveItems"
@@ -68,6 +68,7 @@ import Button from 'primevue/button'
 export default {
   name: 'DynamicForm',
   components: { Button },
+  emits: ['submit', 'cancel', 'field-change', 'dirty-change'],
   
   props: {
     config: {

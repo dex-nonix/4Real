@@ -47,6 +47,7 @@ const emit = defineEmits(['execute-tool']);
 // Reactive state for dialog visibility
 const dialogVisible = ref(false);
 const toolFormData = ref({});
+const isSubmitting = ref(false);
 
 // Dynamic form configuration computed from tool parameters
 const formConfig = computed(() => {
@@ -91,28 +92,37 @@ const closeDialog = () => {
   toolFormData.value = {};
 };
 
-const handleFormSubmit = (formData) => {
-  console.log('🔧 Form submitted with data:', formData);
+const handleFormSubmit = async (formData) => {
+  if (isSubmitting.value) return
+  isSubmitting.value = true
   
-  // Extract the actual form data from the submit event
-  let args = {};
-  
-  if (formData && typeof formData === 'object') {
-    // Use changedValues if available, otherwise fall back to __full
-    if (formData.__full) {
-      args = { ...formData.__full };
-    } else if (Object.keys(formData).length > 0) {
-      args = { ...formData };
+  try {
+    console.log('🔧 Form submitted with data:', formData);
+    
+    // Extract the actual form data from the submit event
+    let args = {};
+    
+    if (formData && typeof formData === 'object') {
+      // Use changedValues if available, otherwise fall back to __full
+      if (formData.__full) {
+        args = { ...formData.__full };
+      } else if (Object.keys(formData).length > 0) {
+        args = { ...formData };
+      }
     }
+    
+    console.log('🔧 Final args to send:', args);
+    
+    emit('execute-tool', {
+      tool: props.selectedTool.name,
+      args: args
+    });
+    closeDialog();
+  } catch (error) {
+    console.error('Form submission error:', error);
+  } finally {
+    isSubmitting.value = false;
   }
-  
-  console.log('🔧 Final args to send:', args);
-  
-  emit('execute-tool', {
-    tool: props.selectedTool.name,
-    args: args
-  });
-  closeDialog();
 };
 
 // Expose functions to the parent component
