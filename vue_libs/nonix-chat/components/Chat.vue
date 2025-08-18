@@ -1,6 +1,6 @@
 <!-- Chat.vue -->
 <script setup>
-import { ref, computed, watch, inject } from 'vue';
+import { ref, computed, inject } from 'vue';
 import ChatHeader from './ChatHeader.vue';
 import ChatSessionBar from './ChatSessionBar.vue';
 import ChatMessageContainer from './ChatMessageContainer.vue';
@@ -20,19 +20,15 @@ const toast = useToast();
 // Service injection for session management
 const chatService = inject('chat-service');
 
-// selectedSession observable - central state for all child components
+// FLAT STATE MANAGEMENT - NO NESTING, NO GLOBAL CACHE
+// SELECTED ITEMS (single objects, no nesting)
 const selectedSession = ref(null);
+const selectedHistory = ref(null);
+const selectedPersona = ref(null);
 
-// Sessions array - will be populated from ChatSessionBar
-const sessions = ref([]);
-
-// Current session ID - managed internally
+// IDS (flat references, no nesting)
 const currentSessionId = ref(null);
-
-// Current history ID - managed internally
 const currentHistoryId = ref(null);
-
-// Current user ID - can be configured if needed
 const currentUserId = ref('user-self');
 
 // Error handling state
@@ -43,38 +39,10 @@ const isLoading = ref(false);
 const showPersonaDialog = ref(false);
 const showHistoryDialog = ref(false);
 
-// Computed values with null safety - now using selectedSession
-const currentSession = computed(() => {
-  return selectedSession.value;
-});
-
-// Get current history object from selectedSession and currentHistoryId
-const currentHistory = computed(() => {
-  if (!selectedSession.value?.histories || !currentHistoryId.value) {
-    return null;
-  }
-  
-  // Find the current history in the selected session's histories
-  return selectedSession.value.histories.find(history => history.id === currentHistoryId.value) || null;
-});
-
-// Get current persona object for ChatHeader
-const currentPersona = computed(() => {
-  if (currentSession.value?.persona) {
-    return currentSession.value.persona;
-  }
-  
-  // Fallback: create persona object from session data
-  if (currentSession.value?.persona_id && currentSession.value?.session_name) {
-    return {
-      id: currentSession.value.persona_id,
-      name: currentSession.value.session_name,
-      avatar_url: currentSession.value.avatar_url || null
-    };
-  }
-  
-  return null;
-});
+// Computed values - FLAT, NO NESTING
+const currentSession = computed(() => selectedSession.value);
+const currentHistory = computed(() => selectedHistory.value);
+const currentPersona = computed(() => selectedPersona.value);
 
 // Error handling utilities
 const addError = (message, details = null) => {
@@ -133,7 +101,7 @@ const addWarning = (message) => {
   console.warn('Chat Warning:', message);
 };
 
-// Handle session selection from ChatSessionBar
+// Handle session selection from ChatSessionBar - FLAT DATA LOADING
 const handleSessionSelected = async (sessionId) => {
   console.log('Session selected:', sessionId);
   
@@ -155,24 +123,22 @@ const handleSessionSelected = async (sessionId) => {
     isLoading.value = true;
     currentSessionId.value = sessionId;
     
-    // Get full session details when session is selected
+    // Load FLAT session data only - NO NESTING!
     if (sessionId && chatService) {
       try {
         addInfo(`Loading session ${sessionId}...`);
         const response = await chatService.getSession(sessionId);
         console.log('Session response:', response);
         
-        let sessionData = response;
+        selectedSession.value = response;
+        console.log('Processed session data:', response);
+        addSuccess(`Session "${response.session_name || 'Unnamed'}" loaded successfully`);
         
-        selectedSession.value = sessionData;
-        console.log('Processed session data:', sessionData);
-        addSuccess(`Session "${sessionData.session_name || 'Unnamed'}" loaded successfully`);
-        
-        // Get history for the selected session
-        if (sessionData.histories && sessionData.histories.length > 0) {
-          currentHistoryId.value = sessionData.histories[0].id;
-          console.log('Using existing history:', currentHistoryId.value);
-          addInfo(`Using existing history: ${sessionData.histories[0].title || 'Untitled'}`);
+        // Set current history ID from session data (flat reference)
+        if (response.current_history_id) {
+          currentHistoryId.value = response.current_history_id;
+          console.log('Set currentHistoryId to:', currentHistoryId.value);
+          addInfo(`Using existing history: ${response.current_history_id}`);
         } else {
           // Create a new history if none exists
           try {
@@ -219,7 +185,7 @@ const handleSessionSelected = async (sessionId) => {
   }
 };
 
-// Handle sessions loaded from ChatSessionBar
+// Handle sessions loaded from ChatSessionBar - NO GLOBAL CACHE
 const handleSessionsLoaded = (sessionsList) => {
   console.log('Sessions loaded:', sessionsList);
   
@@ -235,7 +201,6 @@ const handleSessionsLoaded = (sessionsList) => {
       return true;
     });
     
-    sessions.value = actualSessions;
     console.log('Processed and validated sessions:', actualSessions);
     
     if (actualSessions.length === 0) {
@@ -252,7 +217,6 @@ const handleSessionsLoaded = (sessionsList) => {
   } catch (error) {
     console.error('Error processing sessions:', error);
     addError('Failed to process sessions', error);
-    sessions.value = [];
   }
 };
 
@@ -270,13 +234,14 @@ const handleSessionRemoved = (sessionId) => {
   // If the removed session was selected, clear selection
   if (currentSessionId.value === sessionId) {
     selectedSession.value = null;
+    selectedHistory.value = null;
     currentHistoryId.value = null;
     currentSessionId.value = null;
     addInfo('Current session cleared');
   }
 };
 
-// Handle message sending
+// Handle message sending - FLAT DATA
 const handleSendMessage = async (messageData) => {
   if (!messageData?.historyId || !chatService || !currentSessionId.value) {
     addError('Cannot send message: Missing required data');
@@ -287,8 +252,8 @@ const handleSendMessage = async (messageData) => {
     isLoading.value = true;
     addInfo('Sending message...');
     
-    // Send message using the chat service (now requires sessionId and historyId)
-    const response = await chatService.sendMessageToHistory(currentSessionId.value, messageData.historyId, messageData.text);
+    // Send message using the chat service - FLAT DATA
+    const response = await chatService.sendMessageToHistory(currentSessionId.value, messageData.historyId, messageData.content || messageData.text);
     console.log('Message sent successfully:', response);
     addSuccess('Message sent successfully');
     
@@ -304,34 +269,34 @@ const handleSendMessage = async (messageData) => {
   }
 };
 
-// Handle persona addition - open persona selection dialog
-const handleAddPersona = () => {
+// Handle persona addition - LAZY LOADING when dialog opens
+const handleAddPersona = async () => {
   console.log('Opening persona selection dialog');
-  showPersonaDialog.value = true;
-};
-
-// Refresh sessions list from ChatSessionBar
-const refreshSessions = async () => {
+  
   try {
-    addInfo('Refreshing sessions...');
-    // Manually trigger a reload by calling the service
-    const response = await chatService.getSessions();
-    if (response) {
-      handleSessionsLoaded(response);
-      console.log('Sessions refreshed via service call');
-    }
+    // LAZY LOAD personas when dialog opens - NO GLOBAL CACHE!
+    const personasData = await chatService.getPersonas();
+    console.log('Personas loaded for dialog:', personasData);
+    
+    // Pass to dialog - NO global cache!
+    showPersonaDialog.value = true;
+    // Dialog component receives personasData and manages its own state
   } catch (error) {
-    console.error('Failed to refresh sessions:', error);
-    addError('Failed to refresh sessions', error);
+    console.error('Failed to load personas:', error);
+    addError('Failed to load personas', error);
   }
 };
 
-// Handle persona selection
+// Handle persona selection - FLAT DATA
 const handlePersonaSelected = async (persona) => {
   try {
     isLoading.value = true;
     addInfo(`Starting chat with ${persona.name}...`);
     
+    // Set selected persona (flat object)
+    selectedPersona.value = persona;
+    
+    // Create session with persona_id (flat reference)
     const response = await chatService.startChatWithPersona(persona.id, `Chat with ${persona.name}`, persona.avatar_url);
     console.log('Persona chat started:', response);
     
@@ -341,10 +306,11 @@ const handlePersonaSelected = async (persona) => {
       // Close the persona dialog
       showPersonaDialog.value = false;
       
-      // Refresh sessions to show the new one
-      await refreshSessions();
+      // Set the new session as selected
+      selectedSession.value = response;
+      currentSessionId.value = response.id;
       
-      // Auto-select the new session if it was created
+      // Auto-select the new session
       if (response.id) {
         console.log('Auto-selecting newly created session:', response.id);
         await handleSessionSelected(response.id);
@@ -358,10 +324,27 @@ const handlePersonaSelected = async (persona) => {
   }
 };
 
-// Handle history view request
-const handleViewHistory = () => {
+// Handle history view request - LAZY LOADING when dialog opens
+const handleViewHistory = async () => {
   console.log('View history requested');
-  showHistoryDialog.value = true;
+  
+  if (!currentSessionId.value) {
+    addError('No session selected');
+    return;
+  }
+  
+  try {
+    // LAZY LOAD histories when dialog opens - NO GLOBAL CACHE!
+    const historiesData = await chatService.getHistories(currentSessionId.value);
+    console.log('Histories loaded for dialog:', historiesData);
+    
+    // Pass to dialog - NO global cache!
+    showHistoryDialog.value = true;
+    // Dialog component receives historiesData and manages its own state
+  } catch (error) {
+    console.error('Failed to load histories:', error);
+    addError('Failed to load histories', error);
+  }
 };
 
 // Handle chat close request
@@ -370,7 +353,7 @@ const handleCloseChat = () => {
   addInfo('Close chat functionality not yet implemented');
 };
 
-// Handle history rename request
+// Handle history rename request - FLAT DATA
 const handleRenameHistory = async (historyId, newTitle) => {
   try {
     if (!currentSessionId.value) {
@@ -392,7 +375,7 @@ const handleRenameHistory = async (historyId, newTitle) => {
   }
 };
 
-// Handle history selection from HistoryManagementDialog
+// Handle history selection from HistoryManagementDialog - FLAT DATA
 const handleHistorySelected = async (historyId) => {
   try {
     if (!currentSessionId.value) {
@@ -445,7 +428,6 @@ defineExpose({
   currentSessionId,
   currentHistoryId,
   selectedSession,
-  sessions,
   errors,
   isLoading
 });
@@ -482,7 +464,7 @@ defineExpose({
       <div class="flex-1 relative">
         <!-- Debug info -->
         <div v-if="true" class="p-2 surface-100 text-xs">
-          Debug: currentSessionId={{ currentSessionId }}, currentHistoryId={{ currentHistoryId }}, sessions={{ sessions.length }}, selectedSession={{ selectedSession?.id }}
+          Debug: currentSessionId={{ currentSessionId }}, currentHistoryId={{ currentHistoryId }}, selectedSession={{ selectedSession?.id }}
         </div>
         
         <!-- Error display -->
@@ -506,23 +488,10 @@ defineExpose({
           <span class="ml-2">Loading...</span>
         </div>
         
-        <div 
-          v-for="session in sessions" 
-          :key="session.id"
-          class="chat-message-container-tab"
-          :class="{ 'active-tab': currentSessionId === session.id }"
-          :style="{ 
-            display: currentSessionId === session.id ? 'flex' : 'none',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0
-          }"
-        >
+        <!-- Chat Message Container - FLAT DATA -->
+        <div v-if="currentSessionId && selectedSession" class="flex-1">
           <ChatMessageContainer
-            v-if="session.id && currentSessionId && selectedSession"
-            :session-id="session.id"
+            :session-id="currentSessionId"
             :history-id="currentHistoryId"
             :current-user-id="currentUserId"
             :selected-session="selectedSession"
@@ -531,21 +500,21 @@ defineExpose({
           />
         </div>
         
-        <!-- Loading state when no sessions or sessions are being processed -->
-        <div v-if="sessions.length === 0 || isLoading" class="flex flex-column flex-1 justify-content-center align-items-center p-4">
+        <!-- Loading state when no session selected -->
+        <div v-if="!currentSessionId || !selectedSession" class="flex flex-column flex-1 justify-content-center align-items-center p-4">
           <i class="pi pi-spin pi-spinner text-4xl text-500 mb-3"></i>
-          <p class="text-500">{{ isLoading ? 'Processing...' : 'Loading sessions...' }}</p>
+          <p class="text-500">Select a session to start chatting...</p>
         </div>
       </div>
     </div>
     
-    <!-- Persona Selection Dialog -->
+    <!-- Persona Selection Dialog - LAZY LOADING -->
     <PersonaSelectionDialog
       v-model:visible="showPersonaDialog"
       @persona-selected="handlePersonaSelected"
     />
     
-    <!-- History Management Dialog -->
+    <!-- History Management Dialog - LAZY LOADING -->
     <HistoryManagementDialog
       v-model:visible="showHistoryDialog"
       :session-id="currentSessionId"
