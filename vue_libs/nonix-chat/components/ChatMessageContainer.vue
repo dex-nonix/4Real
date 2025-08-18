@@ -1,8 +1,3 @@
-<!-- ChatMessageContainer.vue -->
-<!--
-  Unified message container that combines ChatMessages + ChatMessageInput
-  Manages session-specific data and input persistence
--->
 <script setup>
 import { ref, computed, onMounted, inject, watch } from 'vue';
 import InputText from 'primevue/inputtext';
