@@ -21,7 +21,6 @@
         :submit-label="'Execute Tool'"
         @submit="executeTool"
         @cancel="closeDialog"
-        @field-change="updateFormData"
       />
       
       <!-- No Parameters -->
@@ -36,7 +35,6 @@
 <script setup>
 import { ref, defineExpose, defineEmits, computed } from 'vue';
 import Dialog from 'primevue/dialog';
-import Button from 'primevue/button';
 import DynamicForm from '@nonix/dynamic-form/DynamicForm.vue';
 
 // Props
@@ -93,21 +91,13 @@ const closeDialog = () => {
   toolFormData.value = {};
 };
 
-const updateFormData = (fieldChange) => {
-  console.log('🔧 Field change:', fieldChange);
-  if (fieldChange.key && fieldChange.value !== undefined) {
-    toolFormData.value[fieldChange.key] = fieldChange.value;
-    console.log('🔧 Updated toolFormData:', toolFormData.value);
-  }
-};
-
 const executeTool = (submitData) => {
   console.log('🔧 Submit data received:', submitData);
-  console.log('🔧 Changed values:', submitData.changedValues);
-  console.log('🔧 Full form data:', submitData.__full);
   
-  // Use the changedValues (the actual form data) or fall back to full form data
-  const args = submitData.changedValues || submitData.__full || {};
+  // The submitData contains the form data directly
+  // Based on working examples, it should have the form values
+  const args = submitData || {};
+  console.log('🔧 Final args to send:', args);
   
   emit('execute-tool', {
     tool: props.selectedTool.name,
