@@ -42,10 +42,7 @@ class APIRouter:
         """Instantiate a service and create routes for any @expose methods."""
         service = service_class(*args, **kwargs)
         
-        # Enable WebSocket capabilities if SocketIO is available
-        if hasattr(service, 'set_socketio') and self.socketio:
-            service.set_socketio(self.socketio)
-            self.logger.info(f"🔌 WebSocket enabled for service: {service_name}")
+        service.set_socketio(self.socketio)
         
         self.registered_services[service_name] = service
 
@@ -61,10 +58,7 @@ class APIRouter:
     def register_service_factory(self, service_name: str, factory: Callable[[], Any]) -> None:
         service = factory()
         
-        # Enable WebSocket capabilities if SocketIO is available
-        if hasattr(service, 'set_socketio') and self.socketio:
-            service.set_socketio(self.socketio)
-            self.logger.info(f"🔌 WebSocket enabled for service: {service_name}")
+        service.set_socketio(self.socketio)
         
         self.registered_services[service_name] = service
 
