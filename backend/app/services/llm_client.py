@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 import importlib
+import logging
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
 from langchain.tools import StructuredTool
 from langchain.agents import create_react_agent
@@ -9,9 +10,26 @@ from .tool_runtime import build_persona_tool_map
 from .internal_tool_registry import registry as internal_tool_registry
 from pydantic import BaseModel, Field
 
+# Get logger for this module
+logger = logging.getLogger(__name__)
+
 
 def create_langchain_tools(persona_id: int, available_tools_info: List[Dict[str, Any]]) -> List[StructuredTool]:
     """Create LangChain StructuredTool objects from persona tools with proper Pydantic schemas."""
+    
+    def _get_field_type(param_type: str) -> type:
+        """Extract the base Python type from a type annotation string."""
+        if 'int' in param_type:
+            return int
+        elif 'str' in param_type:
+            return str
+        elif 'bool' in param_type:
+            return bool
+        elif 'float' in param_type:
+            return float
+        else:
+            return str
+    
     # Get the persona-scoped tools with partial binding
     persona_tools = build_persona_tool_map(persona_id)
     
@@ -23,42 +41,45 @@ def create_langchain_tools(persona_id: int, available_tools_info: List[Dict[str,
         
         # Create a dynamic Pydantic model for the tool parameters
         if tool_info and 'parameters' in tool_info and tool_info['parameters']:
-            # Create a dynamic schema class from the already-extracted parameters
-            schema_fields = {}
-            for param in tool_info['parameters']:
-                param_name = param['name']
-                param_type = param['type']
-                param_required = param['required']
-                param_default = param['default']
+            try:
+                # Create a dynamic schema class from the already-extracted parameters
+                schema_fields = {}
+                for param in tool_info['parameters']:
+                    param_name = param['name']
+                    param_type = param['type']
+                    param_required = param['required']
+                    param_default = param['default']
+                    
+                    # Get the base field type
+                    field_type = _get_field_type(param_type)
+                    
+                    # Create the field - the logic is the same regardless of Optional/Union
+                    if param_required:
+                        schema_fields[param_name] = (field_type, Field(description=f"Parameter: {param_name}"))
+                    else:
+                        schema_fields[param_name] = (Optional[field_type], Field(default=param_default, description=f"Parameter: {param_name}"))
                 
-                # Convert type string to actual type (using the already-extracted type info)
-                if 'int' in param_type:
-                    field_type = int
-                elif 'str' in param_type:
-                    field_type = str
-                elif 'bool' in param_type:
-                    field_type = bool
-                elif 'float' in param_type:
-                    field_type = float
-                else:
-                    field_type = str
+                # Create the schema class dynamically
+                ToolSchema = type(f'{tool_name}Schema', (BaseModel,), schema_fields)
                 
-                # Create field with proper defaults (using the already-extracted default info)
-                if param_required:
-                    schema_fields[param_name] = (field_type, Field(description=f"Parameter: {param_name}"))
-                else:
-                    schema_fields[param_name] = (Optional[field_type], Field(default=param_default, description=f"Parameter: {param_name}"))
-            
-            # Create the schema class dynamically
-            ToolSchema = type(f'{tool_name}Schema', (BaseModel,), schema_fields)
-            
-            # Create StructuredTool with proper Pydantic schema
-            langchain_tool = StructuredTool.from_function(
-                func=tool_func,  # Use the partial directly
-                name=tool_name,
-                description=description,
-                args_schema=ToolSchema
-            )
+                # Create StructuredTool with proper Pydantic schema
+                langchain_tool = StructuredTool.from_function(
+                    func=tool_func,  # Use the partial directly
+                    name=tool_name,
+                    description=description,
+                    args_schema=ToolSchema
+                )
+                
+                logger.debug(f"🔧 Created tool '{tool_name}' with Pydantic schema")
+                
+            except Exception as e:
+                logger.warning(f"🔧 Failed to create Pydantic schema for tool '{tool_name}': {e}", exc_info=True)
+                # Fallback: create tool without schema
+                langchain_tool = StructuredTool.from_function(
+                    func=tool_func,
+                    name=tool_name,
+                    description=description
+                )
         else:
             # Fallback: no schema, just basic tool
             langchain_tool = StructuredTool.from_function(
@@ -69,6 +90,7 @@ def create_langchain_tools(persona_id: int, available_tools_info: List[Dict[str,
         
         langchain_tools.append(langchain_tool)
     
+    logger.info(f"🔧 Created {len(langchain_tools)} LangChain tools for persona {persona_id}")
     return langchain_tools
 
 
@@ -119,7 +141,7 @@ def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]], availa
                 # Create LangChain tools using utility function
                 langchain_tools = create_langchain_tools(persona_id, available_tools_info)
                 
-                print(f"🔧 Created {len(langchain_tools)} LangChain tools for persona {persona_id}")
+                logger.info(f"🔧 Created {len(langchain_tools)} LangChain tools for persona {persona_id}")
                 
                 # Create the ReAct agent with tools
                 agent = create_react_agent(
@@ -127,7 +149,7 @@ def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]], availa
                     langchain_tools
                 )
                 
-                print(f"🔧 Created ReAct agent with {len(langchain_tools)} tools")
+                logger.info(f"🔧 Created ReAct agent with {len(langchain_tools)} tools")
                 
                 # Convert messages to string for agent
                 conversation_history = []
@@ -167,11 +189,11 @@ def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]], availa
                     return { 'type': 'text', 'text': 'No user message found' }
                     
             except ImportError as e:
-                print(f"🔧 LangChain tools not available: {e}")
+                logger.warning(f"🔧 LangChain tools not available: {e}")
                 # Fall back to basic client call
                 pass
             except Exception as e:
-                print(f"🔧 Error creating LangChain agent: {e}")
+                logger.error(f"🔧 Error creating LangChain agent: {e}", exc_info=True)
                 # Fall back to basic client call
                 pass
         
