@@ -10,6 +10,7 @@ export default class WebSocketManager {
     this.reconnectAttempts = 0
     this.maxReconnectAttempts = 5
     this.reconnectDelay = 1000
+    this.queuedChannels = null // Queue for channels to join when connection is stable
     
     this._initWebSocket()
   }
@@ -24,7 +25,8 @@ export default class WebSocketManager {
       // Connect directly to backend server (not through Vite proxy)
       // Vite proxy only handles HTTP, not WebSocket connections
       const wsUrl = 'http://localhost:5000'
-      this.socket = io(`${wsUrl}/api/ws/`, {
+      this.socket = io(wsUrl, {
+        path: '/api/ws',  // Connect to the /api/ws path configured in backend
         transports: ['websocket', 'polling'],
         autoConnect: true,
         reconnection: true,
@@ -50,6 +52,7 @@ export default class WebSocketManager {
       this.reconnectAttempts = 0
       this.eventBus.dispatchEvent(new CustomEvent('websocket:connected'))
       this._rejoinAllChannels()
+      this._processQueuedChannels() // Process queued channel joins after successful connection
     })
 
     this.socket.on('disconnect', () => {
@@ -71,6 +74,7 @@ export default class WebSocketManager {
       this.reconnectAttempts = 0
       this.eventBus.dispatchEvent(new CustomEvent('websocket:reconnected', { detail: { attempt: attemptNumber } }))
       this._rejoinAllChannels()
+      this._processQueuedChannels() // Process queued channel joins after successful reconnection
     })
 
     this.socket.on('reconnect_failed', () => {
@@ -82,8 +86,10 @@ export default class WebSocketManager {
 
   // Join a specific WebSocket channel
   joinChannel(channel) {
-    if (!this.socket || !this.socket.connected) {
+    if (!this.socket || !this.socket.connected || this.connectionState !== 'connected') {
       console.warn('WebSocket not connected, cannot join channel:', channel)
+      // Queue the channel join for when connection is stable
+      this._queueChannelJoin(channel)
       return false
     }
     
@@ -97,6 +103,26 @@ export default class WebSocketManager {
     this.socket.emit('join_channel', { channel })
     console.log('🔌 Joined WebSocket channel:', channel)
     return true
+  }
+
+  // Queue channel join for when connection is stable
+  _queueChannelJoin(channel) {
+    if (!this.queuedChannels) {
+      this.queuedChannels = new Set()
+    }
+    this.queuedChannels.add(channel)
+    console.log('🔌 Queued channel join for later:', channel)
+  }
+
+  // Process queued channel joins when connection is stable
+  _processQueuedChannels() {
+    if (this.queuedChannels && this.queuedChannels.size > 0) {
+      console.log('🔌 Processing queued channel joins...')
+      this.queuedChannels.forEach(channel => {
+        this.joinChannel(channel)
+      })
+      this.queuedChannels.clear()
+    }
   }
 
   // Leave a specific WebSocket channel
@@ -204,9 +230,14 @@ export default class WebSocketManager {
     return Array.from(this.channels.keys()).filter(channel => this.channels.get(channel).joined)
   }
 
-  // Check if WebSocket is connected
+  // Check if WebSocket is connected and stable
   isConnected() {
-    return this.socket && this.socket.connected
+    return this.socket && this.socket.connected && this.connectionState === 'connected'
+  }
+
+  // Check if WebSocket is in a stable state (connected or reconnecting)
+  isStable() {
+    return this.connectionState === 'connected' || this.connectionState === 'reconnecting'
   }
 
   // Get connection state
@@ -242,6 +273,7 @@ export default class WebSocketManager {
     }
     this.connectionState = 'disconnected'
     this.channels.clear()
+    this.queuedChannels = null // Clear queued channels on disconnect
     console.log('🔌 WebSocket disconnected and cleaned up')
   }
 

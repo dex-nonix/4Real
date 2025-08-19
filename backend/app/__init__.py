@@ -44,20 +44,15 @@ def create_app() -> Flask:
 
     # Initialize Flask-SocketIO for WebSocket support
     from flask_socketio import SocketIO
-    socketio = SocketIO(app, cors_allowed_origins="*", logger=True, engineio_logger=True)
+    socketio = SocketIO(app, 
+        cors_allowed_origins="*", 
+        logger=True, 
+        engineio_logger=True,
+        path='/api/ws'  # SocketIO server runs on /api/ws path
+    )
     
     # Make SocketIO available as app extension
     app.extensions['socketio'] = socketio
-
-    # Add WebSocket endpoint route
-    @app.route('/api/ws/')
-    def websocket_endpoint():
-        """WebSocket endpoint for client connections."""
-        return jsonify({
-            'message': 'WebSocket endpoint',
-            'status': 'connect via SocketIO client',
-            'endpoint': '/api/ws/'
-        })
 
     # COMPREHENSIVE ERROR HANDLING - Catch everything!
     

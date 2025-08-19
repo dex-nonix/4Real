@@ -1,5 +1,6 @@
 import click
 from app import create_app, db
+from wsgi import start_server
 
 
 @click.group()
@@ -22,8 +23,8 @@ def init_db():
 @click.option('--debug/--no-debug', default=True)
 def run(host: str, port: int, debug: bool):
     """Run the development server."""
-    app = create_app()
-    app.run(host=host, port=port, debug=debug)
+    # Use the ONE function from wsgi.py
+    start_server(host, port, debug)
 
 
 if __name__ == '__main__':
