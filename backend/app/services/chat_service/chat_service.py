@@ -18,11 +18,10 @@ from .chat_session_mixin import ChatSessionMixin
 from .chat_message_mixin import ChatMessageMixin
 from .chat_history_mixin import ChatHistoryMixin
 from .persona_chat_mixin import PersonaChatMixin
-from .tool_execution_mixin import ToolExecutionMixin
-from .websocket_protocol import WebSocketProtocol
+from .tool_execution_mixin import ToolExecutionMixin 
 
 
-class ChatService(BaseApiService, WebSocketProtocol, ChatSessionMixin, ChatMessageMixin, ChatHistoryMixin, PersonaChatMixin, ToolExecutionMixin):
+class ChatService(BaseApiService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMixin, PersonaChatMixin, ToolExecutionMixin):
     """Complete chat service handling session lifecycle, messaging, and tool execution.
     
     This service is composed of multiple mixins for better organization:
