@@ -9,7 +9,6 @@ export default class BaseApiService {
     this.onRequest = onRequest
     this.onResponse = onResponse
     this.onError = onError
-    this.authToken = null
   }
 
   // Base path for derived services; subclasses can override
@@ -27,9 +26,7 @@ export default class BaseApiService {
     return `${bp}/${path}`
   }
 
-  setAuthToken(token) {
-    this.authToken = token || null
-  }
+
 
   buildUrl(path, query) {
     const base = `${this.baseURL}${path.startsWith('/') ? '' : '/'}${path}`
@@ -52,10 +49,7 @@ export default class BaseApiService {
     const scoped = this.scopePath(path)
     const url = this.buildUrl(scoped, query)
     const finalHeaders = { ...this.defaultHeaders, ...headers }
-    if (this.authToken) {
-      finalHeaders['Authorization'] = `Bearer ${this.authToken}`
-    }
-
+    
     const init = { method, headers: finalHeaders, signal }
     if (body !== undefined) {
       if (typeof FormData !== 'undefined' && body instanceof FormData) {

@@ -2,7 +2,12 @@
     "folder-color.pathColors": [
         {
             "folderPath": "4Real/MASTER/",
-            "color": "foldercolorizer.color_ffcc00",
+            "color": "foldercolorizer.color_336600",
+            "isFolderOnly": true
+        },
+        {
+            "folderPath": "4Real/vue_libs/",
+            "color": "foldercolorizer.color_9966ff",
             "isFolderOnly": true
         }
     ]

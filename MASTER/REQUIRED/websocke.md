@@ -440,3 +440,179 @@ The backend WebSocket system is **100% complete and functional**. The next step 
 4. **`backend/app/__init__.py`**: SocketIO setup and WebSocket event handlers (already implemented)
 5. **Frontend SocketIO client**: Connect to `/api/ws/` and listen to channels
 6. **Test WebSocket communication**: Verify real-time updates work
+
+## Frontend Integration Requirements
+
+### **Current Frontend Status: HTTP-Only**
+
+The frontend `BaseApiService.js` currently provides:
+- ✅ HTTP request methods (GET, POST, PUT, PATCH, DELETE)
+- ✅ URL building and query parameters
+- ✅ Basic error handling and response processing
+- ❌ **NO WebSocket capabilities**
+
+### **Required Frontend Updates**
+
+#### **1. Add SocketIO Client Integration**
+```javascript
+// Need to add to BaseApiService.js:
+import { io } from 'socket.io-client'
+
+// Initialize WebSocket connection to backend
+this.socket = io('http://localhost:5000/api/ws/')
+```
+
+#### **2. Add WebSocket Methods**
+```javascript
+// Need to add these methods to BaseApiService.js:
+
+joinChannel(channel) {
+  // Join a specific WebSocket channel
+}
+
+leaveChannel(channel) {
+  // Leave a specific WebSocket channel
+}
+
+onChannelEvent(channel, event, callback) {
+  // Listen to events from a specific channel
+}
+
+emitToChannel(channel, event, data) {
+  // Send event to a specific channel
+}
+
+sendToChannel(channel, event, data) {
+  // Alias for emitToChannel (matches backend naming)
+}
+```
+
+#### **3. Maintain HTTP Compatibility**
+```javascript
+// ALL existing HTTP methods must remain unchanged:
+- get(), post(), put(), patch(), delete()
+- request(), buildUrl(), scopePath()
+- All existing functionality must work exactly as before
+```
+
+### **Frontend Service Integration Pattern**
+
+#### **1. Hybrid Service Architecture**
+```javascript
+// Frontend services will inherit both HTTP and WebSocket capabilities
+class ChatService extends BaseApiService {
+  // HTTP methods (existing functionality)
+  async getMessages() {
+    return this.get('/messages')
+  }
+  
+  // WebSocket methods (new functionality)
+  joinChatChannel(sessionId, historyId) {
+    const channel = `chat/${sessionId}/${historyId}`
+    this.joinChannel(channel)
+    
+    // Listen for real-time events
+    this.onChannelEvent(channel, 'message_received', (data) => {
+      // Handle real-time message
+    })
+  }
+}
+```
+
+#### **2. Optional WebSocket Usage**
+```javascript
+// Services can choose whether to use WebSocket
+class ArtistService extends BaseApiService {
+  // HTTP-only service (no changes needed)
+  async getArtists() {
+    return this.get('/artists')
+  }
+}
+
+class ChatService extends BaseApiService {
+  // HTTP + WebSocket service
+  async sendMessage(content) {
+    // HTTP request
+    const result = await this.post('/send', { content })
+    
+    // Optional: Emit WebSocket event
+    this.sendToChannel('chat/updates', 'message_sent', result)
+    
+    return result
+  }
+}
+```
+
+### **Frontend Implementation Checklist**
+
+#### **Phase 1: Core WebSocket Integration**
+- [ ] Add SocketIO client dependency to `package.json`
+- [ ] Update `BaseApiService.js` with WebSocket methods
+- [ ] Maintain 100% backward compatibility with HTTP methods
+- [ ] Add WebSocket connection management
+
+#### **Phase 2: Channel Management**
+- [ ] Implement `joinChannel()` and `leaveChannel()`
+- [ ] Add channel subscription tracking
+- [ ] Implement event listener management
+- [ ] Add connection state handling
+
+#### **Phase 3: Event System**
+- [ ] Implement `onChannelEvent()` for listening
+- [ ] Implement `emitToChannel()` for sending
+- [ ] Add event cleanup and memory management
+- [ ] Add error handling for WebSocket operations
+
+#### **Phase 4: Service Integration**
+- [ ] Update existing services to optionally use WebSocket
+- [ ] Add real-time capabilities to Chat Service
+- [ ] Test HTTP + WebSocket hybrid functionality
+- [ ] Document WebSocket usage patterns
+
+### **Frontend WebSocket Flow**
+
+```
+1. Frontend service extends BaseApiService
+2. Service optionally joins WebSocket channels
+3. Service listens for real-time events
+4. Service can emit events to channels
+5. HTTP methods continue working unchanged
+6. WebSocket provides real-time enhancements
+```
+
+### **Benefits of Frontend Integration**
+
+#### **1. Consistent API Pattern**
+- **Same service inheritance** - All services get WebSocket automatically
+- **Optional usage** - Services choose when to use real-time features
+- **No breaking changes** - Existing HTTP functionality preserved
+
+#### **2. Real-time Capabilities**
+- **Live updates** - No need to poll for changes
+- **Event-driven UI** - Immediate response to backend events
+- **Better UX** - Real-time feedback for long-running operations
+
+#### **3. Service Flexibility**
+- **HTTP-only services** - Can remain unchanged
+- **WebSocket services** - Can add real-time features
+- **Hybrid services** - Can use both as needed
+
+### **Current Gap Analysis**
+
+| Backend Capability | Frontend Status | Priority |
+|-------------------|-----------------|----------|
+| `send_to_channel()` | ❌ Missing | 🔴 High |
+| `send_to_room()` | ❌ Missing | 🔴 High |
+| Channel discovery | ❌ Missing | 🟡 Medium |
+| Real-time events | ❌ Missing | 🔴 High |
+| SocketIO connection | ❌ Missing | 🔴 High |
+
+### **Next Steps for Frontend**
+
+1. **Install SocketIO client** - Add dependency to package.json
+2. **Update BaseApiService.js** - Add WebSocket methods while preserving HTTP
+3. **Test backward compatibility** - Ensure no existing functionality breaks
+4. **Implement basic WebSocket** - Connection, channels, events
+5. **Integrate with Chat Service** - Add real-time messaging capabilities
+
+The frontend WebSocket integration will complete the full-stack real-time communication system, allowing frontend services to optionally use WebSocket for enhanced user experience while maintaining full HTTP compatibility.
