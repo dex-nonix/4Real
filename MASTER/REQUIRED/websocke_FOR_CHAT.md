@@ -10,35 +10,97 @@ This document shows how the Chat Service uses the **EXISTING** Generic WebSocket
 
 The Chat Service does NOT use `@expose_ws` decorators. It only uses the **EXISTING** generic WebSocket methods from BaseApiService to emit events to existing channels.
 
+### **Python Protocol-Based Implementation**
+
+We use Python Protocols to define the WebSocket contract, ensuring type safety and proper inheritance.
+
 ```python
-class ChatService(BaseApiService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMixin, PersonaChatMixin, ToolExecutionMixin):
-    """Chat service that uses EXISTING WebSocket methods for real-time LLM chat updates."""
+# backend/app/services/chat_service/websocket_protocol.py
+from typing import Protocol
+from datetime import datetime
+
+class WebSocketProtocol(Protocol):
+    """Protocol for WebSocket event emission - Python's way of defining contracts."""
     
-    # NO @expose_ws decorators!
-    # Chat service only emits events, doesn't expose WebSocket channels
+    def emit_chat_event(self, session_id: int, history_id: int, event: str, data: dict) -> None:
+        """Emit chat event - Protocol method."""
+        ...
     
-    # ADD THESE METHODS to existing ChatService - NO NEW CLASSES!
-    def emit_chat_event(self, session_id: int, history_id: int, event: str, data: dict):
-        """Emit WebSocket event for chat session using EXISTING BaseApiService method."""
+    def emit_llm_event(self, session_id: int, history_id: int, stage: str, message: str) -> None:
+        """Emit LLM status event - Protocol method."""
+        ...
+    
+    def emit_tool_event(self, session_id: int, history_id: int, tool_name: str, status: str, **extra) -> None:
+        """Emit tool execution event - Protocol method."""
+        ...
+```
+
+### **ChatService Implementation**
+
+```python
+# backend/app/services/chat_service/chat_service.py
+class ChatService(BaseApiService, WebSocketProtocol, ChatSessionMixin, ChatMessageMixin, ChatHistoryMixin, PersonaChatMixin, ToolExecutionMixin):
+    """Chat service - inherits from BaseApiService AND WebSocketProtocol AND all mixins."""
+    
+    def emit_chat_event(self, session_id: int, history_id: int, event: str, data: dict) -> None:
+        """IMPLEMENT: Emit chat event using BaseApiService method."""
         channel = f'chat/{session_id}/{history_id}'
         self.send_to_channel(channel, event, data)
-
-    def emit_llm_event(self, session_id: int, history_id: int, stage: str, message: str):
-        """Emit LLM status event using EXISTING WebSocket method."""
+    
+    def emit_llm_event(self, session_id: int, history_id: int, stage: str, message: str) -> None:
+        """IMPLEMENT: Emit LLM status event."""
         self.emit_chat_event(session_id, history_id, 'llm_status', {
             'stage': stage,
             'message': message,
             'timestamp': datetime.utcnow().isoformat()
         })
-
-    def emit_tool_event(self, session_id: int, history_id: int, tool_name: str, status: str, **extra):
-        """Emit tool execution event using EXISTING WebSocket method."""
+    
+    def emit_tool_event(self, session_id: int, history_id: int, tool_name: str, status: str, **extra) -> None:
+        """IMPLEMENT: Emit tool execution event."""
         self.emit_chat_event(session_id, history_id, 'tool_status', {
             'tool_name': tool_name,
             'status': status,
             'timestamp': datetime.utcnow().isoformat(),
             **extra
         })
+```
+
+### **Mixins Inherit from Protocol**
+
+```python
+# backend/app/services/chat_service/tool_execution_mixin.py
+class ToolExecutionMixin(WebSocketProtocol):  # ✅ INHERITS FROM PROTOCOL
+    """Mixin for tool execution - inherits from WebSocket protocol."""
+    
+    def persona_tool_execute(self, req: Request, persona_id: int):
+        """Execute tool - calls protocol methods."""
+        session_id = req.get_json().get('session_id')
+        history_id = req.get_json().get('history_id')
+        
+        # Call protocol method (gets overloaded by ChatService)
+        self.emit_tool_event(session_id, history_id, tool_name, 'started')
+        
+        # ... existing tool execution logic ...
+        
+        # Call protocol method (gets overloaded by ChatService)
+        self.emit_tool_event(session_id, history_id, tool_name, 'completed')
+
+# backend/app/services/chat_service/chat_message_mixin.py
+class ChatMessageMixin(WebSocketProtocol):  # ✅ INHERITS FROM PROTOCOL
+    """Mixin for chat messages - inherits from WebSocket protocol."""
+    
+    def send_message(self, req: Request, id: int):
+        """Send message - calls protocol methods."""
+        session_id = id  # Already available
+        history_id = history.id  # Already available
+        
+        # Call protocol method (gets overloaded by ChatService)
+        self.emit_llm_event(session_id, history_id, 'message_processing', 'Processing your message...')
+        
+        # ... existing logic ...
+        
+        # Call protocol method (gets overloaded by ChatService)
+        self.emit_llm_event(session_id, history_id, 'response_complete', 'Response ready')
 ```
 
 ## Chat WebSocket Channels
@@ -56,37 +118,37 @@ chat/{session_id}/{history_id}
 
 #### 1. LLM Message Processing Events
 ```python
-# When message processing starts - use EXISTING ChatService method
+# When message processing starts - use protocol method
 self.emit_llm_event(session_id, history_id, 'message_processing', 'Processing your message...')
 
-# When LLM starts thinking/analyzing - use EXISTING ChatService method
+# When LLM starts thinking/analyzing - use protocol method
 self.emit_llm_event(session_id, history_id, 'llm_thinking', 'LLM is analyzing your request...')
 
-# When LLM decides to call a tool - use EXISTING ChatService method
+# When LLM decides to call a tool - use protocol method
 self.emit_llm_event(session_id, history_id, 'tool_call_detected', f'LLM needs to call {tool_name}')
 
-# When LLM is building final response - use EXISTING ChatService method
+# When LLM is building final response - use protocol method
 self.emit_llm_event(session_id, history_id, 'building_response', 'LLM is building your response...')
 
-# When response is complete - use EXISTING ChatService method
+# When response is complete - use protocol method
 self.emit_llm_event(session_id, history_id, 'response_complete', 'Response ready')
 ```
 
 #### 2. Tool Execution Events
 ```python
-# When tool execution starts - use EXISTING ChatService method
+# When tool execution starts - use protocol method
 self.emit_tool_event(session_id, history_id, tool_name, 'started', args=tool_args)
 
-# When tool execution completes - use EXISTING ChatService method
+# When tool execution completes - use protocol method
 self.emit_tool_event(session_id, history_id, tool_name, 'completed', result=tool_result)
 
-# When tool execution fails - use EXISTING ChatService method
+# When tool execution fails - use protocol method
 self.emit_tool_event(session_id, history_id, tool_name, 'failed', error=str(exc))
 ```
 
 #### 3. Message Status Events
 ```python
-# When new message is received - use EXISTING ChatService method
+# When new message is received - use protocol method
 self.emit_chat_event(session_id, history_id, 'message_received', {
     'message_id': message.id,
     'role': message.role,
@@ -94,7 +156,7 @@ self.emit_chat_event(session_id, history_id, 'message_received', {
     'timestamp': message.created_at.isoformat()
 })
 
-# When message is fully processed - use EXISTING ChatService method
+# When message is fully processed - use protocol method
 self.emit_chat_event(session_id, history_id, 'message_processed', {
     'message_id': message.id,
     'status': 'processed',
@@ -108,10 +170,10 @@ self.emit_chat_event(session_id, history_id, 'message_processed', {
 
 ```python
 # In backend/app/services/chat_service/tool_execution_mixin.py
-# NO NEW SIGNATURES - just add WebSocket calls to existing method
+# Mixin inherits from WebSocketProtocol - has access to protocol methods
 
 def persona_tool_execute(self, req: Request, persona_id: int):
-    """Execute a tool for a specific persona - ADD WebSocket events to existing method."""
+    """Execute a tool for a specific persona - uses protocol methods."""
     try:
         payload = req.get_json(silent=True) or {}
         tool_name = payload.get('tool_name')
@@ -122,20 +184,20 @@ def persona_tool_execute(self, req: Request, persona_id: int):
         # Get session_id from request or derive it
         session_id = payload.get('session_id')  # Add this to request payload
         
-        # Emit tool execution started event using EXISTING ChatService method
+        # Emit tool execution started event using protocol method
         self.emit_tool_event(session_id, history_id, tool_name, 'started', args=tool_args)
         
         # ... existing tool execution logic ...
         
         exec_result = execute_tool(persona.id, tool_name, tool_args)
         
-        # Emit tool execution completed event using EXISTING ChatService method
+        # Emit tool execution completed event using protocol method
         self.emit_tool_event(session_id, history_id, tool_name, 'completed', result=exec_result)
         
         return jsonify({'data': exec_result})
         
     except Exception as exc:
-        # Emit error event using EXISTING ChatService method
+        # Emit error event using protocol method
         self.emit_tool_event(session_id, history_id, tool_name, 'failed', error=str(exc))
         raise
 ```
@@ -144,10 +206,10 @@ def persona_tool_execute(self, req: Request, persona_id: int):
 
 ```python
 # In backend/app/services/chat_service/chat_message_mixin.py
-# NO NEW SIGNATURES - just add WebSocket calls to existing method
+# Mixin inherits from WebSocketProtocol - has access to protocol methods
 
 def send_message(self, req: Request, id: int):
-    """Send a message to a chat session - ADD WebSocket events to existing method."""
+    """Send a message to a chat session - uses protocol methods."""
     try:
         # ... existing message sending logic ...
         
@@ -155,31 +217,31 @@ def send_message(self, req: Request, id: int):
         session_id = id  # This is already available
         history_id = history.id  # This is already available
         
-        # Emit message processing started event using EXISTING ChatService method
+        # Emit message processing started event using protocol method
         self.emit_llm_event(session_id, history_id, 'message_processing', 'Processing your message...')
         
         # When LLM calls a tool
         if isinstance(assistant_output, dict) and (assistant_output.get('type') == 'tool_call' or 'tool' in assistant_output):
             tool_name = assistant_output.get('tool')
             
-            # Emit LLM tool call detected event using EXISTING ChatService method
+            # Emit LLM tool call detected event using protocol method
             self.emit_llm_event(session_id, history_id, 'tool_call_detected', f'LLM needs to call {tool_name}')
             
             # ... existing tool execution logic ...
             
-            # Emit tool execution started event using EXISTING ChatService method
+            # Emit tool execution started event using protocol method
             self.emit_tool_event(session_id, history_id, tool_name, 'started', args=tool_args)
             
             # Execute tool...
             exec_result = execute_tool(persona.id, tool_name, tool_args)
             
-            # Emit tool execution completed event using EXISTING ChatService method
+            # Emit tool execution completed event using protocol method
             self.emit_tool_event(session_id, history_id, tool_name, 'completed', result=exec_result)
             
-            # Emit LLM building response event using EXISTING ChatService method
+            # Emit LLM building response event using protocol method
             self.emit_llm_event(session_id, history_id, 'building_response', 'LLM is building your response...')
         
-        # Emit response complete event using EXISTING ChatService method
+        # Emit response complete event using protocol method
         self.emit_llm_event(session_id, history_id, 'response_complete', 'Response ready')
         
         return jsonify({'data': asst_msg.to_dict()})
@@ -321,10 +383,11 @@ LLM detects tool need → Tool execution started → Tool runs → Tool complete
 ## Implementation Checklist
 
 ### **Backend Changes Required:**
-- [ ] **ADD WebSocket event methods to existing ChatService** (NO NEW CLASSES)
-- [ ] **ADD WebSocket calls to existing tool_execution_mixin.py** (NO NEW SIGNATURES)
-- [ ] **ADD WebSocket calls to existing chat_message_mixin.py** (NO NEW SIGNATURES)
-- [ ] **Test WebSocket event emission** using existing methods
+- [ ] **Create WebSocketProtocol** with protocol methods
+- [ ] **Make mixins inherit from WebSocketProtocol** (ToolExecutionMixin, ChatMessageMixin)
+- [ ] **Make ChatService inherit from WebSocketProtocol** AND implement the methods
+- [ ] **Add WebSocket calls to existing mixin methods** using protocol methods
+- [ ] **Test WebSocket event emission** using protocol methods
 
 ### **Frontend Changes Required:**
 - [ ] **Use EXISTING ChatService WebSocket methods** in ChatMessageContainer.vue
@@ -333,10 +396,22 @@ LLM detects tool need → Tool execution started → Tool runs → Tool complete
 - [ ] **Test real-time functionality** using existing infrastructure
 
 ### **Key Principles:**
-- **NO NEW CLASSES** - use existing ChatService
-- **NO NEW SIGNATURES** - just add WebSocket calls to existing methods
-- **NO NEW SERVICES** - ChatService already has everything needed
+- **Python Protocols** - proper Python way to define contracts
+- **Type Safety** - mixins and ChatService both follow the protocol
+- **Proper Inheritance** - mixins inherit from protocol, ChatService implements it
+- **No Architecture Breaking** - keeps current mixin design intact
 - **Use EXISTING BaseApiService WebSocket methods** - they're already there
-- **Frontend uses existing ChatService** - no new injection needed
 
-This implementation leverages the **100% complete WebSocket infrastructure** and requires only **adding WebSocket event emission calls** to existing chat methods and **using existing ChatService WebSocket methods** in the frontend. No new infrastructure, no new classes, no new services - just use what we already have!
+## **Inheritance Structure**
+
+```
+BaseApiService (has send_to_channel)
+    ↓
+WebSocketProtocol (defines contract)
+    ↓
+ChatService (implements protocol + has WebSocket methods)
+    ↓
+Mixins (inherit protocol methods, get overloaded by ChatService)
+```
+
+This implementation uses **proper Python Protocols** for type safety and **correct inheritance structure** where mixins inherit from the protocol and ChatService implements it, ensuring all components can emit WebSocket events while maintaining clean architecture.
