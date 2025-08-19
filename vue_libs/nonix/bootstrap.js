@@ -42,7 +42,7 @@ const iterObject = (obj, callback) => {
 };
 const loadConfigObject = (app, config) => {
     iterArray(config.use, [app, "use"])
-    iterObject(config.service, (key, value) => app.provide(key, value()));
+    iterObject(config.service, (key, value) => app.provide(key, value(app)));
     iterObject(config.layouts, (key, item) => LayoutManager.registerWidget(key, item.component, item.defaultProps));
     iterObject(config.pages, (key, item) => PageManager.registerWidget(key, item.component, item.defaultProps));
     iterObject(config.displayWidgets, (key, item) => DisplayWidgetManager.registerWidget(key, item.component, item.defaultProps));
@@ -58,12 +58,12 @@ export const mountNxApp = (target, config = {}) => {
     app.use(ToastService);
     app.directive('tooltip', Tooltip);
     
-    // Create and provide WebSocket manager at app level
+    // Create and provide WebSocket manager at app level - PROPER dependency injection
     const wsManager = new WebSocketManager()
     app.provide('websocket-manager', wsManager)
     
-    // Also make it globally available for BaseApiService to access
-    window.__websocketManager = wsManager
+    // Make Vue app accessible for services to get injected dependencies
+    window.__vueApp = app
     
     loadConfigObject(app, config);
     iterObject( config.packages, (packageConfig)=> loadConfigObject(app, packageConfig));

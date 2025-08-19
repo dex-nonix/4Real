@@ -14,110 +14,88 @@ export default class BaseApiService {
     this.enableWebSocket = enableWebSocket
   }
 
-  // Get WebSocket manager from app-level injection
+  // Get WebSocket manager from Vue app context - PROPER dependency injection
   get wsManager() {
-    // This will be provided by the app via provide/inject
-    return window.__websocketManager
+    // Get from Vue app context if available
+    if (window.__vueApp && window.__vueApp._context && window.__vueApp._context.provides) {
+      return window.__vueApp._context.provides['websocket-manager']
+    }
+    return null
   }
 
   // WebSocket Methods - now delegate to injected manager
 
   /**
-   * Join a specific WebSocket channel
-   * @param {string} channel - Channel name (e.g., 'chat/123/456')
+   * Join a specific WebSocket room
+   * @param {string} room - Room name (e.g., 'chat/123/456')
    * @returns {boolean} - Success status
    */
-  joinChannel(channel) {
+  joinRoom(room) {
     if (!this.enableWebSocket || !this.wsManager) {
       console.warn('WebSocket not enabled or manager not available')
       return false
     }
     
-    return this.wsManager.joinChannel(channel)
+    return this.wsManager.joinRoom(room)
   }
 
   /**
-   * Leave a specific WebSocket channel
-   * @param {string} channel - Channel name to leave
+   * Leave a specific WebSocket room
+   * @param {string} room - Room name to leave
    * @returns {boolean} - Success status
    */
-  leaveChannel(channel) {
+  leaveRoom(room) {
     if (!this.enableWebSocket || !this.wsManager) {
       return false
     }
     
-    return this.wsManager.leaveChannel(channel)
+    return this.wsManager.leaveRoom(room)
   }
 
   /**
-   * Listen to events from a specific channel
-   * @param {string} channel - Channel name
+   * Listen to WebSocket events
    * @param {string} event - Event name
    * @param {Function} callback - Event handler function
    * @returns {Function} - Unsubscribe function
    */
-  onChannelEvent(channel, event, callback) {
+  onWebSocketEvent(event, callback) {
     if (!this.enableWebSocket || !this.wsManager) {
       console.warn('WebSocket not enabled or manager not available')
       return () => {} // Return no-op unsubscribe function
     }
     
-    return this.wsManager.onChannelEvent(channel, event, callback)
+    return this.wsManager.on(event, callback)
   }
 
   /**
-   * Send event to a specific channel
-   * @param {string} channel - Channel name
+   * Emit WebSocket event
    * @param {string} event - Event name
    * @param {any} data - Event data
    * @returns {boolean} - Success status
    */
-  emitToChannel(channel, event, data) {
+  emitWebSocketEvent(event, data) {
     if (!this.enableWebSocket || !this.wsManager) {
       console.warn('WebSocket not enabled or manager not available')
       return false
     }
     
-    return this.wsManager.emitToChannel(channel, event, data)
+    return this.wsManager.emit(event, data)
   }
 
   /**
-   * Alias for emitToChannel (matches backend naming)
-   * @param {string} channel - Channel name
-   * @param {string} event - Event name
-   * @param {any} data - Event data
-   * @returns {boolean} - Success status
-   */
-  sendToChannel(channel, event, data) {
-    return this.emitToChannel(channel, event, data)
-  }
-
-  /**
-   * Send event to a specific room
+   * Emit WebSocket event to a specific room
    * @param {string} room - Room name
    * @param {string} event - Event name
    * @param {any} data - Event data
    * @returns {boolean} - Success status
    */
-  sendToRoom(room, event, data) {
+  emitWebSocketEventToRoom(room, event, data) {
     if (!this.enableWebSocket || !this.wsManager) {
       console.warn('WebSocket not enabled or manager not available')
       return false
     }
     
-    return this.wsManager.sendToRoom(room, event, data)
-  }
-
-  /**
-   * Get all subscribed channels
-   * @returns {Array<string>} - Array of channel names
-   */
-  getSubscribedChannels() {
-    if (!this.enableWebSocket || !this.wsManager) {
-      return []
-    }
-    
-    return this.wsManager.getSubscribedChannels()
+    return this.wsManager.emitToRoom(room, event, data)
   }
 
   /**

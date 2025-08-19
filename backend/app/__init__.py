@@ -134,7 +134,7 @@ def create_app() -> Flask:
             }), 500
         return None  # Let other handlers deal with it
 
-    # 4. WebSocket event handlers
+    # 4. WebSocket event handlers - SIMPLE and straightforward
     @socketio.on('connect')
     def handle_connect():
         print(f"🔌 WebSocket client connected: {request.sid}")
@@ -145,86 +145,29 @@ def create_app() -> Flask:
         print(f"🔌 WebSocket client disconnected: {request.sid}")
         app.logger.info(f"WebSocket client disconnected: {request.sid}")
 
-    @socketio.on('join_channel')
-    def handle_join_channel(data):
-        """Handle client joining a specific channel."""
-        channel = data.get('channel')
-        if channel:
+    @socketio.on('join')
+    def handle_join_room(data):
+        """Handle client joining a room - SIMPLE Socket.IO rooms."""
+        room = data
+        if room:
             from flask_socketio import join_room
-            join_room(channel)
-            print(f"🔌 Client {request.sid} joined channel: {channel}")
-            app.logger.info(f"Client {request.sid} joined channel: {channel}")
-            return {'status': 'success', 'channel': channel}
-        return {'status': 'error', 'message': 'No channel specified'}
+            join_room(room)
+            print(f"🔌 Client {request.sid} joined room: {room}")
+            app.logger.info(f"Client {request.sid} joined room: {room}")
+            return {'status': 'success', 'room': room}
+        return {'status': 'error', 'message': 'No room specified'}
 
-    @socketio.on('channel_message')
-    def handle_channel_message(data):
-        """Route incoming channel messages to appropriate @expose_ws methods."""
-        channel = data.get('channel')
-        message_data = data.get('data')
-        
-        if not channel or not message_data:
-            return {'error': 'Missing channel or data'}
-        
-        # Get the APIRouter instance to find WebSocket methods
-        from .api_router.api_router import APIRouter
-        router = APIRouter.get_instance()
-        
-        if router:
-            websocket_channels = router.get_websocket_channels()
-            
-            # Find which @expose_ws method handles this channel
-            for registered_channel, channel_info in websocket_channels.items():
-                if channel_matches(registered_channel, channel):
-                    service = channel_info['service']
-                    method_name = channel_info['method_name']
-                    method = getattr(service, method_name)
-                    
-                    try:
-                        # Extract path parameters from channel
-                        params = extract_channel_params(registered_channel, channel)
-                        
-                        # Call the service method with extracted parameters
-                        result = method(message_data, **params)
-                        return {'status': 'success', 'result': result}
-                    except Exception as e:
-                        app.logger.error(f"WebSocket method execution error: {str(e)}")
-                        return {'error': str(e)}
-            
-            return {'error': 'Channel not found'}
-        
-        return {'error': 'Router not available'}
-
-    def channel_matches(pattern: str, channel: str) -> bool:
-        """Check if a channel matches a pattern with placeholders."""
-        # Convert pattern placeholders to regex
-        # {param} -> ([^/]+)
-        regex_pattern = re.sub(r'\{([^}]+)\}', r'([^/]+)', pattern)
-        
-        # Add start/end anchors
-        regex_pattern = f'^{regex_pattern}$'
-        
-        # Check if channel matches pattern
-        return bool(re.match(regex_pattern, channel))
-
-    def extract_channel_params(pattern: str, channel: str) -> dict:
-        """Extract parameters from channel based on pattern."""
-        params = {}
-        
-        # Find all placeholders in pattern
-        placeholders = re.findall(r'\{([^}]+)\}', pattern)
-        
-        # Convert pattern to regex for extraction
-        regex_pattern = re.sub(r'\{([^}]+)\}', r'([^/]+)', pattern)
-        regex_pattern = f'^{regex_pattern}$'
-        
-        # Extract values
-        match = re.match(regex_pattern, channel)
-        if match:
-            for i, placeholder in enumerate(placeholders):
-                params[placeholder] = match.group(i + 1)
-        
-        return params
+    @socketio.on('leave')
+    def handle_leave_room(data):
+        """Handle client leaving a room - SIMPLE Socket.IO rooms."""
+        room = data
+        if room:
+            from flask_socketio import leave_room
+            leave_room(room)
+            print(f"🔌 Client {request.sid} left room: {room}")
+            app.logger.info(f"Client {request.sid} left room: {room}")
+            return {'status': 'success', 'room': room}
+        return {'status': 'error', 'message': 'No room specified'}
 
     # Initialize APIRouter with SocketIO instance
     api_router = APIRouter(socketio_instance=socketio)

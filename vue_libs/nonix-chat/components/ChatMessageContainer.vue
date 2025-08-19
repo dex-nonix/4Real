@@ -83,26 +83,26 @@ onMounted(() => {
   chatMessageTypeManager.registerMessageType('tool', ToolMessage);
   chatMessageTypeManager.registerMessageType('user', UserMessage);
   
-  // WebSocket Integration: Join chat channel and listen for real-time events
+  // WebSocket Integration: Join chat room and listen for real-time events
   if (props.selectedSession && props.historyId) {
-    const channel = `chat/${props.selectedSession.id}/${props.historyId}`;
+    const room = `chat/${props.selectedSession.id}/${props.historyId}`;
     
-    // Use EXISTING ChatService WebSocket methods
-    chatService.joinChannel(channel);
+    // Use SIMPLE WebSocket methods
+    chatService.joinRoom(room);
     
-    // Listen for real-time events using EXISTING methods
-    chatService.onChannelEvent(channel, 'llm_status', handleLLMStatus);
-    chatService.onChannelEvent(channel, 'tool_status', handleToolStatus);
-    chatService.onChannelEvent(channel, 'message_received', handleMessageReceived);
-    chatService.onChannelEvent(channel, 'message_processed', handleMessageProcessed);
+    // Listen for real-time events using SIMPLE methods
+    chatService.onWebSocketEvent('llm_status', handleLLMStatus);
+    chatService.onWebSocketEvent('tool_status', handleToolStatus);
+    chatService.onWebSocketEvent('message_received', handleMessageReceived);
+    chatService.onWebSocketEvent('message_processed', handleMessageProcessed);
   }
 });
 
 // Cleanup WebSocket resources on unmount
 onUnmounted(() => {
   if (props.selectedSession && props.historyId) {
-    const channel = `chat/${props.selectedSession.id}/${props.historyId}`;
-    chatService.leaveChannel(channel);
+    const room = `chat/${props.selectedSession.id}/${props.historyId}`;
+    chatService.leaveRoom(room);
   }
 });
 
@@ -157,24 +157,24 @@ const updateMessageStatus = (messageId, status) => {
   }
 };
 
-// Watch for session/history changes and rejoin WebSocket channels
+// Watch for session/history changes and rejoin WebSocket rooms
 watch([() => props.selectedSession, () => props.historyId], ([newSession, newHistoryId], [oldSession, oldHistoryId]) => {
-  // Leave old channel if it exists
+  // Leave old room if it exists
   if (oldSession && oldHistoryId) {
-    const oldChannel = `chat/${oldSession.id}/${oldHistoryId}`;
-    chatService.leaveChannel(oldChannel);
+    const oldRoom = `chat/${oldSession.id}/${oldHistoryId}`;
+    chatService.leaveRoom(oldRoom);
   }
   
-  // Join new channel if it exists
+  // Join new room if it exists
   if (newSession && newHistoryId) {
-    const newChannel = `chat/${newSession.id}/${newHistoryId}`;
-    chatService.joinChannel(newChannel);
+    const newRoom = `chat/${newSession.id}/${newHistoryId}`;
+    chatService.joinRoom(newRoom);
     
     // Re-attach event listeners
-    chatService.onChannelEvent(newChannel, 'llm_status', handleLLMStatus);
-    chatService.onChannelEvent(newChannel, 'tool_status', handleToolStatus);
-    chatService.onChannelEvent(newChannel, 'message_received', handleMessageReceived);
-    chatService.onChannelEvent(newChannel, 'message_processed', handleMessageProcessed);
+    chatService.onWebSocketEvent('llm_status', handleLLMStatus);
+    chatService.onWebSocketEvent('tool_status', handleToolStatus);
+    chatService.onWebSocketEvent('message_received', handleMessageReceived);
+    chatService.onWebSocketEvent('message_processed', handleMessageProcessed);
   }
 }, { immediate: true });
 
