@@ -15,6 +15,7 @@ from ..llm_client import run_chat
 from ..tool_runtime import build_persona_tool_map, execute_tool
 from .websocket_protocol import WebSocketProtocol
 from datetime import datetime
+from ..tool_runtime import list_persona_tools
 
 
 class ChatMessageMixin(WebSocketProtocol):
@@ -161,7 +162,9 @@ class ChatMessageMixin(WebSocketProtocol):
 
             # Resolve persona and tools
             persona = session.persona
-            available_tools = { name: {'type': 'internal'} for name in build_persona_tool_map(persona.id).keys() }
+            # Get proper tool information with schemas and descriptions
+            available_tools_info = list_persona_tools(persona.id)
+            available_tools = { tool['name']: {'type': 'internal'} for tool in available_tools_info }
             model_info = self._select_chat_model(persona.id)
 
             # Build chat history for provider call
@@ -186,7 +189,8 @@ class ChatMessageMixin(WebSocketProtocol):
                     try:
                         # Reconstruct mapping object used for provider call
                         mapping_obj = AIModelMapping.query.filter_by(id=persona.ai_model_mapping_id, is_active=True).first()
-                        assistant_output = run_chat(provider, mapping_obj, chat_history)
+                        # Pass tool information to the LLM
+                        assistant_output = run_chat(provider, mapping_obj, chat_history, available_tools_info)
                     except Exception as exc:  # noqa: BLE001
                         assistant_output = {'type': 'text', 'text': f'Provider error: {exc}'}
             if not assistant_output:
@@ -349,7 +353,9 @@ class ChatMessageMixin(WebSocketProtocol):
 
             # Resolve persona and tools
             persona = session.persona
-            available_tools = { name: {'type': 'internal'} for name in build_persona_tool_map(persona.id).keys() }
+            # Get proper tool information with schemas and descriptions
+            available_tools_info = list_persona_tools(persona.id)
+            available_tools = { tool['name']: {'type': 'internal'} for tool in available_tools_info }
             model_info = self._select_chat_model(persona.id)
 
             # Build chat history for provider call
@@ -374,7 +380,7 @@ class ChatMessageMixin(WebSocketProtocol):
                     try:
                         # Reconstruct mapping object used for provider call
                         mapping_obj = AIModelMapping.query.filter_by(id=persona.ai_model_mapping_id, is_active=True).first()
-                        assistant_output = run_chat(provider, mapping_obj, chat_history)
+                        assistant_output = run_chat(provider, mapping_obj, chat_history, available_tools_info)
                     except Exception as exc:  # noqa: BLE001
                         assistant_output = {'type': 'text', 'text': f'Provider error: {exc}'}
             if not assistant_output:

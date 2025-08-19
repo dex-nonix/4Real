@@ -4,12 +4,13 @@ from typing import Any, Dict, List
 import importlib
 
 
-def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]]) -> Dict[str, Any]:
+def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]], available_tools_info: List[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Provider adapter driven entirely by DB configuration (persona-selected mapping).
 
     - Imports provider.module, resolves provider.class
     - Instantiates with merged kwargs: provider.config_json + model + mapping.parameters_json
     - Calls provider.method (default 'invoke') with LangChain-formatted messages
+    - Now includes available_tools_info for tool-aware LLMs
     """
     cfg: Dict[str, Any] = provider.config_json or {}
     model_name: str = mapping.model_name
@@ -43,6 +44,25 @@ def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]]) -> Dic
     # Convert to LC messages (simple text only)
     from langchain.schema import HumanMessage, SystemMessage, AIMessage
     lc_messages = []
+    
+    # Add system message with tool information if available
+    if available_tools_info:
+        tool_descriptions = []
+        for tool in available_tools_info:
+            name = tool.get('name', '')
+            description = tool.get('description', '')
+            has_artist_id_bound = tool.get('has_artist_id_bound', False)
+            
+            if has_artist_id_bound:
+                tool_descriptions.append(f"- {name}: {description} (artist_id is pre-bound)")
+            else:
+                tool_descriptions.append(f"- {name}: {description}")
+        
+        if tool_descriptions:
+            system_content = f"You have access to the following tools:\n" + "\n".join(tool_descriptions) + "\n\nYou can request tool execution by responding with a tool call in this format: {{'type': 'tool_call', 'tool': 'tool_name', 'args': {{'param': 'value'}}}}"
+            lc_messages.append(SystemMessage(content=system_content))
+    
+    # Add existing messages
     for m in messages:
         role = m.get('role')
         content = m.get('content')
