@@ -13,6 +13,9 @@ const props = defineProps({
   }
 });
 
+// Declare emits for Vue 3 event handling
+const emit = defineEmits(['deleteMessage']);
+
 const toolName = computed(() => props.message.metadata?.toolName || props.message.content_json?.toolName || 'Unknown Tool');
 const toolParams = computed(() => props.message.metadata?.toolParams || props.message.content_json?.toolParams || {});
 const executionStatus = computed(() => props.message.metadata?.executionStatus || props.message.content_json?.executionStatus || 'pending');
