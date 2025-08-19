@@ -171,7 +171,7 @@ def create_app() -> Flask:
             return {'error': 'Missing channel or data'}
         
         # Get the APIRouter instance to find WebSocket methods
-        from .services.api_router import APIRouter
+        from .api_router.api_router import APIRouter
         router = APIRouter.get_instance()
         
         if router:
