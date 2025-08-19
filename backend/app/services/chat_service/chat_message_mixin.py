@@ -189,8 +189,8 @@ class ChatMessageMixin(WebSocketProtocol):
                     try:
                         # Reconstruct mapping object used for provider call
                         mapping_obj = AIModelMapping.query.filter_by(id=persona.ai_model_mapping_id, is_active=True).first()
-                        # Pass tool information to the LLM
-                        assistant_output = run_chat(provider, mapping_obj, chat_history, available_tools_info)
+                        # Pass tool information and persona_id to the LLM
+                        assistant_output = run_chat(provider, mapping_obj, chat_history, available_tools_info, persona.id)
                     except Exception as exc:  # noqa: BLE001
                         assistant_output = {'type': 'text', 'text': f'Provider error: {exc}'}
             if not assistant_output:
