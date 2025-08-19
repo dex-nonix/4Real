@@ -8,6 +8,8 @@ import traceback
 import sys
 from werkzeug.exceptions import HTTPException
 
+from .api_router.api_router import APIRouter
+
 
 db = SQLAlchemy()
 
@@ -36,18 +38,15 @@ def create_app() -> Flask:
     
     app.logger.setLevel(logging.DEBUG)
     
-    # Make sure errors are immediately visible
-    def log_error_and_exit(msg, *args, **kwargs):
-        print(f"\n\033[91m🔥 CRITICAL ERROR 🔥\033[0m: {msg}", file=sys.stderr)
-        sys.stderr.flush()
-        # Don't call app.logger.error again - this prevents infinite recursion
-        # app.logger.error(msg, *args, **kwargs)
-    
-    # Don't replace the logger's error method - this causes infinite recursion
-    # app.logger.error = log_error_and_exit
-
     CORS(app)
     db.init_app(app)
+
+    # Initialize Flask-SocketIO for WebSocket support
+    from flask_socketio import SocketIO
+    socketio = SocketIO(app, cors_allowed_origins="*", logger=True, engineio_logger=True)
+    
+    # Make SocketIO available as app extension
+    app.extensions['socketio'] = socketio
 
     # COMPREHENSIVE ERROR HANDLING - Catch everything!
     
@@ -129,52 +128,70 @@ def create_app() -> Flask:
             }), 500
         return None  # Let other handlers deal with it
 
-    # 4. Request logging middleware with immediate output
-    @app.before_request
-    def log_request_info():
-        request_msg = f"📥 Request: {request.method} {request.url}"
-        print(f"\n{request_msg}")
-        sys.stdout.flush()
-        app.logger.info(request_msg)
+    # 4. WebSocket event handlers
+    @socketio.on('connect')
+    def handle_connect():
+        print(f"🔌 WebSocket client connected: {request.sid}")
+        app.logger.info(f"WebSocket client connected: {request.sid}")
+
+    @socketio.on('disconnect')
+    def handle_disconnect():
+        print(f"🔌 WebSocket client disconnected: {request.sid}")
+        app.logger.info(f"WebSocket client disconnected: {request.sid}")
+
+    @socketio.on('join_channel')
+    def handle_join_channel(data):
+        """Handle client joining a specific channel."""
+        channel = data.get('channel')
+        if channel:
+            from flask_socketio import join_room
+            join_room(channel)
+            print(f"🔌 Client {request.sid} joined channel: {channel}")
+            app.logger.info(f"Client {request.sid} joined channel: {channel}")
+            return {'status': 'success', 'channel': channel}
+        return {'status': 'error', 'message': 'No channel specified'}
+
+    @socketio.on('channel_message')
+    def handle_channel_message(data):
+        """Route incoming channel messages to appropriate @expose_ws methods."""
+        channel = data.get('channel')
+        message_data = data.get('data')
         
-        if request.method in ['POST', 'PUT', 'PATCH']:
-            data = request.get_json(silent=True)
-            if data:
-                data_msg = f"📦 Request data: {data}"
-                print(f"{data_msg}")
-                sys.stdout.flush()
-                app.logger.debug(data_msg)
+        if not channel or not message_data:
+            return {'error': 'Missing channel or data'}
+        
+        # Get the APIRouter instance to find WebSocket methods
+        from .services.api_router import APIRouter
+        router = APIRouter.get_instance()
+        
+        if router:
+            websocket_channels = router.get_websocket_channels()
+            if channel in websocket_channels:
+                channel_info = websocket_channels[channel]
+                service = channel_info['service']
+                method_name = channel_info['method_name']
+                method = getattr(service, method_name)
+                
+                try:
+                    # Extract path parameters from channel
+                    import re
+                    param_pattern = r'\{([^}]+)\}'
+                    channel_params = re.findall(param_pattern, channel)
+                    
+                    # For now, just call the method with the data
+                    # In a real implementation, you'd extract and validate parameters
+                    result = method(message_data)
+                    return {'status': 'success', 'result': result}
+                except Exception as e:
+                    app.logger.error(f"WebSocket method execution error: {str(e)}")
+                    return {'error': str(e)}
+            else:
+                return {'error': 'Channel not found'}
+        
+        return {'error': 'Router not available'}
 
-    @app.after_request
-    def log_response_info(response):
-        status_color = '\033[92m' if response.status_code < 400 else '\033[91m'
-        response_msg = f"📤 Response: {status_color}{response.status_code}\033[0m for {request.method} {request.url}"
-        print(f"{response_msg}")
-        sys.stdout.flush()
-        app.logger.info(response_msg)
-        return response
-
-    # 5. Add error handling to all blueprint registrations
-    def register_blueprint_with_error_handling(blueprint, **kwargs):
-        """Register blueprint with comprehensive error handling"""
-        try:
-            app.register_blueprint(blueprint, **kwargs)
-            print(f"✅ Successfully registered blueprint: {blueprint.name}")
-            sys.stdout.flush()
-        except Exception as e:
-            error_msg = f"💥 FAILED to register blueprint {blueprint.name}: {str(e)}"
-            traceback_msg = f"📋 Full Traceback:\n{traceback.format_exc()}"
-            
-            print(f"\n{error_msg}", file=sys.stderr)
-            print(f"{traceback_msg}", file=sys.stderr)
-            sys.stderr.flush()
-            
-            app.logger.error(error_msg)
-            app.logger.error(traceback_msg)
-            raise  # Re-raise to prevent silent failures
-
-    from .api_router import APIRouter
-    api_router = APIRouter()
+    # Initialize APIRouter with SocketIO instance
+    api_router = APIRouter(socketio_instance=socketio)
 
     with app.app_context():
         try:
@@ -256,17 +273,29 @@ def create_app() -> Flask:
             app.logger.error(traceback_msg)
             raise  # Re-raise to prevent silent failures
 
+    # Add error handling to all blueprint registrations
+    def register_blueprint_with_error_handling(blueprint, **kwargs):
+        """Register blueprint with comprehensive error handling"""
+        try:
+            app.register_blueprint(blueprint, **kwargs)
+            print(f"✅ Successfully registered blueprint: {blueprint.name}")
+            sys.stdout.flush()
+        except Exception as e:
+            error_msg = f"💥 FAILED to register blueprint {blueprint.name}: {str(e)}"
+            traceback_msg = f"📋 Full Traceback:\n{traceback.format_exc()}"
+            
+            print(f"\n{error_msg}", file=sys.stderr)
+            print(f"{traceback_msg}", file=sys.stderr)
+            sys.stderr.flush()
+            
+            app.logger.error(error_msg)
+            app.logger.error(traceback_msg)
+            raise  # Re-raise to prevent silent failures
+
     # Register the API router with error handling
     register_blueprint_with_error_handling(api_router.blueprint, url_prefix='/api')
     
-    # Test endpoint to verify error logging
-    @app.route('/test-error')
-    def test_error():
-        """Test endpoint to verify error logging is working"""
-        print("\n🧪 Testing error logging...")
-        sys.stdout.flush()
-        app.logger.info("Testing error logging...")
-        raise Exception("This is a test error to verify logging is working!")
+
     
     print("\n✅ Flask app initialized successfully with COMPREHENSIVE error logging!")
     sys.stdout.flush()

@@ -48,3 +48,18 @@ def expose(
     
     return decorator
 
+
+def expose_ws(channel: str) -> Callable:
+    """
+    Mark method as WebSocket channel handler.
+    
+    Args:
+        channel: WebSocket channel path (e.g., 'service/{id}/updates')
+    """
+    def decorator(func: Callable) -> Callable:
+        setattr(func, '_expose_ws', True)
+        setattr(func, '_channel', channel)
+        return func
+    
+    return decorator
+

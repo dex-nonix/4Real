@@ -14,10 +14,12 @@ class APIRouter:
 
     _instance = None
 
-    def __init__(self) -> None:
+    def __init__(self, socketio_instance=None) -> None:
         self.blueprint = Blueprint('api', __name__)
         self.registered_services: dict[str, Any] = {}
         self.logger = logging.getLogger(__name__)
+        self.socketio = socketio_instance  # Store SocketIO instance for WebSocket support
+        self._websocket_channels = {}  # Initialize WebSocket channels dict
         
         # Add documentation routes
         self.documentation_router = DocumentationRouter(self.blueprint)
@@ -33,21 +35,58 @@ class APIRouter:
     def register_service(self, service_name: str, service_class: type, *args: Any, **kwargs: Any) -> None:
         """Instantiate a service and create routes for any @expose methods."""
         service = service_class(*args, **kwargs)
+        
+        # Enable WebSocket capabilities if SocketIO is available
+        if hasattr(service, 'set_socketio') and self.socketio:
+            service.set_socketio(self.socketio)
+            self.logger.info(f"🔌 WebSocket enabled for service: {service_name}")
+        
         self.registered_services[service_name] = service
 
+        # Discover and register HTTP endpoints
         for attr_name in dir(service):
             method = getattr(service, attr_name)
             if callable(method) and hasattr(method, '_exposed'):
                 self._create_route(service_name, method)
+        
+        # Discover and register WebSocket channels
+        self._discover_websocket_channels(service_name, service)
 
     def register_service_factory(self, service_name: str, factory: Callable[[], Any]) -> None:
         service = factory()
+        
+        # Enable WebSocket capabilities if SocketIO is available
+        if hasattr(service, 'set_socketio') and self.socketio:
+            service.set_socketio(self.socketio)
+            self.logger.info(f"🔌 WebSocket enabled for service: {service_name}")
+        
         self.registered_services[service_name] = service
 
+        # Discover and register HTTP endpoints
         for attr_name in dir(service):
             method = getattr(service, attr_name)
             if callable(method) and hasattr(method, '_exposed'):
                 self._create_route(service_name, method)
+        
+        # Discover and register WebSocket channels
+        self._discover_websocket_channels(service_name, service)
+
+    def _discover_websocket_channels(self, service_name: str, service: Any) -> None:
+        """Discover @expose_ws methods and register WebSocket channels."""
+        if hasattr(service, 'get_exposed_ws_methods'):
+            ws_methods = service.get_exposed_ws_methods()
+            
+            for method_info in ws_methods:
+                channel = method_info['channel']
+                method_name = method_info['name']
+                self.logger.info(f"🔌 Registered WebSocket channel: {service_name}.{method_name} -> {channel}")
+                
+                # Store WebSocket method info
+                self._websocket_channels[channel] = {
+                    'service_name': service_name,
+                    'method_name': method_name,
+                    'service': service
+                }
 
     def _normalize_path(self, service_name: str, path: str) -> str:
         if not path.startswith('/'):
@@ -115,4 +154,8 @@ class APIRouter:
 
     def get_service(self, service_name: str) -> Any | None:
         return self.registered_services.get(service_name)
+
+    def get_websocket_channels(self) -> dict:
+        """Get all registered WebSocket channels."""
+        return self._websocket_channels
 

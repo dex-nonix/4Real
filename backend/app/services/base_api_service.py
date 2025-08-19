@@ -5,6 +5,67 @@ import re
 class BaseApiService(ABC):
     """Base class for all API services with Swagger documentation capability."""
     
+    def __init__(self):
+        """Initialize WebSocket integration."""
+        self._socketio = None  # Will be set by APIRouter during registration
+    
+    def set_socketio(self, socketio_instance):
+        """Set SocketIO instance for WebSocket communication."""
+        self._socketio = socketio_instance
+    
+    def send_to_channel(self, channel: str, event: str, data: dict, room: str = None):
+        """
+        Send event to a specific WebSocket channel.
+        
+        Args:
+            channel: Channel path (e.g., 'service/channel/123')
+            event: Event name (e.g., 'status_updated')
+            data: Event data payload
+            room: Optional room name (defaults to channel)
+        """
+        if not self._socketio:
+            print(f"Warning: SocketIO not initialized for {self.__class__.__name__}")
+            return
+        
+        # Use channel as room if no specific room provided
+        target_room = room or channel
+        
+        # Emit event to specific room (NO broadcasting!)
+        self._socketio.emit(f'{channel}:{event}', data, room=target_room)
+    
+    def send_to_room(self, room: str, event: str, data: dict):
+        """
+        Send event to a specific room.
+        
+        Args:
+            room: Room name (e.g., 'service/room/123')
+            event: Event name (e.g., 'notification')
+            data: Event data payload
+        """
+        if not self._socketio:
+            print(f"Warning: SocketIO not initialized for {self.__class__.__name__}")
+            return
+        
+        # Emit event to specific room
+        self._socketio.emit(event, data, room=room)
+    
+    def get_exposed_ws_methods(self) -> List[Dict[str, Any]]:
+        """Get all @expose_ws methods with their metadata."""
+        exposed_ws_methods = []
+        
+        for attr_name in dir(self):
+            method = getattr(self, attr_name)
+            if callable(method) and hasattr(method, '_expose_ws'):
+                method_info = {
+                    'name': attr_name,
+                    'channel': getattr(method, '_channel'),
+                    'summary': getattr(method, '_summary'),
+                    'description': getattr(method, '_description')
+                }
+                exposed_ws_methods.append(method_info)
+        
+        return exposed_ws_methods
+    
     def to_swagger(self, service_name: str = None) -> Dict[str, Any]:
         """
         Return Swagger/OpenAPI definitions for this service.

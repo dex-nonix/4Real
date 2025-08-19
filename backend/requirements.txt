@@ -10,3 +10,4 @@ langchain
 langchain-openai
 pydantic>=2.0.0
 flask-swagger-ui>=4.11.1
+Flask-SocketIO==5.3.6
