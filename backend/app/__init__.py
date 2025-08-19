@@ -2,6 +2,7 @@ from flask import Flask, send_from_directory, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from dotenv import load_dotenv
+import re
 import os
 import logging
 import traceback
@@ -176,29 +177,59 @@ def create_app() -> Flask:
         
         if router:
             websocket_channels = router.get_websocket_channels()
-            if channel in websocket_channels:
-                channel_info = websocket_channels[channel]
-                service = channel_info['service']
-                method_name = channel_info['method_name']
-                method = getattr(service, method_name)
-                
-                try:
-                    # Extract path parameters from channel
-                    import re
-                    param_pattern = r'\{([^}]+)\}'
-                    channel_params = re.findall(param_pattern, channel)
+            
+            # Find which @expose_ws method handles this channel
+            for registered_channel, channel_info in websocket_channels.items():
+                if channel_matches(registered_channel, channel):
+                    service = channel_info['service']
+                    method_name = channel_info['method_name']
+                    method = getattr(service, method_name)
                     
-                    # For now, just call the method with the data
-                    # In a real implementation, you'd extract and validate parameters
-                    result = method(message_data)
-                    return {'status': 'success', 'result': result}
-                except Exception as e:
-                    app.logger.error(f"WebSocket method execution error: {str(e)}")
-                    return {'error': str(e)}
-            else:
-                return {'error': 'Channel not found'}
+                    try:
+                        # Extract path parameters from channel
+                        params = extract_channel_params(registered_channel, channel)
+                        
+                        # Call the service method with extracted parameters
+                        result = method(message_data, **params)
+                        return {'status': 'success', 'result': result}
+                    except Exception as e:
+                        app.logger.error(f"WebSocket method execution error: {str(e)}")
+                        return {'error': str(e)}
+            
+            return {'error': 'Channel not found'}
         
         return {'error': 'Router not available'}
+
+    def channel_matches(pattern: str, channel: str) -> bool:
+        """Check if a channel matches a pattern with placeholders."""
+        # Convert pattern placeholders to regex
+        # {param} -> ([^/]+)
+        regex_pattern = re.sub(r'\{([^}]+)\}', r'([^/]+)', pattern)
+        
+        # Add start/end anchors
+        regex_pattern = f'^{regex_pattern}$'
+        
+        # Check if channel matches pattern
+        return bool(re.match(regex_pattern, channel))
+
+    def extract_channel_params(pattern: str, channel: str) -> dict:
+        """Extract parameters from channel based on pattern."""
+        params = {}
+        
+        # Find all placeholders in pattern
+        placeholders = re.findall(r'\{([^}]+)\}', pattern)
+        
+        # Convert pattern to regex for extraction
+        regex_pattern = re.sub(r'\{([^}]+)\}', r'([^/]+)', pattern)
+        regex_pattern = f'^{regex_pattern}$'
+        
+        # Extract values
+        match = re.match(regex_pattern, channel)
+        if match:
+            for i, placeholder in enumerate(placeholders):
+                params[placeholder] = match.group(i + 1)
+        
+        return params
 
     # Initialize APIRouter with SocketIO instance
     api_router = APIRouter(socketio_instance=socketio)
@@ -231,6 +262,7 @@ def create_app() -> Flask:
             from .services.file_category_service import FileCategoryService
             from .services.file_service import FileService
             from .services.file_link_service import FileLinkService
+            
 
             print("📋 Registering services...")
             sys.stdout.flush()

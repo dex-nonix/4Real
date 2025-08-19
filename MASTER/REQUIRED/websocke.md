@@ -350,10 +350,6 @@ socket.on('updates/entity/789:updated', (data) => {
 - **WebSocket Event Handlers**: Connect, disconnect, join_channel, channel_message
 - **Channel Discovery**: Automatic registration of WebSocket channels during service registration
 
-#### Service Integration (COMPLETED)
-- **ChatService**: Example `@expose_ws('chat/{session_id}/{history_id}')` method implemented
-- **All Services**: Automatically get WebSocket capabilities when inheriting from BaseApiService
-- **SocketIO Instance**: Automatically passed to all services during registration
 
 #### WebSocket Endpoint (COMPLETED)
 - **Path**: `/api/ws/` - Single WebSocket connection point
@@ -407,19 +403,12 @@ def handle_channel_message(data):
 2. **`backend/requirements.txt`**: Added `Flask-SocketIO==5.3.6`
 3. **`backend/app/__init__.py`**: Flask-SocketIO initialization and event handlers
 4. **`backend/wsgi.py`**: SocketIO app support
-5. **`backend/app/services/chat_service.py`**: Example `@expose_ws` method
-6. **`backend/app/services/base_api_service.py`**: WebSocket methods (already implemented)
 7. **`backend/app/api_router/api_router.py`**: WebSocket channel discovery (already implemented)
 
 #### WebSocket Flow
 ```
 1. Client connects to /api/ws/
-2. Client joins channel: socket.emit('join_channel', {channel: 'chat/123/456'})
-3. Client sends message: socket.emit('channel_message', {channel: 'chat/123/456', data: {...}})
-4. Server routes to ChatService.chat_channel() method
-5. Method processes and optionally emits events: self.send_to_channel('chat/123/456', 'event_name', data)
-6. All clients in that channel receive the event
-```
+
 
 ### 🎯 Ready for Frontend Integration
 
