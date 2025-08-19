@@ -28,6 +28,7 @@
 <script>
 import { ref, inject } from 'vue'
 import Button from 'primevue/button'
+import { API_BASE_URL } from '@/env.js'
 
 export default {
   name: 'PersonaToolsViewer',
@@ -53,7 +54,6 @@ export default {
           tools.value = Array.isArray(toolsData) ? toolsData : []
         } else {
           // Fallback to direct API call if service not available
-          const { API_BASE_URL } = await import('@/env.js')
           const res = await fetch(`${API_BASE_URL}/chat/personas/${props.personaId}/tools`)
           const data = await res.json()
           tools.value = Array.isArray(data?.data) ? data.data : []
