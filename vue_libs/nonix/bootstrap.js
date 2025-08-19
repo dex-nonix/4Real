@@ -14,6 +14,7 @@ import EditWidgetManager from "@nonix/widget-manager/EditWidgetManager.js";
 import DynamicWidgetManager from "@nonix/widget-manager/DynamicWidgetManager.js";
 import NotFound from "@/views/NotFound.vue";
 import Tooltip from "primevue/tooltip";
+import WebSocketManager from "@/services/WebSocketManager.js";
 
 
 const ensureCallback = callback => {
@@ -56,6 +57,14 @@ export const mountNxApp = (target, config = {}) => {
     app.use(PrimeVue);
     app.use(ToastService);
     app.directive('tooltip', Tooltip);
+    
+    // Create and provide WebSocket manager at app level
+    const wsManager = new WebSocketManager()
+    app.provide('websocket-manager', wsManager)
+    
+    // Also make it globally available for BaseApiService to access
+    window.__websocketManager = wsManager
+    
     loadConfigObject(app, config);
     iterObject( config.packages, (packageConfig)=> loadConfigObject(app, packageConfig));
     app.mount(target);

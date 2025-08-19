@@ -1,15 +1,6 @@
 // BaseApiService.js - minimal fetch-based HTTP layer with WebSocket support
 import { API_BASE_URL } from '@/env.js'
 
-// Import SocketIO client normally - will be undefined if not available
-let io = null
-try {
-  // Use dynamic import but handle it synchronously in the constructor
-  // This avoids top-level await issues
-} catch (error) {
-  console.warn('Socket.IO client import failed:', error)
-}
-
 export default class BaseApiService {
   constructor(options = {}) {
     const { defaultHeaders = {}, onRequest, onResponse, onError, enableWebSocket = true } = options
@@ -19,70 +10,17 @@ export default class BaseApiService {
     this.onResponse = onResponse
     this.onError = onError
     
-    // WebSocket initialization
-    this.socket = null
-    this.channels = new Set() // Track subscribed channels
-    this.eventListeners = new Map() // Track event listeners by channel
-    
-    if (enableWebSocket) {
-      this._initWebSocket()
-    }
+    // WebSocket functionality now comes from injected manager
+    this.enableWebSocket = enableWebSocket
   }
 
-  // Initialize WebSocket connection
-  async _initWebSocket() {
-    // Try to import SocketIO client if not already available
-    if (!io) {
-      try {
-        const socketIOClient = await import('socket.io-client')
-        io = socketIOClient.io
-      } catch (error) {
-        console.warn('Socket.IO client not available, WebSocket disabled:', error)
-        return
-      }
-    }
-    
-    if (!io) {
-      console.warn('Socket.IO client not available, WebSocket disabled')
-      return
-    }
-    
-    try {
-      // Extract WebSocket URL from API base URL
-      const wsUrl = this.baseURL.replace('http://', 'ws://').replace('https://', 'wss://')
-      this.socket = io(`${wsUrl}/api/ws/`, {
-        transports: ['websocket', 'polling'],
-        autoConnect: true,
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionAttempts: 5
-      })
-      
-      // Set up connection event handlers
-      this.socket.on('connect', () => {
-        console.log('🔌 WebSocket connected to backend')
-      })
-      
-      this.socket.on('disconnect', () => {
-        console.log('🔌 WebSocket disconnected from backend')
-      })
-      
-      this.socket.on('connect_error', (error) => {
-        console.error('🔌 WebSocket connection error:', error)
-      })
-      
-      // Re-join channels on reconnection
-      this.socket.on('connect', () => {
-        this.channels.forEach(channel => {
-          this.socket.emit('join_channel', { channel })
-        })
-      })
-    } catch (error) {
-      console.warn('WebSocket initialization failed:', error)
-    }
+  // Get WebSocket manager from app-level injection
+  get wsManager() {
+    // This will be provided by the app via provide/inject
+    return window.__websocketManager
   }
 
-  // WebSocket Methods
+  // WebSocket Methods - now delegate to injected manager
 
   /**
    * Join a specific WebSocket channel
@@ -90,15 +28,12 @@ export default class BaseApiService {
    * @returns {boolean} - Success status
    */
   joinChannel(channel) {
-    if (!this.socket || !this.socket.connected) {
-      console.warn('WebSocket not connected, cannot join channel:', channel)
+    if (!this.enableWebSocket || !this.wsManager) {
+      console.warn('WebSocket not enabled or manager not available')
       return false
     }
     
-    this.socket.emit('join_channel', { channel })
-    this.channels.add(channel)
-    console.log('🔌 Joined WebSocket channel:', channel)
-    return true
+    return this.wsManager.joinChannel(channel)
   }
 
   /**
@@ -107,18 +42,11 @@ export default class BaseApiService {
    * @returns {boolean} - Success status
    */
   leaveChannel(channel) {
-    if (!this.socket || !this.socket.connected) {
+    if (!this.enableWebSocket || !this.wsManager) {
       return false
     }
     
-    // Remove event listeners for this channel
-    this._removeChannelListeners(channel)
-    
-    // Remove from tracked channels
-    this.channels.delete(channel)
-    
-    console.log('🔌 Left WebSocket channel:', channel)
-    return true
+    return this.wsManager.leaveChannel(channel)
   }
 
   /**
@@ -129,35 +57,12 @@ export default class BaseApiService {
    * @returns {Function} - Unsubscribe function
    */
   onChannelEvent(channel, event, callback) {
-    if (!this.socket || !this.socket.connected) {
-      console.warn('WebSocket not connected, cannot listen to events')
+    if (!this.enableWebSocket || !this.wsManager) {
+      console.warn('WebSocket not enabled or manager not available')
       return () => {} // Return no-op unsubscribe function
     }
     
-    const eventKey = `${channel}:${event}`
-    const listener = (data) => {
-      callback(data)
-    }
-    
-    // Store listener for cleanup
-    if (!this.eventListeners.has(channel)) {
-      this.eventListeners.set(channel, new Map())
-    }
-    this.eventListeners.get(channel).set(event, listener)
-    
-    // Listen to the event
-    this.socket.on(eventKey, listener)
-    
-    console.log('🔌 Listening to channel event:', eventKey)
-    
-    // Return unsubscribe function
-    return () => {
-      this.socket.off(eventKey, listener)
-      const channelListeners = this.eventListeners.get(channel)
-      if (channelListeners) {
-        channelListeners.delete(event)
-      }
-    }
+    return this.wsManager.onChannelEvent(channel, event, callback)
   }
 
   /**
@@ -168,18 +73,12 @@ export default class BaseApiService {
    * @returns {boolean} - Success status
    */
   emitToChannel(channel, event, data) {
-    if (!this.socket || !this.socket.connected) {
-      console.warn('WebSocket not connected, cannot emit event')
+    if (!this.enableWebSocket || !this.wsManager) {
+      console.warn('WebSocket not enabled or manager not available')
       return false
     }
     
-    this.socket.emit('channel_message', {
-      channel,
-      data: { event, data }
-    })
-    
-    console.log('🔌 Emitted to channel:', channel, 'event:', event, 'data:', data)
-    return true
+    return this.wsManager.emitToChannel(channel, event, data)
   }
 
   /**
@@ -201,15 +100,12 @@ export default class BaseApiService {
    * @returns {boolean} - Success status
    */
   sendToRoom(room, event, data) {
-    if (!this.socket || !this.socket.connected) {
-      console.warn('WebSocket not connected, cannot send to room')
+    if (!this.enableWebSocket || !this.wsManager) {
+      console.warn('WebSocket not enabled or manager not available')
       return false
     }
     
-    this.socket.emit(event, data, room)
-    
-    console.log('🔌 Sent to room:', room, 'event:', event, 'data:', data)
-    return true
+    return this.wsManager.sendToRoom(room, event, data)
   }
 
   /**
@@ -217,7 +113,11 @@ export default class BaseApiService {
    * @returns {Array<string>} - Array of channel names
    */
   getSubscribedChannels() {
-    return Array.from(this.channels)
+    if (!this.enableWebSocket || !this.wsManager) {
+      return []
+    }
+    
+    return this.wsManager.getSubscribedChannels()
   }
 
   /**
@@ -225,42 +125,38 @@ export default class BaseApiService {
    * @returns {boolean} - Connection status
    */
   isWebSocketConnected() {
-    return this.socket && this.socket.connected
+    if (!this.enableWebSocket || !this.wsManager) {
+      return false
+    }
+    
+    return this.wsManager.isConnected()
+  }
+
+  /**
+   * Get WebSocket connection state
+   * @returns {string} - Connection state
+   */
+  getWebSocketConnectionState() {
+    if (!this.enableWebSocket || !this.wsManager) {
+      return 'disabled'
+    }
+    
+    return this.wsManager.getConnectionState()
   }
 
   /**
    * Clean up WebSocket resources
    */
   disconnect() {
-    if (this.socket) {
-      // Remove all event listeners
-      this.eventListeners.forEach((channelListeners, channel) => {
-        this._removeChannelListeners(channel)
-      })
-      
-      // Disconnect socket
-      this.socket.disconnect()
-      this.socket = null
-      this.channels.clear()
-      this.eventListeners.clear()
-      
-      console.log('🔌 WebSocket disconnected and cleaned up')
+    if (!this.enableWebSocket || !this.wsManager) {
+      return
     }
-  }
-
-  // Private helper method to remove channel listeners
-  _removeChannelListeners(channel) {
-    const channelListeners = this.eventListeners.get(channel)
-    if (channelListeners) {
-      channelListeners.forEach((listener, event) => {
-        const eventKey = `${channel}:${event}`
-        if (this.socket) {
-          this.socket.off(eventKey, listener)
-        }
-      })
-      channelListeners.clear()
-    }
-    this.eventListeners.delete(channel)
+    
+    // Note: We don't disconnect the manager, just leave our channels
+    const channels = this.getSubscribedChannels()
+    channels.forEach(channel => {
+      this.leaveChannel(channel)
+    })
   }
 
   // Base path for derived services; subclasses can override
