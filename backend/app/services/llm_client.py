@@ -21,57 +21,53 @@ def create_langchain_tools(persona_id: int, available_tools_info: List[Dict[str,
         tool_info = next((t for t in available_tools_info if t['name'] == tool_name), None)
         description = tool_info.get('description', f'Execute {tool_name}') if tool_info else f'Execute {tool_name}'
         
-        # Get the original function signature from the registry
-        original_func = internal_tool_registry.get(tool_name)
-        
-        if original_func and callable(original_func):
-            # Create a dynamic Pydantic model for the tool parameters
-            if tool_info and 'parameters' in tool_info:
-                # Create a dynamic schema class
-                schema_fields = {}
-                for param in tool_info['parameters']:
-                    param_name = param['name']
-                    param_type = param['type']
-                    param_required = param['required']
-                    param_default = param['default']
-                    
-                    # Convert type string to actual type
-                    if 'int' in param_type:
-                        field_type = int
-                    elif 'str' in param_type:
-                        field_type = str
-                    elif 'bool' in param_type:
-                        field_type = bool
-                    elif 'float' in param_type:
-                        field_type = float
-                    else:
-                        field_type = str
-                    
-                    # Create field with proper defaults
-                    if param_required:
-                        schema_fields[param_name] = (field_type, Field(description=f"Parameter: {param_name}"))
-                    else:
-                        schema_fields[param_name] = (Optional[field_type], Field(default=param_default, description=f"Parameter: {param_name}"))
+        # Create a dynamic Pydantic model for the tool parameters
+        if tool_info and 'parameters' in tool_info and tool_info['parameters']:
+            # Create a dynamic schema class from the already-extracted parameters
+            schema_fields = {}
+            for param in tool_info['parameters']:
+                param_name = param['name']
+                param_type = param['type']
+                param_required = param['required']
+                param_default = param['default']
                 
-                # Create the schema class dynamically
-                ToolSchema = type(f'{tool_name}Schema', (BaseModel,), schema_fields)
+                # Convert type string to actual type (using the already-extracted type info)
+                if 'int' in param_type:
+                    field_type = int
+                elif 'str' in param_type:
+                    field_type = str
+                elif 'bool' in param_type:
+                    field_type = bool
+                elif 'float' in param_type:
+                    field_type = float
+                else:
+                    field_type = str
                 
-                # Create StructuredTool with proper Pydantic schema
-                langchain_tool = StructuredTool.from_function(
-                    func=tool_func,  # Use the partial directly
-                    name=tool_name,
-                    description=description,
-                    args_schema=ToolSchema
-                )
-            else:
-                # Fallback: no schema, just basic tool
-                langchain_tool = StructuredTool.from_function(
-                    func=tool_func,
-                    name=tool_name,
-                    description=description
-                )
+                # Create field with proper defaults (using the already-extracted default info)
+                if param_required:
+                    schema_fields[param_name] = (field_type, Field(description=f"Parameter: {param_name}"))
+                else:
+                    schema_fields[param_name] = (Optional[field_type], Field(default=param_default, description=f"Parameter: {param_name}"))
             
-            langchain_tools.append(langchain_tool)
+            # Create the schema class dynamically
+            ToolSchema = type(f'{tool_name}Schema', (BaseModel,), schema_fields)
+            
+            # Create StructuredTool with proper Pydantic schema
+            langchain_tool = StructuredTool.from_function(
+                func=tool_func,  # Use the partial directly
+                name=tool_name,
+                description=description,
+                args_schema=ToolSchema
+            )
+        else:
+            # Fallback: no schema, just basic tool
+            langchain_tool = StructuredTool.from_function(
+                func=tool_func,
+                name=tool_name,
+                description=description
+            )
+        
+        langchain_tools.append(langchain_tool)
     
     return langchain_tools
 
