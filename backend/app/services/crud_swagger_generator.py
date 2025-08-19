@@ -4,7 +4,7 @@ from sqlalchemy import or_, func as sa_func
 
 class CrudSwaggerGenerator:
     """Generates Swagger documentation for CRUD services."""
-
+ 
     def __init__(self, service, service_name: str):
         """Initialize with a reference to the service instance and service name."""
         self.service = service
