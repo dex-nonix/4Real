@@ -44,6 +44,8 @@ def create_langchain_tools(persona_id: int, available_tools_info: List[Dict[str,
             try:
                 # Create a dynamic schema class from the already-extracted parameters
                 schema_fields = {}
+                annotations = {}
+                
                 for param in tool_info['parameters']:
                     param_name = param['name']
                     param_type = param['type']
@@ -55,12 +57,17 @@ def create_langchain_tools(persona_id: int, available_tools_info: List[Dict[str,
                     
                     # Create the field - the logic is the same regardless of Optional/Union
                     if param_required:
-                        schema_fields[param_name] = (field_type, Field(description=f"Parameter: {param_name}"))
+                        schema_fields[param_name] = Field(description=f"Parameter: {param_name}")
+                        annotations[param_name] = field_type
                     else:
-                        schema_fields[param_name] = (Optional[field_type], Field(default=param_default, description=f"Parameter: {param_name}"))
+                        schema_fields[param_name] = Field(default=param_default, description=f"Parameter: {param_name}")
+                        annotations[param_name] = Optional[field_type]
                 
-                # Create the schema class dynamically
-                ToolSchema = type(f'{tool_name}Schema', (BaseModel,), schema_fields)
+                # Create the schema class dynamically with proper annotations
+                ToolSchema = type(f'{tool_name}Schema', (BaseModel,), {
+                    '__annotations__': annotations,
+                    **schema_fields
+                })
                 
                 # Create StructuredTool with proper Pydantic schema
                 langchain_tool = StructuredTool.from_function(
