@@ -1,13 +1,24 @@
 from __future__ import annotations
 
 from typing import Any, Callable, Dict
-from functools import partial
 import inspect
 
 from ..models.internal_tool import InternalTool
 from ..models.persona_tool_access import PersonaToolAccess
 from ..models.persona import Persona
 from .internal_tool_registry import registry as internal_tool_registry
+
+
+def llm_tool_wrapper(original_func, *args, **kwargs):
+    """Create a LangChain-compatible wrapper that preserves partial binding."""
+    def wrapper(*w_args, **w_kwargs):
+        return original_func(*args, *w_args, **kwargs, **w_kwargs)
+    
+    wrapper.__name__ = original_func.__name__
+    wrapper.__doc__ = original_func.__doc__
+    wrapper.__annotations__ = original_func.__annotations__
+    
+    return wrapper
 
 
 def _pattern_matches(pattern: str, name: str) -> bool:
@@ -20,7 +31,7 @@ def build_persona_tool_map(persona_id: int) -> Dict[str, Callable[..., Any]]:
     """Return a persona-scoped tool map of qualified_name -> callable.
 
     - Applies allowlist via PersonaToolAccess patterns over active InternalTools
-    - If persona.artist_id is set and a tool's first parameter is 'artist_id', expose a partial with artist_id pre-bound
+    - If persona.artist_id is set and a tool's first parameter is 'artist_id', expose a wrapper with artist_id pre-bound
     - Keeps global registry immutable; returns a new dict per call
     """
     persona = Persona.query.filter_by(id=persona_id).first()
@@ -44,7 +55,7 @@ def build_persona_tool_map(persona_id: int) -> Dict[str, Callable[..., Any]]:
                 sig = inspect.signature(func)
                 params = list(sig.parameters.values())
                 if params and params[0].name == 'artist_id':
-                    tools[qname] = partial(func, artist_id)
+                    tools[qname] = llm_tool_wrapper(func, artist_id)
                     continue
             except Exception:  # noqa: BLE001
                 pass

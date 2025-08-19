@@ -6,6 +6,7 @@ import logging
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
 from langchain.tools import StructuredTool
 from langchain.agents import create_react_agent
+from langchain.prompts import PromptTemplate
 from .tool_runtime import build_persona_tool_map
 from .internal_tool_registry import registry as internal_tool_registry
 from pydantic import BaseModel, Field
@@ -151,26 +152,28 @@ def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]], availa
                 logger.info(f"🔧 Created {len(langchain_tools)} LangChain tools for persona {persona_id}")
                 
                 # Create the ReAct agent with tools
+                react_prompt = PromptTemplate(
+                    input_variables=["tool_names", "tools", "input", "agent_scratchpad"],
+                    template="""You are a helpful AI assistant with access to tools.
+
+Available tools: {tool_names}
+
+Tool descriptions: {tools}
+
+Question: {input}
+
+{agent_scratchpad}
+
+Use tools when needed to answer the question."""
+                )
+                
                 agent = create_react_agent(
                     client,
-                    langchain_tools
+                    langchain_tools,
+                    prompt=react_prompt
                 )
                 
                 logger.info(f"🔧 Created ReAct agent with {len(langchain_tools)} tools")
-                
-                # Convert messages to string for agent
-                conversation_history = []
-                for m in messages:
-                    role = m.get('role')
-                    content = m.get('content')
-                    if isinstance(content, dict):
-                        content = content.get('text', str(content))
-                    if role == 'user':
-                        conversation_history.append(f"Human: {content}")
-                    elif role == 'assistant':
-                        conversation_history.append(f"Assistant: {content}")
-                    elif role == 'system':
-                        conversation_history.append(f"System: {content}")
                 
                 # Get the last user message
                 last_user_msg = next((m for m in reversed(messages) if m.get('role') == 'user'), None)
@@ -179,10 +182,30 @@ def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]], availa
                     if isinstance(user_content, dict):
                         user_content = user_content.get('text', str(user_content))
                     
-                    # Run the agent
+                    # Convert messages to string for agent
+                    conversation_history = []
+                    for m in messages:
+                        role = m.get('role')
+                        content = m.get('content')
+                        if isinstance(content, dict):
+                            content = content.get('text', str(content))
+                        if role == 'user':
+                            conversation_history.append(f"Human: {content}")
+                        elif role == 'assistant':
+                            conversation_history.append(f"Assistant: {content}")
+                        elif role == 'system':
+                            conversation_history.append(f"System: {content}")
+                    
+                    # Prepare tool information for the prompt
+                    tool_names = [tool.name for tool in langchain_tools]
+                    tool_descriptions = [f"{tool.name}: {tool.description}" for tool in langchain_tools]
+                    
+                    # Run the agent with all required placeholder values
                     response = agent.invoke({
+                        "tool_names": ", ".join(tool_names),
+                        "tools": "\n".join(tool_descriptions),
                         "input": user_content,
-                        "chat_history": conversation_history
+                        "agent_scratchpad": ""  # Empty scratchpad to start
                     })
                     
                     # Extract response
