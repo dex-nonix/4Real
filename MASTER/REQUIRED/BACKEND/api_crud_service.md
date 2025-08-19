@@ -662,7 +662,7 @@ class ArtistService(CrudService):
 ```python
 # app.py
 from flask import Flask
-from services.api_router import APIRouter
+from app.api_router.api_router import APIRouter
 from services.artist_service import ArtistService
 from services.album_service import AlbumService
 

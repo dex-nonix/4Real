@@ -374,6 +374,19 @@ def handle_channel_message(data):
     # Return result to client
 ```
 
+## Current Implementation Status
+
+### ✅ Already Implemented
+- **WebSocket methods in BaseApiService** - `send_to_channel`, `send_to_room`, `get_exposed_ws_methods`
+- **@expose_ws decorator** - Available in `backend/app/decorators.py`
+- **APIRouter WebSocket support** - `backend/app/api_router/api_router.py` has full WebSocket integration
+- **SocketIO setup** - Configured in `backend/app/__init__.py`
+
+### 🔄 Ready for Testing
+- **Generic WebSocket infrastructure** - Complete and integrated
+- **Channel discovery system** - Automatically finds @expose_ws methods
+- **Service integration framework** - All services get WebSocket capabilities
+
 ### 🧪 Testing Status
 
 #### Backend Testing
@@ -396,7 +409,7 @@ def handle_channel_message(data):
 4. **`backend/wsgi.py`**: SocketIO app support
 5. **`backend/app/services/chat_service.py`**: Example `@expose_ws` method
 6. **`backend/app/services/base_api_service.py`**: WebSocket methods (already implemented)
-7. **`backend/app/services/api_router.py`**: WebSocket channel discovery (already implemented)
+7. **`backend/app/api_router/api_router.py`**: WebSocket channel discovery (already implemented)
 
 #### WebSocket Flow
 ```
@@ -429,3 +442,12 @@ The backend WebSocket system is **100% complete and functional**. The next step 
 - ✅ **Error Handling**: Comprehensive error handling for WebSocket operations
 - ✅ **CORS Support**: WebSocket connections from any origin
 - ✅ **Logging**: Full WebSocket operation logging
+
+### 📋 Implementation Checklist
+
+1. **`backend/app/decorators.py`**: @expose_ws decorator (already implemented)
+2. **`backend/app/services/base_api_service.py`**: WebSocket methods (already implemented)
+3. **`backend/app/api_router/api_router.py`**: WebSocket channel discovery (already implemented)
+4. **`backend/app/__init__.py`**: SocketIO setup and WebSocket event handlers (already implemented)
+5. **Frontend SocketIO client**: Connect to `/api/ws/` and listen to channels
+6. **Test WebSocket communication**: Verify real-time updates work

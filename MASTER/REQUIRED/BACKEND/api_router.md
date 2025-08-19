@@ -32,7 +32,7 @@ def expose(path, methods=None):
 
 ### **2. APIRouter Blueprint (services expose RELATIVE paths):**
 ```python
-# services/api_router.py
+# api_router/api_router.py
 from flask import Blueprint
 
 class APIRouter:
@@ -83,7 +83,7 @@ class APIRouter:
         return list(self.registered_services.keys())
     
     def get_service(self, service_name):
-        """Get registered service by name"""
+        """Get a specific service by name"""
         return self.registered_services.get(service_name)
 ```
 
@@ -94,7 +94,7 @@ Note:
 ```python
 # app.py
 from flask import Flask
-from services.api_router import APIRouter
+from app.api_router.api_router import APIRouter
 from services.artist_service import ArtistService
 from services.album_service import AlbumService
  
@@ -124,13 +124,20 @@ app.register_blueprint(api_router.blueprint, url_prefix='/api')
 backend/
 ├── app/
 │   ├── __init__.py
-│   ├── services/
+│   ├── api_router/
 │   │   ├── __init__.py
 │   │   ├── api_router.py        # APIRouter blueprint ONLY
+│   │   ├── documentation_router.py
+│   │   ├── openapi_generator.py
+│   │   ├── swagger_ui_generator.py
+│   │   └── compact_api_generator.py
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── base_api_service.py  # Base class with WebSocket support
 │   │   ├── crud_service.py      # Generic CRUD service
 │   │   ├── artist_service.py    # Artist service
 │   │   └── album_service.py     # Album service
-│   └── decorators.py            # @expose decorator
+│   └── decorators.py            # @expose and @expose_ws decorators
 ├── config.py                     # Configuration
 └── requirements.txt              # Dependencies
 ```

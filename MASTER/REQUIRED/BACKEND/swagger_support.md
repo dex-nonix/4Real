@@ -220,7 +220,7 @@ def expose(
 
 ### **Step 5: Update APIRouter for OpenAPI Generation**
 
-Update `backend/app/services/api_router.py`:
+Update `backend/app/api_router/api_router.py`:
 
 ```python
 from __future__ import annotations
@@ -519,6 +519,23 @@ class APIRouter:
 
     def get_service(self, service_name: str) -> Any | None:
         return self.registered_services.get(service_name)
+
+    def _discover_websocket_channels(self, service_name: str, service: Any) -> None:
+        """Discover @expose_ws methods and register WebSocket channels."""
+        if hasattr(service, 'get_exposed_ws_methods'):
+            ws_methods = service.get_exposed_ws_methods()
+            
+            for method_info in ws_methods:
+                channel = method_info['channel']
+                method_name = method_info['name']
+                self.logger.info(f"🔌 Registered WebSocket channel: {service_name}.{method_name} -> {channel}")
+                
+                # Store WebSocket method info
+                self._websocket_channels[channel] = {
+                    'service_name': service_name,
+                    'method_name': method_name,
+                    'service': service
+                }
 ```
 
 ### **Step 6: Update a Service to Use DTOs**
