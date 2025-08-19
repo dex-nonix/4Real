@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, inject, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, inject, watch } from 'vue';
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 import IconField from 'primevue/iconfield';
@@ -61,6 +61,11 @@ const messages = ref([]);
 const inputText = ref('');
 const loading = ref(false);
 
+// WebSocket Real-time State
+const llmStatus = ref(null);
+const toolStatus = ref(null);
+const realTimeMessages = ref([]);
+
 // Session-specific input text storage
 const sessionInputTexts = ref(new Map());
 
@@ -77,7 +82,101 @@ onMounted(() => {
   chatMessageTypeManager.registerMessageType('system', SystemMessage);
   chatMessageTypeManager.registerMessageType('tool', ToolMessage);
   chatMessageTypeManager.registerMessageType('user', UserMessage);
+  
+  // WebSocket Integration: Join chat channel and listen for real-time events
+  if (props.selectedSession && props.historyId) {
+    const channel = `chat/${props.selectedSession.id}/${props.historyId}`;
+    
+    // Use EXISTING ChatService WebSocket methods
+    chatService.joinChannel(channel);
+    
+    // Listen for real-time events using EXISTING methods
+    chatService.onChannelEvent(channel, 'llm_status', handleLLMStatus);
+    chatService.onChannelEvent(channel, 'tool_status', handleToolStatus);
+    chatService.onChannelEvent(channel, 'message_received', handleMessageReceived);
+    chatService.onChannelEvent(channel, 'message_processed', handleMessageProcessed);
+  }
 });
+
+// Cleanup WebSocket resources on unmount
+onUnmounted(() => {
+  if (props.selectedSession && props.historyId) {
+    const channel = `chat/${props.selectedSession.id}/${props.historyId}`;
+    chatService.leaveChannel(channel);
+  }
+});
+
+// WebSocket Event Handlers - NO NEW CLASSES
+const handleLLMStatus = (data) => {
+  const { stage, message, timestamp } = data;
+  console.log('LLM Status:', stage, message, timestamp);
+  // Update UI state based on LLM stage
+  updateLLMStatus(stage, message);
+};
+
+const handleToolStatus = (data) => {
+  const { tool_name, status, result, error, timestamp } = data;
+  console.log('Tool Status:', tool_name, status, result, error);
+  // Update UI state based on tool status
+  updateToolStatus(tool_name, status, result, error);
+};
+
+const handleMessageReceived = (data) => {
+  const { message_id, role, content, timestamp } = data;
+  console.log('Message Received:', message_id, role, content);
+  // Add message to chat
+  addMessageToChat(data);
+};
+
+const handleMessageProcessed = (data) => {
+  const { message_id, status, timestamp } = data;
+  console.log('Message Processed:', message_id, status);
+  // Update message status
+  updateMessageStatus(message_id, status);
+};
+
+// State Update Functions
+const updateLLMStatus = (stage, message) => {
+  llmStatus.value = { stage, message, timestamp: new Date().toISOString() };
+};
+
+const updateToolStatus = (toolName, status, result, error) => {
+  toolStatus.value = { toolName, status, result, error, timestamp: new Date().toISOString() };
+};
+
+const addMessageToChat = (messageData) => {
+  // Add real-time message to chat
+  realTimeMessages.value.push(messageData);
+};
+
+const updateMessageStatus = (messageId, status) => {
+  // Update message status in real-time
+  const messageIndex = realTimeMessages.value.findIndex(m => m.message_id === messageId);
+  if (messageIndex !== -1) {
+    realTimeMessages.value[messageIndex].status = status;
+  }
+};
+
+// Watch for session/history changes and rejoin WebSocket channels
+watch([() => props.selectedSession, () => props.historyId], ([newSession, newHistoryId], [oldSession, oldHistoryId]) => {
+  // Leave old channel if it exists
+  if (oldSession && oldHistoryId) {
+    const oldChannel = `chat/${oldSession.id}/${oldHistoryId}`;
+    chatService.leaveChannel(oldChannel);
+  }
+  
+  // Join new channel if it exists
+  if (newSession && newHistoryId) {
+    const newChannel = `chat/${newSession.id}/${newHistoryId}`;
+    chatService.joinChannel(newChannel);
+    
+    // Re-attach event listeners
+    chatService.onChannelEvent(newChannel, 'llm_status', handleLLMStatus);
+    chatService.onChannelEvent(newChannel, 'tool_status', handleToolStatus);
+    chatService.onChannelEvent(newChannel, 'message_received', handleMessageReceived);
+    chatService.onChannelEvent(newChannel, 'message_processed', handleMessageProcessed);
+  }
+}, { immediate: true });
 
 // Load messages for specific history
 const loadMessages = async (historyId) => {
@@ -248,7 +347,8 @@ const executeTool = async (toolName) => {
       toolName,
       {}, // Default empty args
       props.historyId,
-      null // message_id is optional
+      null, // message_id is optional
+      props.selectedSession.id // session_id for WebSocket events
     );
     
     console.log('Tool executed successfully:', response);
@@ -292,7 +392,8 @@ const executeToolWithForm = async (formData) => {
       selectedTool.value.name, // Use the tool name from the selectedTool object
       args, // Use the extracted form data
       props.historyId,
-      null // message_id is optional
+      null, // message_id is optional
+      props.selectedSession.id // session_id for WebSocket events
     );
     
     console.log('Tool executed successfully:', response);
@@ -380,6 +481,31 @@ defineExpose({
 
 <template>
   <div class="chat-container">
+    <!-- Real-time Status Display -->
+    <div v-if="llmStatus || toolStatus" class="real-time-status p-3 surface-100 border-round mb-2">
+      <!-- LLM Status -->
+      <div v-if="llmStatus" class="llm-status mb-2">
+        <div class="flex align-items-center gap-2">
+          <i class="pi pi-spin pi-spinner text-primary"></i>
+          <span class="font-medium text-primary">{{ llmStatus.stage }}</span>
+          <span class="text-color-secondary">{{ llmStatus.message }}</span>
+        </div>
+      </div>
+      
+      <!-- Tool Status -->
+      <div v-if="toolStatus" class="tool-status">
+        <div class="flex align-items-center gap-2">
+          <i :class="[
+            toolStatus.status === 'started' ? 'pi pi-spin pi-spinner' : 'pi pi-check-circle',
+            toolStatus.status === 'completed' ? 'text-success' : toolStatus.status === 'failed' ? 'text-danger' : 'text-primary'
+          ]"></i>
+          <span class="font-medium">{{ toolStatus.toolName }}</span>
+          <span class="text-color-secondary">{{ toolStatus.status }}</span>
+          <span v-if="toolStatus.error" class="text-danger">({{ toolStatus.error }})</span>
+        </div>
+      </div>
+    </div>
+    
     <!-- Messages Area - Takes remaining space and scrolls -->
     <div class="messages-area">
       <div v-if="messages.length === 0 && !loading" class="text-center text-color-secondary p-4">
@@ -560,5 +686,28 @@ defineExpose({
   padding: 0.75rem;
   border-top: 1px solid var(--surface-border);
   background: var(--surface-section);
+}
+
+/* Real-time status display */
+.real-time-status {
+  border-left: 4px solid var(--primary-color);
+  background: var(--surface-50);
+}
+
+.llm-status, .tool-status {
+  font-size: 0.875rem;
+}
+
+.llm-status .pi-spinner {
+  animation: spin 1s linear infinite;
+}
+
+.tool-status .pi-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>

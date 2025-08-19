@@ -119,13 +119,20 @@ export default class ChatService extends BaseApiService {
     return response.data  
   }
 
-  async executeTool(personaId, toolName, toolArgs, historyId, userMessageId) {
+  async executeTool(personaId, toolName, toolArgs, historyId, userMessageId, sessionId = null) {
+    
+    // If sessionId not provided, try to derive it from historyId
+    let finalSessionId = sessionId;
+    if (!finalSessionId && historyId) {
+      finalSessionId = await this.getSessionIdFromHistory(historyId);
+    }
     
     const response = await this.post(`/chat/personas/${personaId}/tools/execute`, {
       tool_name: toolName,
       args: toolArgs,
       history_id: historyId,
-      message_id: userMessageId
+      message_id: userMessageId,
+      session_id: finalSessionId  // ✅ ADDED: session_id for WebSocket events
     })
     return response.data  
   }

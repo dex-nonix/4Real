@@ -13,9 +13,11 @@ from ...models.ai_model_mapping import AIModelMapping
 from ...models.ai_provider import AIProvider
 from ..llm_client import run_chat
 from ..tool_runtime import build_persona_tool_map, execute_tool
+from .websocket_protocol import WebSocketProtocol
+from datetime import datetime
 
 
-class ChatMessageMixin:
+class ChatMessageMixin(WebSocketProtocol):
     """Mixin for chat message handling and sending operations."""
 
     def _select_chat_model(self, persona_id: int) -> Dict[str, Any] | None:
@@ -144,6 +146,19 @@ class ChatMessageMixin:
             db.session.add(user_msg)
             db.session.commit()
 
+            # Emit message received event using protocol method
+            session_id = id  # This is already available
+            history_id = history.id  # This is already available
+            self.emit_chat_event(session_id, history_id, 'message_received', {
+                'message_id': user_msg.id,
+                'role': user_msg.role,
+                'content': user_msg.content_json,
+                'timestamp': user_msg.created_at.isoformat()
+            })
+
+            # Emit message processing started event using protocol method
+            self.emit_llm_event(session_id, history_id, 'message_processing', 'Processing your message...')
+
             # Resolve persona and tools
             persona = session.persona
             available_tools = { name: {'type': 'internal'} for name in build_persona_tool_map(persona.id).keys() }
@@ -181,7 +196,14 @@ class ChatMessageMixin:
             if isinstance(assistant_output, dict) and (assistant_output.get('type') == 'tool_call' or 'tool' in assistant_output):
                 tool_name = assistant_output.get('tool')
                 tool_args = assistant_output.get('args') or {}
+                
+                # Emit LLM tool call detected event using protocol method
+                self.emit_llm_event(session_id, history_id, 'tool_call_detected', f'LLM needs to call {tool_name}')
+                
                 if tool_name and tool_name in available_tools:
+                    # Emit tool execution started event using protocol method
+                    self.emit_tool_event(session_id, history_id, tool_name, 'started', args=tool_args)
+                    
                     log = ToolInvocationLog(
                         history_id=history.id,
                         message_id=user_msg.id,
@@ -193,10 +215,17 @@ class ChatMessageMixin:
                     db.session.commit()
 
                     exec_result = execute_tool(persona.id, tool_name, tool_args)
+                    
+                    # Emit tool execution completed event using protocol method
+                    self.emit_tool_event(session_id, history_id, tool_name, 'completed', result=exec_result)
+                    
                     log.status = 'success' if exec_result.get('status') == 'success' else 'error'
                     log.output_json = exec_result
                     db.session.commit()
 
+                    # Emit LLM building response event using protocol method
+                    self.emit_llm_event(session_id, history_id, 'building_response', 'LLM is building your response...')
+                    
                     tool_msg = ChatMessage(
                         history_id=history.id, 
                         role='tool', 
@@ -215,6 +244,10 @@ class ChatMessageMixin:
                     )
                     db.session.add(asst_msg)
                     db.session.commit()
+                    
+                    # Emit response complete event using protocol method
+                    self.emit_llm_event(session_id, history_id, 'response_complete', 'Response ready')
+                    
                     return jsonify({'data': asst_msg.to_dict()})
                 else:
                     asst_msg = ChatMessage(
@@ -236,6 +269,16 @@ class ChatMessageMixin:
             )
             db.session.add(asst_msg)
             db.session.commit()
+
+            # Emit response complete event using protocol method
+            self.emit_llm_event(session_id, history_id, 'response_complete', 'Response ready')
+            
+            # Emit message processed event using protocol method
+            self.emit_chat_event(session_id, history_id, 'message_processed', {
+                'message_id': asst_msg.id,
+                'status': 'processed',
+                'timestamp': datetime.utcnow().isoformat()
+            })
 
             return jsonify({'data': asst_msg.to_dict()})
         except Exception as exc:  # noqa: BLE001
