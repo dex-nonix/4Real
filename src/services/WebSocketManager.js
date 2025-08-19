@@ -21,8 +21,9 @@ export default class WebSocketManager {
       const socketIOClient = await import('socket.io-client')
       const io = socketIOClient.io
       
-      // Extract WebSocket URL from API base URL
-      const wsUrl = API_BASE_URL.replace('http://', 'ws://').replace('https://', 'wss://')
+      // Connect directly to backend server (not through Vite proxy)
+      // Vite proxy only handles HTTP, not WebSocket connections
+      const wsUrl = 'http://localhost:5000'
       this.socket = io(`${wsUrl}/api/ws/`, {
         transports: ['websocket', 'polling'],
         autoConnect: true,
