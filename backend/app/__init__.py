@@ -48,6 +48,16 @@ def create_app() -> Flask:
     # Make SocketIO available as app extension
     app.extensions['socketio'] = socketio
 
+    # Add WebSocket endpoint route
+    @app.route('/api/ws/')
+    def websocket_endpoint():
+        """WebSocket endpoint for client connections."""
+        return jsonify({
+            'message': 'WebSocket endpoint',
+            'status': 'connect via SocketIO client',
+            'endpoint': '/api/ws/'
+        })
+
     # COMPREHENSIVE ERROR HANDLING - Catch everything!
     
     # 1. Global exception handler for ALL unhandled exceptions
@@ -295,7 +305,8 @@ def create_app() -> Flask:
     # Register the API router with error handling
     register_blueprint_with_error_handling(api_router.blueprint, url_prefix='/api')
     
-
+    # Register SocketIO with the Flask app
+    socketio.init_app(app)
     
     print("\n✅ Flask app initialized successfully with COMPREHENSIVE error logging!")
     sys.stdout.flush()

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from flask import jsonify, Request
 
-from ...decorators import expose, expose_ws
+from ...decorators import expose
 from ... import db
 from ...models.chat_session import ChatSession
 from ...models.chat_message import ChatMessage
@@ -30,12 +30,5 @@ class ChatService(BaseApiService, ChatSessionMixin, ChatMessageMixin, ChatHistor
     - PersonaChatMixin: Persona-related operations
     - ToolExecutionMixin: Tool execution and MCP operations
     """
-    
-    @expose_ws('chat/{session_id}/{history_id}')
-    def chat_channel(self, data: dict, session_id: int, history_id: int):
-        """WebSocket channel for real-time chat updates."""
-        # This is just for testing WebSocket channel discovery
-        # Chat service doesn't actually use @expose_ws in production
-        return {'status': 'success', 'message': 'WebSocket channel working'}
     
     pass
