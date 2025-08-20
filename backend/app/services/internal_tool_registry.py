@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict
 
+from .tools.album_tools import album_list_tracks, album_get_info
 # Import all tool functions
 from .tools.artist_tools import artist_list_albums, artist_get_info
-from .tools.album_tools import album_list_tracks, album_get_info
 from .tools.file_tools import file_list_artist_files, file_read_lyrics
 from .tools.music_tools import track_list_by_album, style_list_all, track_get_info
 
@@ -31,7 +31,7 @@ class InternalToolRegistry:
         try:
             result = func(**(args or {})) if args else func()
             return {'status': 'success', 'result': result}
-        except Exception as exc: # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001
             return {'status': 'error', 'error': str(exc)}
 
 
@@ -46,6 +46,7 @@ def _admin_system_info() -> dict:
         'platform': platform.platform(),
         'cwd': os.getcwd(),
     }
+
 
 # Register admin tools
 registry.register('admin:system_info', _admin_system_info)
@@ -66,5 +67,3 @@ registry.register('file:read_lyrics', file_read_lyrics)
 registry.register('track:list_by_album', track_list_by_album)
 registry.register('track:get_info', track_get_info)
 registry.register('style:list_all', style_list_all)
-
-

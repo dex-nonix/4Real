@@ -24,4 +24,3 @@ class TrackService(CrudService):
             'search_fields': ['title'],
         },
     }
-

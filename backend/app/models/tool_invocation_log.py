@@ -39,5 +39,3 @@ class ToolInvocationLog(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<ToolInvocationLog id={self.id} tool_name={self.tool_name!r} status={self.status!r}>"
-
-

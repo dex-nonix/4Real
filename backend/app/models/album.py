@@ -32,4 +32,3 @@ class Album(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Album id={self.id} title={self.title!r}>"
-

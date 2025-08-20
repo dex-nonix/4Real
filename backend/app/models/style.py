@@ -25,4 +25,3 @@ class Style(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Style id={self.id} name={self.name!r}>"
-

@@ -21,7 +21,8 @@ class Persona(db.Model):
 
     # Relationships
     artist = db.relationship('Artist', foreign_keys=[artist_id], backref=db.backref('personas', lazy=True))
-    ai_model_mapping = db.relationship('AIModelMapping', foreign_keys=[ai_model_mapping_id], backref=db.backref('personas', lazy=True))
+    ai_model_mapping = db.relationship('AIModelMapping', foreign_keys=[ai_model_mapping_id],
+                                       backref=db.backref('personas', lazy=True))
 
     def to_dict(self) -> dict:
         return {
@@ -39,5 +40,3 @@ class Persona(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Persona id={self.id} name={self.name!r}>"
-
-

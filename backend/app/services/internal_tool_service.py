@@ -24,5 +24,3 @@ class InternalToolService(CrudService):
             'search_fields': ['qualified_name', 'name', 'namespace'],
         },
     }
-
-

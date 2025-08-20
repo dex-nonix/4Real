@@ -24,4 +24,3 @@ class AlbumService(CrudService):
             'search_fields': ['title'],
         },
     }
-

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, TYPE_CHECKING
 
 from flask import jsonify
@@ -20,6 +21,7 @@ class DocumentationRouter:
         self.blueprint = router.blueprint
         self.openapi_generator = OpenAPIGenerator()
         self.swagger_ui_generator = SwaggerUIGenerator()
+        self.logger = logging.getLogger(__name__)
 
         # Add documentation routes
         self._add_documentation_routes()
@@ -31,24 +33,20 @@ class DocumentationRouter:
         def openapi_spec():
             service_filter = request.args.get('services', None)
 
-            # Debug logging - MORE DETAILED
-            print(f"🔍 OpenAPI request received!")
-            print(f"🔍 Full request URL: {request.url}")
-            print(f"🔍 Query parameters: {dict(request.args)}")
-            print(f"🔍 Services filter: {service_filter}")
-            print(f"🔍 Request method: {request.method}")
+            # Log OpenAPI request details
+            self.logger.info(f"OpenAPI request: {request.method} {request.url} (filter: {service_filter})")
 
             # Use the router directly - no need for get_instance() crap
             if self.router:
-                print(f"📋 Found {len(self.router.registered_services)} registered services:")
+                self.logger.info(f"📋 Found {len(self.router.registered_services)} registered services:")
                 for service_name in self.router.registered_services.keys():
-                    print(f"   - {service_name}")
+                    self.logger.info(f"   - {service_name}")
 
                 result = self.openapi_generator.generate_openapi_spec(
                     self.router.registered_services,
                     service_filter
                 )
-                print(f"✅ Generated OpenAPI spec with {len(result.get('paths', {}))} paths")
+                self.logger.info(f"✅ Generated OpenAPI spec with {len(result.get('paths', {}))} paths")
                 return jsonify(result)
             return jsonify({"error": "No services registered"}), 500
 

@@ -24,4 +24,3 @@ class AIAnalysisResultService(CrudService):
             'search_fields': ['analysis_type'],
         },
     }
-

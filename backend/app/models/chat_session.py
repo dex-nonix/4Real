@@ -9,7 +9,8 @@ class ChatSession(db.Model):
     __tablename__ = 'chat_sessions'
 
     id = db.Column(db.Integer, primary_key=True)
-    persona_id = db.Column(db.Integer, db.ForeignKey('personas.id'), nullable=False)  # NOT unique - multiple sessions per persona
+    persona_id = db.Column(db.Integer, db.ForeignKey('personas.id'),
+                           nullable=False)  # NOT unique - multiple sessions per persona
     session_name = db.Column(db.String(255))  # NEW: Optional custom name
     session_icon = db.Column(db.String(512))  # NEW: Optional custom icon
     current_history_id = db.Column(db.Integer, db.ForeignKey('chat_histories.id'), nullable=True)
@@ -20,6 +21,7 @@ class ChatSession(db.Model):
     # Relationships
     persona = db.relationship('Persona', foreign_keys=[persona_id], backref=db.backref('chat_sessions', lazy=True))
     current_history = db.relationship('ChatHistory', foreign_keys=[current_history_id])
+
     # histories relationship is handled by backref in ChatHistory model
 
     def to_dict(self) -> dict:
@@ -36,5 +38,3 @@ class ChatSession(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<ChatSession id={self.id} title={self.title!r}>"
-
-

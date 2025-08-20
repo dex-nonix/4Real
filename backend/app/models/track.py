@@ -34,4 +34,3 @@ class Track(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Track id={self.id} title={self.title!r}>"
-

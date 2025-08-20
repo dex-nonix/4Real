@@ -18,7 +18,9 @@ class AIModelMapping(db.Model):
     updated_at = db.Column(db.DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    provider = db.relationship('AIProvider', foreign_keys=[provider_id], backref=db.backref('model_mappings', lazy=True))
+    provider = db.relationship('AIProvider', foreign_keys=[provider_id],
+                               backref=db.backref('model_mappings', lazy=True))
+
     # personas relationship is handled by backref in Persona model
 
     def to_dict(self) -> dict:
@@ -35,4 +37,3 @@ class AIModelMapping(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<AIModelMapping id={self.id} name={self.name!r} model={self.model_name!r}>"
-

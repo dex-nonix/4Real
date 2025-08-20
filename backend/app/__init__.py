@@ -1,17 +1,15 @@
+import logging
+import os
+import sys
+import traceback
+
+from dotenv import load_dotenv
 from flask import Flask, send_from_directory, jsonify, request
+from flask_cors import CORS
 from flask_socketio import SocketIO, join_room, leave_room
 from flask_sqlalchemy import SQLAlchemy
-from flask_cors import CORS
-from dotenv import load_dotenv
-import re
-import os
-import logging
-import traceback
-import sys
-from werkzeug.exceptions import HTTPException
 
 from .api_router.api_router import APIRouter
-
 
 db = SQLAlchemy()
 
@@ -30,37 +28,37 @@ def create_app() -> Flask:
             logging.FileHandler('flask_errors.log')  # Also log to file
         ]
     )
-    
+
     # Force immediate output (no buffering)
     for handler in logging.root.handlers:
         handler.setFormatter(logging.Formatter(
             '\033[1m%(asctime)s\033[0m [\033[91m%(levelname)s\033[0m] \033[94m%(name)s\033[0m: %(message)s'
         ))
         handler.flush = lambda: None  # Force immediate flush
-    
+
     app.logger.setLevel(logging.DEBUG)
-    
+
     CORS(app)
     db.init_app(app)
 
     # Initialize Flask-SocketIO for WebSocket support
-    socketio = SocketIO(app, 
-        cors_allowed_origins="*", 
-        logger=True, 
-        engineio_logger=True,
-        path='/api/ws'  # SocketIO server runs on /api/ws path
-    )
-    
+    socketio = SocketIO(app,
+                        cors_allowed_origins="*",
+                        logger=True,
+                        engineio_logger=True,
+                        path='/api/ws'  # SocketIO server runs on /api/ws path
+                        )
+
     # Make SocketIO available as app extension
     app.extensions['socketio'] = socketio
 
     # COMPREHENSIVE ERROR HANDLING - Catch everything!
-    
+
     # 1. Global exception handler for ALL unhandled exceptions
     @app.errorhandler(Exception)
     def handle_all_exceptions(e):
         app.logger.error(f"💥 UNHANDLED EXCEPTION: {type(e).__name__}: {str(e)}", exc_info=True)
-        
+
         return jsonify({
             'error': 'Internal Server Error',
             'exception_type': type(e).__name__,
@@ -72,7 +70,7 @@ def create_app() -> Flask:
     @app.errorhandler(500)
     def internal_error(error):
         app.logger.error(f"🔥 500 Internal Server Error: {error}", exc_info=True)
-        
+
         return jsonify({
             'error': 'Internal Server Error',
             'message': str(error),
@@ -92,7 +90,7 @@ def create_app() -> Flask:
     def handle_database_errors(e):
         if 'database' in str(e).lower() or 'sql' in str(e).lower() or 'db' in str(e).lower():
             app.logger.error(f"🗄️  DATABASE ERROR: {type(e).__name__}: {str(e)}", exc_info=True)
-            
+
             return jsonify({
                 'error': 'Database Error',
                 'exception_type': type(e).__name__,
@@ -134,7 +132,7 @@ def create_app() -> Flask:
     with app.app_context():
         try:
             app.logger.info("Initializing database and services...")
-            
+
             # Register services with the APIRouter
             from .services.artist_service import ArtistService
             from .services.album_service import AlbumService
@@ -158,7 +156,6 @@ def create_app() -> Flask:
             from .services.file_category_service import FileCategoryService
             from .services.file_service import FileService
             from .services.file_link_service import FileLinkService
-            
 
             app.logger.info("Registering services...")
 
@@ -195,7 +192,7 @@ def create_app() -> Flask:
                     return send_from_directory(upload_dir, filename)
 
             app.logger.info("All services and database initialized successfully!")
-            
+
         except Exception as e:
             app.logger.error(f"💥 CRITICAL ERROR during app initialization: {type(e).__name__}: {str(e)}", exc_info=True)
             raise  # Re-raise to prevent silent failures
@@ -212,24 +209,24 @@ def create_app() -> Flask:
 
     # Register the API router with error handling
     register_blueprint_with_error_handling(api_router.blueprint, url_prefix='/api')
-    
+
     # Register SocketIO with the Flask app
     socketio.init_app(app)
-    
+
     app.logger.info("Flask app initialized successfully with comprehensive error logging")
-    
+
     # FINAL SAFETY NET - Catch ALL errors at WSGI level
     class ErrorCatchingMiddleware:
         def __init__(self, app):
             self.app = app
-        
+
         def __call__(self, environ, start_response):
             try:
                 return self.app(environ, start_response)
             except Exception as e:
                 # This catches ANY error that wasn't caught by Flask handlers
                 app.logger.error(f"🚨 WSGI LEVEL CRASH: {type(e).__name__}: {str(e)}", exc_info=True)
-                
+
                 # Return error response
                 status = '500 Internal Server Error'
                 response_headers = [('Content-type', 'application/json')]
@@ -240,9 +237,8 @@ def create_app() -> Flask:
                     'message': str(e),
                     'traceback': traceback.format_exc() if app.config.get('DEBUG') else None
                 }).get_data()]
-    
+
     # Wrap the app with our error-catching middleware
     app.wsgi_app = ErrorCatchingMiddleware(app.wsgi_app)
-    
-    return app
 
+    return app

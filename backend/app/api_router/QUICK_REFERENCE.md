@@ -18,6 +18,7 @@ app.register_blueprint(router.blueprint, url_prefix='/api')
 ## Service Architecture
 
 ### **BaseApiService** (NEW!)
+
 All services now extend `BaseApiService` which provides automatic Swagger generation:
 
 ```python
@@ -30,6 +31,7 @@ class MyService(BaseApiService):
 ```
 
 ### **CrudService** (Enhanced!)
+
 CRUD services automatically generate schemas from models and configs:
 
 ```python
@@ -47,6 +49,7 @@ class ArtistService(CrudService):
 ```
 
 ### **Custom Services** (Simple!)
+
 Custom services use `@expose` decorator for schemas:
 
 ```python
@@ -65,6 +68,7 @@ class ChatService(BaseApiService):
 ## Service Filtering (New Feature!)
 
 ### **Backend Filtering (Query Parameters)**
+
 Filter OpenAPI documentation to focus on specific services:
 
 ```
@@ -82,7 +86,9 @@ GET /api/openapi.json?services=chat, artists , albums
 ```
 
 ### **Frontend Filtering (Swagger UI)**
+
 The Swagger UI now has a built-in filtering interface:
+
 - **Filter Input** - Type service names and press Enter
 - **Quick Buttons** - Click for common service combinations
 - **No Reloads** - Instant filtering without page refresh
@@ -91,6 +97,7 @@ The Swagger UI now has a built-in filtering interface:
 ## @expose Decorator (Enhanced!)
 
 ### **Basic Usage**
+
 ```python
 from app.api_router import expose
 
@@ -108,6 +115,7 @@ def my_method(self, request):
 ```
 
 ### **Direct Schema Definition** 🚀
+
 ```python
 @expose(
     path='/items',
@@ -140,6 +148,7 @@ def my_method(self, request):
 ## Automatic Schema Generation
 
 ### **CRUD Services** (Automatic!)
+
 CRUD services automatically generate schemas from models:
 
 - **Create Schema** - Generated from model fields (excludes ID, timestamps)
@@ -147,6 +156,7 @@ CRUD services automatically generate schemas from models:
 - **Response Schema** - Generated from model fields (includes all fields)
 
 ### **Custom Services** (Manual)
+
 Custom services define schemas in `@expose` decorator:
 
 ```python
@@ -159,6 +169,7 @@ Custom services define schemas in `@expose` decorator:
 ## Error Handling
 
 Errors are automatically caught and logged:
+
 - Terminal output with emojis
 - Structured JSON responses
 - Full tracebacks in debug mode
@@ -171,6 +182,7 @@ Errors are automatically caught and logged:
 ## Common Patterns
 
 ### **CRUD Service** (Automatic Schemas!)
+
 ```python
 class ArtistService(CrudService):
     model = Artist
@@ -184,6 +196,7 @@ class ArtistService(CrudService):
 ```
 
 ### **Custom Service** (Manual Schemas)
+
 ```python
 class ChatService(BaseApiService):
     @expose(

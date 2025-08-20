@@ -24,4 +24,3 @@ class ArtistService(CrudService):
             'search_fields': ['name', 'abbreviation']
         },
     }
-

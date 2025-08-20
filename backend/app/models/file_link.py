@@ -36,5 +36,3 @@ class FileLink(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<FileLink id={self.id} file_id={self.file_id} {self.entity_type}#{self.entity_id}>"
-
-

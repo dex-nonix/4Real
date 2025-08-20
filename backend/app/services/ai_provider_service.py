@@ -24,4 +24,3 @@ class AIProviderService(CrudService):
             'search_fields': ['name', 'provider_type', 'module', 'cls'],
         },
     }
-

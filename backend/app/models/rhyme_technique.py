@@ -25,4 +25,3 @@ class RhymeTechnique(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<RhymeTechnique id={self.id} name={self.name!r}>"
-

@@ -33,5 +33,3 @@ class InternalTool(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<InternalTool id={self.id} qualified_name={self.qualified_name!r}>"
-
-

@@ -24,4 +24,3 @@ class StyleService(CrudService):
             'search_fields': ['name'],
         },
     }
-

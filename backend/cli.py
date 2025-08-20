@@ -1,4 +1,5 @@
 import click
+
 from app import create_app, db
 from wsgi import start_server
 
@@ -29,4 +30,3 @@ def run(host: str, port: int, debug: bool):
 
 if __name__ == '__main__':
     cli()
-

@@ -25,5 +25,3 @@ class FileLinkService(CrudService):
             'order_by': 'created_at',
         },
     }
-
-

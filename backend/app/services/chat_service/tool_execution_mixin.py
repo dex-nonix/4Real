@@ -1,23 +1,24 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
-from flask import jsonify, Request
-from ...decorators import expose
-from ... import db
-from ...models.persona import Persona
-from ...models.mcp_server import MCPServer
-from ...models.tool_invocation_log import ToolInvocationLog
-from ...models.chat_message import ChatMessage
-from ..tool_runtime import build_persona_tool_map, execute_tool, list_persona_tools
 from datetime import datetime
+
+from flask import jsonify, Request
+
 from .websocket_protocol import WebSocketProtocol
+from ..tool_runtime import build_persona_tool_map, execute_tool, list_persona_tools
+from ... import db
+from ...decorators import expose
+from ...models.chat_message import ChatMessage
+from ...models.mcp_server import MCPServer
+from ...models.persona import Persona
+from ...models.tool_invocation_log import ToolInvocationLog
 
 
 class ToolExecutionMixin(WebSocketProtocol):
     """Mixin for tool execution and MCP operations."""
 
     @expose(
-        '/personas/{persona_id}/tools', 
+        '/personas/{persona_id}/tools',
         methods=['GET'],
         status_codes={200: 'OK', 404: 'Not Found'},
         response_schema={
@@ -48,7 +49,7 @@ class ToolExecutionMixin(WebSocketProtocol):
             return jsonify({'error': str(exc)}), 500
 
     @expose(
-        '/personas/{persona_id}/tools/execute', 
+        '/personas/{persona_id}/tools/execute',
         methods=['POST'],
         status_codes={200: 'OK', 403: 'Forbidden', 404: 'Not Found'},
         request_schema={
@@ -83,14 +84,14 @@ class ToolExecutionMixin(WebSocketProtocol):
             tool_args = payload.get('args') or {}
             history_id = payload.get('history_id')
             user_message_id = payload.get('message_id')
-            
+
             # Get session_id from request or derive it
             session_id = payload.get('session_id')  # Add this to request payload
-            
+
             # Validate required fields
             if not tool_name:
                 return jsonify({'error': 'tool_name is required'}), 400
-            
+
             # Fallback: derive session_id from history_id if not provided
             if not session_id and history_id:
                 from ...models.chat_history import ChatHistory
@@ -98,7 +99,7 @@ class ToolExecutionMixin(WebSocketProtocol):
                 if history:
                     session_id = history.session_id
                     print(f"🔍 Derived session_id {session_id} from history_id {history_id}")
-            
+
             # Emit tool execution started event using protocol method
             if session_id and history_id:
                 print(f"🔌 Emitting WebSocket event: tool_status started for channel chat/{session_id}/{history_id}")
@@ -127,14 +128,15 @@ class ToolExecutionMixin(WebSocketProtocol):
                 db.session.commit()
 
             exec_result = execute_tool(persona.id, tool_name, tool_args)
-            
+
             # Emit tool execution completed event using protocol method
             if session_id and history_id:
                 print(f"🔌 Emitting WebSocket event: tool_status completed for channel chat/{session_id}/{history_id}")
                 self.emit_tool_event(session_id, history_id, tool_name, 'completed', result=exec_result)
             else:
-                print(f"⚠️  Cannot emit WebSocket event: tool_status completed: session_id={session_id}, history_id={history_id}")
-            
+                print(
+                    f"⚠️  Cannot emit WebSocket event: tool_status completed: session_id={session_id}, history_id={history_id}")
+
             # Update log if it exists
             if log:
                 log.status = 'success' if exec_result.get('status') == 'success' else 'error'
@@ -144,8 +146,8 @@ class ToolExecutionMixin(WebSocketProtocol):
             if history_id:
                 # Create a proper tool message that matches ToolMessage component expectations
                 tool_msg = ChatMessage(
-                    history_id=history_id, 
-                    role='tool', 
+                    history_id=history_id,
+                    role='tool',
                     message_type='tool',  # Changed from 'tool_result' to 'tool'
                     content_json={
                         'toolName': tool_name,
@@ -166,13 +168,14 @@ class ToolExecutionMixin(WebSocketProtocol):
                 print(f"🔌 Emitting WebSocket event: tool_status failed for channel chat/{session_id}/{history_id}")
                 self.emit_tool_event(session_id, history_id, tool_name, 'failed', error=str(exc))
             else:
-                print(f"⚠️  Cannot emit WebSocket event: tool_status failed: session_id={session_id}, history_id={history_id}")
-            
+                print(
+                    f"⚠️  Cannot emit WebSocket event: tool_status failed: session_id={session_id}, history_id={history_id}")
+
             db.session.rollback()
             return jsonify({'error': str(exc)}), 500
 
     @expose(
-        '/mcp/servers/status', 
+        '/mcp/servers/status',
         methods=['GET'],
         status_codes={200: 'OK'},
         response_schema={
@@ -202,4 +205,4 @@ class ToolExecutionMixin(WebSocketProtocol):
             servers = MCPServer.query.all()
             return jsonify({'data': [s.to_dict() for s in servers]})
         except Exception as exc:  # noqa: BLE001
-            return jsonify({'error': str(exc)}), 500 
+            return jsonify({'error': str(exc)}), 500

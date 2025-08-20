@@ -44,5 +44,3 @@ class File(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<File id={self.id} original={self.original_filename!r}>"
-
-

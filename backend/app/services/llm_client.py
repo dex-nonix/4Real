@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, AsyncGenerator
 import importlib
 import logging
+from typing import Any, Dict, List, Optional, AsyncGenerator
+
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
 from langchain.tools import StructuredTool
-from langgraph.prebuilt import create_react_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-
-from ..services.chat_service.streaming_interface import StreamingChunk
-from .tool_runtime import build_persona_tool_map
+from langgraph.prebuilt import create_react_agent
 from pydantic import BaseModel, Field
 
+from .tool_runtime import build_persona_tool_map
+from ..services.chat_service.streaming_interface import StreamingChunk
 from ..utils.llm_message_utils import iter_messages, LCAIMessage, LCToolMessage
 
 # Get logger for this module
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def create_langchain_tools(persona_id: int, available_tools_info: List[Dict[str, Any]]) -> List[StructuredTool]:
     """Create LangChain StructuredTool objects from persona tools with proper Pydantic schemas."""
-    
+
     def _get_field_type(param_type: str) -> type:
         """Extract the base Python type from a type annotation string."""
         if 'int' in param_type:
@@ -33,32 +33,32 @@ def create_langchain_tools(persona_id: int, available_tools_info: List[Dict[str,
             return float
         else:
             return str
-    
+
     # Get the persona-scoped tools with partial binding
     persona_tools = build_persona_tool_map(persona_id)
-    
+
     langchain_tools = []
     for tool_name, tool_func in persona_tools.items():
         # Find tool info for description
         tool_info = next((t for t in available_tools_info if t['name'] == tool_name), None)
         description = tool_info.get('description', f'Execute {tool_name}') if tool_info else f'Execute {tool_name}'
-        
+
         # Create a dynamic Pydantic model for the tool parameters
         if tool_info and 'parameters' in tool_info and tool_info['parameters']:
             try:
                 # Create a dynamic schema class from the already-extracted parameters
                 schema_fields = {}
                 annotations = {}
-                
+
                 for param in tool_info['parameters']:
                     param_name = param['name']
                     param_type = param['type']
                     param_required = param['required']
                     param_default = param['default']
-                    
+
                     # Get the base field type
                     field_type = _get_field_type(param_type)
-                    
+
                     # Create the field - the logic is the same regardless of Optional/Union
                     if param_required:
                         schema_fields[param_name] = Field(description=f"Parameter: {param_name}")
@@ -66,13 +66,13 @@ def create_langchain_tools(persona_id: int, available_tools_info: List[Dict[str,
                     else:
                         schema_fields[param_name] = Field(default=param_default, description=f"Parameter: {param_name}")
                         annotations[param_name] = Optional[field_type]
-                
+
                 # Create the schema class dynamically with proper annotations
                 ToolSchema = type(f'{tool_name}Schema', (BaseModel,), {
                     '__annotations__': annotations,
                     **schema_fields
                 })
-                
+
                 # Create StructuredTool with proper Pydantic schema
                 langchain_tool = StructuredTool.from_function(
                     func=tool_func,  # Use the partial directly
@@ -80,9 +80,9 @@ def create_langchain_tools(persona_id: int, available_tools_info: List[Dict[str,
                     description=description,
                     args_schema=ToolSchema
                 )
-                
+
                 logger.debug(f"🔧 Created tool '{tool_name}' with Pydantic schema")
-                
+
             except Exception as e:
                 logger.warning(f"🔧 Failed to create Pydantic schema for tool '{tool_name}': {e}", exc_info=True)
                 # Fallback: create tool without schema
@@ -98,14 +98,15 @@ def create_langchain_tools(persona_id: int, available_tools_info: List[Dict[str,
                 name=tool_name,
                 description=description
             )
-        
+
         langchain_tools.append(langchain_tool)
-    
+
     logger.info(f"🔧 Created {len(langchain_tools)} LangChain tools for persona {persona_id}")
     return langchain_tools
 
 
-def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]], available_tools_info: List[Dict[str, Any]] = None, persona_id: int = None) -> Dict[str, Any]:
+def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]],
+             available_tools_info: List[Dict[str, Any]] = None, persona_id: int = None) -> Dict[str, Any]:
     """Provider adapter driven entirely by DB configuration (persona-selected mapping).
 
     - Imports provider.module, resolves provider.class
@@ -128,7 +129,7 @@ def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]], availa
         text = (last_user or {}).get('content', '')
         if isinstance(text, dict):
             text = text.get('text', str(text))
-        return { 'type': 'text', 'text': f"Provider not configured (module/class missing). Echo: {text}" }
+        return {'type': 'text', 'text': f"Provider not configured (module/class missing). Echo: {text}"}
 
     # Build kwargs: provider creds/connection + model + mapping params (mapping overrides)
     kwargs: Dict[str, Any] = {}
@@ -142,11 +143,11 @@ def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]], availa
         client_cls = getattr(module, class_name)
     except Exception as exc:  # noqa: BLE001
         logger.error(f"Provider import error: {exc}", exc_info=True)
-        return { 'type': 'text', 'text': f'Provider import error: {exc}' }
+        return {'type': 'text', 'text': f'Provider import error: {exc}'}
 
     try:
         client = client_cls(**kwargs)
-        
+
         # Always create LangChain agent (with or without tools)
         if persona_id:
             try:
@@ -155,12 +156,12 @@ def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]], availa
                 if available_tools_info is not None:
                     langchain_tools = create_langchain_tools(persona_id, available_tools_info)
                     logger.info(f"🔧 Created {len(langchain_tools)} LangChain tools for persona {persona_id}")
-                
+
                 # Get the persona for system prompt
                 from ..models.persona import Persona
                 persona = Persona.query.filter_by(id=persona_id).first()
                 persona_system_prompt = persona.system_prompt if persona else ""
-                
+
                 # Create the ChatPromptTemplate with persona system prompt
                 if persona_system_prompt:
                     chat_prompt = ChatPromptTemplate.from_messages([
@@ -174,25 +175,25 @@ def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]], availa
                         MessagesPlaceholder(variable_name="chat_history"),
                         ("human", "{input}")
                     ])
-                
+
                 # Create the ReAct agent (no prompt needed)
                 agent = create_react_agent(
                     client,
                     langchain_tools
                 )
-                
+
                 logger.info(f"🔧 Created ReAct agent with {len(langchain_tools)} tools")
-                
+
                 # Chain the prompt with the agent
                 new_agent = chat_prompt | agent
-                
+
                 # Get the last user message
                 last_user_msg = next((m for m in reversed(messages) if m.get('role') == 'user'), None)
                 if last_user_msg:
                     user_content = last_user_msg.get('content', '')
                     if isinstance(user_content, dict):
                         user_content = user_content.get('text', str(user_content))
-                    
+
                     # Convert messages to string for agent
                     conversation_history = []
                     for m in messages:
@@ -206,37 +207,37 @@ def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]], availa
                             conversation_history.append(f"Assistant: {content}")
                         elif role == 'system':
                             conversation_history.append(f"System: {content}")
-                    
+
                     # Run the chained agent
                     response = new_agent.invoke({
                         "chat_history": conversation_history,
                         "input": user_content
                     })
-                    
+
                     # Extract response
                     if hasattr(response, 'output'):
                         text = response.output
                     else:
                         text = str(response)
-                    
-                    return { 'type': 'text', 'text': text }
+
+                    return {'type': 'text', 'text': text}
                 else:
-                    return { 'type': 'text', 'text': 'No user message found' }
-                    
+                    return {'type': 'text', 'text': 'No user message found'}
+
             except Exception as e:
                 logger.error(f"🔧 Error creating LangChain agent: {e}", exc_info=True)
                 # Fall back to basic client call
                 pass
-        
+
         # Fallback: use basic client method (no tools)
         method = getattr(client, method_name, None)
         if not callable(method):
             logger.error(f"Client method '{method_name}' not found on {class_name}")
-            return { 'type': 'text', 'text': f"Provider method '{method_name}' not found on {class_name}" }
-        
+            return {'type': 'text', 'text': f"Provider method '{method_name}' not found on {class_name}"}
+
         # Convert to LC messages (simple text only)
         lc_messages = []
-        
+
         # Add existing messages
         for m in messages:
             role = m.get('role')
@@ -249,23 +250,23 @@ def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]], availa
                 lc_messages.append(AIMessage(content=content))
             else:
                 lc_messages.append(HumanMessage(content=content))
-        
+
         resp = method(lc_messages)
         text = getattr(resp, 'content', '') if hasattr(resp, 'content') else (resp or '')
         if isinstance(text, dict):
             # Normalize to text response
             text = text.get('text', str(text))
-        return { 'type': 'text', 'text': text or '' }
-        
+        return {'type': 'text', 'text': text or ''}
+
     except Exception as exc:  # noqa: BLE001
         logger.error(f"Provider error: {exc}", exc_info=True)
-        return { 'type': 'text', 'text': f'Provider error: {exc}' }
+        return {'type': 'text', 'text': f'Provider error: {exc}'}
 
 
-async def run_chat_streaming(provider: Any, mapping: Any, 
-                            messages: List[Dict[str, Any]], 
-                            available_tools_info: List[Dict[str, Any]], 
-                            persona_id: int) -> AsyncGenerator[StreamingChunk, None]:
+async def run_chat_streaming(provider: Any, mapping: Any,
+                             messages: List[Dict[str, Any]],
+                             available_tools_info: List[Dict[str, Any]],
+                             persona_id: int) -> AsyncGenerator[StreamingChunk, None]:
     """Streaming version of run_chat using llm_message_utils.
     
     This function ONLY handles persona-based clients with tools.
@@ -285,8 +286,8 @@ async def run_chat_streaming(provider: Any, mapping: Any,
         text = (last_user or {}).get('content', '')
         if isinstance(text, dict):
             text = text.get('text', str(text))
-        yield StreamingChunk(content=f"Provider not configured (module/class missing). Echo: {text}", 
-                           chunk_type="complete", is_final=True)
+        yield StreamingChunk(content=f"Provider not configured (module/class missing). Echo: {text}",
+                             chunk_type="complete", is_final=True)
         return
 
     # Build kwargs: provider creds/connection + model + mapping params (mapping overrides)
@@ -301,24 +302,24 @@ async def run_chat_streaming(provider: Any, mapping: Any,
         client_cls = getattr(module, class_name)
     except Exception as exc:  # noqa: BLE001
         logger.error(f"Provider import error: {exc}", exc_info=True)
-        yield StreamingChunk(content=f'Provider import error: {exc}', 
-                           chunk_type="complete", is_final=True)
+        yield StreamingChunk(content=f'Provider import error: {exc}',
+                             chunk_type="complete", is_final=True)
         return
 
     try:
         client = client_cls(**kwargs)
-        
+
         # Create LangChain tools (can be empty list if no tools)
         langchain_tools = []
         if available_tools_info is not None:
             langchain_tools = create_langchain_tools(persona_id, available_tools_info)
             logger.info(f"🔧 Created {len(langchain_tools)} LangChain tools for persona {persona_id}")
-        
+
         # Get the persona for system prompt
         from ..models.persona import Persona
         persona = Persona.query.filter_by(id=persona_id).first()
         persona_system_prompt = persona.system_prompt if persona else ""
-        
+
         # Create the ChatPromptTemplate with persona system prompt
         if persona_system_prompt:
             chat_prompt = ChatPromptTemplate.from_messages([
@@ -332,25 +333,25 @@ async def run_chat_streaming(provider: Any, mapping: Any,
                 MessagesPlaceholder(variable_name="chat_history"),
                 ("human", "{input}")
             ])
-        
+
         # Create the ReAct agent (no prompt needed)
         agent = create_react_agent(
             client,
             langchain_tools
         )
-        
+
         logger.info(f"🔧 Created ReAct agent with {len(langchain_tools)} tools")
-        
+
         # Chain the prompt with the agent
         new_agent = chat_prompt | agent
-        
+
         # Get the last user message
         last_user_msg = next((m for m in reversed(messages) if m.get('role') == 'user'), None)
         if last_user_msg:
             user_content = last_user_msg.get('content', '')
             if isinstance(user_content, dict):
                 user_content = user_content.get('text', str(user_content))
-            
+
             # Convert messages to string for agent
             conversation_history = []
             for m in messages:
@@ -364,7 +365,7 @@ async def run_chat_streaming(provider: Any, mapping: Any,
                     conversation_history.append(f"Assistant: {content}")
                 elif role == 'system':
                     conversation_history.append(f"System: {content}")
-            
+
             # Use streaming with astream_events
             try:
                 async for mode, message in iter_messages(new_agent.astream_events({
@@ -375,20 +376,20 @@ async def run_chat_streaming(provider: Any, mapping: Any,
                         if isinstance(message, LCAIMessage):
                             yield StreamingChunk(content="", chunk_type="ai_start")
                         elif isinstance(message, LCToolMessage):
-                            yield StreamingChunk(content="", chunk_type="tool_start", 
-                                              metadata={"tool_name": message.status.get("tool_name", "unknown")})
-                    
+                            yield StreamingChunk(content="", chunk_type="tool_start",
+                                                 metadata={"tool_name": message.status.get("tool_name", "unknown")})
+
                     elif mode == "update":
                         if isinstance(message, LCAIMessage):
                             yield StreamingChunk(content=message.status.get("content", ""), chunk_type="text")
-                    
+
                     elif mode == "end":
                         if isinstance(message, LCAIMessage):
                             yield StreamingChunk(content="", chunk_type="complete", is_final=True)
                         elif isinstance(message, LCToolMessage):
-                            yield StreamingChunk(content="", chunk_type="tool_end", 
-                                              metadata={"tool_name": message.status.get("tool_name", "unknown")})
-            
+                            yield StreamingChunk(content="", chunk_type="tool_end",
+                                                 metadata={"tool_name": message.status.get("tool_name", "unknown")})
+
             except AttributeError:
                 # Fallback if astream_events is not available
                 logger.warning("astream_events not available, falling back to invoke")
@@ -396,24 +397,19 @@ async def run_chat_streaming(provider: Any, mapping: Any,
                     "chat_history": conversation_history,
                     "input": user_content
                 })
-                
+
                 # Extract response and yield as single chunk
                 if hasattr(response, 'output'):
                     text = response.output
                 else:
                     text = str(response)
-                
+
                 yield StreamingChunk(content=text, chunk_type="text")
                 yield StreamingChunk(content="", chunk_type="complete", is_final=True)
-                
+
         else:
             yield StreamingChunk(content="No user message found", chunk_type="complete", is_final=True)
-            
+
     except Exception as exc:  # noqa: BLE001
         logger.error(f"Provider error: {exc}", exc_info=True)
         yield StreamingChunk(content=f'Provider error: {exc}', chunk_type="complete", is_final=True)
-
-
- 
-
-

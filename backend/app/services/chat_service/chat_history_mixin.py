@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
 from flask import jsonify, Request
-from ...decorators import expose
+
 from ... import db
-from ...models.chat_session import ChatSession
+from ...decorators import expose
 from ...models.chat_history import ChatHistory
 from ...models.chat_message import ChatMessage
+from ...models.chat_session import ChatSession
 
 
 class ChatHistoryMixin:
     """Mixin for chat history management operations."""
 
     @expose(
-        '/sessions/{id}/histories', 
+        '/sessions/{id}/histories',
         methods=['GET'],
         status_codes={200: 'OK', 404: 'Not Found'},
         response_schema={
@@ -50,7 +50,7 @@ class ChatHistoryMixin:
             return jsonify({'error': str(exc)}), 500
 
     @expose(
-        '/sessions/{id}/histories', 
+        '/sessions/{id}/histories',
         methods=['POST'],
         status_codes={201: 'Created', 404: 'Not Found'},
         request_schema={
@@ -100,7 +100,7 @@ class ChatHistoryMixin:
             return jsonify({'error': str(exc)}), 500
 
     @expose(
-        '/sessions/{id}/histories/{history_id}', 
+        '/sessions/{id}/histories/{history_id}',
         methods=['PUT'],
         status_codes={200: 'OK', 404: 'Not Found'},
         request_schema={
@@ -139,11 +139,11 @@ class ChatHistoryMixin:
 
             data = req.get_json(silent=True) or {}
             allowed_fields = ['title']
-            
+
             for field in allowed_fields:
                 if field in data:
                     setattr(history, field, data[field])
-            
+
             db.session.commit()
             return jsonify({'data': history.to_dict()})
         except Exception as exc:  # noqa: BLE001
@@ -151,7 +151,7 @@ class ChatHistoryMixin:
             return jsonify({'error': str(exc)}), 500
 
     @expose(
-        '/sessions/{id}/histories/{history_id}', 
+        '/sessions/{id}/histories/{history_id}',
         methods=['DELETE'],
         status_codes={200: 'OK', 400: 'Bad Request', 404: 'Not Found'},
         response_schema={
@@ -181,10 +181,10 @@ class ChatHistoryMixin:
             return jsonify({'message': 'History deleted successfully'})
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
-            return jsonify({'error': str(exc)}), 500 
+            return jsonify({'error': str(exc)}), 500
 
     @expose(
-        '/sessions/{id}/histories/{history_id}/messages', 
+        '/sessions/{id}/histories/{history_id}/messages',
         methods=['DELETE'],
         status_codes={200: 'OK', 400: 'Bad Request', 404: 'Not Found'},
         response_schema={
@@ -208,23 +208,23 @@ class ChatHistoryMixin:
 
             # Get count of messages to be deleted
             message_count = ChatMessage.query.filter_by(history_id=history_id).count()
-            
+
             if message_count == 0:
                 return jsonify({'message': 'No messages to clear', 'deleted_count': 0})
 
             # Delete all messages in this history
             ChatMessage.query.filter_by(history_id=history_id).delete()
-            
+
             # Reset message count in history
             history.message_count = 0
-            
+
             db.session.commit()
-            
+
             return jsonify({
                 'message': f'Cleared {message_count} messages successfully',
                 'deleted_count': message_count
             })
-            
+
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
-            return jsonify({'error': str(exc)}), 500 
+            return jsonify({'error': str(exc)}), 500

@@ -1,23 +1,25 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List
+
 from flask import jsonify, Request
-from ...decorators import expose
-from ... import db
-from ...models.chat_session import ChatSession
-from ...models.chat_message import ChatMessage
-from ...models.chat_history import ChatHistory
-from ...models.persona import Persona
-from ...models.tool_invocation_log import ToolInvocationLog
-from ...models.ai_model_mapping import AIModelMapping
-from ...models.ai_provider import AIProvider
-from ..tool_runtime import execute_tool
-from .websocket_protocol import WebSocketProtocol
-from ..tool_runtime import list_persona_tools
+
+from .streaming_event_manager import StreamingEventManager
 from .streaming_interface import StreamingChunk
 from .streaming_message_handler import StreamingMessageHandler
-from .streaming_event_manager import StreamingEventManager
+from .websocket_protocol import WebSocketProtocol
 from ..llm_client import run_chat_streaming
+from ..tool_runtime import execute_tool
+from ..tool_runtime import list_persona_tools
+from ... import db
+from ...decorators import expose
+from ...models.ai_model_mapping import AIModelMapping
+from ...models.ai_provider import AIProvider
+from ...models.chat_history import ChatHistory
+from ...models.chat_message import ChatMessage
+from ...models.chat_session import ChatSession
+from ...models.persona import Persona
+from ...models.tool_invocation_log import ToolInvocationLog
 
 
 class ChatMessageMixin(WebSocketProtocol):
@@ -42,7 +44,7 @@ class ChatMessageMixin(WebSocketProtocol):
         session = ChatSession.query.filter_by(id=session_id, is_active=True).first()
         if not session:
             return None, None
-        
+
         if history_id:
             # Specific history requested
             history = ChatHistory.query.filter_by(id=history_id, session_id=session_id).first()
@@ -64,7 +66,7 @@ class ChatMessageMixin(WebSocketProtocol):
                 history = ChatHistory.query.get(session.current_history_id)
                 if not history:
                     return session, None
-        
+
         return session, history
 
     def _create_user_message(self, history_id: int, content: Dict[str, Any]) -> ChatMessage:
@@ -95,22 +97,24 @@ class ChatMessageMixin(WebSocketProtocol):
     def _build_chat_history(self, history_id: int, user_msg_id: int) -> List[Dict[str, Any]]:
         """Build chat history for LLM processing."""
         chat_history = []
-        
+
         # Add system messages
-        system_msgs = ChatMessage.query.filter_by(history_id=history_id, role='system').order_by(ChatMessage.created_at.asc()).all()
+        system_msgs = ChatMessage.query.filter_by(history_id=history_id, role='system').order_by(
+            ChatMessage.created_at.asc()).all()
         for sm in system_msgs:
             content = sm.content_json if isinstance(sm.content_json, dict) else {'text': str(sm.content_json)}
             chat_history.append({'role': 'system', 'content': content})
-        
+
         # Add user and assistant messages up to current user message
-        user_msgs = ChatMessage.query.filter(ChatMessage.history_id==history_id, ChatMessage.id<=user_msg_id).order_by(ChatMessage.created_at.asc()).all()
+        user_msgs = ChatMessage.query.filter(ChatMessage.history_id == history_id,
+                                             ChatMessage.id <= user_msg_id).order_by(ChatMessage.created_at.asc()).all()
         for um in user_msgs:
             role = um.role
             if role not in ('user', 'assistant'):
                 continue
             content = um.content_json if isinstance(um.content_json, dict) else {'text': str(um.content_json)}
             chat_history.append({'role': role, 'content': content})
-        
+
         return chat_history
 
     def _resolve_ai_model(self, persona_id: int):
@@ -118,18 +122,18 @@ class ChatMessageMixin(WebSocketProtocol):
         model_info = self._select_chat_model(persona_id)
         if not model_info:
             return None, None, None
-        
+
         provider = AIProvider.query.filter_by(id=model_info['provider_id'], is_active=True).first()
         mapping_obj = AIModelMapping.query.filter_by(id=persona_id, is_active=True).first()
-        
+
         return model_info, provider, mapping_obj
 
-    def _execute_tool_call(self, persona_id: int, tool_name: str, tool_args: Dict[str, Any], 
-                          history_id: int, user_msg_id: int, available_tools: Dict[str, Any]):
+    def _execute_tool_call(self, persona_id: int, tool_name: str, tool_args: Dict[str, Any],
+                           history_id: int, user_msg_id: int, available_tools: Dict[str, Any]):
         """Execute tool call and return result."""
         if tool_name not in available_tools:
             return None, f'Tool {tool_name} not allowed'
-        
+
         # Log tool execution
         log = ToolInvocationLog(
             history_id=history_id,
@@ -159,7 +163,8 @@ class ChatMessageMixin(WebSocketProtocol):
 
         return exec_result, None
 
-    def _create_assistant_message(self, history_id: int, content: Dict[str, Any], status: str = 'complete') -> ChatMessage:
+    def _create_assistant_message(self, history_id: int, content: Dict[str, Any],
+                                  status: str = 'complete') -> ChatMessage:
         """Create and save assistant message."""
         asst_msg = ChatMessage(
             history_id=history_id,
@@ -177,7 +182,7 @@ class ChatMessageMixin(WebSocketProtocol):
         return jsonify({'error': error_message}), status_code
 
     @expose(
-        '/sessions/{id}/messages', 
+        '/sessions/{id}/messages',
         methods=['GET'],
         status_codes={200: 'OK', 404: 'Not Found'},
         response_schema={
@@ -213,13 +218,14 @@ class ChatMessageMixin(WebSocketProtocol):
             if not session.current_history_id:
                 return jsonify({'data': [], 'total': 0})
 
-            msgs = ChatMessage.query.filter_by(history_id=session.current_history_id).order_by(ChatMessage.created_at.asc()).all()
+            msgs = ChatMessage.query.filter_by(history_id=session.current_history_id).order_by(
+                ChatMessage.created_at.asc()).all()
             return jsonify({'data': [m.to_dict() for m in msgs], 'total': len(msgs)})
         except Exception as exc:  # noqa: BLE001
             return jsonify({'error': str(exc)}), 500
 
     @expose(
-        '/sessions/{id}/send', 
+        '/sessions/{id}/send',
         methods=['POST'],
         status_codes={200: 'OK', 400: 'Bad Request', 404: 'Not Found'},
         request_schema={
@@ -306,7 +312,8 @@ class ChatMessageMixin(WebSocketProtocol):
             db.session.rollback()
             return self._format_error_response(str(exc), 500)
 
-    def _submit_message_for_async_processing(self, user_msg_id: int, asst_msg_id: int, session_id: int, history_id: int, persona_id: int):
+    def _submit_message_for_async_processing(self, user_msg_id: int, asst_msg_id: int, session_id: int, history_id: int,
+                                             persona_id: int):
         """Submit message processing to thread pool for async execution."""
         try:
             # Use the thread pool manager from the parent ChatService
@@ -314,11 +321,11 @@ class ChatMessageMixin(WebSocketProtocol):
                 self._process_message_async,
                 user_msg_id, asst_msg_id, session_id, history_id, persona_id
             )
-            
+
             # Log successful submission with proper logger
             self._logger.info(f"Message {user_msg_id} submitted to thread pool for async processing")
             return future
-            
+
         except Exception as e:
             # Log error with full stack trace
             self._logger.error(f"Failed to submit message {user_msg_id} to thread pool: {e}", exc_info=True)
@@ -326,41 +333,41 @@ class ChatMessageMixin(WebSocketProtocol):
             self.emit_llm_event(session_id, history_id, 'processing_failed', f'Failed to start processing: {e}')
             raise
 
-    async def _process_message_async(self, user_msg_id: int, asst_msg_id: int, 
-                                    session_id: int, history_id: int, persona_id: int):
+    async def _process_message_async(self, user_msg_id: int, asst_msg_id: int,
+                                     session_id: int, history_id: int, persona_id: int):
         """Process message asynchronously using streaming."""
         message_handler = StreamingMessageHandler(session_id, history_id)
         event_manager = StreamingEventManager(self)
-        try:    
+        try:
             # Set the existing assistant message ID
             message_handler.assistant_message_id = asst_msg_id
-            
+
             # Validate message exists
             if not message_handler.ensure_message_exists():
                 error_msg = "Assistant message not found or inaccessible"
                 self.emit_llm_event(session_id, history_id, 'processing_failed', error_msg)
                 return
-            
+
             # Get model info and tools
             model_info, provider, mapping_obj = self._resolve_ai_model(persona_id)
             available_tools_info = list_persona_tools(persona_id)
-            
+
             if not model_info or not provider or not mapping_obj:
                 # No model available - mark as failed
                 error_msg = "AI model, provider, or mapping not available"
                 message_handler.mark_as_error(error_msg)
-                event_manager.emit_chunk_event(session_id, history_id, 
-                                            StreamingChunk(content="", chunk_type="complete", is_final=True),
-                                            asst_msg_id)
+                event_manager.emit_chunk_event(session_id, history_id,
+                                               StreamingChunk(content="", chunk_type="complete", is_final=True),
+                                               asst_msg_id)
                 return
-            
+
             # Build chat history using helper method
             chat_history = self._build_chat_history(history_id, user_msg_id)
-            
+
             # Use streaming LLM client
             try:
                 async for message in run_chat_streaming(provider, mapping_obj, chat_history,
-                                                    available_tools_info, persona_id):
+                                                        available_tools_info, persona_id):
                     # Handle each chunk
                     if message.chunk_type == "text":
                         if message_handler.update_content_safely(message.content):
@@ -368,37 +375,38 @@ class ChatMessageMixin(WebSocketProtocol):
                         else:
                             # Log error but continue processing
                             self._logger.error(f"Failed to update content for chunk: {message.content[:50]}...")
-                    
+
                     elif message.chunk_type == "ai_start":
                         event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
-                    
+
                     elif message.chunk_type == "tool_start":
-                        event_manager.emit_tool_event(session_id, history_id, 
-                                                   message.metadata["tool_name"], "started")
-                    
+                        event_manager.emit_tool_event(session_id, history_id,
+                                                      message.metadata["tool_name"], "started")
+
                     elif message.chunk_type == "tool_end":
-                        event_manager.emit_tool_event(session_id, history_id, 
-                                                   message.metadata["tool_name"], "completed")
-                    
+                        event_manager.emit_tool_event(session_id, history_id,
+                                                      message.metadata["tool_name"], "completed")
+
                     elif message.chunk_type == "complete":
                         message_handler.finalize_assistant_message()
                         event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
                         break
-                        
+
             except Exception as e:
                 # Handle streaming errors
                 message_handler.mark_as_error(f"Streaming error: {str(e)}")
                 message_handler.cleanup_on_error()  # Clean up on error
-                event_manager.emit_streaming_error(session_id, history_id, f"Streaming error: {str(e)}", "streaming_error", asst_msg_id)
+                event_manager.emit_streaming_error(session_id, history_id, f"Streaming error: {str(e)}",
+                                                   "streaming_error", asst_msg_id)
                 self.emit_llm_event(session_id, history_id, 'processing_failed', f"Streaming error: {str(e)}")
-                
+
         except Exception as e:
             message_handler.cleanup_on_error()
             self.emit_llm_event(session_id, history_id, 'processing_failed', f"Async processing error: {str(e)}")
             self._logger.error(f"Error in _process_message_async: {e}", exc_info=True)
 
     @expose(
-        '/sessions/{session_id}/histories/{history_id}/send', 
+        '/sessions/{session_id}/histories/{history_id}/send',
         methods=['POST'],
         status_codes={200: 'OK', 400: 'Bad Request', 404: 'Not Found'},
         request_schema={
@@ -488,7 +496,7 @@ class ChatMessageMixin(WebSocketProtocol):
             return self._format_error_response(str(exc), 500)
 
     @expose(
-        '/sessions/{id}/retry', 
+        '/sessions/{id}/retry',
         methods=['POST'],
         status_codes={200: 'OK', 400: 'Bad Request'},
         response_schema={
@@ -512,7 +520,8 @@ class ChatMessageMixin(WebSocketProtocol):
     def retry_last(self, req: Request, id: int):  # noqa: A002
         """Retry the last user message in a session."""
         try:
-            last_user = ChatMessage.query.filter_by(session_id=id, role='user').order_by(ChatMessage.created_at.desc()).first()
+            last_user = ChatMessage.query.filter_by(session_id=id, role='user').order_by(
+                ChatMessage.created_at.desc()).first()
             if not last_user:
                 return self._format_error_response('No user messages', 400)
             # Reuse send logic by re-sending the last user content
@@ -522,7 +531,7 @@ class ChatMessageMixin(WebSocketProtocol):
             return self._format_error_response(str(exc), 500)
 
     @expose(
-        '/sessions/{session_id}/histories/{history_id}/messages', 
+        '/sessions/{session_id}/histories/{history_id}/messages',
         methods=['GET'],
         status_codes={200: 'OK', 404: 'Not Found'},
         response_schema={
@@ -563,7 +572,7 @@ class ChatMessageMixin(WebSocketProtocol):
             return self._format_error_response(str(exc), 500)
 
     @expose(
-        '/sessions/{session_id}/histories/{history_id}/messages/{message_id}', 
+        '/sessions/{session_id}/histories/{history_id}/messages/{message_id}',
         methods=['DELETE'],
         status_codes={200: 'OK', 400: 'Bad Request', 404: 'Not Found'},
         response_schema={
@@ -594,20 +603,20 @@ class ChatMessageMixin(WebSocketProtocol):
 
             # Store message ID before deletion for response
             deleted_message_id = message.id
-            
+
             # Delete the message
             db.session.delete(message)
-            
+
             # Update history message count
             history.message_count = max(0, history.message_count - 1)
-            
+
             db.session.commit()
-            
+
             return jsonify({
                 'message': 'Message deleted successfully',
                 'deleted_message_id': deleted_message_id
             })
-            
+
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
-            return self._format_error_response(str(exc), 500) 
+            return self._format_error_response(str(exc), 500)

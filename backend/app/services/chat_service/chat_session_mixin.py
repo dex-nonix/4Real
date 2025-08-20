@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
 from flask import jsonify, Request
-from ...decorators import expose
+
 from ... import db
-from ...models.chat_session import ChatSession
+from ...decorators import expose
 from ...models.chat_history import ChatHistory
-from ...models.persona import Persona
 from ...models.chat_message import ChatMessage
+from ...models.chat_session import ChatSession
+from ...models.persona import Persona
 
 
 class ChatSessionMixin:
@@ -16,7 +16,7 @@ class ChatSessionMixin:
     def _get_sessions_with_history_counts(self, persona_id: int = None, session_id: int = None):
         """Utility method to get sessions with history counts using single JOIN query."""
         from sqlalchemy import func
-        
+
         query = db.session.query(
             ChatSession,
             func.count(ChatHistory.id).label('history_count')
@@ -25,17 +25,17 @@ class ChatSessionMixin:
         ).filter(
             ChatSession.is_active == True
         )
-        
+
         if persona_id:
             query = query.filter(ChatSession.persona_id == persona_id)
         if session_id:
             query = query.filter(ChatSession.id == session_id)
-            
+
         return query.group_by(ChatSession.id)
 
     @expose(
-        '/sessions', 
-        methods=['POST'], 
+        '/sessions',
+        methods=['POST'],
         status_codes={201: 'Created', 400: 'Bad Request', 404: 'Not Found'},
         request_schema={
             "type": "object",
@@ -70,7 +70,8 @@ class ChatSessionMixin:
         try:
             payload = req.get_json(silent=True) or {}
             persona_id = int(payload.get('persona_id'))
-            session_name = payload.get('session_name') or f'Chat with {Persona.query.get(persona_id).name if Persona.query.get(persona_id) else "Persona"}'
+            session_name = payload.get(
+                'session_name') or f'Chat with {Persona.query.get(persona_id).name if Persona.query.get(persona_id) else "Persona"}'
             session_icon = payload.get('session_icon')
 
             persona = Persona.query.filter_by(id=persona_id, is_active=True).first()
@@ -78,8 +79,8 @@ class ChatSessionMixin:
                 return jsonify({'error': 'Persona not found or inactive'}), 404
 
             session = ChatSession(
-                persona_id=persona_id, 
-                session_name=session_name, 
+                persona_id=persona_id,
+                session_name=session_name,
                 session_icon=session_icon,
                 is_active=True
             )
@@ -102,8 +103,8 @@ class ChatSessionMixin:
             # Optional initial system message from persona.system_prompt
             if persona.system_prompt:
                 sys_msg = ChatMessage(
-                    history_id=history.id, 
-                    role='system', 
+                    history_id=history.id,
+                    role='system',
                     message_type='text',
                     content_json={'type': 'system', 'text': persona.system_prompt}
                 )
@@ -116,7 +117,7 @@ class ChatSessionMixin:
             return jsonify({'error': str(exc)}), 500
 
     @expose(
-        '/sessions', 
+        '/sessions',
         methods=['GET'],
         status_codes={200: 'OK'},
         response_schema={
@@ -148,7 +149,7 @@ class ChatSessionMixin:
         try:
             # Use utility method for single JOIN query with COUNT
             sessions_with_counts = self._get_sessions_with_history_counts().all()
-            
+
             result = []
             for session, history_count in sessions_with_counts:
                 session_data = session.to_dict()
@@ -159,7 +160,7 @@ class ChatSessionMixin:
             return jsonify({'error': str(exc)}), 500
 
     @expose(
-        '/sessions/{id}', 
+        '/sessions/{id}',
         methods=['GET'],
         status_codes={200: 'OK', 404: 'Not Found'},
         response_schema={
@@ -187,20 +188,20 @@ class ChatSessionMixin:
         try:
             # Use utility method for single JOIN query with COUNT
             session_with_count = self._get_sessions_with_history_counts(session_id=id).first()
-            
+
             if not session_with_count:
                 return jsonify({'error': 'Session not found or inactive'}), 404
-            
+
             session, history_count = session_with_count
             session_data = session.to_dict()
             session_data['history_count'] = history_count  # Just the count, no objects
-            
+
             return jsonify({'data': session_data})
         except Exception as exc:  # noqa: BLE001
             return jsonify({'error': str(exc)}), 500
 
     @expose(
-        '/sessions/{id}', 
+        '/sessions/{id}',
         methods=['PUT'],
         status_codes={200: 'OK', 404: 'Not Found'},
         request_schema={
@@ -239,11 +240,11 @@ class ChatSessionMixin:
 
             data = req.get_json(silent=True) or {}
             allowed_fields = ['session_name', 'session_icon', 'current_history_id']
-            
+
             for field in allowed_fields:
                 if field in data:
                     setattr(session, field, data[field])
-            
+
             db.session.commit()
             return jsonify({'data': session.to_dict()})
         except Exception as exc:  # noqa: BLE001
@@ -251,7 +252,7 @@ class ChatSessionMixin:
             return jsonify({'error': str(exc)}), 500
 
     @expose(
-        '/sessions/{id}', 
+        '/sessions/{id}',
         methods=['DELETE'],
         status_codes={200: 'OK', 404: 'Not Found'},
         response_schema={
@@ -276,7 +277,7 @@ class ChatSessionMixin:
             return jsonify({'error': str(exc)}), 500
 
     @expose(
-        '/personas/{persona_id}/sessions', 
+        '/personas/{persona_id}/sessions',
         methods=['GET'],
         status_codes={200: 'OK', 404: 'Not Found'},
         response_schema={
@@ -312,19 +313,19 @@ class ChatSessionMixin:
 
             # Use utility method for single JOIN query with COUNT
             sessions_with_counts = self._get_sessions_with_history_counts(persona_id=persona_id).all()
-            
+
             sessions_data = []
             for session, history_count in sessions_with_counts:
                 session_data = session.to_dict()
                 session_data['history_count'] = history_count  # Just the count, no objects
                 sessions_data.append(session_data)
-            
+
             return jsonify({'data': sessions_data, 'total': len(sessions_data)})
         except Exception as exc:  # noqa: BLE001
             return jsonify({'error': str(exc)}), 500
 
     @expose(
-        '/personas/{persona_id}/start-chat', 
+        '/personas/{persona_id}/start-chat',
         methods=['POST'],
         status_codes={201: 'Created', 404: 'Not Found'},
         request_schema={
@@ -401,4 +402,4 @@ class ChatSessionMixin:
             return jsonify({'data': session.to_dict()}), 201
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
-            return jsonify({'error': str(exc)}), 500 
+            return jsonify({'error': str(exc)}), 500

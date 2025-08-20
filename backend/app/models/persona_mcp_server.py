@@ -32,5 +32,3 @@ class PersonaMCPServer(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<PersonaMCPServer id={self.id} persona_id={self.persona_id} mcp_server_id={self.mcp_server_id}>"
-
-

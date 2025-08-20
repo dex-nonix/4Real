@@ -24,5 +24,3 @@ class PersonaService(CrudService):
             'search_fields': ['name'],
         },
     }
-
-

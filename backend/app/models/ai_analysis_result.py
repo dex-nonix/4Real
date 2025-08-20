@@ -33,4 +33,3 @@ class AIAnalysisResult(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<AIAnalysisResult id={self.id} type={self.analysis_type!r}>"
-

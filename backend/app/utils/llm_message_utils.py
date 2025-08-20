@@ -132,12 +132,3 @@ async def iter_messages(events):
             await self._handle_message(mode, message)
         return response_output.content
 """
-
-
-
-
-
-
-
-
-

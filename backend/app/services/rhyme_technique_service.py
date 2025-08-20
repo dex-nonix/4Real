@@ -24,4 +24,3 @@ class RhymeTechniqueService(CrudService):
             'search_fields': ['name'],
         },
     }
-

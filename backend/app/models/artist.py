@@ -32,4 +32,3 @@ class Artist(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover - debug helper
         return f"<Artist id={self.id} name={self.name!r}>"
-

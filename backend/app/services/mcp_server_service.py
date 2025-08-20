@@ -24,5 +24,3 @@ class MCPServerService(CrudService):
             'search_fields': ['name'],
         },
     }
-
-

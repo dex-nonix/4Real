@@ -2,15 +2,19 @@
 
 ## Overview
 
-The API Router system is a modular, auto-documenting Flask API framework that automatically generates OpenAPI 3.0 specifications and Swagger UI documentation. It provides a clean separation of concerns between routing, documentation generation, and service management.
+The API Router system is a modular, auto-documenting Flask API framework that automatically generates OpenAPI 3.0
+specifications and Swagger UI documentation. It provides a clean separation of concerns between routing, documentation
+generation, and service management.
 
 **🚀 NEW: Enhanced Swagger Generation**
+
 - **BaseApiService** - Base class for all services with automatic Swagger generation
 - **CrudService** - Automatic schema generation from models and configs
 - **Enhanced @expose** - Direct schema definition in decorators
 - **No DTOs required** - Schemas defined directly or generated automatically
 
 **🚀 NEW: Compact API Generator**
+
 - **Compact YAML Overviews** - Human-readable API summaries converted from full OpenAPI specs
 - **OpenAPI Integration** - Leverages existing OpenAPIGenerator for consistency
 - **Dynamic Categorization** - Groups endpoints by service and logical sections
@@ -41,6 +45,7 @@ services/
 The main router class that handles service registration, route creation, and request handling.
 
 **Key Features:**
+
 - Automatic service registration and route creation
 - Built-in error handling and logging
 - Service lifecycle management
@@ -48,6 +53,7 @@ The main router class that handles service registration, route creation, and req
 - **🚀 NEW: Compact API generator integration (converts OpenAPI specs)**
 
 **Usage:**
+
 ```python
 from app.api_router import APIRouter
 
@@ -63,6 +69,7 @@ blueprint = router.blueprint
 ```
 
 **Methods:**
+
 - `register_service(service_name, service_class, *args, **kwargs)`: Register a service class
 - `register_service_factory(service_name, factory)`: Register a service using a factory function
 - `list_services()`: Get list of registered service names
@@ -73,6 +80,7 @@ blueprint = router.blueprint
 Generates compact, human-readable YAML overviews by converting the full OpenAPI specification into a simplified format.
 
 **Key Features:**
+
 - **OpenAPI Integration** - Works with the existing OpenAPIGenerator to convert full specs
 - **Dynamic Categorization** - Groups endpoints by service and logical sections
 - **Service Filtering** - Supports filtering by service names via query parameters
@@ -80,10 +88,12 @@ Generates compact, human-readable YAML overviews by converting the full OpenAPI 
 - **Consistent with Full Spec** - Always in sync with the complete OpenAPI documentation
 
 **Endpoints:**
+
 - **`/api/overview`** - Overview of all services
 - **`/api/overview?services=chat,artist`** - Filtered overview of specific services
 
 **Example Output:**
+
 ```yaml
 # COMPACT API OVERVIEW - All Services
 # Generated at: 2024-01-15T10:30:00
@@ -120,6 +130,7 @@ artist:
 ```
 
 **Use Cases:**
+
 - **Development** - Quick API reference during coding
 - **Code Reviews** - Overview of API changes
 - **Documentation** - Simple endpoint listing
@@ -127,6 +138,7 @@ artist:
 - **Onboarding** - New developers understanding API structure
 
 **How It Works:**
+
 1. **Leverages OpenAPIGenerator** - Uses the existing OpenAPI spec generation
 2. **Applies service filtering** - Filters by query parameter if specified (`?services=chat,artist`)
 3. **Converts to compact format** - Transforms verbose OpenAPI spec into readable YAML
@@ -138,12 +150,14 @@ artist:
 Base class for all API services that provides automatic Swagger documentation generation.
 
 **Key Features:**
+
 - **Automatic Swagger generation** from `@expose` decorators
 - **Default `method_to_swagger()`** implementation for all subclasses
 - **No override required** for most services
 - **Clean architecture** with separation of concerns
 
 **Usage:**
+
 ```python
 from app.services.base_api_service import BaseApiService
 
@@ -162,12 +176,14 @@ class MyService(BaseApiService):
 Enhanced CRUD service that automatically generates schemas from models and configurations.
 
 **Key Features:**
+
 - **Automatic schema generation** from SQLAlchemy models
 - **Config-driven validation** and field requirements
 - **Override of `method_to_swagger()`** for dynamic model schemas
 - **Create/Update/Response schemas** generated automatically
 
 **Usage:**
+
 ```python
 from app.services.crud_service import CrudService
 
@@ -189,8 +205,9 @@ class ArtistService(CrudService):
 ```
 
 **Automatic Schema Generation:**
+
 - **Create Schema**: Model fields excluding ID, timestamps
-- **Update Schema**: Model fields excluding ID, timestamps  
+- **Update Schema**: Model fields excluding ID, timestamps
 - **Response Schema**: All model fields with proper types
 
 ### 5. OpenAPIGenerator (`openapi_generator.py`)
@@ -198,6 +215,7 @@ class ArtistService(CrudService):
 Handles the generation of OpenAPI 3.0 specifications from registered services.
 
 **Key Features:**
+
 - **Service-aware schema generation** via `to_swagger()` method
 - **Automatic schema extraction** from `@expose` decorators
 - **Dynamic tag processing**
@@ -205,6 +223,7 @@ Handles the generation of OpenAPI 3.0 specifications from registered services.
 - **Service filtering support**
 
 **Service Integration:**
+
 ```python
 # Generate spec for all services
 spec = generator.generate_openapi_spec(services)
@@ -217,6 +236,7 @@ spec = generator.generate_openapi_spec(services, "chat")
 ```
 
 **Filter Format:**
+
 - Comma-separated service names
 - Case-insensitive matching
 - Whitespace is automatically trimmed
@@ -227,6 +247,7 @@ spec = generator.generate_openapi_spec(services, "chat")
 Generates the Swagger UI HTML interface for API exploration with advanced service filtering.
 
 **Features:**
+
 - Modern Swagger UI 5.9.0
 - **Service Filtering Interface** - Filter services without reloading
 - **Quick Filter Buttons** - Pre-defined service combinations
@@ -241,12 +262,14 @@ Generates the Swagger UI HTML interface for API exploration with advanced servic
 Manages documentation endpoints and integrates the OpenAPI and Swagger UI generators.
 
 **Endpoints:**
+
 - `/api/openapi.json` - OpenAPI specification (supports filtering)
 - `/api/docs` - Swagger UI interface
 
 ### 8. CompactApiGenerator Integration 🚀 NEW!
 
-The CompactApiGenerator is automatically integrated into the APIRouter system and provides the `/api/overview` endpoint. It works by:
+The CompactApiGenerator is automatically integrated into the APIRouter system and provides the `/api/overview` endpoint.
+It works by:
 
 1. **Leveraging OpenAPIGenerator** - Uses the existing OpenAPI spec generation
 2. **Converting to Compact Format** - Transforms verbose OpenAPI specs into readable YAML
@@ -254,6 +277,7 @@ The CompactApiGenerator is automatically integrated into the APIRouter system an
 4. **Supporting Service Filtering** - Works with the same filtering system as OpenAPI endpoints
 
 **Integration Points:**
+
 - Automatically added to the APIRouter blueprint
 - Uses the same service filtering as OpenAPI endpoints
 - Maintains consistency with full OpenAPI documentation
@@ -263,6 +287,7 @@ The CompactApiGenerator is automatically integrated into the APIRouter system an
 ### **NEW: Service Architecture**
 
 #### **BaseApiService** (All Services)
+
 ```python
 from app.services.base_api_service import BaseApiService
 
@@ -273,6 +298,7 @@ class MyService(BaseApiService):
 ```
 
 #### **CrudService** (CRUD Operations)
+
 ```python
 from app.services.crud_service import CrudService
 
@@ -288,6 +314,7 @@ class ArtistService(CrudService):
 ```
 
 #### **Custom Services** (Special Logic)
+
 ```python
 class ChatService(BaseApiService):
     # Can override method_to_swagger() if needed
@@ -384,24 +411,31 @@ class CreateItemDTO(BaseModel):
 The Compact API Generator provides quick, human-readable overviews of your API structure:
 
 #### **All Services Overview**
+
 ```
 GET /api/overview
 ```
+
 Returns compact YAML overview of all discovered services.
 
 #### **Single Service Overview**
+
 ```
 GET /api/overview/{service_name}
 ```
+
 Returns compact YAML overview of a specific service.
 
 #### **Raw YAML Output**
+
 ```
 GET /api/overview/{service_name}/yaml
 ```
+
 Returns raw YAML content with proper `text/yaml` content type.
 
 #### **Benefits:**
+
 - **Quick Reference** - See all endpoints at a glance
 - **Easy Navigation** - Grouped by logical sections
 - **Minimal Noise** - No verbose schema details
@@ -413,6 +447,7 @@ Returns raw YAML content with proper `text/yaml` content type.
 ### **NEW: Enhanced Schema Generation**
 
 #### **Automatic CRUD Schemas**
+
 CRUD services automatically generate schemas from models:
 
 ```python
@@ -432,6 +467,7 @@ class ArtistService(CrudService):
 ```
 
 #### **Manual Schema Definition**
+
 Custom services define schemas in `@expose` decorator:
 
 ```python
@@ -457,9 +493,11 @@ Custom services define schemas in `@expose` decorator:
 
 ### Dynamic Service Filtering
 
-The OpenAPI endpoint now supports query parameter filtering, and the Swagger UI provides an intuitive interface for this:
+The OpenAPI endpoint now supports query parameter filtering, and the Swagger UI provides an intuitive interface for
+this:
 
 #### **Backend Filtering (Query Parameters)**
+
 ```
 # All services
 GET /api/openapi.json
@@ -475,7 +513,9 @@ GET /api/openapi.json?services=chat, artists , albums
 ```
 
 #### **Frontend Filtering (Swagger UI)**
+
 The Swagger UI now includes:
+
 - **Filter Input Field** - Type service names and press Enter or click Apply
 - **Quick Filter Buttons** - One-click access to common service combinations
 - **Real-time Updates** - No page reloads, instant filtering
@@ -490,6 +530,7 @@ The system automatically processes tags with special markers:
 - `{service_name}` → Replaced with the service name in title case
 
 **Examples:**
+
 ```python
 @expose(tags=['__SERVICE_NAME__', 'core'])  # → ['Chat', 'core']
 @expose(tags=['{service_name}-operations']) # → ['Chat-operations']
@@ -505,6 +546,7 @@ The API router includes comprehensive error handling:
 - Terminal output for immediate debugging
 
 **Error Response Format:**
+
 ```json
 {
   "error": "Service Error",
@@ -525,6 +567,7 @@ The system provides detailed logging:
 - Performance monitoring
 
 **Log Format:**
+
 ```
 🚀 Executing service_name.method_name with kwargs: {...}
 ✅ Successfully executed service_name.method_name
@@ -675,37 +718,37 @@ router.register_service('chat', ChatService)       # Custom service
 ### Common Issues
 
 1. **Service not appearing in OpenAPI spec**
-   - Check that methods have `@expose` decorator
-   - Verify service extends `BaseApiService`
-   - Check for import errors
+    - Check that methods have `@expose` decorator
+    - Verify service extends `BaseApiService`
+    - Check for import errors
 
 2. **CRUD schemas not appearing**
-   - Ensure service extends `CrudService`
-   - Verify `model` and `config` are properly set
-   - Check that model has proper SQLAlchemy fields
+    - Ensure service extends `CrudService`
+    - Verify `model` and `config` are properly set
+    - Check that model has proper SQLAlchemy fields
 
 3. **Custom schemas not working**
-   - Use `request_schema`/`response_schema` in `@expose` decorator
-   - Ensure schemas follow OpenAPI 3.0 format
-   - Check for syntax errors in schema definitions
+    - Use `request_schema`/`response_schema` in `@expose` decorator
+    - Ensure schemas follow OpenAPI 3.0 format
+    - Check for syntax errors in schema definitions
 
 4. **Routes not working**
-   - Check Flask blueprint registration
-   - Verify URL prefix configuration
-   - Check for route conflicts
+    - Check Flask blueprint registration
+    - Verify URL prefix configuration
+    - Check for route conflicts
 
 5. **Filtering not working**
-   - Verify query parameter format (`?services=name1,name2`)
-   - Check service names match exactly (case-insensitive)
-   - Ensure no extra spaces in parameter values
+    - Verify query parameter format (`?services=name1,name2`)
+    - Check service names match exactly (case-insensitive)
+    - Ensure no extra spaces in parameter values
 
 6. **Compact overview not working**
-   - Check that services extend `BaseApiService`
-   - Verify services have `to_swagger` method
-   - Ensure services are properly registered in ApiRouter
-   - Check that services have `get_exposed_methods()` method
-   - Verify OpenAPIGenerator is working correctly
-   - Check that the `/api/overview` endpoint is accessible
+    - Check that services extend `BaseApiService`
+    - Verify services have `to_swagger` method
+    - Ensure services are properly registered in ApiRouter
+    - Check that services have `get_exposed_methods()` method
+    - Verify OpenAPIGenerator is working correctly
+    - Check that the `/api/overview` endpoint is accessible
 
 ### Debug Mode
 

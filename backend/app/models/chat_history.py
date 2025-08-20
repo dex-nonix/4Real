@@ -18,6 +18,7 @@ class ChatHistory(db.Model):
 
     # Relationships
     session = db.relationship('ChatSession', foreign_keys=[session_id], backref=db.backref('histories', lazy=True))
+
     # messages relationship is handled by backref in ChatMessage model
 
     def to_dict(self) -> dict:

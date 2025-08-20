@@ -24,5 +24,3 @@ class PersonaMCPServerService(CrudService):
             'search_fields': [],
         },
     }
-
-

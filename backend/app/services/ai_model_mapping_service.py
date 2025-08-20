@@ -25,4 +25,3 @@ class AIModelMappingService(CrudService):
             },
         }
         super().__init__(AIModelMapping, config)
-

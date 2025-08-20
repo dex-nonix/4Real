@@ -3,15 +3,14 @@ Thread Pool Manager for Chat Service
 Provides production-grade thread pool management for async message processing.
 """
 
-import concurrent.futures
-import threading
-import logging
-import time
 import asyncio
-from typing import Optional, Callable, Any, Dict
+import concurrent.futures
+import logging
+import threading
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Optional, Callable, Any, Dict
 
 
 @dataclass
@@ -37,9 +36,9 @@ class ChatThreadPoolManager:
     - Graceful shutdown procedures
     - Comprehensive error handling
     """
-    
-    def __init__(self, app, 
-                 max_workers: int = 20, 
+
+    def __init__(self, app,
+                 max_workers: int = 20,
                  thread_name_prefix: str = "ChatWorker",
                  monitoring_interval: int = 30,
                  log_level: str = "INFO"):
@@ -56,13 +55,13 @@ class ChatThreadPoolManager:
         self._max_workers = max_workers
         self._thread_name_prefix = thread_name_prefix
         self._monitoring_interval = monitoring_interval
-        
+
         # Thread pool
         self._executor = concurrent.futures.ThreadPoolExecutor(
             max_workers=max_workers,
             thread_name_prefix=thread_name_prefix
         )
-        
+
         # State management
         self._lock = threading.RLock()
         self._active_tasks = set()
@@ -71,11 +70,11 @@ class ChatThreadPoolManager:
         self._total_submissions = 0
         self._last_activity = datetime.utcnow()
         self._shutdown_event = threading.Event()
-        
+
         # Logging setup with configurable level
         self._logger = logging.getLogger(__name__)
         self._setup_logging(log_level)
-        
+
         # Start monitoring thread
         self._monitor_thread = threading.Thread(
             target=self._monitor_thread_pool,
@@ -83,34 +82,34 @@ class ChatThreadPoolManager:
             name="ThreadPoolMonitor"
         )
         self._monitor_thread.start()
-        
+
         self._logger.info(f"ChatThreadPoolManager initialized with {max_workers} workers, log level: {log_level}")
-    
+
     def _setup_logging(self, log_level: str):
         """Setup logging with configurable level."""
         try:
             # Convert string to logging level
             numeric_level = getattr(logging, log_level.upper(), logging.INFO)
             self._logger.setLevel(numeric_level)
-            
+
             # Create formatter with detailed information
             formatter = logging.Formatter(
                 '%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s'
             )
-            
+
             # Add handler if none exists
             if not self._logger.handlers:
                 handler = logging.StreamHandler()
                 handler.setFormatter(formatter)
                 self._logger.addHandler(handler)
-            
+
             self._logger.debug(f"Logging configured with level: {log_level} ({numeric_level})")
-            
+
         except Exception as e:
             # Fallback to basic logging if setup fails
             print(f"Warning: Failed to setup logging: {e}")
             self._logger.setLevel(logging.INFO)
-    
+
     def submit_task(self, func: Callable, *args, **kwargs) -> concurrent.futures.Future:
         """
         Submit a task to the thread pool.
@@ -130,35 +129,35 @@ class ChatThreadPoolManager:
             error_msg = "Thread pool manager is shutdown"
             self._logger.error(error_msg)
             raise RuntimeError(error_msg)
-        
+
         try:
             # Wrap function with Flask application context to ensure database access works
             def context_wrapper(*args, **kwargs):
                 with self.app.app_context():
                     return func(*args, **kwargs)
-            
+
             # Submit wrapped function to thread pool
             future = self._executor.submit(context_wrapper, *args, **kwargs)
-            
+
             # Track task
             with self._lock:
                 self._active_tasks.add(future)
                 self._total_submissions += 1
                 self._last_activity = datetime.utcnow()
-            
+
             # Add completion callback
             future.add_done_callback(self._task_completed_callback)
-            
+
             # Log successful submission with function details
             func_name = getattr(func, '__name__', str(func))
             self._logger.info(f"Task submitted successfully: {func_name} (args: {len(args)}, kwargs: {len(kwargs)})")
             return future
-            
+
         except Exception as e:
             # Log detailed error with stack trace
             func_name = getattr(func, '__name__', str(func))
             self._logger.error(f"Failed to submit task {func_name}: {type(e).__name__}: {e}", exc_info=True)
-            
+
             # Log additional context
             self._logger.error(f"Task submission context - Args: {args}, Kwargs: {kwargs}")
             raise
@@ -182,13 +181,13 @@ class ChatThreadPoolManager:
             error_msg = "Thread pool manager is shutdown"
             self._logger.error(error_msg)
             raise RuntimeError(error_msg)
-        
+
         def run_async_in_thread():
             """Run async function in a new thread with its own event loop and Flask app context."""
             # Create new event loop for this thread
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            
+
             try:
                 # Wrap with Flask application context to ensure database access works
                 with self.app.app_context():
@@ -206,7 +205,7 @@ class ChatThreadPoolManager:
                     pending = asyncio.all_tasks(loop)
                     for task in pending:
                         task.cancel()
-                    
+
                     # Wait for cancellation to complete
                     if pending:
                         loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
@@ -214,31 +213,32 @@ class ChatThreadPoolManager:
                     pass
                 finally:
                     loop.close()
-        
+
         try:
             # Submit the wrapper function to thread pool
             future = self._executor.submit(run_async_in_thread)
-            
+
             # Track task
             with self._lock:
                 self._active_tasks.add(future)
                 self._total_submissions += 1
                 self._last_activity = datetime.utcnow()
-            
+
             # Add completion callback
             future.add_done_callback(self._task_completed_callback)
-            
+
             # Log successful submission
             func_name = getattr(async_func, '__name__', str(async_func))
-            self._logger.info(f"Async task submitted successfully: {func_name} (args: {len(args)}, kwargs: {len(kwargs)})")
+            self._logger.info(
+                f"Async task submitted successfully: {func_name} (args: {len(args)}, kwargs: {len(kwargs)})")
             return future
-            
+
         except Exception as e:
             # Log detailed error
             func_name = getattr(async_func, '__name__', str(async_func))
             self._logger.error(f"Failed to submit async task {func_name}: {type(e).__name__}: {e}", exc_info=True)
             raise
-    
+
     def _task_completed_callback(self, future: concurrent.futures.Future):
         """Callback executed when a task completes."""
         try:
@@ -247,39 +247,39 @@ class ChatThreadPoolManager:
                 self._active_tasks.discard(future)
                 self._completed_tasks += 1
                 self._last_activity = datetime.utcnow()
-            
+
             # Check for exceptions with full stack trace
             if future.exception():
                 with self._lock:
                     self._failed_tasks += 1
-                
+
                 # Log the exception with full details
                 exc = future.exception()
                 self._logger.error(f"Task failed with exception: {type(exc).__name__}: {exc}", exc_info=True)
-                
+
                 # Additional context for debugging
                 if hasattr(future, '_thread_name'):
                     self._logger.error(f"Task failed in thread: {future._thread_name}")
-                
+
             else:
                 self._logger.debug("Task completed successfully")
-                
+
         except Exception as e:
             self._logger.error(f"Critical error in task completion callback: {e}", exc_info=True)
             # This is a meta-error - log it but don't crash the callback
-    
+
     def _monitor_thread_pool(self):
         """Monitor thread pool health and performance."""
         while not self._shutdown_event.is_set():
             try:
                 # Get current stats
                 stats = self.get_stats()
-                
+
                 # Log metrics with detailed info
                 self._logger.info(f"Thread pool monitoring - Active: {stats.active_tasks}/{stats.thread_pool_size}, "
-                                f"Completed: {stats.completed_tasks}, Failed: {stats.failed_tasks}, "
-                                f"Total: {stats.total_submissions}")
-                
+                                  f"Completed: {stats.completed_tasks}, Failed: {stats.failed_tasks}, "
+                                  f"Total: {stats.total_submissions}")
+
                 # Alert if high utilization
                 utilization = stats.active_tasks / stats.thread_pool_size
                 if utilization > 0.8:
@@ -287,44 +287,45 @@ class ChatThreadPoolManager:
                         f"High thread pool utilization: {utilization:.1%} "
                         f"({stats.active_tasks}/{stats.thread_pool_size})"
                     )
-                
+
                 # Alert if many failed tasks
                 if stats.failed_tasks > 0 and stats.completed_tasks > 0:
                     failure_rate = stats.failed_tasks / (stats.completed_tasks + stats.failed_tasks)
                     if failure_rate > 0.1:  # 10% failure rate
                         self._logger.error(f"High task failure rate: {failure_rate:.1%} - "
-                                         f"Failed: {stats.failed_tasks}, Completed: {stats.completed_tasks}")
-                
+                                           f"Failed: {stats.failed_tasks}, Completed: {stats.completed_tasks}")
+
                 # Wait for next check
                 self._shutdown_event.wait(self._monitoring_interval)
-                
+
             except Exception as e:
                 self._logger.error(f"Critical error in thread pool monitor: {e}", exc_info=True)
                 # Sleep longer on error to prevent spam
                 self._shutdown_event.wait(60)
-    
+
     def get_stats(self) -> ThreadPoolStats:
         """Get current thread pool statistics."""
         with self._lock:
             return ThreadPoolStats(
                 active_tasks=len(self._active_tasks),
                 thread_pool_size=self._max_workers,
-                queue_size=getattr(self._executor, '_work_queue', None).qsize() if hasattr(self._executor, '_work_queue') else 0,
+                queue_size=getattr(self._executor, '_work_queue', None).qsize() if hasattr(self._executor,
+                                                                                           '_work_queue') else 0,
                 completed_tasks=self._completed_tasks,
                 failed_tasks=self._failed_tasks,
                 total_submissions=self._total_submissions,
                 last_activity=self._last_activity
             )
-    
+
     def get_health_status(self) -> Dict[str, Any]:
         """Get health status for monitoring endpoints."""
         try:
             stats = self.get_stats()
-            
+
             # Calculate health metrics
             utilization = stats.active_tasks / stats.thread_pool_size if stats.thread_pool_size > 0 else 0
             failure_rate = stats.failed_tasks / max(stats.completed_tasks + stats.failed_tasks, 1)
-            
+
             # Determine overall health
             if utilization > 0.9:
                 health_status = "overloaded"
@@ -338,7 +339,7 @@ class ChatThreadPoolManager:
             else:
                 health_status = "healthy"
                 self._logger.debug(f"Thread pool health: {health_status} - Utilization: {utilization:.1%}")
-            
+
             return {
                 "status": health_status,
                 "timestamp": datetime.utcnow().isoformat(),
@@ -351,7 +352,7 @@ class ChatThreadPoolManager:
                     "last_activity": stats.last_activity.isoformat()
                 }
             }
-            
+
         except Exception as e:
             self._logger.error(f"Failed to get health status: {type(e).__name__}: {e}", exc_info=True)
             return {
@@ -359,40 +360,40 @@ class ChatThreadPoolManager:
                 "error": f"{type(e).__name__}: {e}",
                 "timestamp": datetime.utcnow().isoformat()
             }
-    
+
     @contextmanager
     def get_executor_context(self):
         """Context manager for safe thread pool access."""
         if self._shutdown_event.is_set():
             raise RuntimeError("Thread pool manager is shutdown")
-        
+
         try:
             yield self._executor
         except Exception as e:
             self._logger.error(f"Error in executor context: {e}", exc_info=True)
             raise
-    
+
     def shutdown(self, wait: bool = True, timeout: Optional[float] = None):
         """Graceful shutdown of thread pool manager."""
         self._logger.info("Shutting down ChatThreadPoolManager...")
-        
+
         # Signal shutdown
         self._shutdown_event.set()
-        
+
         try:
             # Cancel all pending tasks
             with self._lock:
                 for future in self._active_tasks.copy():
                     future.cancel()
-            
+
             # Shutdown executor
             self._executor.shutdown(wait=wait, timeout=timeout)
-            
+
             self._logger.info("ChatThreadPoolManager shutdown complete")
-            
+
         except Exception as e:
             self._logger.error(f"Error during thread pool shutdown: {e}", exc_info=True)
-    
+
     def __del__(self):
         """Cleanup on destruction."""
         try:

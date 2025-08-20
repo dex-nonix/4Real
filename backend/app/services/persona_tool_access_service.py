@@ -24,5 +24,3 @@ class PersonaToolAccessService(CrudService):
             'search_fields': ['pattern'],
         },
     }
-
-

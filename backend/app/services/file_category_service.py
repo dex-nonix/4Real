@@ -25,5 +25,3 @@ class FileCategoryService(CrudService):
             'order_by': 'name',
         },
     }
-
-

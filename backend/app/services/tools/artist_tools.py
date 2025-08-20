@@ -1,7 +1,7 @@
 from typing import Dict, Any
-from ... import db
-from ...models.artist import Artist
+
 from ...models.album import Album
+from ...models.artist import Artist
 
 
 def artist_list_albums(artist_id: int, page: int = 1, page_size: int = 20) -> Dict[str, Any]:
@@ -11,15 +11,15 @@ def artist_list_albums(artist_id: int, page: int = 1, page_size: int = 20) -> Di
         artist = Artist.query.filter_by(id=artist_id).first()
         if not artist:
             return {'status': 'error', 'error': f'Artist {artist_id} not found'}
-        
+
         # Query albums with pagination
         offset = (page - 1) * page_size
-        albums = Album.query.filter_by(artist_id=artist_id)\
-                           .order_by(Album.release_date.desc())\
-                           .offset(offset).limit(page_size).all()
-        
+        albums = Album.query.filter_by(artist_id=artist_id) \
+            .order_by(Album.release_date.desc()) \
+            .offset(offset).limit(page_size).all()
+
         total = Album.query.filter_by(artist_id=artist_id).count()
-        
+
         return {
             'status': 'success',
             'result': {
@@ -43,10 +43,10 @@ def artist_get_info(artist_id: int) -> Dict[str, Any]:
         artist = Artist.query.filter_by(id=artist_id).first()
         if not artist:
             return {'status': 'error', 'error': f'Artist {artist_id} not found'}
-        
+
         # Get related data
         album_count = Album.query.filter_by(artist_id=artist_id).count()
-        
+
         return {
             'status': 'success',
             'result': {

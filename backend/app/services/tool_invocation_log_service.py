@@ -25,5 +25,3 @@ class ToolInvocationLogService(CrudService):
             'order_by': 'started_at',
         },
     }
-
-

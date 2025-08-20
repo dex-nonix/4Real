@@ -13,13 +13,14 @@ class ChatMessage(db.Model):
     role = db.Column(db.String(50), nullable=False)  # system|user|assistant|tool
     message_type = db.Column(db.String(50), nullable=False)  # text|tool_call|tool_result|image|file
     content_json = db.Column(db.JSON)  # Structured content
-    status = db.Column(db.String(50), nullable=False) 
+    status = db.Column(db.String(50), nullable=False)
     parent_message_id = db.Column(db.Integer, db.ForeignKey('chat_messages.id'), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
 
     # Relationships
     history = db.relationship('ChatHistory', foreign_keys=[history_id], backref=db.backref('messages', lazy=True))
-    parent_message = db.relationship('ChatMessage', foreign_keys=[parent_message_id], remote_side=[id], backref='child_messages')
+    parent_message = db.relationship('ChatMessage', foreign_keys=[parent_message_id], remote_side=[id],
+                                     backref='child_messages')
 
     def to_dict(self) -> dict:
         return {
@@ -35,5 +36,3 @@ class ChatMessage(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<ChatMessage id={self.id} role={self.role!r}>"
-
-

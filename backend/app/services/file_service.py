@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-import os
 import hashlib
+import os
 from typing import Any
 
 from flask import current_app, jsonify, Request
 from werkzeug.utils import secure_filename
 
 from .crud_service import CrudService
+from .. import db
 from ..decorators import expose
 from ..models.file import File
-from .. import db
 
 
 class FileService(CrudService):
@@ -117,5 +117,3 @@ class FileService(CrudService):
             return h.hexdigest()
         except Exception:
             return ''
-
-

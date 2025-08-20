@@ -25,5 +25,3 @@ class ChatMessageService(CrudService):
             'order_by': 'created_at',
         },
     }
-
-

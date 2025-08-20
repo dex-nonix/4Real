@@ -17,7 +17,7 @@ class AIProvider(db.Model):
     config_json = db.Column(db.JSON)
     is_active = db.Column(db.Boolean, nullable=False, server_default=db.text('1'))
     created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
-    updated_at = db.Column(db.DateTime, nullable=False, server_default=func.now(), onupdate=func.now()) 
+    updated_at = db.Column(db.DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     # Relationships
     # model_mappings relationship is handled by backref in AIModelMapping model
@@ -38,4 +38,3 @@ class AIProvider(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<AIProvider id={self.id} name={self.name!r}>"
-

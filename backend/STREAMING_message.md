@@ -3,6 +3,7 @@
 ## 🎯 **THE PRINCIPLE: Self-Contained Components**
 
 ### **❌ WRONG APPROACH (What NOT to do):**
+
 ```javascript
 // Component receives updates from outside - BAD!
 <StreamingMessage 
@@ -14,6 +15,7 @@
 ```
 
 ### **✅ RIGHT APPROACH (What TO do):**
+
 ```javascript
 // Component manages itself - GOOD!
 <StreamingMessage 
@@ -25,6 +27,7 @@
 ## 🏗️ **EXISTING ARCHITECTURE - What's Already There**
 
 ### **1. Message Type Registry System**
+
 ```javascript
 // ✅ ChatMessageTypeManager - Dynamic component registry
 chatMessageTypeManager.registerMessageType('text', TextMessage);
@@ -35,6 +38,7 @@ chatMessageTypeManager.registerMessageType('user', UserMessage);
 ```
 
 ### **2. Dynamic Component Rendering**
+
 ```javascript
 // ✅ System automatically chooses component based on message type
 const getMessageComponent = (message) => {
@@ -45,6 +49,7 @@ const getMessageComponent = (message) => {
 ```
 
 ### **3. Message Type Components**
+
 ```javascript
 // ✅ Existing components for different message types
 - TextMessage.vue      // Static text messages
@@ -55,6 +60,7 @@ const getMessageComponent = (message) => {
 ```
 
 ### **4. Streaming State Management**
+
 ```javascript
 // ✅ Already tracks streaming status per message
 const streamingStatus = ref(new Map());
@@ -66,6 +72,7 @@ const isMessageStreaming = (messageId) => {
 ```
 
 ### **5. WebSocket Event Handling**
+
 ```javascript
 // ✅ Already listens to streaming events
 chatService.onWebSocketEvent('assistant_message_started', handleAssistantStarted);
@@ -76,6 +83,7 @@ chatService.onWebSocketEvent('assistant_message_complete', handleAssistantComple
 ## 🔧 **WHAT'S MISSING - The Smart Wrapper**
 
 ### **The Missing Piece:**
+
 The system is **ALMOST PERFECT** but missing the **intelligent wrapper** that can:
 
 1. **Detect if a message is streaming** vs **static**
@@ -83,12 +91,14 @@ The system is **ALMOST PERFECT** but missing the **intelligent wrapper** that ca
 3. **Handle streaming vs non-streaming** automatically
 
 ### **Current Flow:**
+
 ```javascript
 // ❌ CURRENT: All assistant messages use TextMessage
 message_type: 'text'  // Always static, never streaming
 ```
 
 ### **Needed Flow:**
+
 ```javascript
 // ✅ NEEDED: Dynamic message type based on state
 message_type: 'streaming'  // When status === 'streaming'
@@ -98,6 +108,7 @@ message_type: 'text'       // When status === 'complete'
 ## 🚀 **THE SOLUTION - Add Streaming Message Type**
 
 ### **Step 1: Create StreamingMessage Component**
+
 ```javascript
 // ✅ Create: vue_libs/nonix-chat/components/message-types/StreamingMessage.vue
 export default {
@@ -132,12 +143,14 @@ export default {
 ```
 
 ### **Step 2: Register in Message Type Manager**
+
 ```javascript
 // ✅ ADD THIS to ChatMessageContainer.vue onMounted():
 chatMessageTypeManager.registerMessageType('streaming', StreamingMessage);
 ```
 
 ### **Step 3: Update Message Type Detection**
+
 ```javascript
 // ✅ UPDATE: getMessageComponent to handle streaming
 const getMessageComponent = (message) => {
@@ -156,6 +169,7 @@ const getMessageComponent = (message) => {
 ## 🎯 **HOW IT WORKS - The Complete Flow**
 
 ### **1. Message Creation (Backend)**
+
 ```javascript
 // Backend creates message with status 'streaming'
 const assistantMessage = {
@@ -169,6 +183,7 @@ const assistantMessage = {
 ```
 
 ### **2. Frontend Detection**
+
 ```javascript
 // ✅ Frontend automatically detects streaming
 if (message.role === 'assistant' && message.status === 'streaming') {
@@ -179,6 +194,7 @@ if (message.role === 'assistant' && message.status === 'streaming') {
 ```
 
 ### **3. Component Selection**
+
 ```javascript
 // ✅ System automatically chooses right component
 const component = chatMessageTypeManager.getMessageType('streaming');
@@ -186,6 +202,7 @@ const component = chatMessageTypeManager.getMessageType('streaming');
 ```
 
 ### **4. StreamingMessage Component**
+
 ```javascript
 // ✅ Component handles its own streaming
 - Listens to WebSocket events for ITS message ID
@@ -195,6 +212,7 @@ const component = chatMessageTypeManager.getMessageType('streaming');
 ```
 
 ### **5. Completion**
+
 ```javascript
 // ✅ When streaming completes
 message.status = 'complete';
@@ -206,6 +224,7 @@ message.status = 'complete';
 ## 📊 **IMPLEMENTATION STATUS**
 
 ### **✅ COMPLETE:**
+
 - [x] Message Type Registry System
 - [x] Dynamic Component Rendering
 - [x] WebSocket Event Infrastructure
@@ -214,28 +233,33 @@ message.status = 'complete';
 - [x] Event Protocol (Backend ↔ Frontend)
 
 ### **✅ COMPLETE:**
+
 - [x] StreamingMessage.vue Component
 - [x] Register 'streaming' Message Type
 - [x] Smart Message Type Detection
 - [x] Streaming vs Static Component Switching
 
 ### **📈 COMPLETION: 100%**
+
 **✅ IMPLEMENTATION COMPLETE! Streaming message system is now fully functional.**
 
 ## 🎯 **IMPLEMENTATION CHECKLIST**
 
 ### **Phase 1: Create StreamingMessage Component**
+
 - [x] Create `vue_libs/nonix-chat/components/message-types/StreamingMessage.vue`
 - [x] Implement self-contained WebSocket event listening
 - [x] Implement progressive content accumulation
 - [x] Add typing indicators and streaming UI
 
 ### **Phase 2: Integrate with Message Type System**
+
 - [x] Register 'streaming' message type in ChatMessageContainer
 - [x] Update message type detection logic
 - [x] Test automatic component switching
 
 ### **Phase 3: Test End-to-End Flow**
+
 - [x] Test streaming message creation
 - [x] Test component auto-selection
 - [x] Test WebSocket event handling
@@ -244,21 +268,25 @@ message.status = 'complete';
 ## 🚀 **WHY THIS ARCHITECTURE IS PERFECT**
 
 ### **1. Self-Contained Components**
+
 - Each component manages its own state
 - No props passing for content updates
 - Components listen to events directly
 
 ### **2. Intelligent Wrapper System**
+
 - Automatically detects streaming vs static
 - Chooses right component automatically
 - No hardcoded logic needed
 
 ### **3. Generic and Reusable**
+
 - Same system works for any message type
 - Easy to add new message types
 - Components are completely independent
 
 ### **4. Event-Driven Updates**
+
 - WebSocket events drive all updates
 - Components react to events automatically
 - No manual state management needed

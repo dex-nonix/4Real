@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Callable
 from datetime import datetime, date
-from flask import jsonify, Request
-from sqlalchemy import or_, func as sa_func
+from typing import Any, Dict, List, Optional
 
-from .. import db
-from ..decorators import expose
+from flask import jsonify, Request
+from sqlalchemy import or_
+
 from .base_api_service import BaseApiService
 from .crud_swagger_generator import CrudSwaggerGenerator
+from .. import db
+from ..decorators import expose
 
 
 class CrudService(BaseApiService):
@@ -51,11 +52,11 @@ class CrudService(BaseApiService):
 
     def to_swagger(self, service_name: str) -> Dict[str, Any]:
         """Generate Swagger documentation for CRUD operations from model + config."""
-        
+
         # Validate service_name immediately (no default, no fallback)
         if not service_name:
             raise ValueError("service_name is required for CRUD service Swagger generation")
-        
+
         # Use the CrudSwaggerGenerator to handle all Swagger generation
         generator = CrudSwaggerGenerator(self, service_name)
         return generator.generate_swagger(service_name)
@@ -390,7 +391,7 @@ class CrudService(BaseApiService):
                 return str(getattr(item, field_name))
         return str(getattr(item, 'id'))
 
-    def _apply_filters(self, query, args)  :  # type: ignore[no-untyped-def]
+    def _apply_filters(self, query, args):  # type: ignore[no-untyped-def]
         for key, value in args.items():
             if key.startswith('filter_'):
                 field_name = key[7:]
@@ -487,4 +488,3 @@ class CrudService(BaseApiService):
         for column in instance.__table__.columns:  # type: ignore[attr-defined]
             result[column.name] = getattr(instance, column.name)
         return result
-

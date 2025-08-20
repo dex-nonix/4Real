@@ -27,5 +27,3 @@ class PersonaToolAccess(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<PersonaToolAccess id={self.id} persona_id={self.persona_id} pattern={self.pattern!r}>"
-
-
