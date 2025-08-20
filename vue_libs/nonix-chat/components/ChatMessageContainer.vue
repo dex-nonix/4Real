@@ -539,10 +539,6 @@ defineExpose({
 
     <!-- Input Area - Fixed at bottom -->
     <div class="input-area">
-      <!-- Debug info -->
-      <div class="text-xs text-500 mr-2">
-        Debug: historyId = {{ props.historyId }}, persona_id = {{ props.selectedSession?.persona_id }}
-      </div>
       
       <!-- Tools Button -->
       <Button 
