@@ -289,6 +289,26 @@ class ChatMessageMixin(WebSocketProtocol):
             db.session.rollback()
             return jsonify({'error': str(exc)}), 500
 
+    def _submit_message_for_async_processing(self, user_msg_id: int, asst_msg_id: int, session_id: int, history_id: int, persona_id: int):
+        """Submit message processing to thread pool for async execution."""
+        try:
+            # Use the thread pool manager from the parent ChatService
+            future = self.submit_async_task(
+                self._process_message_async,
+                user_msg_id, asst_msg_id, session_id, history_id, persona_id
+            )
+            
+            # Log successful submission with proper logger
+            self._logger.info(f"Message {user_msg_id} submitted to thread pool for async processing")
+            return future
+            
+        except Exception as e:
+            # Log error with full stack trace
+            self._logger.error(f"Failed to submit message {user_msg_id} to thread pool: {e}", exc_info=True)
+            # Emit error event
+            self.emit_llm_event(session_id, history_id, 'processing_failed', f'Failed to start processing: {e}')
+            raise
+
     @expose(
         '/sessions/{session_id}/histories/{history_id}/send', 
         methods=['POST'],

@@ -1,17 +1,13 @@
 from __future__ import annotations
+import logging
 
-from flask import jsonify, Request
+from flask import jsonify
 
 from ...decorators import expose
-from ... import db
-from ...models.chat_session import ChatSession
-from ...models.chat_message import ChatMessage
-from ...models.chat_history import ChatHistory
-from ...models.persona import Persona
-from ..llm_client import run_chat
-from ..tool_runtime import build_persona_tool_map, execute_tool, list_persona_tools
+
 from ..base_api_service import BaseApiService
 from datetime import datetime
+from .thread_pool_manager import get_thread_pool_manager
 
 # Import all mixins
 from .chat_session_mixin import ChatSessionMixin
@@ -32,10 +28,21 @@ class ChatService(BaseApiService, ChatSessionMixin, ChatMessageMixin, ChatHistor
     - ToolExecutionMixin: Tool execution and MCP operations
     """
     
+    def __init__(self):
+        """Initialize chat service with thread pool manager."""
+        super().__init__()
+        
+        # Initialize thread pool manager
+        self._thread_pool = get_thread_pool_manager()
+        
+        # Log initialization
+        self._logger = logging.getLogger(__name__)
+        self._logger.info("ChatService initialized with thread pool manager")
+    
     def emit_chat_event(self, session_id: int, history_id: int, event: str, data: dict) -> None:
         """IMPLEMENT: Emit chat event using BaseApiService method."""
         channel = f'chat/{session_id}/{history_id}'
-        print(f"🔌 ChatService.emit_chat_event: channel={channel}, event={event}, data={data}")
+        self._logger.debug(f"Emitting chat event: channel={channel}, event={event}, data={data}")
         self.send_to_channel(channel, event, data)
     
     def emit_llm_event(self, session_id: int, history_id: int, stage: str, message: str) -> None:
@@ -53,4 +60,58 @@ class ChatService(BaseApiService, ChatSessionMixin, ChatMessageMixin, ChatHistor
             'status': status,
             'timestamp': datetime.utcnow().isoformat(),
             **extra
-        }) 
+        })
+    
+    def submit_async_task(self, func, *args, **kwargs):
+        """Submit a task to the thread pool for async execution."""
+        try:
+            future = self._thread_pool.submit_task(func, *args, **kwargs)
+            self._logger.debug(f"Task submitted to thread pool: {func.__name__}")
+            return future
+        except Exception as e:
+            self._logger.error(f"Failed to submit task to thread pool: {e}", exc_info=True)
+            raise
+    
+    def get_thread_pool_health(self):
+        """Get thread pool health status for monitoring."""
+        return self._thread_pool.get_health_status()
+    
+    def get_thread_pool_stats(self):
+        """Get thread pool statistics for monitoring."""
+        return self._thread_pool.get_stats()
+    
+    @expose(
+        '/health/thread-pool',
+        methods=['GET'],
+        status_codes={200: 'OK'},
+        response_schema={
+            "type": "object",
+            "properties": {
+                "status": {"type": "string"},
+                "timestamp": {"type": "string", "format": "date-time"},
+                "stats": {
+                    "type": "object",
+                    "properties": {
+                        "active_tasks": {"type": "integer"},
+                        "thread_pool_size": {"type": "integer"},
+                        "utilization": {"type": "string"},
+                        "failure_rate": {"type": "string"},
+                        "total_submissions": {"type": "integer"},
+                        "last_activity": {"type": "string", "format": "date-time"}
+                    }
+                }
+            }
+        }
+    )
+    def thread_pool_health(self, req):
+        """Get thread pool health status for monitoring."""
+        try:
+            health_status = self.get_thread_pool_health()
+            return jsonify(health_status)
+        except Exception as e:
+            self._logger.error(f"Failed to get thread pool health: {e}", exc_info=True)
+            return jsonify({
+                'status': 'error',
+                'error': str(e),
+                'timestamp': datetime.utcnow().isoformat()
+            }), 500 
