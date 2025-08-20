@@ -387,16 +387,14 @@ class ChatMessageMixin(WebSocketProtocol):
                         
             except Exception as e:
                 # Handle streaming errors
-                error_msg = f"Streaming error: {str(e)}"
-                message_handler.mark_as_error(error_msg)
+                message_handler.mark_as_error(f"Streaming error: {str(e)}")
                 message_handler.cleanup_on_error()  # Clean up on error
-                event_manager.emit_streaming_error(session_id, history_id, error_msg, "streaming_error", asst_msg_id)
-                self.emit_llm_event(session_id, history_id, 'processing_failed', error_msg)
+                event_manager.emit_streaming_error(session_id, history_id, f"Streaming error: {str(e)}", "streaming_error", asst_msg_id)
+                self.emit_llm_event(session_id, history_id, 'processing_failed', f"Streaming error: {str(e)}")
                 
         except Exception as e:
-            error_msg = f"Async processing error: {str(e)}"
             message_handler.cleanup_on_error()
-            self.emit_llm_event(session_id, history_id, 'processing_failed', error_msg)
+            self.emit_llm_event(session_id, history_id, 'processing_failed', f"Async processing error: {str(e)}")
             self._logger.error(f"Error in _process_message_async: {e}", exc_info=True)
 
     @expose(

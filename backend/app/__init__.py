@@ -1,4 +1,5 @@
 from flask import Flask, send_from_directory, jsonify, request
+from flask_socketio import SocketIO, join_room, leave_room
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -43,7 +44,6 @@ def create_app() -> Flask:
     db.init_app(app)
 
     # Initialize Flask-SocketIO for WebSocket support
-    from flask_socketio import SocketIO
     socketio = SocketIO(app, 
         cors_allowed_origins="*", 
         logger=True, 
@@ -59,17 +59,7 @@ def create_app() -> Flask:
     # 1. Global exception handler for ALL unhandled exceptions
     @app.errorhandler(Exception)
     def handle_all_exceptions(e):
-        error_msg = f"💥 UNHANDLED EXCEPTION: {type(e).__name__}: {str(e)}"
-        traceback_msg = f"📋 Full Traceback:\n{traceback.format_exc()}"
-        
-        # Print immediately to terminal
-        print(f"\n{error_msg}", file=sys.stderr)
-        print(f"{traceback_msg}", file=sys.stderr)
-        sys.stderr.flush()
-        
-        # Also log normally
-        app.logger.error(error_msg)
-        app.logger.error(traceback_msg)
+        app.logger.error(f"💥 UNHANDLED EXCEPTION: {type(e).__name__}: {str(e)}", exc_info=True)
         
         return jsonify({
             'error': 'Internal Server Error',
@@ -81,17 +71,7 @@ def create_app() -> Flask:
     # 2. Specific HTTP error handlers
     @app.errorhandler(500)
     def internal_error(error):
-        error_msg = f"🔥 500 Internal Server Error: {error}"
-        traceback_msg = f"📋 Full Traceback:\n{traceback.format_exc()}"
-        
-        # Print immediately to terminal
-        print(f"\n{error_msg}", file=sys.stderr)
-        print(f"{traceback_msg}", file=sys.stderr)
-        sys.stderr.flush()
-        
-        # Also log normally
-        app.logger.error(error_msg)
-        app.logger.error(traceback_msg)
+        app.logger.error(f"🔥 500 Internal Server Error: {error}", exc_info=True)
         
         return jsonify({
             'error': 'Internal Server Error',
@@ -101,10 +81,7 @@ def create_app() -> Flask:
 
     @app.errorhandler(404)
     def not_found_error(error):
-        warning_msg = f"⚠️  404 Not Found: {request.url}"
-        print(f"\n{warning_msg}", file=sys.stderr)
-        sys.stderr.flush()
-        app.logger.warning(warning_msg)
+        app.logger.warning(f"⚠️  404 Not Found: {request.url}")
         return jsonify({
             'error': 'Not Found',
             'message': f'The requested URL {request.url} was not found'
@@ -114,17 +91,7 @@ def create_app() -> Flask:
     @app.errorhandler(Exception)
     def handle_database_errors(e):
         if 'database' in str(e).lower() or 'sql' in str(e).lower() or 'db' in str(e).lower():
-            error_msg = f"🗄️  DATABASE ERROR: {type(e).__name__}: {str(e)}"
-            traceback_msg = f"📋 Full Traceback:\n{traceback.format_exc()}"
-            
-            # Print immediately to terminal
-            print(f"\n{error_msg}", file=sys.stderr)
-            print(f"{traceback_msg}", file=sys.stderr)
-            sys.stderr.flush()
-            
-            # Also log normally
-            app.logger.error(error_msg)
-            app.logger.error(traceback_msg)
+            app.logger.error(f"🗄️  DATABASE ERROR: {type(e).__name__}: {str(e)}", exc_info=True)
             
             return jsonify({
                 'error': 'Database Error',
@@ -137,45 +104,36 @@ def create_app() -> Flask:
     # 4. WebSocket event handlers - SIMPLE and straightforward
     @socketio.on('connect')
     def handle_connect():
-        print(f"🔌 WebSocket client connected: {request.sid}")
         app.logger.info(f"WebSocket client connected: {request.sid}")
 
     @socketio.on('disconnect')
     def handle_disconnect():
-        print(f"🔌 WebSocket client disconnected: {request.sid}")
         app.logger.info(f"WebSocket client disconnected: {request.sid}")
 
     @socketio.on('join')
-    def handle_join_room(data):
+    def handle_join_room(room):
         """Handle client joining a room - SIMPLE Socket.IO rooms."""
-        room = data
         if room:
-            from flask_socketio import join_room
             join_room(room)
-            print(f"🔌 Client {request.sid} joined room: {room}")
             app.logger.info(f"Client {request.sid} joined room: {room}")
-            return {'status': 'success', 'room': room}
-        return {'status': 'error', 'message': 'No room specified'}
+        else:
+            app.logger.warning(f"Client {request.sid} tried to join room but no room specified")
 
     @socketio.on('leave')
-    def handle_leave_room(data):
+    def handle_leave_room(room):
         """Handle client leaving a room - SIMPLE Socket.IO rooms."""
-        room = data
         if room:
-            from flask_socketio import leave_room
             leave_room(room)
-            print(f"🔌 Client {request.sid} left room: {room}")
             app.logger.info(f"Client {request.sid} left room: {room}")
-            return {'status': 'success', 'room': room}
-        return {'status': 'error', 'message': 'No room specified'}
+        else:
+            app.logger.warning(f"Client {request.sid} tried to leave room but no room specified")
 
     # Initialize APIRouter with SocketIO instance
     api_router = APIRouter(socketio_instance=socketio)
 
     with app.app_context():
         try:
-            print("🚀 Initializing database and services...")
-            sys.stdout.flush()
+            app.logger.info("Initializing database and services...")
             
             # Register services with the APIRouter
             from .services.artist_service import ArtistService
@@ -202,8 +160,7 @@ def create_app() -> Flask:
             from .services.file_link_service import FileLinkService
             
 
-            print("📋 Registering services...")
-            sys.stdout.flush()
+            app.logger.info("Registering services...")
 
             api_router.register_service('artists', ArtistService)
             api_router.register_service('albums', AlbumService)
@@ -227,8 +184,7 @@ def create_app() -> Flask:
             api_router.register_service('files', FileService)
             api_router.register_service('file-links', FileLinkService)
 
-            print("🗄️  Creating database tables...")
-            sys.stdout.flush()
+            app.logger.info("Creating database tables...")
             db.create_all()
 
             # Serve uploaded files directly from the API server in all run modes
@@ -238,19 +194,10 @@ def create_app() -> Flask:
                 def uploads(filename):  # pragma: no cover
                     return send_from_directory(upload_dir, filename)
 
-            print("✅ All services and database initialized successfully!")
-            sys.stdout.flush()
+            app.logger.info("All services and database initialized successfully!")
             
         except Exception as e:
-            error_msg = f"💥 CRITICAL ERROR during app initialization: {type(e).__name__}: {str(e)}"
-            traceback_msg = f"📋 Full Traceback:\n{traceback.format_exc()}"
-            
-            print(f"\n{error_msg}", file=sys.stderr)
-            print(f"{traceback_msg}", file=sys.stderr)
-            sys.stderr.flush()
-            
-            app.logger.error(error_msg)
-            app.logger.error(traceback_msg)
+            app.logger.error(f"💥 CRITICAL ERROR during app initialization: {type(e).__name__}: {str(e)}", exc_info=True)
             raise  # Re-raise to prevent silent failures
 
     # Add error handling to all blueprint registrations
@@ -258,18 +205,9 @@ def create_app() -> Flask:
         """Register blueprint with comprehensive error handling"""
         try:
             app.register_blueprint(blueprint, **kwargs)
-            print(f"✅ Successfully registered blueprint: {blueprint.name}")
-            sys.stdout.flush()
+            app.logger.info(f"Successfully registered blueprint: {blueprint.name}")
         except Exception as e:
-            error_msg = f"💥 FAILED to register blueprint {blueprint.name}: {str(e)}"
-            traceback_msg = f"📋 Full Traceback:\n{traceback.format_exc()}"
-            
-            print(f"\n{error_msg}", file=sys.stderr)
-            print(f"{traceback_msg}", file=sys.stderr)
-            sys.stderr.flush()
-            
-            app.logger.error(error_msg)
-            app.logger.error(traceback_msg)
+            app.logger.error(f"💥 FAILED to register blueprint {blueprint.name}: {str(e)}", exc_info=True)
             raise  # Re-raise to prevent silent failures
 
     # Register the API router with error handling
@@ -278,9 +216,7 @@ def create_app() -> Flask:
     # Register SocketIO with the Flask app
     socketio.init_app(app)
     
-    print("\n✅ Flask app initialized successfully with COMPREHENSIVE error logging!")
-    sys.stdout.flush()
-    app.logger.info("Flask app initialized successfully")
+    app.logger.info("Flask app initialized successfully with comprehensive error logging")
     
     # FINAL SAFETY NET - Catch ALL errors at WSGI level
     class ErrorCatchingMiddleware:
@@ -292,17 +228,7 @@ def create_app() -> Flask:
                 return self.app(environ, start_response)
             except Exception as e:
                 # This catches ANY error that wasn't caught by Flask handlers
-                error_msg = f"🚨 WSGI LEVEL CRASH: {type(e).__name__}: {str(e)}"
-                traceback_msg = f"📋 Full Traceback:\n{traceback.format_exc()}"
-                
-                # Print immediately to terminal
-                print(f"\n{error_msg}", file=sys.stderr)
-                print(f"{traceback_msg}", file=sys.stderr)
-                sys.stderr.flush()
-                
-                # Also log normally
-                app.logger.error(error_msg)
-                app.logger.error(traceback_msg)
+                app.logger.error(f"🚨 WSGI LEVEL CRASH: {type(e).__name__}: {str(e)}", exc_info=True)
                 
                 # Return error response
                 status = '500 Internal Server Error'
