@@ -16,6 +16,10 @@ from ..tool_runtime import build_persona_tool_map, execute_tool
 from .websocket_protocol import WebSocketProtocol
 from datetime import datetime
 from ..tool_runtime import list_persona_tools
+from .streaming_interface import StreamingChunk
+from .streaming_message_handler import StreamingMessageHandler
+from .streaming_event_manager import StreamingEventManager
+from ..llm_client import run_chat_streaming
 
 
 class ChatMessageMixin(WebSocketProtocol):
@@ -160,131 +164,33 @@ class ChatMessageMixin(WebSocketProtocol):
             # Emit message processing started event using protocol method
             self.emit_llm_event(session_id, history_id, 'message_processing', 'Processing your message...')
 
-            # Resolve persona and tools
-            persona = session.persona
-            # Get proper tool information with schemas and descriptions
-            available_tools_info = list_persona_tools(persona.id)
-            available_tools = { tool['name']: {'type': 'internal'} for tool in available_tools_info }
-            model_info = self._select_chat_model(persona.id)
-
-            # Build chat history for provider call
-            chat_history = []
-            system_msgs = ChatMessage.query.filter_by(history_id=history.id, role='system').order_by(ChatMessage.created_at.asc()).all()
-            for sm in system_msgs:
-                content = sm.content_json if isinstance(sm.content_json, dict) else {'text': str(sm.content_json)}
-                chat_history.append({'role': 'system', 'content': content})
-            user_msgs = ChatMessage.query.filter(ChatMessage.history_id==history.id, ChatMessage.id<=user_msg.id).order_by(ChatMessage.created_at.asc()).all()
-            for um in user_msgs:
-                role = um.role
-                if role not in ('user', 'assistant'):
-                    continue
-                content = um.content_json if isinstance(um.content_json, dict) else {'text': str(um.content_json)}
-                chat_history.append({'role': role, 'content': content})
-
-            # Resolve model mapping and provider; fallback to placeholder if none
-            assistant_output = None
-            if model_info:
-                provider = AIProvider.query.filter_by(id=model_info['provider_id'], is_active=True).first()
-                if provider:
-                    try:
-                        # Reconstruct mapping object used for provider call
-                        mapping_obj = AIModelMapping.query.filter_by(id=persona.ai_model_mapping_id, is_active=True).first()
-                        # Pass tool information and persona_id to the LLM
-                        assistant_output = run_chat(provider, mapping_obj, chat_history, available_tools_info, persona.id)
-                    except Exception as exc:  # noqa: BLE001
-                        assistant_output = {'type': 'text', 'text': f'Provider error: {exc}'}
-            if not assistant_output:
-                return jsonify({'error': 'Persona has no active model mapping or provider is unavailable'}), 400
-
-            # If model requested a tool call, execute when allowlisted
-            if isinstance(assistant_output, dict) and (assistant_output.get('type') == 'tool_call' or 'tool' in assistant_output):
-                tool_name = assistant_output.get('tool')
-                tool_args = assistant_output.get('args') or {}
-                
-                # Emit LLM tool call detected event using protocol method
-                self.emit_llm_event(session_id, history_id, 'tool_call_detected', f'LLM needs to call {tool_name}')
-                
-                if tool_name and tool_name in available_tools:
-                    # Emit tool execution started event using protocol method
-                    self.emit_tool_event(session_id, history_id, tool_name, 'started', args=tool_args)
-                    
-                    log = ToolInvocationLog(
-                        history_id=history.id,
-                        message_id=user_msg.id,
-                        tool_name=tool_name,
-                        input_json=tool_args,
-                        status='started'
-                    )
-                    db.session.add(log)
-                    db.session.commit()
-
-                    exec_result = execute_tool(persona.id, tool_name, tool_args)
-                    
-                    # Emit tool execution completed event using protocol method
-                    self.emit_tool_event(session_id, history_id, tool_name, 'completed', result=exec_result)
-                    
-                    log.status = 'success' if exec_result.get('status') == 'success' else 'error'
-                    log.output_json = exec_result
-                    db.session.commit()
-
-                    # Emit LLM building response event using protocol method
-                    self.emit_llm_event(session_id, history_id, 'building_response', 'LLM is building your response...')
-                    
-                    tool_msg = ChatMessage(
-                        history_id=history.id, 
-                        role='tool', 
-                        message_type='tool_result',
-                        content_json={'type': 'tool_result', 'tool': tool_name, 'input': tool_args, 'output': exec_result}
-                    )
-                    db.session.add(tool_msg)
-                    db.session.commit()
-
-                    # Follow-up assistant acknowledgment
-                    asst_msg = ChatMessage(
-                        history_id=history.id, 
-                        role='assistant', 
-                        message_type='text',
-                        content_json={'type': 'text', 'text': 'Tool executed'}
-                    )
-                    db.session.add(asst_msg)
-                    db.session.commit()
-                    
-                    # Emit response complete event using protocol method
-                    self.emit_llm_event(session_id, history_id, 'response_complete', 'Response ready')
-                    
-                    return jsonify({'data': asst_msg.to_dict()})
-                else:
-                    asst_msg = ChatMessage(
-                        history_id=history.id, 
-                        role='assistant', 
-                        message_type='text',
-                        content_json={'type': 'text', 'text': f'Tool {tool_name or "(unknown)"} not allowed'}
-                    )
-                    db.session.add(asst_msg)
-                    db.session.commit()
-                    return jsonify({'data': asst_msg.to_dict()})
-
-            # Default assistant text message
+            # Create EMPTY assistant message placeholder immediately
             asst_msg = ChatMessage(
-                history_id=history.id, 
-                role='assistant', 
+                history_id=history.id,
+                role='assistant',
                 message_type='text',
-                content_json=assistant_output
+                content_json={'type': 'text', 'text': ''},
+                status='processing'
             )
             db.session.add(asst_msg)
             db.session.commit()
 
-            # Emit response complete event using protocol method
-            self.emit_llm_event(session_id, history_id, 'response_complete', 'Response ready')
-            
-            # Emit message processed event using protocol method
-            self.emit_chat_event(session_id, history_id, 'message_processed', {
-                'message_id': asst_msg.id,
-                'status': 'processed',
-                'timestamp': datetime.utcnow().isoformat()
-            })
+            # Return BOTH message IDs immediately
+            response_data = {
+                'data': {
+                    'user_message_id': user_msg.id,
+                    'assistant_message_id': asst_msg.id,
+                    'status': 'processing',
+                    'websocket_channel': f'chat/{id}/{history.id}'
+                }
+            }
 
-            return jsonify({'data': asst_msg.to_dict()})
+            # Start async processing in thread pool AFTER response
+            self._submit_message_for_async_processing(
+                user_msg.id, asst_msg.id, id, history.id, persona.id
+            )
+
+            return jsonify(response_data)
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
             return jsonify({'error': str(exc)}), 500
@@ -308,6 +214,95 @@ class ChatMessageMixin(WebSocketProtocol):
             # Emit error event
             self.emit_llm_event(session_id, history_id, 'processing_failed', f'Failed to start processing: {e}')
             raise
+
+    async def _process_message_async(self, user_msg_id: int, asst_msg_id: int, 
+                                    session_id: int, history_id: int, persona_id: int):
+        """Process message asynchronously using streaming."""
+        try:
+            # Initialize handlers
+            message_handler = StreamingMessageHandler(session_id, history_id)
+            event_manager = StreamingEventManager(self)
+            
+            # Set the existing assistant message ID
+            message_handler.assistant_message_id = asst_msg_id
+            
+            # Get model info and tools
+            model_info = self._select_chat_model(persona_id)
+            available_tools_info = list_persona_tools(persona_id)
+            
+            if not model_info:
+                # No model available - mark as failed
+                message_handler.finalize_assistant_message("No AI model available for this persona")
+                event_manager.emit_chunk_event(session_id, history_id, 
+                                            StreamingChunk(content="", chunk_type="complete", is_final=True))
+                return
+            
+            # Get provider and mapping
+            provider = AIProvider.query.filter_by(id=model_info['provider_id'], is_active=True).first()
+            mapping_obj = AIModelMapping.query.filter_by(id=persona_id, is_active=True).first()
+            
+            if not provider or not mapping_obj:
+                # Provider or mapping not available
+                message_handler.finalize_assistant_message("AI provider or model mapping not available")
+                event_manager.emit_chunk_event(session_id, history_id, 
+                                            StreamingChunk(content="", chunk_type="complete", is_final=True))
+                return
+            
+            # Build chat history for provider call
+            chat_history = []
+            system_msgs = ChatMessage.query.filter_by(history_id=history_id, role='system').order_by(ChatMessage.created_at.asc()).all()
+            for sm in system_msgs:
+                content = sm.content_json if isinstance(sm.content_json, dict) else {'text': str(sm.content_json)}
+                chat_history.append({'role': 'system', 'content': content})
+            
+            user_msgs = ChatMessage.query.filter(ChatMessage.history_id==history_id, ChatMessage.id<=user_msg_id).order_by(ChatMessage.created_at.asc()).all()
+            for um in user_msgs:
+                role = um.role
+                if role not in ('user', 'assistant'):
+                    continue
+                content = um.content_json if isinstance(um.content_json, dict) else {'text': str(um.content_json)}
+                chat_history.append({'role': role, 'content': content})
+            
+            # Use streaming LLM client
+            try:
+                async for chunk in run_chat_streaming(provider, mapping_obj, chat_history, 
+                                                    available_tools_info, persona_id):
+                    # Handle each chunk
+                    if chunk.chunk_type == "text":
+                        message_handler.update_assistant_content(chunk.content)
+                        event_manager.emit_chunk_event(session_id, history_id, chunk)
+                    
+                    elif chunk.chunk_type == "ai_start":
+                        event_manager.emit_chunk_event(session_id, history_id, chunk)
+                    
+                    elif chunk.chunk_type == "tool_start":
+                        event_manager.emit_tool_event(session_id, history_id, 
+                                                   chunk.metadata["tool_name"], "started")
+                    
+                    elif chunk.chunk_type == "tool_end":
+                        event_manager.emit_tool_event(session_id, history_id, 
+                                                   chunk.metadata["tool_name"], "completed")
+                    
+                    elif chunk.chunk_type == "complete":
+                        message_handler.finalize_assistant_message()
+                        event_manager.emit_chunk_event(session_id, history_id, chunk)
+                        break
+                        
+            except Exception as e:
+                # Handle streaming errors
+                error_msg = f"Streaming error: {str(e)}"
+                message_handler.finalize_assistant_message(error_msg)
+                self.emit_llm_event(session_id, history_id, 'processing_failed', error_msg)
+                
+        except Exception as e:
+            # Handle general errors
+            error_msg = f"Async processing error: {str(e)}"
+            self.emit_llm_event(session_id, history_id, 'processing_failed', error_msg)
+            # Log the error
+            if hasattr(self, '_logger'):
+                self._logger.error(f"Error in _process_message_async: {e}", exc_info=True)
+            else:
+                print(f"Error in _process_message_async: {e}")
 
     @expose(
         '/sessions/{session_id}/histories/{history_id}/send', 

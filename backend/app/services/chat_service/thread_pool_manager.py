@@ -7,6 +7,7 @@ import concurrent.futures
 import threading
 import logging
 import time
+import asyncio
 from typing import Optional, Callable, Any, Dict
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -154,6 +155,62 @@ class ChatThreadPoolManager:
             
             # Log additional context
             self._logger.error(f"Task submission context - Args: {args}, Kwargs: {kwargs}")
+            raise
+
+    def submit_async_task(self, async_func, *args, **kwargs) -> concurrent.futures.Future:
+        """
+        Submit an async function to the thread pool with event loop management.
+        
+        Args:
+            async_func: Async function to execute
+            *args: Function arguments
+            **kwargs: Function keyword arguments
+            
+        Returns:
+            Future object representing the task
+            
+        Raises:
+            RuntimeError: If thread pool is shutdown
+        """
+        if self._shutdown_event.is_set():
+            error_msg = "Thread pool manager is shutdown"
+            self._logger.error(error_msg)
+            raise RuntimeError(error_msg)
+        
+        def run_async_in_thread():
+            """Run async function in a new thread with its own event loop."""
+            # Create new event loop for this thread
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            try:
+                # Run the async function
+                return loop.run_until_complete(async_func(*args, **kwargs))
+            finally:
+                loop.close()
+        
+        try:
+            # Submit the wrapper function to thread pool
+            future = self._executor.submit(run_async_in_thread)
+            
+            # Track task
+            with self._lock:
+                self._active_tasks.add(future)
+                self._total_submissions += 1
+                self._last_activity = datetime.utcnow()
+            
+            # Add completion callback
+            future.add_done_callback(self._task_completed_callback)
+            
+            # Log successful submission
+            func_name = getattr(async_func, '__name__', str(async_func))
+            self._logger.info(f"Async task submitted successfully: {func_name} (args: {len(args)}, kwargs: {len(kwargs)})")
+            return future
+            
+        except Exception as e:
+            # Log detailed error
+            func_name = getattr(async_func, '__name__', str(async_func))
+            self._logger.error(f"Failed to submit async task {func_name}: {type(e).__name__}: {e}", exc_info=True)
             raise
     
     def _task_completed_callback(self, future: concurrent.futures.Future):
