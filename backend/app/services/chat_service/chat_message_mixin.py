@@ -11,10 +11,8 @@ from ...models.persona import Persona
 from ...models.tool_invocation_log import ToolInvocationLog
 from ...models.ai_model_mapping import AIModelMapping
 from ...models.ai_provider import AIProvider
-from ..llm_client import run_chat
-from ..tool_runtime import build_persona_tool_map, execute_tool
+from ..tool_runtime import execute_tool
 from .websocket_protocol import WebSocketProtocol
-from datetime import datetime
 from ..tool_runtime import list_persona_tools
 from .streaming_interface import StreamingChunk
 from .streaming_message_handler import StreamingMessageHandler
@@ -38,6 +36,145 @@ class ChatMessageMixin(WebSocketProtocol):
             'model_name': mapping.model_name,
             'parameters': mapping.parameters_json or {},
         }
+
+    def _validate_session_history(self, session_id: int, history_id: int = None):
+        """Validate session and history, return tuple (session, history)."""
+        session = ChatSession.query.filter_by(id=session_id, is_active=True).first()
+        if not session:
+            return None, None
+        
+        if history_id:
+            # Specific history requested
+            history = ChatHistory.query.filter_by(id=history_id, session_id=session_id).first()
+            if not history:
+                return session, None
+        else:
+            # Use current history or create new one
+            if not session.current_history_id:
+                history = ChatHistory(
+                    session_id=session_id,
+                    title='New Conversation',
+                    message_count=0
+                )
+                db.session.add(history)
+                db.session.commit()
+                session.current_history_id = history.id
+                db.session.commit()
+            else:
+                history = ChatHistory.query.get(session.current_history_id)
+                if not history:
+                    return session, None
+        
+        return session, history
+
+    def _create_user_message(self, history_id: int, content: Dict[str, Any]) -> ChatMessage:
+        """Create and save user message."""
+        user_msg = ChatMessage(
+            history_id=history_id,
+            role='user',
+            message_type='text',
+            content_json=content
+        )
+        db.session.add(user_msg)
+        db.session.commit()
+        return user_msg
+
+    def _create_assistant_placeholder(self, history_id: int) -> ChatMessage:
+        """Create empty assistant message placeholder."""
+        asst_msg = ChatMessage(
+            history_id=history_id,
+            role='assistant',
+            message_type='text',
+            content_json={'type': 'text', 'text': ''},
+            status='processing'
+        )
+        db.session.add(asst_msg)
+        db.session.commit()
+        return asst_msg
+
+    def _build_chat_history(self, history_id: int, user_msg_id: int) -> List[Dict[str, Any]]:
+        """Build chat history for LLM processing."""
+        chat_history = []
+        
+        # Add system messages
+        system_msgs = ChatMessage.query.filter_by(history_id=history_id, role='system').order_by(ChatMessage.created_at.asc()).all()
+        for sm in system_msgs:
+            content = sm.content_json if isinstance(sm.content_json, dict) else {'text': str(sm.content_json)}
+            chat_history.append({'role': 'system', 'content': content})
+        
+        # Add user and assistant messages up to current user message
+        user_msgs = ChatMessage.query.filter(ChatMessage.history_id==history_id, ChatMessage.id<=user_msg_id).order_by(ChatMessage.created_at.asc()).all()
+        for um in user_msgs:
+            role = um.role
+            if role not in ('user', 'assistant'):
+                continue
+            content = um.content_json if isinstance(um.content_json, dict) else {'text': str(um.content_json)}
+            chat_history.append({'role': role, 'content': content})
+        
+        return chat_history
+
+    def _resolve_ai_model(self, persona_id: int):
+        """Resolve AI model, provider, and mapping."""
+        model_info = self._select_chat_model(persona_id)
+        if not model_info:
+            return None, None, None
+        
+        provider = AIProvider.query.filter_by(id=model_info['provider_id'], is_active=True).first()
+        mapping_obj = AIModelMapping.query.filter_by(id=persona_id, is_active=True).first()
+        
+        return model_info, provider, mapping_obj
+
+    def _execute_tool_call(self, persona_id: int, tool_name: str, tool_args: Dict[str, Any], 
+                          history_id: int, user_msg_id: int, available_tools: Dict[str, Any]):
+        """Execute tool call and return result."""
+        if tool_name not in available_tools:
+            return None, f'Tool {tool_name} not allowed'
+        
+        # Log tool execution
+        log = ToolInvocationLog(
+            history_id=history_id,
+            message_id=user_msg_id,
+            tool_name=tool_name,
+            input_json=tool_args,
+            status='started'
+        )
+        db.session.add(log)
+        db.session.commit()
+
+        # Execute tool
+        exec_result = execute_tool(persona_id, tool_name, tool_args)
+        log.status = 'success' if exec_result.get('status') == 'success' else 'error'
+        log.output_json = exec_result
+        db.session.commit()
+
+        # Create tool result message
+        tool_msg = ChatMessage(
+            history_id=history_id,
+            role='tool',
+            message_type='tool_result',
+            content_json={'type': 'tool_result', 'tool': tool_name, 'input': tool_args, 'output': exec_result}
+        )
+        db.session.add(tool_msg)
+        db.session.commit()
+
+        return exec_result, None
+
+    def _create_assistant_message(self, history_id: int, content: Dict[str, Any], status: str = 'complete') -> ChatMessage:
+        """Create and save assistant message."""
+        asst_msg = ChatMessage(
+            history_id=history_id,
+            role='assistant',
+            message_type='text',
+            content_json=content,
+            status=status
+        )
+        db.session.add(asst_msg)
+        db.session.commit()
+        return asst_msg
+
+    def _format_error_response(self, error_message: str, status_code: int = 400):
+        """Format error response consistently."""
+        return jsonify({'error': error_message}), status_code
 
     @expose(
         '/sessions/{id}/messages', 
@@ -117,43 +254,25 @@ class ChatMessageMixin(WebSocketProtocol):
     def send_message(self, req: Request, id: int):  # noqa: A002
         """Send a message to a chat session."""
         try:
-            session = ChatSession.query.filter_by(id=id, is_active=True).first()
+            # Validate session and get/create history
+            session, history = self._validate_session_history(id)
             if not session:
-                return jsonify({'error': 'Session not found or inactive'}), 404
+                return self._format_error_response('Session not found or inactive', 404)
+            if not history:
+                return self._format_error_response('Current history not found', 404)
 
-            # Get or create current history
-            if not session.current_history_id:
-                history = ChatHistory(
-                    session_id=id,
-                    title='New Conversation',
-                    message_count=0
-                )
-                db.session.add(history)
-                db.session.commit()
-                session.current_history_id = history.id
-                db.session.commit()
-            else:
-                history = ChatHistory.query.get(session.current_history_id)
-                if not history:
-                    return jsonify({'error': 'Current history not found'}), 404
-
+            # Get user content
             payload = req.get_json(silent=True) or {}
             user_content = payload.get('content')
             if not user_content:
-                return jsonify({'error': 'content required'}), 400
+                return self._format_error_response('content required', 400)
 
-            user_msg = ChatMessage(
-                history_id=history.id, 
-                role='user', 
-                message_type='text',
-                content_json=user_content
-            )
-            db.session.add(user_msg)
-            db.session.commit()
+            # Create user message
+            user_msg = self._create_user_message(history.id, user_content)
 
-            # Emit message received event using protocol method
-            session_id = id  # This is already available
-            history_id = history.id  # This is already available
+            # Emit message received event
+            session_id = id
+            history_id = history.id
             self.emit_chat_event(session_id, history_id, 'message_received', {
                 'message_id': user_msg.id,
                 'role': user_msg.role,
@@ -161,19 +280,11 @@ class ChatMessageMixin(WebSocketProtocol):
                 'timestamp': user_msg.created_at.isoformat()
             })
 
-            # Emit message processing started event using protocol method
+            # Emit message processing started event
             self.emit_llm_event(session_id, history_id, 'message_processing', 'Processing your message...')
 
             # Create EMPTY assistant message placeholder immediately
-            asst_msg = ChatMessage(
-                history_id=history.id,
-                role='assistant',
-                message_type='text',
-                content_json={'type': 'text', 'text': ''},
-                status='processing'
-            )
-            db.session.add(asst_msg)
-            db.session.commit()
+            asst_msg = self._create_assistant_placeholder(history.id)
 
             # Return BOTH message IDs immediately
             response_data = {
@@ -187,13 +298,13 @@ class ChatMessageMixin(WebSocketProtocol):
 
             # Start async processing in thread pool AFTER response
             self._submit_message_for_async_processing(
-                user_msg.id, asst_msg.id, id, history.id, persona.id
+                user_msg.id, asst_msg.id, id, history.id, session.persona.id
             )
 
             return jsonify(response_data)
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
-            return jsonify({'error': str(exc)}), 500
+            return self._format_error_response(str(exc), 500)
 
     def _submit_message_for_async_processing(self, user_msg_id: int, asst_msg_id: int, session_id: int, history_id: int, persona_id: int):
         """Submit message processing to thread pool for async execution."""
@@ -227,41 +338,19 @@ class ChatMessageMixin(WebSocketProtocol):
             message_handler.assistant_message_id = asst_msg_id
             
             # Get model info and tools
-            model_info = self._select_chat_model(persona_id)
+            model_info, provider, mapping_obj = self._resolve_ai_model(persona_id)
             available_tools_info = list_persona_tools(persona_id)
             
-            if not model_info:
+            if not model_info or not provider or not mapping_obj:
                 # No model available - mark as failed
-                message_handler.finalize_assistant_message("No AI model available for this persona")
+                error_msg = "AI model, provider, or mapping not available"
+                message_handler.finalize_assistant_message(error_msg)
                 event_manager.emit_chunk_event(session_id, history_id, 
                                             StreamingChunk(content="", chunk_type="complete", is_final=True))
                 return
             
-            # Get provider and mapping
-            provider = AIProvider.query.filter_by(id=model_info['provider_id'], is_active=True).first()
-            mapping_obj = AIModelMapping.query.filter_by(id=persona_id, is_active=True).first()
-            
-            if not provider or not mapping_obj:
-                # Provider or mapping not available
-                message_handler.finalize_assistant_message("AI provider or model mapping not available")
-                event_manager.emit_chunk_event(session_id, history_id, 
-                                            StreamingChunk(content="", chunk_type="complete", is_final=True))
-                return
-            
-            # Build chat history for provider call
-            chat_history = []
-            system_msgs = ChatMessage.query.filter_by(history_id=history_id, role='system').order_by(ChatMessage.created_at.asc()).all()
-            for sm in system_msgs:
-                content = sm.content_json if isinstance(sm.content_json, dict) else {'text': str(sm.content_json)}
-                chat_history.append({'role': 'system', 'content': content})
-            
-            user_msgs = ChatMessage.query.filter(ChatMessage.history_id==history_id, ChatMessage.id<=user_msg_id).order_by(ChatMessage.created_at.asc()).all()
-            for um in user_msgs:
-                role = um.role
-                if role not in ('user', 'assistant'):
-                    continue
-                content = um.content_json if isinstance(um.content_json, dict) else {'text': str(um.content_json)}
-                chat_history.append({'role': role, 'content': content})
+            # Build chat history using helper method
+            chat_history = self._build_chat_history(history_id, user_msg_id)
             
             # Use streaming LLM client
             try:
@@ -340,135 +429,59 @@ class ChatMessageMixin(WebSocketProtocol):
     def send_message_to_history(self, req: Request, session_id: int, history_id: int):
         """Send a message to a specific history within a session."""
         try:
-            session = ChatSession.query.filter_by(id=session_id, is_active=True).first()
+            # Validate session and history
+            session, history = self._validate_session_history(session_id, history_id)
             if not session:
-                return jsonify({'error': 'Session not found or inactive'}), 404
-
-            history = ChatHistory.query.filter_by(id=history_id, session_id=session_id).first()
+                return self._format_error_response('Session not found or inactive', 404)
             if not history:
-                return jsonify({'error': 'History not found'}), 404
+                return self._format_error_response('History not found', 404)
 
+            # Get user content
             payload = req.get_json(silent=True) or {}
             user_content = payload.get('content')
             if not user_content:
-                return jsonify({'error': 'content required'}), 400
+                return self._format_error_response('content required', 400)
 
-            user_msg = ChatMessage(
-                history_id=history_id, 
-                role='user', 
-                message_type='text',
-                content_json=user_content
-            )
-            db.session.add(user_msg)
-            db.session.commit()
+            # Create user message
+            user_msg = self._create_user_message(history_id, user_content)
 
             # Update history message count
             history.message_count += 1
             db.session.commit()
 
-            # Resolve persona and tools
-            persona = session.persona
-            # Get proper tool information with schemas and descriptions
-            available_tools_info = list_persona_tools(persona.id)
-            available_tools = { tool['name']: {'type': 'internal'} for tool in available_tools_info }
-            model_info = self._select_chat_model(persona.id)
+            # Emit message received event
+            self.emit_chat_event(session_id, history_id, 'message_received', {
+                'message_id': user_msg.id,
+                'role': user_msg.role,
+                'content': user_msg.content_json,
+                'timestamp': user_msg.created_at.isoformat()
+            })
 
-            # Build chat history for provider call
-            chat_history = []
-            system_msgs = ChatMessage.query.filter_by(history_id=history_id, role='system').order_by(ChatMessage.created_at.asc()).all()
-            for sm in system_msgs:
-                content = sm.content_json if isinstance(sm.content_json, dict) else {'text': str(sm.content_json)}
-                chat_history.append({'role': 'system', 'content': content})
-            user_msgs = ChatMessage.query.filter(ChatMessage.history_id==history_id, ChatMessage.id<=user_msg.id).order_by(ChatMessage.created_at.asc()).all()
-            for um in user_msgs:
-                role = um.role
-                if role not in ('user', 'assistant'):
-                    continue
-                content = um.content_json if isinstance(um.content_json, dict) else {'text': str(um.content_json)}
-                chat_history.append({'role': role, 'content': content})
+            # Emit message processing started event
+            self.emit_llm_event(session_id, history_id, 'message_processing', 'Processing your message...')
 
-            # Resolve model mapping and provider; fallback to placeholder if none
-            assistant_output = None
-            if model_info:
-                provider = AIProvider.query.filter_by(id=model_info['provider_id'], is_active=True).first()
-                if provider:
-                    try:
-                        # Reconstruct mapping object used for provider call
-                        mapping_obj = AIModelMapping.query.filter_by(id=persona.ai_model_mapping_id, is_active=True).first()
-                        assistant_output = run_chat(provider, mapping_obj, chat_history, available_tools_info, persona.id)
-                    except Exception as exc:  # noqa: BLE001
-                        assistant_output = {'type': 'text', 'text': f'Provider error: {exc}'}
-            if not assistant_output:
-                return jsonify({'error': 'Persona has no active model mapping or provider is unavailable'}), 400
+            # Create EMPTY assistant message placeholder immediately
+            asst_msg = self._create_assistant_placeholder(history_id)
 
-            # If model requested a tool call, execute when allowlisted
-            if isinstance(assistant_output, dict) and (assistant_output.get('type') == 'tool_call' or 'tool' in assistant_output):
-                tool_name = assistant_output.get('tool')
-                tool_args = assistant_output.get('args') or {}
-                if tool_name and tool_name in available_tools:
-                    log = ToolInvocationLog(
-                        history_id=history_id,
-                        message_id=user_msg.id,
-                        tool_name=tool_name,
-                        input_json=tool_args,
-                        status='started'
-                    )
-                    db.session.add(log)
-                    db.session.commit()
+            # Return BOTH message IDs immediately
+            response_data = {
+                'data': {
+                    'user_message_id': user_msg.id,
+                    'assistant_message_id': asst_msg.id,
+                    'status': 'processing',
+                    'websocket_channel': f'chat/{session_id}/{history_id}'
+                }
+            }
 
-                    exec_result = execute_tool(persona.id, tool_name, tool_args)
-                    log.status = 'success' if exec_result.get('status') == 'success' else 'error'
-                    log.output_json = exec_result
-                    db.session.commit()
-
-                    tool_msg = ChatMessage(
-                        history_id=history_id, 
-                        role='tool', 
-                        message_type='tool_result',
-                        content_json={'type': 'tool_result', 'tool': tool_name, 'input': tool_args, 'output': exec_result}
-                    )
-                    db.session.add(tool_msg)
-                    db.session.commit()
-
-                    # Follow-up assistant acknowledgment
-                    asst_msg = ChatMessage(
-                        history_id=history_id, 
-                        role='assistant', 
-                        message_type='text',
-                        content_json={'type': 'text', 'text': 'Tool executed'}
-                    )
-                    db.session.add(asst_msg)
-                    db.session.commit()
-                    return jsonify({'data': asst_msg.to_dict()})
-                else:
-                    asst_msg = ChatMessage(
-                        history_id=history_id, 
-                        role='assistant', 
-                        message_type='text',
-                        content_json={'type': 'text', 'text': f'Tool {tool_name or "(unknown)"} not allowed'}
-                    )
-                    db.session.add(asst_msg)
-                    db.session.commit()
-                    return jsonify({'data': asst_msg.to_dict()})
-
-            # Default assistant text message
-            asst_msg = ChatMessage(
-                history_id=history_id, 
-                role='assistant', 
-                message_type='text',
-                content_json=assistant_output
+            # Start async processing in thread pool AFTER response
+            self._submit_message_for_async_processing(
+                user_msg.id, asst_msg.id, session_id, history_id, session.persona.id
             )
-            db.session.add(asst_msg)
-            db.session.commit()
 
-            # Update history message count
-            history.message_count += 1
-            db.session.commit()
-
-            return jsonify({'data': asst_msg.to_dict()})
+            return jsonify(response_data)
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
-            return jsonify({'error': str(exc)}), 500
+            return self._format_error_response(str(exc), 500)
 
     @expose(
         '/sessions/{id}/retry', 
@@ -497,12 +510,12 @@ class ChatMessageMixin(WebSocketProtocol):
         try:
             last_user = ChatMessage.query.filter_by(session_id=id, role='user').order_by(ChatMessage.created_at.desc()).first()
             if not last_user:
-                return jsonify({'error': 'No user messages'}), 400
+                return self._format_error_response('No user messages', 400)
             # Reuse send logic by re-sending the last user content
             mock_req = type('obj', (), {'get_json': lambda self, silent=True: {'content': last_user.content_json}})()
             return self.send_message(mock_req, id)
         except Exception as exc:  # noqa: BLE001
-            return jsonify({'error': str(exc)}), 500
+            return self._format_error_response(str(exc), 500)
 
     @expose(
         '/sessions/{session_id}/histories/{history_id}/messages', 
@@ -533,18 +546,17 @@ class ChatMessageMixin(WebSocketProtocol):
     def list_history_messages(self, req: Request, session_id: int, history_id: int):
         """Get messages from a specific history within a session."""
         try:
-            session = ChatSession.query.filter_by(id=session_id, is_active=True).first()
+            # Validate session and history
+            session, history = self._validate_session_history(session_id, history_id)
             if not session:
-                return jsonify({'error': 'Session not found or inactive'}), 404
-
-            history = ChatHistory.query.filter_by(id=history_id, session_id=session_id).first()
+                return self._format_error_response('Session not found or inactive', 404)
             if not history:
-                return jsonify({'error': 'History not found'}), 404
+                return self._format_error_response('History not found', 404)
 
             msgs = ChatMessage.query.filter_by(history_id=history_id).order_by(ChatMessage.created_at.asc()).all()
             return jsonify({'data': [m.to_dict() for m in msgs], 'total': len(msgs)})
         except Exception as exc:  # noqa: BLE001
-            return jsonify({'error': str(exc)}), 500 
+            return self._format_error_response(str(exc), 500)
 
     @expose(
         '/sessions/{session_id}/histories/{history_id}/messages/{message_id}', 
@@ -564,17 +576,17 @@ class ChatMessageMixin(WebSocketProtocol):
             # Verify session exists and is active
             session = ChatSession.query.filter_by(id=session_id, is_active=True).first()
             if not session:
-                return jsonify({'error': 'Session not found or inactive'}), 404
+                return self._format_error_response('Session not found or inactive', 404)
 
             # Verify history exists and belongs to session
             history = ChatHistory.query.filter_by(id=history_id, session_id=session_id).first()
             if not history:
-                return jsonify({'error': 'History not found'}), 404
+                return self._format_error_response('History not found', 404)
 
             # Find and delete the specific message
             message = ChatMessage.query.filter_by(id=message_id, history_id=history_id).first()
             if not message:
-                return jsonify({'error': 'Message not found'}), 404
+                return self._format_error_response('Message not found', 404)
 
             # Store message ID before deletion for response
             deleted_message_id = message.id
@@ -594,4 +606,4 @@ class ChatMessageMixin(WebSocketProtocol):
             
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
-            return jsonify({'error': str(exc)}), 500 
+            return self._format_error_response(str(exc), 500) 
