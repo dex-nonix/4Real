@@ -38,7 +38,7 @@ class ChatThreadPoolManager:
     - Comprehensive error handling
     """
     
-    def __init__(self, 
+    def __init__(self, app, 
                  max_workers: int = 20, 
                  thread_name_prefix: str = "ChatWorker",
                  monitoring_interval: int = 30,
@@ -52,6 +52,7 @@ class ChatThreadPoolManager:
             monitoring_interval: Monitoring check interval in seconds
             log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
         """
+        self.app = app
         self._max_workers = max_workers
         self._thread_name_prefix = thread_name_prefix
         self._monitoring_interval = monitoring_interval
@@ -159,7 +160,7 @@ class ChatThreadPoolManager:
 
     def submit_async_task(self, async_func, *args, **kwargs) -> concurrent.futures.Future:
         """
-        Submit an async function to the thread pool with event loop management.
+        Submit an async function to the thread pool with event loop management and Flask app context.
         
         Args:
             async_func: Async function to execute
@@ -178,15 +179,17 @@ class ChatThreadPoolManager:
             raise RuntimeError(error_msg)
         
         def run_async_in_thread():
-            """Run async function in a new thread with its own event loop."""
+            """Run async function in a new thread with its own event loop and Flask app context."""
             # Create new event loop for this thread
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             
             try:
-                # Run the async function and ensure it's properly awaited
-                result = loop.run_until_complete(async_func(*args, **kwargs))
-                return result
+                # Wrap with Flask application context to ensure database access works
+                with self.app.app_context():
+                    # Run the async function and ensure it's properly awaited
+                    result = loop.run_until_complete(async_func(*args, **kwargs))
+                    return result
             except Exception as e:
                 # Log any errors that occur during async execution
                 self._logger.error(f"Async function execution failed: {e}", exc_info=True)
@@ -391,41 +394,3 @@ class ChatThreadPoolManager:
             self.shutdown(wait=False)
         except:
             pass  # Ignore errors during cleanup
-
-
-# Global instance for easy access
-_thread_pool_manager: Optional[ChatThreadPoolManager] = None
-
-
-def get_thread_pool_manager() -> ChatThreadPoolManager:
-    """Get the global thread pool manager instance."""
-    global _thread_pool_manager
-    if _thread_pool_manager is None:
-        _thread_pool_manager = ChatThreadPoolManager()
-    return _thread_pool_manager
-
-
-def initialize_thread_pool_manager(max_workers: int = 20, 
-                                  thread_name_prefix: str = "ChatWorker",
-                                  monitoring_interval: int = 30,
-                                  log_level: str = "INFO") -> ChatThreadPoolManager:
-    """Initialize the global thread pool manager with custom settings."""
-    global _thread_pool_manager
-    if _thread_pool_manager is not None:
-        _thread_pool_manager.shutdown()
-    
-    _thread_pool_manager = ChatThreadPoolManager(
-        max_workers=max_workers,
-        thread_name_prefix=thread_name_prefix,
-        monitoring_interval=monitoring_interval,
-        log_level=log_level
-    )
-    return _thread_pool_manager
-
-
-def shutdown_thread_pool_manager():
-    """Shutdown the global thread pool manager."""
-    global _thread_pool_manager
-    if _thread_pool_manager is not None:
-        _thread_pool_manager.shutdown()
-        _thread_pool_manager = None

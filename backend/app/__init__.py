@@ -222,7 +222,7 @@ def create_app() -> Flask:
             api_router.register_service('chat-messages', ChatMessageService)
             api_router.register_service('chat-histories', ChatHistoryService)
             api_router.register_service('tool-invocation-logs', ToolInvocationLogService)
-            api_router.register_service('chat', ChatService)
+            api_router.register_service('chat', ChatService, app=app)
             api_router.register_service('file-categories', FileCategoryService)
             api_router.register_service('files', FileService)
             api_router.register_service('file-links', FileLinkService)

@@ -8,7 +8,7 @@ from ...decorators import expose
 
 from ..base_api_service import BaseApiService
 from datetime import datetime
-from .thread_pool_manager import get_thread_pool_manager
+from .thread_pool_manager import ChatThreadPoolManager
 
 # Import all mixins
 from .chat_session_mixin import ChatSessionMixin
@@ -29,12 +29,13 @@ class ChatService(BaseApiService, ChatSessionMixin, ChatMessageMixin, ChatHistor
     - ToolExecutionMixin: Tool execution and MCP operations
     """
     
-    def __init__(self):
+    def __init__(self, app):
         """Initialize chat service with thread pool manager."""
         super().__init__()
         
         # Initialize thread pool manager
-        self._thread_pool = get_thread_pool_manager()
+        self.app = app
+        self._thread_pool = ChatThreadPoolManager(app)
         
         # Log initialization
         self._logger = logging.getLogger(__name__)
