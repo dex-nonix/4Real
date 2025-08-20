@@ -1,9 +1,15 @@
 from typing import Protocol
 from datetime import datetime
+import logging
 
 
 class WebSocketProtocol(Protocol):
     """Protocol for WebSocket event emission - Python's way of defining contracts."""
+    
+    @property
+    def _logger(self) -> logging.Logger:
+        """Get logger from parent ChatService."""
+        ...
     
     def emit_chat_event(self, session_id: int, history_id: int, event: str, data: dict) -> None:
         """Emit chat event - Protocol method."""

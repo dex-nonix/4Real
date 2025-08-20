@@ -35,30 +35,14 @@ class StreamingEventManager:
                                chunk.metadata.get("tool_name", "unknown"), "completed", 
                                chunk.metadata)
     
-    def emit_tool_event(self, session_id: int, history_id: int, tool_name: str, status: str, metadata: Dict[str, Any] = None):
+    def emit_tool_event(self, session_id: int, history_id: int, tool_name: str, status: str, **extra):
         """Emit tool execution event."""
-        event_data = {
-            'tool_name': tool_name,
-            'status': status,
-            'timestamp': self._get_timestamp()
-        }
-        
-        if metadata:
-            event_data.update(metadata)
-        
-        self.chat_service.emit_tool_event(session_id, history_id, tool_name, status, **event_data)
+        # Pass all extra data as keyword arguments to match ChatService.emit_tool_event signature
+        self.chat_service.emit_tool_event(session_id, history_id, tool_name, status, **extra)
     
     def emit_llm_status_event(self, session_id: int, history_id: int, stage: str, message: str, metadata: Dict[str, Any] = None):
         """Emit LLM status event."""
-        event_data = {
-            'stage': stage,
-            'message': message,
-            'timestamp': self._get_timestamp()
-        }
-        
-        if metadata:
-            event_data.update(metadata)
-        
+        # Call emit_llm_event with correct parameters (stage and message only)
         self.chat_service.emit_llm_event(session_id, history_id, stage, message)
     
     def emit_streaming_error(self, session_id: int, history_id: int, error_message: str, error_type: str = "streaming_error"):
