@@ -184,10 +184,28 @@ class ChatThreadPoolManager:
             asyncio.set_event_loop(loop)
             
             try:
-                # Run the async function
-                return loop.run_until_complete(async_func(*args, **kwargs))
+                # Run the async function and ensure it's properly awaited
+                result = loop.run_until_complete(async_func(*args, **kwargs))
+                return result
+            except Exception as e:
+                # Log any errors that occur during async execution
+                self._logger.error(f"Async function execution failed: {e}", exc_info=True)
+                raise
             finally:
-                loop.close()
+                # Ensure the loop is properly closed
+                try:
+                    # Cancel any pending tasks
+                    pending = asyncio.all_tasks(loop)
+                    for task in pending:
+                        task.cancel()
+                    
+                    # Wait for cancellation to complete
+                    if pending:
+                        loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                except Exception:
+                    pass
+                finally:
+                    loop.close()
         
         try:
             # Submit the wrapper function to thread pool

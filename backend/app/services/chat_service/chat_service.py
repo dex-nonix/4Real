@@ -1,5 +1,6 @@
 from __future__ import annotations
 import logging
+import asyncio
 
 from flask import jsonify
 
@@ -65,7 +66,11 @@ class ChatService(BaseApiService, ChatSessionMixin, ChatMessageMixin, ChatHistor
     def submit_async_task(self, func, *args, **kwargs):
         """Submit a task to the thread pool for async execution."""
         try:
-            future = self._thread_pool.submit_task(func, *args, **kwargs)
+            # Check if function is async and use appropriate method
+            if asyncio.iscoroutinefunction(func):
+                future = self._thread_pool.submit_async_task(func, *args, **kwargs)
+            else:
+                future = self._thread_pool.submit_task(func, *args, **kwargs)
             self._logger.debug(f"Task submitted to thread pool: {func.__name__}")
             return future
         except Exception as e:

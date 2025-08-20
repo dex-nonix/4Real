@@ -66,6 +66,10 @@ const llmStatus = ref(null);
 const toolStatus = ref(null);
 const realTimeMessages = ref([]);
 
+// NEW: Streaming message state management
+const streamingMessages = ref(new Map()); // message_id -> { content, status, metadata }
+const streamingStatus = ref(new Map());   // message_id -> 'streaming' | 'complete' | 'error'
+
 // Session-specific input text storage
 const sessionInputTexts = ref(new Map());
 
@@ -95,6 +99,11 @@ onMounted(() => {
     chatService.onWebSocketEvent('tool_status', handleToolStatus);
     chatService.onWebSocketEvent('message_received', handleMessageReceived);
     chatService.onWebSocketEvent('message_processed', handleMessageProcessed);
+    
+    // NEW: Add streaming event listeners
+    chatService.onWebSocketEvent('assistant_message_started', handleAssistantStarted);
+    chatService.onWebSocketEvent('assistant_message_chunk', handleAssistantChunk);
+    chatService.onWebSocketEvent('assistant_message_complete', handleAssistantComplete);
   }
 });
 
@@ -133,6 +142,65 @@ const handleMessageProcessed = (data) => {
   console.log('Message Processed:', message_id, status);
   // Update message status
   updateMessageStatus(message_id, status);
+};
+
+// NEW: Streaming event handlers
+const handleAssistantStarted = (data) => {
+  console.log('Assistant Message Started:', data);
+  // Create empty assistant message in messages array
+  const { message_id, status, metadata } = data;
+  const assistantMessage = {
+    id: message_id,
+    role: 'assistant',
+    message_type: 'text',
+    content_json: { type: 'text', text: '' },
+    status: 'streaming',
+    created_at: new Date().toISOString()
+  };
+  messages.value.push(assistantMessage);
+  
+  // Track streaming state
+  streamingMessages.value.set(message_id, { content: '', status: 'streaming', metadata });
+  streamingStatus.value.set(message_id, 'streaming');
+};
+
+const handleAssistantChunk = (data) => {
+  console.log('Assistant Message Chunk:', data);
+  // Find existing assistant message and append chunk
+  const { chunk, metadata, is_final } = data;
+  const messageIndex = messages.value.findIndex(m => m.id === data.message_id);
+  if (messageIndex !== -1) {
+    const currentText = messages.value[messageIndex].content_json?.text || '';
+    messages.value[messageIndex].content_json = { 
+      type: 'text', 
+      text: currentText + chunk 
+    };
+    
+    // Update streaming state
+    const streamingData = streamingMessages.value.get(data.message_id);
+    if (streamingData) {
+      streamingData.content = currentText + chunk;
+      streamingMessages.value.set(data.message_id, streamingData);
+    }
+  }
+};
+
+const handleAssistantComplete = (data) => {
+  console.log('Assistant Message Complete:', data);
+  // Mark message as complete
+  const { message_id, status, metadata } = data;
+  const messageIndex = messages.value.findIndex(m => m.id === message_id);
+  if (messageIndex !== -1) {
+    messages.value[messageIndex].status = 'complete';
+  }
+  
+  // Update streaming state
+  streamingStatus.value.set(message_id, 'complete');
+  const streamingData = streamingMessages.value.get(message_id);
+  if (streamingData) {
+    streamingData.status = 'complete';
+    streamingMessages.value.set(message_id, streamingData);
+  }
 };
 
 // State Update Functions
@@ -175,6 +243,11 @@ watch([() => props.selectedSession, () => props.historyId], ([newSession, newHis
     chatService.onWebSocketEvent('tool_status', handleToolStatus);
     chatService.onWebSocketEvent('message_received', handleMessageReceived);
     chatService.onWebSocketEvent('message_processed', handleMessageProcessed);
+    
+    // NEW: Re-attach streaming event listeners
+    chatService.onWebSocketEvent('assistant_message_started', handleAssistantStarted);
+    chatService.onWebSocketEvent('assistant_message_chunk', handleAssistantChunk);
+    chatService.onWebSocketEvent('assistant_message_complete', handleAssistantComplete);
   }
 }, { immediate: true });
 
@@ -466,6 +539,17 @@ const hasValidMessageType = (message) => {
   return hasType;
 };
 
+// NEW: Check if message is currently streaming
+const isMessageStreaming = (messageId) => {
+  return streamingStatus.value.get(messageId) === 'streaming';
+};
+
+// NEW: Get streaming content for a message
+const getStreamingContent = (messageId) => {
+  const streamingData = streamingMessages.value.get(messageId);
+  return streamingData ? streamingData.content : '';
+};
+
 // Computed values
 const hasHistory = computed(() => !!props.historyId);
 const canSendMessage = computed(() => hasHistory.value && inputText.value?.trim());
@@ -475,7 +559,13 @@ defineExpose({
   loadMessages,
   clearLocalMessages,
   refreshMessages: () => loadMessages(props.historyId),
-  triggerRefresh: () => loadMessages(props.historyId)
+  triggerRefresh: () => loadMessages(props.historyId),
+  
+  // NEW: Expose streaming methods
+  isMessageStreaming,
+  getStreamingContent,
+  getStreamingStatus: () => Object.fromEntries(streamingStatus.value),
+  getStreamingMessages: () => Object.fromEntries(streamingMessages.value)
 });
 </script>
 
@@ -502,6 +592,15 @@ defineExpose({
           <span class="font-medium">{{ toolStatus.toolName }}</span>
           <span class="text-color-secondary">{{ toolStatus.status }}</span>
           <span v-if="toolStatus.error" class="text-danger">({{ toolStatus.error }})</span>
+        </div>
+      </div>
+      
+      <!-- NEW: Streaming Status -->
+      <div v-if="Array.from(streamingStatus.values()).some(status => status === 'streaming')" class="streaming-status mt-2">
+        <div class="flex align-items-center gap-2">
+          <i class="pi pi-spin pi-spinner text-warning"></i>
+          <span class="font-medium text-warning">AI is typing...</span>
+          <span class="text-color-secondary">Streaming response in real-time</span>
         </div>
       </div>
     </div>
@@ -534,6 +633,15 @@ defineExpose({
             />
           </template>
         </MessageContainer>
+        
+        <!-- NEW: Streaming indicator for assistant messages -->
+        <div v-if="message.role === 'assistant' && streamingStatus.get(message.id) === 'streaming'" 
+             class="streaming-indicator p-2 surface-100 border-round mb-2">
+          <div class="flex align-items-center gap-2">
+            <i class="pi pi-spin pi-spinner text-warning text-sm"></i>
+            <span class="text-xs text-warning">AI is typing...</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -690,7 +798,7 @@ defineExpose({
   background: var(--surface-50);
 }
 
-.llm-status, .tool-status {
+.llm-status, .tool-status, .streaming-status {
   font-size: 0.875rem;
 }
 
@@ -700,6 +808,22 @@ defineExpose({
 
 .tool-status .pi-spinner {
   animation: spin 1s linear infinite;
+}
+
+.streaming-status .pi-spinner {
+  animation: spin 1s linear infinite;
+}
+
+.streaming-status {
+  border-left: 3px solid var(--warning-color);
+  background: var(--surface-100);
+}
+
+.streaming-indicator {
+  border-left: 3px solid var(--warning-color);
+  background: var(--surface-50);
+  margin-left: 1rem;
+  opacity: 0.8;
 }
 
 @keyframes spin {
