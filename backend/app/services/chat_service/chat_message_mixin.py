@@ -346,7 +346,8 @@ class ChatMessageMixin(WebSocketProtocol):
                 error_msg = "AI model, provider, or mapping not available"
                 message_handler.finalize_assistant_message(error_msg)
                 event_manager.emit_chunk_event(session_id, history_id, 
-                                            StreamingChunk(content="", chunk_type="complete", is_final=True))
+                                            StreamingChunk(content="", chunk_type="complete", is_final=True),
+                                            asst_msg_id)
                 return
             
             # Build chat history using helper method
