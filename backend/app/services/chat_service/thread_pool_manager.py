@@ -71,9 +71,8 @@ class ChatThreadPoolManager:
         self._last_activity = datetime.utcnow()
         self._shutdown_event = threading.Event()
 
-        # Logging setup with configurable level
+        # Logging setup
         self._logger = logging.getLogger(__name__)
-        self._setup_logging(log_level)
 
         # Start monitoring thread
         self._monitor_thread = threading.Thread(
@@ -83,32 +82,9 @@ class ChatThreadPoolManager:
         )
         self._monitor_thread.start()
 
-        self._logger.info(f"ChatThreadPoolManager initialized with {max_workers} workers, log level: {log_level}")
+        self._logger.debug(f"ChatThreadPoolManager initialized with {max_workers} workers")
 
-    def _setup_logging(self, log_level: str):
-        """Setup logging with configurable level."""
-        try:
-            # Convert string to logging level
-            numeric_level = getattr(logging, log_level.upper(), logging.INFO)
-            self._logger.setLevel(numeric_level)
 
-            # Create formatter with detailed information
-            formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s'
-            )
-
-            # Add handler if none exists
-            if not self._logger.handlers:
-                handler = logging.StreamHandler()
-                handler.setFormatter(formatter)
-                self._logger.addHandler(handler)
-
-            self._logger.debug(f"Logging configured with level: {log_level} ({numeric_level})")
-
-        except Exception as e:
-            # Fallback to basic logging if setup fails
-            print(f"Warning: Failed to setup logging: {e}")
-            self._logger.setLevel(logging.INFO)
 
     def submit_task(self, func: Callable, *args, **kwargs) -> concurrent.futures.Future:
         """
@@ -276,7 +252,7 @@ class ChatThreadPoolManager:
                 stats = self.get_stats()
 
                 # Log metrics with detailed info
-                self._logger.info(f"Thread pool monitoring - Active: {stats.active_tasks}/{stats.thread_pool_size}, "
+                self._logger.debug(f"Thread pool monitoring - Active: {stats.active_tasks}/{stats.thread_pool_size}, "
                                   f"Completed: {stats.completed_tasks}, Failed: {stats.failed_tasks}, "
                                   f"Total: {stats.total_submissions}")
 

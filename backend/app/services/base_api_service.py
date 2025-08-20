@@ -25,7 +25,7 @@ class BaseApiService(ABC):
             room: Optional room name (defaults to channel)
         """
         if not self._socketio:
-            print(f"Warning: SocketIO not initialized for {self.__class__.__name__}")
+            self._logger.error(f"CRITICAL ERROR: SocketIO not initialized for {self.__class__.__name__} - WebSocket communication disabled!")
             return
 
         # Use channel as room if no specific room provided
@@ -44,7 +44,7 @@ class BaseApiService(ABC):
             data: Event data payload
         """
         if not self._socketio:
-            print(f"Warning: SocketIO not initialized for {self.__class__.__name__}")
+            self._logger.error(f"CRITICAL ERROR: SocketIO not initialized for {self.__class__.__name__} - WebSocket communication disabled!")
             return
 
         # Emit event to specific room
@@ -168,8 +168,6 @@ class BaseApiService(ABC):
         description = getattr(method, '_description')
         tags = getattr(method, '_tags', [])
         status_codes = getattr(method, '_status_codes', {})
-
-        # 🚀 NEW: Extract schemas from decorator
         request_schema = getattr(method, '_request_schema')
         response_schema = getattr(method, '_response_schema')
 
@@ -183,7 +181,7 @@ class BaseApiService(ABC):
         if not status_codes:
             status_codes = {200: 'Success', 400: 'Bad Request', 500: 'Internal Server Error'}
 
-        # 🚀 NEW: Extract path parameters from URL pattern
+        # Extract path parameters from URL pattern
         path_parameters = self._extract_path_parameters(path)
 
         # Build operation object
@@ -194,11 +192,11 @@ class BaseApiService(ABC):
             "responses": {}
         }
 
-        # 🚀 NEW: Add path parameters if any exist
+        # Add path parameters if any exist
         if path_parameters:
             operation["parameters"] = path_parameters
 
-        # 🚀 NEW: Add request body if schema provided
+        # Add request body if schema provided
         if request_schema:
             operation["requestBody"] = {
                 "required": True,
@@ -213,7 +211,7 @@ class BaseApiService(ABC):
         for status_code, description_text in status_codes.items():
             response_obj = {"description": description_text}
 
-            # 🚀 NEW: Add response schema if provided
+            # Add response schema if provided
             if response_schema and status_code in [200, 201]:
                 response_obj["content"] = {
                     "application/json": {
