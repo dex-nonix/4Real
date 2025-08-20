@@ -335,14 +335,9 @@ class ChatMessageMixin(WebSocketProtocol):
             # Set the existing assistant message ID
             message_handler.assistant_message_id = asst_msg_id
             
-            # Validate message exists and database connection
+            # Validate message exists
             if not message_handler.ensure_message_exists():
                 error_msg = "Assistant message not found or inaccessible"
-                self.emit_llm_event(session_id, history_id, 'processing_failed', error_msg)
-                return
-            
-            if not message_handler.check_database_connection():
-                error_msg = "Database connection unavailable"
                 self.emit_llm_event(session_id, history_id, 'processing_failed', error_msg)
                 return
             
