@@ -15,8 +15,6 @@ from .compact_api_generator import CompactApiGenerator
 class APIRouter:
     """Blueprint that auto-registers all services and creates API routes."""
 
-    _instance = None
-
     def __init__(self, socketio_instance=None) -> None:
         self.blueprint = Blueprint('api', __name__)
         self.registered_services: dict[str, BaseApiService] = {}
@@ -25,18 +23,12 @@ class APIRouter:
         self._websocket_channels = {}  # Initialize WebSocket channels dict
 
         # Add documentation routes
-        self.documentation_router = DocumentationRouter(self.blueprint)
+        self.documentation_router = DocumentationRouter(self)
         
         # Add compact API generator
         self.compact_generator = CompactApiGenerator(self)
 
-        # Store instance for documentation access
-        APIRouter._instance = self
 
-    @classmethod
-    def get_instance(cls):
-        """Get the current instance of APIRouter"""
-        return cls._instance
 
     def register_service(self, service_name: str, service_class: type, *args, **kwargs) -> None:
         """Instantiate a service and create routes for any @expose methods."""

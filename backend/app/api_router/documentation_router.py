@@ -9,8 +9,9 @@ from .swagger_ui_generator import SwaggerUIGenerator
 class DocumentationRouter:
     """Handles documentation-related routes and endpoints."""
 
-    def __init__(self, blueprint: Blueprint) -> None:
-        self.blueprint = blueprint
+    def __init__(self, router) -> None:
+        self.router = router
+        self.blueprint = router.blueprint
         self.openapi_generator = OpenAPIGenerator()
         self.swagger_ui_generator = SwaggerUIGenerator()
         
@@ -24,7 +25,6 @@ class DocumentationRouter:
         def openapi_spec():
             """Return OpenAPI 3.0 specification as JSON"""
             from flask import request
-            from .api_router import APIRouter
             
             # Get service filter from query parameter
             service_filter = request.args.get('services', None)
@@ -36,15 +36,14 @@ class DocumentationRouter:
             print(f"🔍 Services filter: {service_filter}")
             print(f"🔍 Request method: {request.method}")
             
-            # We need to get the registered services from the main router
-            router = APIRouter.get_instance()
-            if router:
-                print(f"📋 Found {len(router.registered_services)} registered services:")
-                for service_name in router.registered_services.keys():
+            # Use the router directly - no need for get_instance() crap
+            if self.router:
+                print(f"📋 Found {len(self.router.registered_services)} registered services:")
+                for service_name in self.router.registered_services.keys():
                     print(f"   - {service_name}")
                 
                 result = self.openapi_generator.generate_openapi_spec(
-                    router.registered_services, 
+                    self.router.registered_services, 
                     service_filter
                 )
                 print(f"✅ Generated OpenAPI spec with {len(result.get('paths', {}))} paths")
