@@ -14,10 +14,8 @@ import SystemMessage from './message-types/SystemMessage.vue';
 import ToolMessage from './message-types/ToolMessage.vue';
 import UserMessage from './message-types/UserMessage.vue';
 import StreamingMessage from './message-types/StreamingMessage.vue';
-import Dialog from 'primevue/dialog';
+import AvailableToolsDialog from './AvailableToolsDialog.vue';
 import ToolExecutionDialog from './ToolExecutionDialog.vue';
-import DataTable from 'primevue/datatable';
-import Column from 'primevue/column';
 
 const props = defineProps({
   sessionId: { type: [String, Number, null], required: true },
@@ -408,36 +406,7 @@ const showTools = async () => {
   }
 };
 
-// Execute tool
-const executeTool = async (toolName) => {
-  if (!props.selectedSession?.persona_id || !props.historyId || !chatService) {
-    console.error('Cannot execute tool: Missing required data');
-    return;
-  }
-  
-  try {
-    // Execute tool using the existing ChatService
-    const response = await chatService.executeTool(
-      props.selectedSession.persona_id,
-      toolName,
-      {}, // Default empty args
-      props.historyId,
-      null, // message_id is optional
-      props.selectedSession.id // session_id for WebSocket events
-    );
-    
-    console.log('Tool executed successfully:', response);
-    
-    // Close tools dialog
-    showToolsDialog.value = false;
-    
-    // Refresh messages to show tool result
-    await loadMessages(props.historyId);
-    
-  } catch (error) {
-    console.error('Tool execution failed:', error);
-  }
-};
+
 
 // Select tool and show parameter form
 const selectTool = (toolData) => {
@@ -461,14 +430,16 @@ const executeToolWithForm = async (formData) => {
     const args = formData.__full || formData.args || {};
     console.log('🔧 Extracted args:', args);
     
-    // Execute tool using the existing ChatService
-    const response = await chatService.executeTool(
-      props.selectedSession.persona_id,
-      selectedTool.value.name, // Use the tool name from the selectedTool object
-      args, // Use the extracted form data
-      props.historyId,
-      null, // message_id is optional
-      props.selectedSession.id // session_id for WebSocket events
+    // ✅ REPLACE WITH: UNIFIED message-based tool calls
+    const response = await chatService.sendMessage(
+      props.selectedSession.id,           // sessionId
+      props.historyId,                    // ✅ historyId as separate parameter
+      {
+        type: 'tool_call',              // MESSAGE TYPE
+        tool: selectedTool.value.name,  // Use the tool name from the selectedTool object
+        args: args // Use the extracted form data
+        // ✅ NO history_id in payload!
+      }
     );
     
     console.log('Tool executed successfully:', response);
@@ -711,54 +682,11 @@ defineExpose({
     />
 
     <!-- Tools Dialog -->
-    <Dialog 
-      v-model:visible="showToolsDialog" 
-      header="Available Tools" 
-      modal 
-      :style="{ width: '90vw', maxWidth: '700px' }"
-      class="p-dialog-sm"
-    >
-      <div v-if="availableTools.length > 0">
-        <DataTable 
-          :value="availableTools" 
-          class="p-datatable-sm"
-          :showGridlines="true"
-          stripedRows
-          responsiveLayout="scroll"
-        >
-          <Column field="name" header="Tool" style="width: 40%">
-            <template #body="{ data }">
-              <div class="font-mono text-sm">{{ data.name }}</div>
-            </template>
-          </Column>
-          
-          <Column field="description" header="Description" style="width: 45%">
-            <template #body="{ data }">
-              <div class="text-xs text-600">{{ data.description }}</div>
-            </template>
-          </Column>
-          
-          <Column header="Action" style="width: 15%">
-            <template #body="{ data }">
-              <Button 
-                icon="pi pi-play" 
-                size="small" 
-                @click="selectTool(data)"
-                severity="primary"
-                class="p-button-sm"
-                text
-                rounded
-              />
-            </template>
-          </Column>
-        </DataTable>
-      </div>
-      
-      <div v-else class="text-center p-3">
-        <i class="pi pi-info-circle text-2xl text-500"></i>
-        <p class="text-500 text-sm mt-2">No tools available for this persona</p>
-      </div>
-    </Dialog>
+    <AvailableToolsDialog
+      v-model:visible="showToolsDialog"
+      :tools="availableTools"
+      @tool-selected="selectTool"
+    />
 
     <!-- Tool Execution Dialog -->
     <ToolExecutionDialog

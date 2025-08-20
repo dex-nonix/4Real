@@ -8,6 +8,8 @@ from .streaming_event_manager import StreamingEventManager
 from .streaming_interface import StreamingChunk
 from .streaming_message_handler import StreamingMessageHandler
 from .websocket_protocol import WebSocketProtocol
+from .message_type_registry import message_type_registry
+from .message_handlers import ChatMessageHandler, ToolCallMessageHandler
 from ..llm_client import run_chat_streaming
 from ..tool_runtime import execute_tool
 from ..tool_runtime import list_persona_tools
@@ -24,6 +26,12 @@ from ...models.tool_invocation_log import ToolInvocationLog
 
 class ChatMessageMixin(WebSocketProtocol):
     """Mixin for chat message handling and sending operations."""
+
+    def __init__(self):
+        """Initialize message type handlers."""
+        # Register message type handlers
+        message_type_registry.register('chat', ChatMessageHandler())
+        message_type_registry.register('tool_call', ToolCallMessageHandler())
 
     def _select_chat_model(self, persona_id: int) -> Dict[str, Any] | None:
         # Strict persona selection: require persona.ai_model_mapping_id
@@ -257,58 +265,64 @@ class ChatMessageMixin(WebSocketProtocol):
             }
         }
     )
-    def send_message(self, req: Request, id: int):  # noqa: A002
-        """Send a message to a chat session."""
+    @expose('/sessions/{session_id}/send')
+    @expose('/sessions/{session_id}/histories/{history_id}/send')
+    def send_message(self, req: Request, session_id: int, history_id: int = None):
+        """Send message to session - history_id is OPTIONAL in URL."""
         try:
-            # Validate session and get/create history
-            session, history = self._validate_session_history(id)
+            session = self._get_session(session_id)
             if not session:
-                return self._format_error_response('Session not found or inactive', 404)
-            if not history:
-                return self._format_error_response('Current history not found', 404)
+                return self._format_error_response('Session not found', 404)
 
-            # Get user content
+            # ✅ EXTRACT persona DIRECTLY from session
+            persona = session.persona
+            if not persona:
+                return self._format_error_response('Session has no persona', 400)
+            if not persona.is_active:
+                return self._format_error_response('Persona is not active', 400)
+
+            # ✅ OPTIONAL EXTRACTION: If no history_id provided, extract from session
+            if history_id is None:
+                history_id = session.current_history_id
+                if not history_id:
+                    return self._format_error_response('No current history', 400)
+            else:
+                # Validate provided history_id belongs to session
+                history = self._get_history(history_id)
+                if not history or history.session_id != session_id:
+                    return self._format_error_response('History not found or invalid', 404)
+
+            # Get user content - MUST be object with type
             payload = req.get_json(silent=True) or {}
             user_content = payload.get('content')
             if not user_content:
                 return self._format_error_response('content required', 400)
 
-            # Create user message
-            user_msg = self._create_user_message(history.id, user_content)
+            # ✅ MANDATORY: Content MUST be object with explicit type
+            if not isinstance(user_content, dict) or 'type' not in user_content:
+                return self._format_error_response('Content must be object with explicit type', 400)
 
-            # Emit message received event
-            session_id = id
-            history_id = history.id
-            self.emit_chat_event(session_id, history_id, 'message_received', {
-                'message_id': user_msg.id,
-                'role': user_msg.role,
-                'content': user_msg.content_json,
-                'timestamp': user_msg.created_at.isoformat()
-            })
+            # Get message type
+            message_type = user_content.get('type')
+            if not message_type:
+                return self._format_error_response('Message type is required', 400)
 
-            # Emit message processing started event
-            self.emit_llm_event(session_id, history_id, 'message_processing', 'Processing your message...')
+            # Get handler from registry
+            handler = message_type_registry.get_handler(message_type)
+            if not handler:
+                return self._format_error_response(f'Unknown message type: {message_type}', 400)
 
-            # Create EMPTY assistant message placeholder immediately
-            asst_msg = self._create_assistant_placeholder(history.id)
-
-            # Return BOTH message IDs immediately
-            response_data = {
-                'data': {
-                    'user_message_id': user_msg.id,
-                    'assistant_message_id': asst_msg.id,
-                    'status': 'processing',
-                    'websocket_channel': f'chat/{id}/{history.id}'
-                }
-            }
-
-            # Start async processing in thread pool AFTER response
-            self._submit_message_for_async_processing(
-                user_msg.id, asst_msg.id, id, history.id, session.persona.id
+            # ✅ PASS persona as DIRECT PARAMETER to handler
+            result = handler.handle(
+                chat_service=self,
+                session=session,           # Session object
+                persona=persona,           # ✅ PERSONA as DIRECT PARAMETER!
+                history_id=history_id,     # ALWAYS provided (extracted or from URL)
+                content=user_content
             )
+            return jsonify({'data': result})
 
-            return jsonify(response_data)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             db.session.rollback()
             return self._format_error_response(str(exc), 500)
 
@@ -438,62 +452,7 @@ class ChatMessageMixin(WebSocketProtocol):
             }
         }
     )
-    def send_message_to_history(self, req: Request, session_id: int, history_id: int):
-        """Send a message to a specific history within a session."""
-        try:
-            # Validate session and history
-            session, history = self._validate_session_history(session_id, history_id)
-            if not session:
-                return self._format_error_response('Session not found or inactive', 404)
-            if not history:
-                return self._format_error_response('History not found', 404)
 
-            # Get user content
-            payload = req.get_json(silent=True) or {}
-            user_content = payload.get('content')
-            if not user_content:
-                return self._format_error_response('content required', 400)
-
-            # Create user message
-            user_msg = self._create_user_message(history_id, user_content)
-
-            # Update history message count
-            history.message_count += 1
-            db.session.commit()
-
-            # Emit message received event
-            self.emit_chat_event(session_id, history_id, 'message_received', {
-                'message_id': user_msg.id,
-                'role': user_msg.role,
-                'content': user_msg.content_json,
-                'timestamp': user_msg.created_at.isoformat()
-            })
-
-            # Emit message processing started event
-            self.emit_llm_event(session_id, history_id, 'message_processing', 'Processing your message...')
-
-            # Create EMPTY assistant message placeholder immediately
-            asst_msg = self._create_assistant_placeholder(history_id)
-
-            # Return BOTH message IDs immediately
-            response_data = {
-                'data': {
-                    'user_message_id': user_msg.id,
-                    'assistant_message_id': asst_msg.id,
-                    'status': 'processing',
-                    'websocket_channel': f'chat/{session_id}/{history_id}'
-                }
-            }
-
-            # Start async processing in thread pool AFTER response
-            self._submit_message_for_async_processing(
-                user_msg.id, asst_msg.id, session_id, history_id, session.persona.id
-            )
-
-            return jsonify(response_data)
-        except Exception as exc:  # noqa: BLE001
-            db.session.rollback()
-            return self._format_error_response(str(exc), 500)
 
     @expose(
         '/sessions/{id}/retry',

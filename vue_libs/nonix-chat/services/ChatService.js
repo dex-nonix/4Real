@@ -78,11 +78,19 @@ export default class ChatService extends BaseApiService {
     return response.data  
   }
 
-  async sendMessageToHistory(sessionId, historyId, content) {
-    const response = await this.post(`/chat/sessions/${sessionId}/send`, {
-      content: content
-    })
-    return response.data  
+  async sendMessage(sessionId, historyId, content) {
+    // historyId is MANDATORY parameter
+    let url;
+    if (historyId) {
+        // Specific history
+        url = `/chat/sessions/${sessionId}/histories/${historyId}/send`;
+    } else {
+        // Current history (extracted by backend)
+        url = `/chat/sessions/${sessionId}/send`;
+    }
+
+    const response = await this.post(url, { content: content });
+    return response.data;
   }
 
   // Persona Management
@@ -119,42 +127,11 @@ export default class ChatService extends BaseApiService {
     return response.data  
   }
 
-  async executeTool(personaId, toolName, toolArgs, historyId, userMessageId, sessionId = null) {
-    
-    // If sessionId not provided, try to derive it from historyId
-    let finalSessionId = sessionId;
-    if (!finalSessionId && historyId) {
-      finalSessionId = await this.getSessionIdFromHistory(historyId);
-    }
-    
-    const response = await this.post(`/chat/personas/${personaId}/tools/execute`, {
-      tool_name: toolName,
-      args: toolArgs,
-      history_id: historyId,
-      message_id: userMessageId,
-      session_id: finalSessionId  // ✅ ADDED: session_id for WebSocket events
-    })
-    return response.data  
-  }
-
   // MCP Status
   async mcpStatus() {
-    
+
     const response = await this.get('/chat/mcp/servers/status')
-    return response.data  
-  }
-
-
-  async getSessionIdFromHistory(historyId) {    
-    const sessionsResponse = await this.getSessions()
-    if (sessionsResponse && Array.isArray(sessionsResponse)) {
-      for (const session of sessionsResponse) {
-        if (session.histories && session.histories.some(h => h.id === historyId)) {
-          return session.id
-        }
-      }
-    }
-    return null
+    return response.data
   }
 
 }
