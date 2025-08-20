@@ -98,14 +98,14 @@ class ToolExecutionMixin(WebSocketProtocol):
                 history = ChatHistory.query.get(history_id)
                 if history:
                     session_id = history.session_id
-                    print(f"🔍 Derived session_id {session_id} from history_id {history_id}")
+                    self._logger.debug(f"Derived session_id {session_id} from history_id {history_id}")
 
             # Emit tool execution started event using protocol method
             if session_id and history_id:
-                print(f"🔌 Emitting WebSocket event: tool_status started for channel chat/{session_id}/{history_id}")
+                self._logger.info(f"Emitting WebSocket event: tool_status started for channel chat/{session_id}/{history_id}")
                 self.emit_tool_event(session_id, history_id, tool_name, 'started', args=tool_args)
             else:
-                print(f"⚠️  Cannot emit WebSocket event: session_id={session_id}, history_id={history_id}")
+                self._logger.error(f"Cannot emit WebSocket event: session_id={session_id}, history_id={history_id}")
 
             persona = Persona.query.filter_by(id=persona_id).first()
             if not persona:
@@ -131,11 +131,11 @@ class ToolExecutionMixin(WebSocketProtocol):
 
             # Emit tool execution completed event using protocol method
             if session_id and history_id:
-                print(f"🔌 Emitting WebSocket event: tool_status completed for channel chat/{session_id}/{history_id}")
+                self._logger.info(f"Emitting WebSocket event: tool_status completed for channel chat/{session_id}/{history_id}")
                 self.emit_tool_event(session_id, history_id, tool_name, 'completed', result=exec_result)
             else:
-                print(
-                    f"⚠️  Cannot emit WebSocket event: tool_status completed: session_id={session_id}, history_id={history_id}")
+                self._logger.error(
+                    f"Cannot emit WebSocket event: tool_status completed: session_id={session_id}, history_id={history_id}")
 
             # Update log if it exists
             if log:
@@ -165,11 +165,11 @@ class ToolExecutionMixin(WebSocketProtocol):
         except Exception as exc:  # noqa: BLE001
             # Emit error event using protocol method
             if session_id and history_id:
-                print(f"🔌 Emitting WebSocket event: tool_status failed for channel chat/{session_id}/{history_id}")
+                self._logger.error(f"Emitting WebSocket event: tool_status failed for channel chat/{session_id}/{history_id}")
                 self.emit_tool_event(session_id, history_id, tool_name, 'failed', error=str(exc))
             else:
-                print(
-                    f"⚠️  Cannot emit WebSocket event: tool_status failed: session_id={session_id}, history_id={history_id}")
+                self._logger.error(
+                    f"Cannot emit WebSocket event: tool_status failed: session_id={session_id}, history_id={history_id}")
 
             db.session.rollback()
             return jsonify({'error': str(exc)}), 500

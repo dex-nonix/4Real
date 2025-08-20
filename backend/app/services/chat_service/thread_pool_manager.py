@@ -47,7 +47,7 @@ class ChatThreadPoolManager:
         
         Args:
             max_workers: Maximum number of worker threads
-            thread_name_prefix: Prefix for thread names
+            thread_name_prefix: Prefix for thread namesiuger
             monitoring_interval: Monitoring check interval in seconds
             log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
         """
