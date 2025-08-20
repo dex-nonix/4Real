@@ -13,6 +13,7 @@ import TextMessage from './message-types/TextMessage.vue';
 import SystemMessage from './message-types/SystemMessage.vue';
 import ToolMessage from './message-types/ToolMessage.vue';
 import UserMessage from './message-types/UserMessage.vue';
+import StreamingMessage from './message-types/StreamingMessage.vue';
 import Dialog from 'primevue/dialog';
 import ToolExecutionDialog from './ToolExecutionDialog.vue';
 import DataTable from 'primevue/datatable';
@@ -86,21 +87,21 @@ onMounted(() => {
   chatMessageTypeManager.registerMessageType('system', SystemMessage);
   chatMessageTypeManager.registerMessageType('tool', ToolMessage);
   chatMessageTypeManager.registerMessageType('user', UserMessage);
+  chatMessageTypeManager.registerMessageType('streaming', StreamingMessage);
   
-  // WebSocket Integration: Join chat room and listen for real-time events
+  // WebSocket Integration
   if (props.selectedSession && props.historyId) {
     const room = `chat/${props.selectedSession.id}/${props.historyId}`;
     
-    // Use SIMPLE WebSocket methods
     chatService.joinRoom(room);
     
-    // Listen for real-time events using SIMPLE methods
+    // Listen for real-time events
     chatService.onWebSocketEvent('llm_status', handleLLMStatus);
     chatService.onWebSocketEvent('tool_status', handleToolStatus);
     chatService.onWebSocketEvent('message_received', handleMessageReceived);
     chatService.onWebSocketEvent('message_processed', handleMessageProcessed);
     
-    // NEW: Add streaming event listeners
+    // Add streaming event listeners
     chatService.onWebSocketEvent('assistant_message_started', handleAssistantStarted);
     chatService.onWebSocketEvent('assistant_message_chunk', handleAssistantChunk);
     chatService.onWebSocketEvent('assistant_message_complete', handleAssistantComplete);
@@ -115,7 +116,7 @@ onUnmounted(() => {
   }
 });
 
-// WebSocket Event Handlers - NO NEW CLASSES
+// WebSocket Event Handlers
 const handleLLMStatus = (data) => {
   const { stage, message, timestamp } = data;
   console.log('LLM Status:', stage, message, timestamp);
@@ -144,15 +145,15 @@ const handleMessageProcessed = (data) => {
   updateMessageStatus(message_id, status);
 };
 
-// NEW: Streaming event handlers
+// Streaming event handlers
 const handleAssistantStarted = (data) => {
   console.log('Assistant Message Started:', data);
-  // Create empty assistant message in messages array
+  // Create empty assistant message
   const { message_id, status, metadata } = data;
   const assistantMessage = {
     id: message_id,
     role: 'assistant',
-    message_type: 'text',
+    message_type: 'streaming',
     content_json: { type: 'text', text: '' },
     status: 'streaming',
     created_at: new Date().toISOString()
@@ -187,11 +188,12 @@ const handleAssistantChunk = (data) => {
 
 const handleAssistantComplete = (data) => {
   console.log('Assistant Message Complete:', data);
-  // Mark message as complete
+  // Mark message as complete and change type to text
   const { message_id, status, metadata } = data;
   const messageIndex = messages.value.findIndex(m => m.id === message_id);
   if (messageIndex !== -1) {
     messages.value[messageIndex].status = 'complete';
+    messages.value[messageIndex].message_type = 'text';
   }
   
   // Update streaming state
@@ -244,7 +246,7 @@ watch([() => props.selectedSession, () => props.historyId], ([newSession, newHis
     chatService.onWebSocketEvent('message_received', handleMessageReceived);
     chatService.onWebSocketEvent('message_processed', handleMessageProcessed);
     
-    // NEW: Re-attach streaming event listeners
+    // Re-attach streaming event listeners
     chatService.onWebSocketEvent('assistant_message_started', handleAssistantStarted);
     chatService.onWebSocketEvent('assistant_message_chunk', handleAssistantChunk);
     chatService.onWebSocketEvent('assistant_message_complete', handleAssistantComplete);
@@ -527,7 +529,13 @@ const clearLocalMessages = () => {
 
 // Get the appropriate component for each message
 const getMessageComponent = (message) => {
-  const messageType = message.message_type || 'text';
+  let messageType = message.message_type || 'text';
+  
+  // Detect streaming messages automatically
+  if (message.role === 'assistant' && message.status === 'streaming') {
+    messageType = 'streaming';
+  }
+  
   const component = chatMessageTypeManager.getMessageType(messageType);
   return component;
 };
@@ -539,12 +547,12 @@ const hasValidMessageType = (message) => {
   return hasType;
 };
 
-// NEW: Check if message is currently streaming
+// Check if message is currently streaming
 const isMessageStreaming = (messageId) => {
   return streamingStatus.value.get(messageId) === 'streaming';
 };
 
-// NEW: Get streaming content for a message
+// Get streaming content for a message
 const getStreamingContent = (messageId) => {
   const streamingData = streamingMessages.value.get(messageId);
   return streamingData ? streamingData.content : '';
@@ -561,7 +569,7 @@ defineExpose({
   refreshMessages: () => loadMessages(props.historyId),
   triggerRefresh: () => loadMessages(props.historyId),
   
-  // NEW: Expose streaming methods
+  // Expose streaming methods
   isMessageStreaming,
   getStreamingContent,
   getStreamingStatus: () => Object.fromEntries(streamingStatus.value),
@@ -595,7 +603,7 @@ defineExpose({
         </div>
       </div>
       
-      <!-- NEW: Streaming Status -->
+      <!-- Streaming Status -->
       <div v-if="Array.from(streamingStatus.values()).some(status => status === 'streaming')" class="streaming-status mt-2">
         <div class="flex align-items-center gap-2">
           <i class="pi pi-spin pi-spinner text-warning"></i>
@@ -634,14 +642,7 @@ defineExpose({
           </template>
         </MessageContainer>
         
-        <!-- NEW: Streaming indicator for assistant messages -->
-        <div v-if="message.role === 'assistant' && streamingStatus.get(message.id) === 'streaming'" 
-             class="streaming-indicator p-2 surface-100 border-round mb-2">
-          <div class="flex align-items-center gap-2">
-            <i class="pi pi-spin pi-spinner text-warning text-sm"></i>
-            <span class="text-xs text-warning">AI is typing...</span>
-          </div>
-        </div>
+        <!-- StreamingMessage component handles its own streaming indicators -->
       </div>
     </div>
 

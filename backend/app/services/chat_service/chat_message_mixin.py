@@ -329,11 +329,9 @@ class ChatMessageMixin(WebSocketProtocol):
     async def _process_message_async(self, user_msg_id: int, asst_msg_id: int, 
                                     session_id: int, history_id: int, persona_id: int):
         """Process message asynchronously using streaming."""
-        try:
-            # Initialize handlers
-            message_handler = StreamingMessageHandler(session_id, history_id)
-            event_manager = StreamingEventManager(self)
-            
+        message_handler = StreamingMessageHandler(session_id, history_id)
+        event_manager = StreamingEventManager(self)
+        try:    
             # Set the existing assistant message ID
             message_handler.assistant_message_id = asst_msg_id
             
@@ -366,30 +364,30 @@ class ChatMessageMixin(WebSocketProtocol):
             
             # Use streaming LLM client
             try:
-                async for chunk in run_chat_streaming(provider, mapping_obj, chat_history, 
+                async for message in run_chat_streaming(provider, mapping_obj, chat_history,
                                                     available_tools_info, persona_id):
                     # Handle each chunk
-                    if chunk.chunk_type == "text":
-                        if message_handler.update_content_safely(chunk.content):
-                            event_manager.emit_chunk_event(session_id, history_id, chunk, asst_msg_id)
+                    if message.chunk_type == "text":
+                        if message_handler.update_content_safely(message.content):
+                            event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
                         else:
                             # Log error but continue processing
-                            self._logger.error(f"Failed to update content for chunk: {chunk.content[:50]}...")
+                            self._logger.error(f"Failed to update content for chunk: {message.content[:50]}...")
                     
-                    elif chunk.chunk_type == "ai_start":
-                        event_manager.emit_chunk_event(session_id, history_id, chunk, asst_msg_id)
+                    elif message.chunk_type == "ai_start":
+                        event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
                     
-                    elif chunk.chunk_type == "tool_start":
+                    elif message.chunk_type == "tool_start":
                         event_manager.emit_tool_event(session_id, history_id, 
-                                                   chunk.metadata["tool_name"], "started")
+                                                   message.metadata["tool_name"], "started")
                     
-                    elif chunk.chunk_type == "tool_end":
+                    elif message.chunk_type == "tool_end":
                         event_manager.emit_tool_event(session_id, history_id, 
-                                                   chunk.metadata["tool_name"], "completed")
+                                                   message.metadata["tool_name"], "completed")
                     
-                    elif chunk.chunk_type == "complete":
+                    elif message.chunk_type == "complete":
                         message_handler.finalize_assistant_message()
-                        event_manager.emit_chunk_event(session_id, history_id, chunk, asst_msg_id)
+                        event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
                         break
                         
             except Exception as e:
@@ -401,20 +399,10 @@ class ChatMessageMixin(WebSocketProtocol):
                 self.emit_llm_event(session_id, history_id, 'processing_failed', error_msg)
                 
         except Exception as e:
-            # Handle general errors
             error_msg = f"Async processing error: {str(e)}"
-            # Try to cleanup if message handler exists
-            try:
-                if 'message_handler' in locals():
-                    message_handler.cleanup_on_error()
-            except:
-                pass  # Ignore cleanup errors
+            message_handler.cleanup_on_error()
             self.emit_llm_event(session_id, history_id, 'processing_failed', error_msg)
-            # Log the error
-            if hasattr(self, '_logger'):
-                self._logger.error(f"Error in _process_message_async: {e}", exc_info=True)
-            else:
-                print(f"Error in _process_message_async: {e}")
+            self._logger.error(f"Error in _process_message_async: {e}", exc_info=True)
 
     @expose(
         '/sessions/{session_id}/histories/{history_id}/send', 

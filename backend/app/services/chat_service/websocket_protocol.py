@@ -5,7 +5,10 @@ import logging
 
 class WebSocketProtocol(Protocol):
     """Protocol for WebSocket event emission - Python's way of defining contracts."""
-    
+
+    def submit_async_task(self, func, *args, **kwargs):
+        ...
+
     _logger: logging.Logger
     
     def emit_chat_event(self, session_id: int, history_id: int, event: str, data: dict) -> None:

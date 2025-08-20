@@ -58,57 +58,6 @@ class LCUserMessage(LCSeenMessage):
     type = "user"
 
 
-async def iter_messages_cb(events, callback):
-    seen_messages = {}
-
-    def put_msg(msg):
-        if msg.msg_id in seen_messages:
-            raise ValueError(f"Message ID {msg.msg_id} already exists")
-        seen_messages[msg.msg_id] = msg
-        return msg
-
-    def get_msg(msg_id, allow_none=False):
-        if allow_none:
-            return seen_messages.get(msg_id, None)
-        return seen_messages[msg_id]
-
-    async for event in events:
-        event_type = event.get("event")
-        run_id = event.get("run_id", None)
-
-        if event_type in ["on_chain_start", "on_chain_end"] and not len(event.get("parent_ids")):
-            if event_type == "on_chain_start":
-                await callback("start", put_msg(LCUserMessage(run_id, event["data"]["input"])))
-            else:
-                await callback("end", get_msg(run_id))
-
-        if event_type == "on_tool_start":
-            await callback("start", put_msg(LCToolMessage(
-                run_id,
-                event['name'],
-                event['data']['input'],
-            )))
-
-        elif event_type == "on_tool_end":
-            tool = get_msg(run_id)
-            tool.set_status("output", event["data"]["output"])
-            await callback("end", tool)
-
-        elif event_type == "on_chat_model_stream":
-            chunk = event["data"]["chunk"]
-            if chunk.content:
-                current_ai_message = get_msg(run_id, True)
-                if current_ai_message is None:
-                    await callback("start", put_msg(LCAIMessage(run_id, chunk.content)))
-                else:
-                    await callback("update", current_ai_message.add_chunk(chunk.content))
-
-        elif event_type == "on_chat_model_end":
-            cim = get_msg(run_id, True)
-            if cim:
-                await callback("end", cim)
-
-
 async def iter_messages(events):
     seen_messages = {}
 
