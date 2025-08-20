@@ -13,6 +13,7 @@ class ChatMessage(db.Model):
     role = db.Column(db.String(50), nullable=False)  # system|user|assistant|tool
     message_type = db.Column(db.String(50), nullable=False)  # text|tool_call|tool_result|image|file
     content_json = db.Column(db.JSON)  # Structured content
+    status = db.Column(db.String(50), nullable=False) 
     parent_message_id = db.Column(db.Integer, db.ForeignKey('chat_messages.id'), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
 
@@ -26,6 +27,7 @@ class ChatMessage(db.Model):
             'history_id': self.history_id,
             'role': self.role,
             'message_type': self.message_type,
+            'status': self.status,
             'content_json': self.content_json,
             'parent_message_id': self.parent_message_id,
             'created_at': self.created_at.isoformat() if self.created_at else None,
