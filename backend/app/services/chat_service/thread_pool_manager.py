@@ -132,8 +132,13 @@ class ChatThreadPoolManager:
             raise RuntimeError(error_msg)
         
         try:
-            # Submit to thread pool
-            future = self._executor.submit(func, *args, **kwargs)
+            # Wrap function with Flask application context to ensure database access works
+            def context_wrapper(*args, **kwargs):
+                with self.app.app_context():
+                    return func(*args, **kwargs)
+            
+            # Submit wrapped function to thread pool
+            future = self._executor.submit(context_wrapper, *args, **kwargs)
             
             # Track task
             with self._lock:

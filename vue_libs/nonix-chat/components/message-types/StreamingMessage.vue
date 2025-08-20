@@ -161,7 +161,7 @@ const hasError = computed(() => streamingStatus.value === 'error');
 </script>
 
 <template>
-  <div class="flex align-items-start" style="background-color: red;">
+  <div class="flex align-items-start">
     <div class="flex-grow-1">
       <p class="m-0 text-normal" style="hyphens: auto; word-break: break-word;">
         {{ displayContent }}
