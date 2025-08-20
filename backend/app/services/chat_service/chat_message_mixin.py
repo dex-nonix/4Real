@@ -337,6 +337,17 @@ class ChatMessageMixin(WebSocketProtocol):
             # Set the existing assistant message ID
             message_handler.assistant_message_id = asst_msg_id
             
+            # Validate message exists and database connection
+            if not message_handler.ensure_message_exists():
+                error_msg = "Assistant message not found or inaccessible"
+                self.emit_llm_event(session_id, history_id, 'processing_failed', error_msg)
+                return
+            
+            if not message_handler.check_database_connection():
+                error_msg = "Database connection unavailable"
+                self.emit_llm_event(session_id, history_id, 'processing_failed', error_msg)
+                return
+            
             # Get model info and tools
             model_info, provider, mapping_obj = self._resolve_ai_model(persona_id)
             available_tools_info = list_persona_tools(persona_id)
@@ -344,7 +355,7 @@ class ChatMessageMixin(WebSocketProtocol):
             if not model_info or not provider or not mapping_obj:
                 # No model available - mark as failed
                 error_msg = "AI model, provider, or mapping not available"
-                message_handler.finalize_assistant_message(error_msg)
+                message_handler.mark_as_error(error_msg)
                 event_manager.emit_chunk_event(session_id, history_id, 
                                             StreamingChunk(content="", chunk_type="complete", is_final=True),
                                             asst_msg_id)
@@ -359,8 +370,11 @@ class ChatMessageMixin(WebSocketProtocol):
                                                     available_tools_info, persona_id):
                     # Handle each chunk
                     if chunk.chunk_type == "text":
-                        message_handler.update_assistant_content(chunk.content)
-                        event_manager.emit_chunk_event(session_id, history_id, chunk, asst_msg_id)
+                        if message_handler.update_content_safely(chunk.content):
+                            event_manager.emit_chunk_event(session_id, history_id, chunk, asst_msg_id)
+                        else:
+                            # Log error but continue processing
+                            self._logger.error(f"Failed to update content for chunk: {chunk.content[:50]}...")
                     
                     elif chunk.chunk_type == "ai_start":
                         event_manager.emit_chunk_event(session_id, history_id, chunk, asst_msg_id)
@@ -381,13 +395,20 @@ class ChatMessageMixin(WebSocketProtocol):
             except Exception as e:
                 # Handle streaming errors
                 error_msg = f"Streaming error: {str(e)}"
-                message_handler.finalize_assistant_message(error_msg)
+                message_handler.mark_as_error(error_msg)
+                message_handler.cleanup_on_error()  # Clean up on error
                 event_manager.emit_streaming_error(session_id, history_id, error_msg, "streaming_error", asst_msg_id)
                 self.emit_llm_event(session_id, history_id, 'processing_failed', error_msg)
                 
         except Exception as e:
             # Handle general errors
             error_msg = f"Async processing error: {str(e)}"
+            # Try to cleanup if message handler exists
+            try:
+                if 'message_handler' in locals():
+                    message_handler.cleanup_on_error()
+            except:
+                pass  # Ignore cleanup errors
             self.emit_llm_event(session_id, history_id, 'processing_failed', error_msg)
             # Log the error
             if hasattr(self, '_logger'):
