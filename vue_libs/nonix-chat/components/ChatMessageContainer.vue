@@ -324,22 +324,26 @@ const onSend = async () => {
   if (!inputText.value?.trim() || !props.historyId || !chatService) return;
   
   try {
+    // ✅ FIXED: Send proper message type object
     const messageData = {
       historyId: props.historyId,
-      text: inputText.value.trim(),
+      content: {
+        type: 'chat',                    // ✅ EXPLICIT MESSAGE TYPE
+        text: inputText.value.trim()     // ✅ MESSAGE CONTENT
+      }
     };
-    
+
     // Save current input text for this session before clearing
     if (props.selectedSession?.id) {
       sessionInputTexts.value.set(props.selectedSession.id, inputText.value);
     }
-    
+
     // Emit event for parent component
     emit('sendMessage', messageData);
-    
+
     // Clear input after sending
     inputText.value = '';
-    
+
     // Reload messages to get the new message
     await loadMessages(props.historyId);
   } catch (error) {

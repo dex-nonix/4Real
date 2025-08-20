@@ -266,25 +266,29 @@ const handleSessionAdded = (newSession) => {
   addSuccess(`New session "${newSession.session_name || 'Unnamed'}" created successfully`);
 };
 
-// Handle message sending - FLAT DATA
+// Handle message sending - OBJECT WITH MESSAGE TYPE
 const handleSendMessage = async (messageData) => {
-  if (!messageData?.historyId || !chatService || !currentSessionId.value) {
+  if (!messageData?.historyId || !messageData?.content || !chatService || !currentSessionId.value) {
     addError('Cannot send message: Missing required data');
     return;
   }
-  
+
   try {
     isLoading.value = true;
     addInfo('Sending message...');
-    
-    // Send message using the chat service - FLAT DATA
-    const response = await chatService.sendMessageToHistory(currentSessionId.value, messageData.historyId, messageData.content || messageData.text);
+
+    // ✅ FIXED: Use correct API method with proper object payload
+    const response = await chatService.sendMessage(
+      currentSessionId.value,
+      messageData.historyId,
+      messageData.content  // ✅ OBJECT WITH MESSAGE TYPE
+    );
     console.log('Message sent successfully:', response);
     addSuccess('Message sent successfully');
-    
+
     // Simple refresh after sending
     await refreshMessages();
-    
+
   } catch (error) {
     console.error('Failed to send message:', error);
     addError('Failed to send message', error);
