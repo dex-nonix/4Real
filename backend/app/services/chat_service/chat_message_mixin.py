@@ -359,10 +359,10 @@ class ChatMessageMixin(WebSocketProtocol):
                     # Handle each chunk
                     if chunk.chunk_type == "text":
                         message_handler.update_assistant_content(chunk.content)
-                        event_manager.emit_chunk_event(session_id, history_id, chunk)
+                        event_manager.emit_chunk_event(session_id, history_id, chunk, asst_msg_id)
                     
                     elif chunk.chunk_type == "ai_start":
-                        event_manager.emit_chunk_event(session_id, history_id, chunk)
+                        event_manager.emit_chunk_event(session_id, history_id, chunk, asst_msg_id)
                     
                     elif chunk.chunk_type == "tool_start":
                         event_manager.emit_tool_event(session_id, history_id, 
@@ -374,13 +374,14 @@ class ChatMessageMixin(WebSocketProtocol):
                     
                     elif chunk.chunk_type == "complete":
                         message_handler.finalize_assistant_message()
-                        event_manager.emit_chunk_event(session_id, history_id, chunk)
+                        event_manager.emit_chunk_event(session_id, history_id, chunk, asst_msg_id)
                         break
                         
             except Exception as e:
                 # Handle streaming errors
                 error_msg = f"Streaming error: {str(e)}"
                 message_handler.finalize_assistant_message(error_msg)
+                event_manager.emit_streaming_error(session_id, history_id, error_msg, "streaming_error", asst_msg_id)
                 self.emit_llm_event(session_id, history_id, 'processing_failed', error_msg)
                 
         except Exception as e:
