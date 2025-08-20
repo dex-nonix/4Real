@@ -1,10 +1,11 @@
 <template>
   <Dialog
-    v-model:visible="visible"
+    :visible="visible"
     header="Available Tools"
     modal
     :style="{ width: '90vw', maxWidth: '700px' }"
     class="p-dialog-sm"
+    @update:visible="$emit('update:visible', $event)"
   >
     <div v-if="tools.length > 0">
       <DataTable

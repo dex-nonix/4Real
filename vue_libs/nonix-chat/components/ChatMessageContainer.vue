@@ -687,8 +687,9 @@ defineExpose({
 
     <!-- Tools Dialog -->
     <AvailableToolsDialog
-      v-model:visible="showToolsDialog"
+      :visible="showToolsDialog"
       :tools="availableTools"
+      @update:visible="showToolsDialog = $event"
       @tool-selected="selectTool"
     />
 
