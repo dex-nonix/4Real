@@ -5,8 +5,8 @@ import importlib
 import logging
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
 from langchain.tools import StructuredTool
-from langchain.agents import create_react_agent
-from langchain.prompts import PromptTemplate
+from langgraph.prebuilt import create_react_agent
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from .tool_runtime import build_persona_tool_map
 from .internal_tool_registry import registry as internal_tool_registry
 from pydantic import BaseModel, Field
@@ -138,42 +138,50 @@ def run_chat(provider: Any, mapping: Any, messages: List[Dict[str, Any]], availa
         module = importlib.import_module(module_name)
         client_cls = getattr(module, class_name)
     except Exception as exc:  # noqa: BLE001
+        logger.error(f"Provider import error: {exc}", exc_info=True)
         return { 'type': 'text', 'text': f'Provider import error: {exc}' }
 
     try:
         client = client_cls(**kwargs)
         
-        # If we have tools, create a LangChain agent
-        if available_tools_info and persona_id:
+        # Always create LangChain agent (with or without tools)
+        if persona_id:
             try:
-                # Create LangChain tools using utility function
-                langchain_tools = create_langchain_tools(persona_id, available_tools_info)
+                # Create LangChain tools (can be empty list if no tools)
+                langchain_tools = []
+                if available_tools_info is not None:
+                    langchain_tools = create_langchain_tools(persona_id, available_tools_info)
+                    logger.info(f"🔧 Created {len(langchain_tools)} LangChain tools for persona {persona_id}")
                 
-                logger.info(f"🔧 Created {len(langchain_tools)} LangChain tools for persona {persona_id}")
+                # Get the persona for system prompt
+                from ..models.persona import Persona
+                persona = Persona.query.filter_by(id=persona_id).first()
+                persona_system_prompt = persona.system_prompt if persona else ""
                 
-                # Create the ReAct agent with tools
-                react_prompt = PromptTemplate(
-                    input_variables=["tool_names", "tools", "input", "agent_scratchpad"],
-                    template="""You are a helpful AI assistant with access to tools.
-
-Available tools: {tool_names}
-
-Tool descriptions: {tools}
-
-Question: {input}
-
-{agent_scratchpad}
-
-Use tools when needed to answer the question."""
-                )
+                # Create the ChatPromptTemplate with persona system prompt
+                if persona_system_prompt:
+                    chat_prompt = ChatPromptTemplate.from_messages([
+                        ("system", persona_system_prompt),
+                        MessagesPlaceholder(variable_name="chat_history"),
+                        ("human", "{input}")
+                    ])
+                else:
+                    # No system prompt - just chat history and input
+                    chat_prompt = ChatPromptTemplate.from_messages([
+                        MessagesPlaceholder(variable_name="chat_history"),
+                        ("human", "{input}")
+                    ])
                 
+                # Create the ReAct agent (no prompt needed)
                 agent = create_react_agent(
                     client,
-                    langchain_tools,
-                    prompt=react_prompt
+                    langchain_tools
                 )
                 
                 logger.info(f"🔧 Created ReAct agent with {len(langchain_tools)} tools")
+                
+                # Chain the prompt with the agent
+                new_agent = chat_prompt | agent
                 
                 # Get the last user message
                 last_user_msg = next((m for m in reversed(messages) if m.get('role') == 'user'), None)
@@ -196,16 +204,10 @@ Use tools when needed to answer the question."""
                         elif role == 'system':
                             conversation_history.append(f"System: {content}")
                     
-                    # Prepare tool information for the prompt
-                    tool_names = [tool.name for tool in langchain_tools]
-                    tool_descriptions = [f"{tool.name}: {tool.description}" for tool in langchain_tools]
-                    
-                    # Run the agent with all required placeholder values
-                    response = agent.invoke({
-                        "tool_names": ", ".join(tool_names),
-                        "tools": "\n".join(tool_descriptions),
-                        "input": user_content,
-                        "agent_scratchpad": ""  # Empty scratchpad to start
+                    # Run the chained agent
+                    response = new_agent.invoke({
+                        "chat_history": conversation_history,
+                        "input": user_content
                     })
                     
                     # Extract response
@@ -218,10 +220,6 @@ Use tools when needed to answer the question."""
                 else:
                     return { 'type': 'text', 'text': 'No user message found' }
                     
-            except ImportError as e:
-                logger.warning(f"🔧 LangChain tools not available: {e}")
-                # Fall back to basic client call
-                pass
             except Exception as e:
                 logger.error(f"🔧 Error creating LangChain agent: {e}", exc_info=True)
                 # Fall back to basic client call
@@ -230,6 +228,7 @@ Use tools when needed to answer the question."""
         # Fallback: use basic client method (no tools)
         method = getattr(client, method_name, None)
         if not callable(method):
+            logger.error(f"Client method '{method_name}' not found on {class_name}")
             return { 'type': 'text', 'text': f"Provider method '{method_name}' not found on {class_name}" }
         
         # Convert to LC messages (simple text only)
@@ -256,6 +255,7 @@ Use tools when needed to answer the question."""
         return { 'type': 'text', 'text': text or '' }
         
     except Exception as exc:  # noqa: BLE001
+        logger.error(f"Provider error: {exc}", exc_info=True)
         return { 'type': 'text', 'text': f'Provider error: {exc}' }
 
 
