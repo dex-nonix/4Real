@@ -9,6 +9,7 @@ from ..tool_runtime import build_persona_tool_map, execute_tool, list_persona_to
 from ... import db
 from ...decorators import expose
 from ...models.chat_message import ChatMessage
+from ...models.chat_history import ChatHistory
 from ...models.mcp_server import MCPServer
 from ...models.persona import Persona
 from ...models.tool_invocation_log import ToolInvocationLog
@@ -94,25 +95,35 @@ class ToolExecutionMixin(WebSocketProtocol):
 
             # Fallback: derive session_id from history_id if not provided
             if not session_id and history_id:
-                from ...models.chat_history import ChatHistory
                 history = ChatHistory.query.get(history_id)
                 if history:
                     session_id = history.session_id
                     self._logger.debug(f"Derived session_id {session_id} from history_id {history_id}")
 
-            # Emit tool execution started event using protocol method
-            if session_id and history_id:
-                self._logger.info(f"Emitting WebSocket event: tool_status started for channel chat/{session_id}/{history_id}")
-                self.emit_tool_event(session_id, history_id, tool_name, 'started', args=tool_args)
-            else:
-                self._logger.error(f"Cannot emit WebSocket event: session_id={session_id}, history_id={history_id}")
+            # Check session and history FIRST (required for any tool execution)
+            if not session_id or not history_id:
+                self._logger.error(f"Tool execution failed: Missing session_id={session_id}, history_id={history_id}")
+                return jsonify({'error': 'Missing session_id or history_id'}), 400
 
+            # Check persona exists
             persona = Persona.query.filter_by(id=persona_id).first()
             if not persona:
+                self._logger.error(f"Tool execution failed: Persona {persona_id} not found")
+                # Emit failure event (we have session_id and history_id now)
+                self.emit_tool_event(session_id, history_id, tool_name, 'failed', error='Persona not found')
                 return jsonify({'error': 'Not found'}), 404
+
+            # Check if tool is allowed
             tools = build_persona_tool_map(persona.id)
             if tool_name not in tools:
+                self._logger.error(f"Tool execution failed: Tool {tool_name} not allowed for persona {persona_id}")
+                # Emit failure event
+                self.emit_tool_event(session_id, history_id, tool_name, 'failed', error='Tool not allowed')
                 return jsonify({'error': 'Tool not allowed'}), 403
+
+            # NOW emit started event (after we know everything will work)
+            self._logger.info(f"Tool execution starting: {tool_name} for persona {persona_id}")
+            self.emit_tool_event(session_id, history_id, tool_name, 'started', args=tool_args)
 
             # Only create log entry if we have required fields
             log = None
@@ -131,8 +142,11 @@ class ToolExecutionMixin(WebSocketProtocol):
 
             # Emit tool execution completed event using protocol method
             if session_id and history_id:
-                self._logger.info(f"Emitting WebSocket event: tool_status completed for channel chat/{session_id}/{history_id}")
-                self.emit_tool_event(session_id, history_id, tool_name, 'completed', result=exec_result)
+                try:
+                    self._logger.info(f"Emitting WebSocket event: tool_status completed for channel chat/{session_id}/{history_id}")
+                    self.emit_tool_event(session_id, history_id, tool_name, 'completed', result=exec_result)
+                except Exception as emit_error:
+                    self._logger.error(f"FAILED to emit WebSocket event tool_status completed: {emit_error}")
             else:
                 self._logger.error(
                     f"Cannot emit WebSocket event: tool_status completed: session_id={session_id}, history_id={history_id}")
