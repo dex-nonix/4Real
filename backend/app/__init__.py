@@ -53,6 +53,63 @@ def create_app() -> Flask:
     # Make SocketIO available as app extension
     app.extensions['socketio'] = socketio
 
+    # Register WebSocket event handlers IMMEDIATELY after SocketIO creation
+    @socketio.on('connect')
+    def handle_connect():
+        app.logger.info(f"WebSocket client connected: {request.sid}")
+
+    @socketio.on('disconnect')
+    def handle_disconnect():
+        app.logger.info(f"WebSocket client disconnected: {request.sid}")
+
+    @socketio.on('join')
+    def handle_join_room(room):
+        if room:
+            app.logger.info(f"DEBUG: Attempting to join room '{room}' for client {request.sid}")
+            try:
+                join_room(room, namespace="/")
+                app.logger.info(f"DEBUG: join_room() called successfully for room '{room}'")
+                app.logger.info(f"Client {request.sid} joined room: {room}")
+                
+                # Debug: Check if room was actually created
+                if hasattr(socketio, 'server') and hasattr(socketio.server, 'manager'):
+                    manager = socketio.server.manager
+                    try:
+                        all_rooms = manager.rooms
+                        app.logger.info(f"DEBUG: After join, total rooms: {len(all_rooms)}")
+                        if all_rooms:
+                            app.logger.info(f"DEBUG: Active rooms: {list(all_rooms.keys())}")
+                        
+                        if room in all_rooms:
+                            room_data = all_rooms[room]
+                            if hasattr(room_data, 'sids'):
+                                room_sids = list(room_data.sids)
+                                app.logger.info(f"DEBUG: Room '{room}' now has {len(room_sids)} connections: {room_sids}")
+                            else:
+                                app.logger.info(f"DEBUG: Room '{room}' created with data: {room_data}")
+                        else:
+                            app.logger.warning(f"DEBUG: Room '{room}' was NOT created!")
+                            app.logger.warning(f"DEBUG: Available rooms: {list(all_rooms.keys()) if all_rooms else 'None'}")
+                    except Exception as e:
+                        app.logger.error(f"DEBUG: Error checking room status: {e}")
+                else:
+                    app.logger.warning(f"DEBUG: SocketIO server or manager not accessible")
+            except Exception as e:
+                app.logger.error(f"DEBUG: Error in join_room: {e}")
+        else:
+            app.logger.warning(f"Client {request.sid} tried to join room but no room specified")
+
+    @socketio.on('leave')
+    def handle_leave_room(room):
+        """Handle client leaving a room"""
+        if room:
+            leave_room(room, namespace="/")
+            app.logger.info(f"Client {request.sid} left room: {room}")
+        else:
+            app.logger.warning(f"Client {request.sid} tried to leave room but no room specified")
+
+    app.logger.info("WebSocket event handlers registered successfully!")
+
     # COMPREHENSIVE ERROR HANDLING - Catch everything!
 
     # 1. Global exception handler for ALL unhandled exceptions
@@ -100,31 +157,7 @@ def create_app() -> Flask:
             }), 500
         return None  # Let other handlers deal with it
 
-    # 4. WebSocket event handlers
-    @socketio.on('connect')
-    def handle_connect():
-        app.logger.info(f"WebSocket client connected: {request.sid}")
-
-    @socketio.on('disconnect')
-    def handle_disconnect():
-        app.logger.info(f"WebSocket client disconnected: {request.sid}")
-
-    @socketio.on('join')
-    def handle_join_room(room):
-        if room:
-            join_room(room, namespace="/")
-            app.logger.info(f"Client {request.sid} joined room: {room}")
-        else:
-            app.logger.warning(f"Client {request.sid} tried to join room but no room specified")
-
-    @socketio.on('leave')
-    def handle_leave_room(room):
-        """Handle client leaving a room"""
-        if room:
-            leave_room(room, namespace="/")
-            app.logger.info(f"Client {request.sid} left room: {room}")
-        else:
-            app.logger.warning(f"Client {request.sid} tried to leave room but no room specified")
+    # 4. WebSocket event handlers - Will be registered after APIRouter initialization
 
     # Initialize APIRouter with SocketIO instance
     api_router = APIRouter(socketio_instance=socketio)
@@ -180,6 +213,8 @@ def create_app() -> Flask:
             api_router.register_service('file-categories', FileCategoryService)
             api_router.register_service('files', FileService)
             api_router.register_service('file-links', FileLinkService)
+
+
 
             app.logger.info("Creating database tables...")
             db.create_all()
