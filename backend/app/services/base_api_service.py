@@ -9,46 +9,37 @@ class BaseApiService(ABC):
     def __init__(self):
         """Initialize WebSocket integration."""
         self._socketio = None  # Will be set by APIRouter during registration
+        self._logger = None  # Will be set by subclasses
 
     def set_socketio(self, socketio_instance):
         """Set SocketIO instance for WebSocket communication."""
         self._socketio = socketio_instance
 
-    def send_to_channel(self, channel: str, event: str, data: dict, room: str = None):
+    def send_to_channel(self, channel: str, event: str, data: dict):
         """
         Send event to a specific WebSocket channel.
-        
+
         Args:
             channel: Channel path (e.g., 'service/channel/123')
             event: Event name (e.g., 'status_updated')
             data: Event data payload
             room: Optional room name (defaults to channel)
         """
+        self._websocket_emit(event, data, channel)
+
+
+    def _websocket_emit(self, event, data: dict, target: str = None):
+        _socketio = self._socketio
         if not self._socketio:
             self._logger.error(f"CRITICAL ERROR: SocketIO not initialized for {self.__class__.__name__} - WebSocket communication disabled!")
             return
-
-        # Use channel as room if no specific room provided
-        target_room = room or channel
-
-        # Emit event to specific room (NO broadcasting!)
-        self._socketio.emit(event, data, room=target_room)
-
-    def send_to_room(self, room: str, event: str, data: dict):
-        """
-        Send event to a specific room.
-        
-        Args:
-            room: Room name (e.g., 'service/room/123')
-            event: Event name (e.g., 'notification')
-            data: Event data payload
-        """
-        if not self._socketio:
-            self._logger.error(f"CRITICAL ERROR: SocketIO not initialized for {self.__class__.__name__} - WebSocket communication disabled!")
-            return
-
-        # Emit event to specific room
-        self._socketio.emit(event, data, room=room)
+        self._logger.debug(f"Emitting event '{event}' to room '{target}' with data: {data}")
+        try:
+            self._socketio.emit(event, data, room=target, namespace='/')
+            self._logger.debug(f"Successfully emitted event '{event}' to room '{target}'")
+        except Exception as e:
+            self._logger.error(f"Failed to emit event '{event}' to room '{target}': {e}")
+            raise
 
     def get_exposed_ws_methods(self) -> List[Dict[str, Any]]:
         """Get all @expose_ws methods with their metadata."""
