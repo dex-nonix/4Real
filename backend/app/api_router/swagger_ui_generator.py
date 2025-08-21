@@ -11,7 +11,7 @@ class SwaggerUIGenerator:
     def __init__(self) -> None:
         pass
 
-    def generate_swagger_ui(self, current_filter: str = None) -> str:
+    async def generate_swagger_ui(self, current_filter: str = None) -> str:
         """Generate Swagger UI HTML page with service filtering using Jinja2 template"""
 
         # Get the template file path

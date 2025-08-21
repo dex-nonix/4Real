@@ -13,7 +13,7 @@ from ...models.persona import Persona
 class ChatSessionMixin:
     """Mixin for chat session management operations."""
 
-    def _get_sessions_with_history_counts(self, persona_id: int = None, session_id: int = None):
+    async def _get_sessions_with_history_counts(self, persona_id: int = None, session_id: int = None):
         """Utility method to get sessions with history counts using single JOIN query."""
         from sqlalchemy import func
 
@@ -65,7 +65,7 @@ class ChatSessionMixin:
             }
         }
     )
-    def create_session(self, req: Request):
+    async def create_session(self, req: Request):
         """Create a new chat session."""
         try:
             payload = req.get_json(silent=True) or {}
@@ -144,11 +144,11 @@ class ChatSessionMixin:
             }
         }
     )
-    def list_sessions(self, req: Request):
+    async def list_sessions(self, req: Request):
         """List all active chat sessions."""
         try:
             # Use utility method for single JOIN query with COUNT
-            sessions_with_counts = self._get_sessions_with_history_counts().all()
+            sessions_with_counts = (await self._get_sessions_with_history_counts()).all()
 
             result = []
             for session, history_count in sessions_with_counts:
@@ -183,11 +183,11 @@ class ChatSessionMixin:
             }
         }
     )
-    def get_session(self, req: Request, id: int):  # noqa: A002
+    async def get_session(self, req: Request, id: int):  # noqa: A002
         """Get a specific chat session by ID."""
         try:
             # Use utility method for single JOIN query with COUNT
-            session_with_count = self._get_sessions_with_history_counts(session_id=id).first()
+            session_with_count = await self._get_sessions_with_history_counts(session_id=id).first()
 
             if not session_with_count:
                 return jsonify({'error': 'Session not found or inactive'}), 404
@@ -231,7 +231,7 @@ class ChatSessionMixin:
             }
         }
     )
-    def update_session(self, req: Request, id: int):  # noqa: A002
+    async def update_session(self, req: Request, id: int):  # noqa: A002
         """Update a chat session."""
         try:
             session = ChatSession.query.filter_by(id=id, is_active=True).first()
@@ -262,7 +262,7 @@ class ChatSessionMixin:
             }
         }
     )
-    def delete_session(self, req: Request, id: int):  # noqa: A002
+    async def delete_session(self, req: Request, id: int):  # noqa: A002
         """Delete a chat session (soft delete by setting is_active=False)."""
         try:
             session = ChatSession.query.filter_by(id=id, is_active=True).first()
@@ -304,7 +304,7 @@ class ChatSessionMixin:
             }
         }
     )
-    def get_persona_sessions(self, req: Request, persona_id: int):
+    async def get_persona_sessions(self, req: Request, persona_id: int):
         """Get all sessions for a specific persona."""
         try:
             persona = Persona.query.filter_by(id=persona_id, is_active=True).first()
@@ -312,7 +312,7 @@ class ChatSessionMixin:
                 return jsonify({'error': 'Persona not found or inactive'}), 404
 
             # Use utility method for single JOIN query with COUNT
-            sessions_with_counts = self._get_sessions_with_history_counts(persona_id=persona_id).all()
+            sessions_with_counts = await self._get_sessions_with_history_counts(persona_id=persona_id).all()
 
             sessions_data = []
             for session, history_count in sessions_with_counts:
@@ -354,7 +354,7 @@ class ChatSessionMixin:
             }
         }
     )
-    def start_chat_with_persona(self, req: Request, persona_id: int):
+    async def start_chat_with_persona(self, req: Request, persona_id: int):
         """Start a new chat session with a persona."""
         try:
             persona = Persona.query.filter_by(id=persona_id, is_active=True).first()

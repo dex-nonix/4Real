@@ -9,7 +9,7 @@ class CrudSwaggerGenerator:
         self.service = service
         self.service_name = service_name
 
-    def method_to_swagger(self, method: Callable, service_name: str) -> Dict[str, Any]:
+    async def method_to_swagger(self, method: Callable, service_name: str) -> Dict[str, Any]:
         """ONLY CRUD service overrides this - adds dynamic model schemas."""
 
         # Get base method info from BaseApiService
@@ -23,7 +23,7 @@ class CrudSwaggerGenerator:
 
             # Generate schemas based on method type
             if method_name == 'create':
-                create_schema = self._build_create_schema(model, config)
+                create_schema = await self._build_create_schema(model, config)
                 method_info['schemas'] = {
                     f"{self.service.__class__.__name__}Create": create_schema
                 }
@@ -39,7 +39,7 @@ class CrudSwaggerGenerator:
                 }
 
             elif method_name in ['read_one', 'list_all', 'search', 'selector']:
-                response_schema = self._build_response_schema(model, config)
+                response_schema = await self._build_response_schema(model, config)
                 method_info['schemas'] = {
                     f"{self.service.__class__.__name__}Response": response_schema
                 }
@@ -55,8 +55,8 @@ class CrudSwaggerGenerator:
 
             elif method_name == 'update':
                 # Add update and response schemas
-                update_schema = self._build_update_schema(model, config)
-                response_schema = self._build_response_schema(model, config)
+                update_schema = await self._build_update_schema(model, config)
+                response_schema = await self._build_response_schema(model, config)
                 method_info['schemas'] = {
                     f"{self.service.__class__.__name__}Update": update_schema,
                     f"{self.service.__class__.__name__}Response": response_schema
@@ -83,7 +83,7 @@ class CrudSwaggerGenerator:
 
         return method_info
 
-    def _generate_model_schemas(self) -> Dict[str, Any]:
+    async def _generate_model_schemas(self) -> Dict[str, Any]:
         """Generate OpenAPI schemas from service.model + service.config."""
         if not hasattr(self.service, 'model'):
             return {}
@@ -95,23 +95,23 @@ class CrudSwaggerGenerator:
         schemas = {}
 
         # Create schema
-        create_schema = self._build_create_schema(model, config)
+        create_schema = await self._build_create_schema(model, config)
         if create_schema:
             schemas[f"{self.service.__class__.__name__}Create"] = create_schema
 
         # Update schema
-        update_schema = self._build_update_schema(model, config)
+        update_schema = await self._build_update_schema(model, config)
         if update_schema:
             schemas[f"{self.service.__class__.__name__}Update"] = update_schema
 
         # Response schema
-        response_schema = self._build_response_schema(model, config)
+        response_schema = await self._build_response_schema(model, config)
         if response_schema:
             schemas[f"{self.service.__class__.__name__}Response"] = response_schema
 
         return schemas
 
-    def _build_create_schema(self, model: Any, config: Dict[str, Any]) -> Dict[str, Any]:
+    async def _build_create_schema(self, model: Any, config: Dict[str, Any]) -> Dict[str, Any]:
         """Build schema for create operations."""
         schema = {
             "type": "object",
@@ -136,7 +136,7 @@ class CrudSwaggerGenerator:
 
         return schema
 
-    def _build_update_schema(self, model: Any, config: Dict[str, Any]) -> Dict[str, Any]:
+    async def _build_update_schema(self, model: Any, config: Dict[str, Any]) -> Dict[str, Any]:
         """Build schema for update operations."""
         schema = {
             "type": "object",
@@ -156,7 +156,7 @@ class CrudSwaggerGenerator:
 
         return schema
 
-    def _build_response_schema(self, model: Any, config: Dict[str, Any]) -> Dict[str, Any]:
+    async def _build_response_schema(self, model: Any, config: Dict[str, Any]) -> Dict[str, Any]:
         """Build schema for response operations."""
         schema = {
             "type": "object",
@@ -177,7 +177,7 @@ class CrudSwaggerGenerator:
 
         return schema
 
-    def _column_to_openapi_schema(self, column: Any) -> Dict[str, Any]:
+    async def _column_to_openapi_schema(self, column: Any) -> Dict[str, Any]:
         """Convert SQLAlchemy column to OpenAPI schema."""
         # Map SQLAlchemy types to OpenAPI types
         type_mapping = {
@@ -212,7 +212,7 @@ class CrudSwaggerGenerator:
 
         return schema
 
-    def _generate_crud_paths(self, exposed_methods: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def _generate_crud_paths(self, exposed_methods: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Generate OpenAPI paths from exposed methods."""
         paths = {}
 
@@ -283,7 +283,7 @@ class CrudSwaggerGenerator:
 
             # Add path parameters if they exist
             if '{' in path:
-                operation["parameters"] = self._extract_path_parameters(path)
+                operation["parameters"] = await self._extract_path_parameters(path)
 
             # Add to paths
             for method in methods:
@@ -294,7 +294,7 @@ class CrudSwaggerGenerator:
 
         return paths
 
-    def _extract_path_parameters(self, path: str) -> List[Dict[str, Any]]:
+    async def _extract_path_parameters(self, path: str) -> List[Dict[str, Any]]:
         """Extract path parameters from {param} patterns used by @expose decorator"""
         parameters = []
 
@@ -320,14 +320,14 @@ class CrudSwaggerGenerator:
 
         return parameters
 
-    def generate_swagger(self, service_name: str) -> Dict[str, Any]:
+    async def generate_swagger(self, service_name: str) -> Dict[str, Any]:
         """Generate complete Swagger documentation for CRUD operations."""
 
         # Get exposed methods from the service instance
-        exposed_methods = self.service.get_exposed_methods()
+        exposed_methods = await self.service.get_exposed_methods()
 
         # Generate paths from exposed methods
-        raw_paths = self._generate_crud_paths(exposed_methods)
+        raw_paths = await self._generate_crud_paths(exposed_methods)
 
         # Add service prefix to ALL paths (service_name is permanent, no fallback)
         paths = {}
@@ -336,7 +336,7 @@ class CrudSwaggerGenerator:
             paths[full_path] = path_info
 
         # Generate schemas from model
-        schemas = self._generate_model_schemas()
+        schemas = await self._generate_model_schemas()
 
         return {
             'schemas': schemas,

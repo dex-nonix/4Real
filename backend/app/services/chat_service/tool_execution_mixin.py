@@ -33,7 +33,7 @@ class ToolExecutionMixin(WebSocketMixinProtocol):
             }
         }
     )
-    def persona_tools(self, req: Request, persona_id: int):
+    async def persona_tools(self, req: Request, persona_id: int):
         """Get available tools for a specific persona."""
         try:
             persona = Persona.query.filter_by(id=persona_id).first()
@@ -96,7 +96,7 @@ class ToolExecutionMixin(WebSocketMixinProtocol):
             }
         }
     )
-    def mcp_status(self, req: Request):
+    async def mcp_status(self, req: Request):
         """Get status of all MCP servers."""
         try:
             servers = MCPServer.query.all()

@@ -9,10 +9,10 @@ from ..models.persona import Persona
 from ..models.persona_tool_access import PersonaToolAccess
 
 
-def llm_tool_wrapper(original_func, *args, **kwargs):
+async def llm_tool_wrapper(original_func, *args, **kwargs):
     """Create a LangChain-compatible wrapper that preserves partial binding."""
 
-    def wrapper(*w_args, **w_kwargs):
+    async def wrapper(*w_args, **w_kwargs):
         return original_func(*args, *w_args, **kwargs, **w_kwargs)
 
     wrapper.__name__ = original_func.__name__
@@ -22,13 +22,13 @@ def llm_tool_wrapper(original_func, *args, **kwargs):
     return wrapper
 
 
-def _pattern_matches(pattern: str, name: str) -> bool:
+async def _pattern_matches(pattern: str, name: str) -> bool:
     if pattern.endswith(':*'):
         return name.startswith(pattern[:-2] + ':')
     return pattern == name
 
 
-def build_persona_tool_map(persona_id: int) -> Dict[str, Callable[..., Any]]:
+async def build_persona_tool_map(persona_id: int) -> Dict[str, Callable[..., Any]]:
     """Return a persona-scoped tool map of qualified_name -> callable.
 
     - Applies allowlist via PersonaToolAccess patterns over active InternalTools
@@ -66,7 +66,7 @@ def build_persona_tool_map(persona_id: int) -> Dict[str, Callable[..., Any]]:
     return tools
 
 
-def list_persona_tools(persona_id: int) -> list[dict]:
+async def list_persona_tools(persona_id: int) -> list[dict]:
     """Return tool signatures for a persona with artist_id filtered out if applicable."""
     persona = Persona.query.filter_by(id=persona_id).first()
     artist_id = getattr(persona, 'artist_id', None) if persona else None
@@ -125,7 +125,7 @@ def list_persona_tools(persona_id: int) -> list[dict]:
     return sorted(tools_info, key=lambda x: x['name'])
 
 
-def execute_tool(persona_id: int, tool_name: str, args: Dict[str, Any] | None = None) -> Dict[str, Any]:
+async def execute_tool(persona_id: int, tool_name: str, args: Dict[str, Any] | None = None) -> Dict[str, Any]:
     """Execute a persona-scoped tool by name with provided args.
 
     The callable may be a partial; args are passed through without mutation.

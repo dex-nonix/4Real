@@ -86,7 +86,7 @@ class ChatThreadPoolManager:
 
 
 
-    def submit_task(self, func: Callable, *args, **kwargs) -> concurrent.futures.Future:
+    async def submit_task(self, func: Callable, *args, **kwargs) -> concurrent.futures.Future:
         """
         Submit a task to the thread pool.
         
@@ -138,7 +138,7 @@ class ChatThreadPoolManager:
             self._logger.error(f"Task submission context - Args: {args}, Kwargs: {kwargs}")
             raise
 
-    def submit_async_task(self, async_func, *args, **kwargs) -> concurrent.futures.Future:
+    async def submit_async_task(self, async_func, *args, **kwargs) -> concurrent.futures.Future:
         """
         Submit an async function to the thread pool with event loop management and Flask app context.
         
@@ -215,7 +215,7 @@ class ChatThreadPoolManager:
             self._logger.error(f"Failed to submit async task {func_name}: {type(e).__name__}: {e}", exc_info=True)
             raise
 
-    def _task_completed_callback(self, future: concurrent.futures.Future):
+    async def _task_completed_callback(self, future: concurrent.futures.Future):
         """Callback executed when a task completes."""
         try:
             # Remove from active tasks
@@ -244,7 +244,7 @@ class ChatThreadPoolManager:
             self._logger.error(f"Critical error in task completion callback: {e}", exc_info=True)
             # This is a meta-error - log it but don't crash the callback
 
-    def _monitor_thread_pool(self):
+    async def _monitor_thread_pool(self):
         """Monitor thread pool health and performance."""
         while not self._shutdown_event.is_set():
             try:
@@ -279,7 +279,7 @@ class ChatThreadPoolManager:
                 # Sleep longer on error to prevent spam
                 self._shutdown_event.wait(60)
 
-    def get_stats(self) -> ThreadPoolStats:
+    async def get_stats(self) -> ThreadPoolStats:
         """Get current thread pool statistics."""
         with self._lock:
             return ThreadPoolStats(
@@ -293,7 +293,7 @@ class ChatThreadPoolManager:
                 last_activity=self._last_activity
             )
 
-    def get_health_status(self) -> Dict[str, Any]:
+    async def get_health_status(self) -> Dict[str, Any]:
         """Get health status for monitoring endpoints."""
         try:
             stats = self.get_stats()
@@ -338,7 +338,7 @@ class ChatThreadPoolManager:
             }
 
     @contextmanager
-    def get_executor_context(self):
+    async def get_executor_context(self):
         """Context manager for safe thread pool access."""
         if self._shutdown_event.is_set():
             raise RuntimeError("Thread pool manager is shutdown")
@@ -349,7 +349,7 @@ class ChatThreadPoolManager:
             self._logger.error(f"Error in executor context: {e}", exc_info=True)
             raise
 
-    def shutdown(self, wait: bool = True, timeout: Optional[float] = None):
+    async def shutdown(self, wait: bool = True, timeout: Optional[float] = None):
         """Graceful shutdown of thread pool manager."""
         self._logger.info("Shutting down ChatThreadPoolManager...")
 

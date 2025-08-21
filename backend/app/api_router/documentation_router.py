@@ -26,11 +26,11 @@ class DocumentationRouter:
         # Add documentation routes
         self._add_documentation_routes()
 
-    def _add_documentation_routes(self) -> None:
+    async def _add_documentation_routes(self) -> None:
         """Add OpenAPI documentation endpoints to the blueprint"""
 
         @self.blueprint.route('/openapi.json')
-        def openapi_spec():
+        async def openapi_spec():
             service_filter = request.args.get('services', None)
 
             # Log OpenAPI request details
@@ -42,7 +42,7 @@ class DocumentationRouter:
                 for service_name in self.router.registered_services.keys():
                     self.logger.info(f"   - {service_name}")
 
-                result = self.openapi_generator.generate_openapi_spec(
+                result = await self.openapi_generator.generate_openapi_spec(
                     self.router.registered_services,
                     service_filter
                 )
@@ -51,12 +51,12 @@ class DocumentationRouter:
             return jsonify({"error": "No services registered"}), 500
 
         @self.blueprint.route('/docs')
-        def swagger_ui():
+        async def swagger_ui():
             """Return Swagger UI HTML page"""
             current_filter = request.args.get('services', None)
 
-            return self.swagger_ui_generator.generate_swagger_ui(current_filter)
+            return await self.swagger_ui_generator.generate_swagger_ui(current_filter)
 
-    def generate_openapi_spec(self, registered_services: dict[str, Any], service_filter: str = None) -> dict[str, Any]:
+    async def generate_openapi_spec(self, registered_services: dict[str, Any], service_filter: str = None) -> dict[str, Any]:
         """Generate OpenAPI specification for external use"""
-        return self.openapi_generator.generate_openapi_spec(registered_services, service_filter)
+        return await self.openapi_generator.generate_openapi_spec(registered_services, service_filter)

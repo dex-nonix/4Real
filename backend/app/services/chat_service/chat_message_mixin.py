@@ -34,7 +34,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         message_type_registry.register('chat', ChatMessageHandler())
         message_type_registry.register('tool_call', ToolCallMessageHandler())
 
-    def _select_chat_model(self, persona_id: int) -> Dict[str, Any] | None:
+    async def _select_chat_model(self, persona_id: int) -> Dict[str, Any] | None:
         """Select AI model for persona with strict validation."""
         self._logger.debug(f"Selecting AI model for persona {persona_id}")
 
@@ -62,7 +62,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         self._logger.info(f"Selected AI model: {mapping.model_name} (provider: {mapping.provider_id})")
         return model_info
 
-    def _validate_session_history(self, session_id: int, history_id: int = None):
+    async def _validate_session_history(self, session_id: int, history_id: int = None):
         """Validate session and history, return tuple (session, history)."""
         self._logger.debug(f"Validating session {session_id} with history {history_id}")
 
@@ -107,7 +107,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             f"Session validation successful: session={session.id}, history={history.id if history else None}")
         return session, history
 
-    def _create_user_message(self, history_id: int, content: Dict[str, Any]) -> ChatMessage:
+    async def _create_user_message(self, history_id: int, content: Dict[str, Any]) -> ChatMessage:
         """Create and save user message."""
         self._logger.debug(f"Creating user message for history {history_id}")
 
@@ -123,7 +123,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         self._logger.info(f"User message {user_msg.id} created successfully for history {history_id}")
         return user_msg
 
-    def _create_assistant_placeholder(self, history_id: int) -> ChatMessage:
+    async def _create_assistant_placeholder(self, history_id: int) -> ChatMessage:
         """Create empty assistant message placeholder."""
         self._logger.debug(f"Creating assistant message placeholder for history {history_id}")
 
@@ -140,7 +140,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         self._logger.info(f"Assistant message placeholder {asst_msg.id} created for history {history_id}")
         return asst_msg
 
-    def _build_chat_history(self, history_id: int, user_msg_id: int) -> List[Dict[str, Any]]:
+    async def _build_chat_history(self, history_id: int, user_msg_id: int) -> List[Dict[str, Any]]:
         """Build chat history for LLM processing."""
         self._logger.debug(f"Building chat history for history {history_id} up to message {user_msg_id}")
 
@@ -168,11 +168,11 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         self._logger.info(f"Built chat history with {len(chat_history)} total messages")
         return chat_history
 
-    def _resolve_ai_model(self, persona_id: int):
+    async def _resolve_ai_model(self, persona_id: int):
         """Resolve AI model, provider, and mapping."""
         self._logger.debug(f"Resolving AI model components for persona {persona_id}")
 
-        model_info = self._select_chat_model(persona_id)
+        model_info = await self._select_chat_model(persona_id)
         if not model_info:
             self._logger.warning(f"Failed to select AI model for persona {persona_id}")
             return None, None, None
@@ -190,7 +190,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         self._logger.info(f"AI model resolved successfully: provider={provider.name}, model={model_info['model_name']}")
         return model_info, provider, mapping_obj
 
-    def _execute_tool_call(self, persona_id: int, tool_name: str, tool_args: Dict[str, Any],
+    async def _execute_tool_call(self, persona_id: int, tool_name: str, tool_args: Dict[str, Any],
                            history_id: int, user_msg_id: int, available_tools: Dict[str, Any]):
         """Execute tool call and return result."""
         self._logger.info(f"Executing tool '{tool_name}' for persona {persona_id}")
@@ -235,7 +235,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
         return exec_result, None
 
-    def _create_assistant_message(self, history_id: int, content: Dict[str, Any],
+    async def _create_assistant_message(self, history_id: int, content: Dict[str, Any],
                                   status: str = 'complete') -> ChatMessage:
         """Create and save assistant message."""
         self._logger.debug(f"Creating assistant message for history {history_id} with status '{status}'")
@@ -253,13 +253,13 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         self._logger.info(f"Assistant message {asst_msg.id} created successfully for history {history_id}")
         return asst_msg
 
-    def _format_error_response(self, error_message: str, status_code: int = 400):
+    async def _format_error_response(self, error_message: str, status_code: int = 400):
         """Format error response consistently."""
         return jsonify({'error': error_message}), status_code
 
-    def emit_llm_event(self, session_id: int, history_id: int, stage: str, message: str):
+    async def emit_llm_event(self, session_id: int, history_id: int, stage: str, message: str):
         """Emit LLM status event."""
-        self.emit_chat_event(session_id, history_id, 'llm_status', {
+        await self.emit_chat_event(session_id, history_id, 'llm_status', {
             'stage': stage,
             'message': message,
             'timestamp': datetime.utcnow().isoformat()
@@ -291,7 +291,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             }
         }
     )
-    def list_messages(self, req: Request, id: int):  # noqa: A002
+    async def list_messages(self, req: Request, id: int):  # noqa: A002
         """List messages from a chat session's current history."""
         try:
             session = ChatSession.query.filter_by(id=id, is_active=True).first()
@@ -338,7 +338,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                     }
                 }
             })
-    def send_message(self, req: Request, session_id: int, history_id: int = None):
+    async def send_message(self, req: Request, session_id: int, history_id: int = None):
         """Send message to session."""
         self._logger.info(f"Processing send_message request for session {session_id}, history {history_id}")
 
@@ -350,18 +350,18 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
             self._logger.debug(f"Parameter conversion: session_id={session_id}, history_id={history_id}")
 
-            session, history = self._validate_session_history(session_id, history_id)
+            session, history = await self._validate_session_history(session_id, history_id)
             if not session:
                 self._logger.warning(f"Session {session_id} not found")
-                return self._format_error_response('Session not found', 404)
+                return await self._format_error_response('Session not found', 404)
 
             persona = session.persona
             if not persona:
                 self._logger.warning(f"Session {session_id} has no persona")
-                return self._format_error_response('Session has no persona', 400)
+                return await self._format_error_response('Session has no persona', 400)
             if not persona.is_active:
                 self._logger.warning(f"Persona {persona.id} is not active")
-                return self._format_error_response('Persona is not active', 400)
+                return await self._format_error_response('Persona is not active', 400)
 
             if not history_id:
                 self._logger.debug(
@@ -369,27 +369,27 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 history_id = session.current_history_id
                 if not history_id:
                     self._logger.warning(f"No current history found for session {session_id}")
-                    return self._format_error_response('No current history', 400)
+                    return await self._format_error_response('No current history', 400)
             else:
                 self._logger.debug(f"History_id provided: {history_id}, history object: {history}")
                 # Validate provided history_id belongs to session
                 if not history or history.session_id != session_id:
                     self._logger.warning(f"History validation failed - history: {history}, session_id: {session_id}")
-                    return self._format_error_response('History not found or invalid', 404)
+                    return await self._format_error_response('History not found or invalid', 404)
 
             # Get user content - MUST be object with type
             payload = req.get_json(silent=True) or {}
             user_content = payload.get('content')
             if not user_content:
-                return self._format_error_response('content required', 400)
+                return await self._format_error_response('content required', 400)
 
             if not isinstance(user_content, dict) or 'type' not in user_content:
-                return self._format_error_response('Content must be object with explicit type', 400)
+                return await self._format_error_response('Content must be object with explicit type', 400)
 
             # Get message type
             message_type = user_content.get('type')
             if not message_type:
-                return self._format_error_response('Message type is required', 400)
+                return await self._format_error_response('Message type is required', 400)
 
             self._logger.info(f"Processing message type: {message_type}")
             self._logger.debug(f"Available message types: {message_type_registry.list_types()}")
@@ -401,7 +401,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             self._logger.debug(f"Message handler resolved: {type(handler).__name__}")
             if not handler:
                 self._logger.error(f"Unknown message type: {message_type}")
-                return self._format_error_response(f'Unknown message type: {message_type}', 400)
+                return await self._format_error_response(f'Unknown message type: {message_type}', 400)
 
             result = handler.handle(
                 chat_service=self,
@@ -417,9 +417,9 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         except Exception as exc:
             self._logger.error(f"Error in send_message: {exc}", exc_info=True)
             db.session.rollback()
-            return self._format_error_response(str(exc), 500)
+            return await self._format_error_response(str(exc), 500)
 
-    def _submit_message_for_async_processing(self, user_msg_id: int, asst_msg_id: int, session_id: int, history_id: int,
+    async def _submit_message_for_async_processing(self, user_msg_id: int, asst_msg_id: int, session_id: int, history_id: int,
                                              persona_id: int):
         """Submit message processing to thread pool for async execution."""
         try:
@@ -437,7 +437,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             # Log error with full stack trace
             self._logger.error(f"Failed to submit message {user_msg_id} to thread pool: {e}", exc_info=True)
             # Emit error event
-            self.emit_llm_event(session_id, history_id, 'processing_failed', f'Failed to start processing: {e}')
+            await self.emit_llm_event(session_id, history_id, 'processing_failed', f'Failed to start processing: {e}')
             raise
 
     async def _process_message_async(self, user_msg_id: int, asst_msg_id: int,
@@ -450,26 +450,26 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             message_handler.assistant_message_id = asst_msg_id
 
             # Validate message exists
-            if not message_handler.ensure_message_exists():
+            if not await message_handler.ensure_message_exists():
                 error_msg = "Assistant message not found or inaccessible"
-                self.emit_llm_event(session_id, history_id, 'processing_failed', error_msg)
+                await self.emit_llm_event(session_id, history_id, 'processing_failed', error_msg)
                 return
 
             # Get model info and tools
-            model_info, provider, mapping_obj = self._resolve_ai_model(persona_id)
-            available_tools_info = list_persona_tools(persona_id)
+            model_info, provider, mapping_obj = await self._resolve_ai_model(persona_id)
+            available_tools_info = await list_persona_tools(persona_id)
 
             if not model_info or not provider or not mapping_obj:
                 # No model available - mark as failed
                 error_msg = "AI model, provider, or mapping not available"
-                message_handler.mark_as_error(error_msg)
-                event_manager.emit_chunk_event(session_id, history_id,
+                await message_handler.mark_as_error(error_msg)
+                await event_manager.emit_chunk_event(session_id, history_id,
                                                StreamingChunk(content="", chunk_type="complete", is_final=True),
                                                asst_msg_id)
                 return
 
             # Build chat history using helper method
-            chat_history = self._build_chat_history(history_id, user_msg_id)
+            chat_history = await self._build_chat_history(history_id, user_msg_id)
 
             # Use streaming LLM client
             try:
@@ -477,39 +477,39 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                                                         available_tools_info, persona_id):
                     # Handle each chunk
                     if message.chunk_type == "text":
-                        if message_handler.update_content_safely(message.content):
-                            event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
+                        if await message_handler.update_content_safely(message.content):
+                            await event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
                         else:
                             # Log error but continue processing
                             self._logger.error(f"Failed to update content for chunk: {message.content[:50]}...")
 
                     elif message.chunk_type == "ai_start":
-                        event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
+                        await event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
 
                     elif message.chunk_type == "tool_start":
-                        event_manager.emit_tool_event(session_id, history_id,
+                        await event_manager.emit_tool_event(session_id, history_id,
                                                       message.metadata["tool_name"], "started")
 
                     elif message.chunk_type == "tool_end":
-                        event_manager.emit_tool_event(session_id, history_id,
+                        await event_manager.emit_tool_event(session_id, history_id,
                                                       message.metadata["tool_name"], "completed")
 
                     elif message.chunk_type == "complete":
-                        message_handler.finalize_assistant_message()
-                        event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
+                        await message_handler.finalize_assistant_message()
+                        await event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
                         break
 
             except Exception as e:
                 # Handle streaming errors
-                message_handler.mark_as_error(f"Streaming error: {str(e)}")
-                message_handler.cleanup_on_error()  # Clean up on error
-                event_manager.emit_streaming_error(session_id, history_id, f"Streaming error: {str(e)}",
+                await message_handler.mark_as_error(f"Streaming error: {str(e)}")
+                await message_handler.cleanup_on_error()  # Clean up on error
+                await event_manager.emit_streaming_error(session_id, history_id, f"Streaming error: {str(e)}",
                                                    "streaming_error", asst_msg_id)
-                self.emit_llm_event(session_id, history_id, 'processing_failed', f"Streaming error: {str(e)}")
+                await self.emit_llm_event(session_id, history_id, 'processing_failed', f"Streaming error: {str(e)}")
 
         except Exception as e:
-            message_handler.cleanup_on_error()
-            self.emit_llm_event(session_id, history_id, 'processing_failed', f"Async processing error: {str(e)}")
+            await message_handler.cleanup_on_error()
+            await self.emit_llm_event(session_id, history_id, 'processing_failed', f"Async processing error: {str(e)}")
             self._logger.error(f"Error in _process_message_async: {e}", exc_info=True)
 
     # @expose(
@@ -561,27 +561,27 @@ class ChatMessageMixin(WebSocketMixinProtocol):
     #     try:
     #         session, history = self._validate_session_history(session_id, history_id)
     #         if not session:
-    #             return self._format_error_response('Session not found', 404)
+    #             return await self._format_error_response('Session not found', 404)
     #
     #         # OPTIONAL EXTRACTION: If no history_id provided, extract from session
     #         if not history_id:
     #             history_id = session.current_history_id
     #             if not history_id:
-    #                 return self._format_error_response('No current history', 400)
+    #                 return await self._format_error_response('No current history', 400)
     #         else:
     #             # Validate provided history_id belongs to session
     #             if not history or history.session_id != session_id:
-    #                 return self._format_error_response('History not found or invalid', 404)
+    #                 return await self._format_error_response('History not found or invalid', 404)
     #
     #         last_user = ChatMessage.query.filter_by(session_id=session_id, role='user').order_by(
     #             ChatMessage.created_at.desc()).first()
     #         if not last_user:
-    #             return self._format_error_response('No user messages', 400)
+    #             return await self._format_error_response('No user messages', 400)
     #         # Reuse send logic by re-sending the last user content
     #         mock_req = type('obj', (), {'get_json': lambda self, silent=True: {'content': last_user.content_json}})()
     #         return self.send_message(mock_req, session_id, history_id)
     #     except Exception as exc:  # noqa: BLE001
-    #         return self._format_error_response(str(exc), 500)
+    #         return await self._format_error_response(str(exc), 500)
 
     @expose(
         '/sessions/{session_id}/histories/{history_id}/messages',
@@ -609,20 +609,20 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             }
         }
     )
-    def list_history_messages(self, req: Request, session_id: int, history_id: int):
+    async def list_history_messages(self, req: Request, session_id: int, history_id: int):
         """Get messages from a specific history within a session."""
         try:
             # Validate session and history
-            session, history = self._validate_session_history(session_id, history_id)
+            session, history = await self._validate_session_history(session_id, history_id)
             if not session:
-                return self._format_error_response('Session not found or inactive', 404)
+                return await self._format_error_response('Session not found or inactive', 404)
             if not history:
-                return self._format_error_response('History not found', 404)
+                return await self._format_error_response('History not found', 404)
 
             msgs = ChatMessage.query.filter_by(history_id=history_id).order_by(ChatMessage.created_at.asc()).all()
             return jsonify({'data': [m.to_dict() for m in msgs], 'total': len(msgs)})
         except Exception as exc:  # noqa: BLE001
-            return self._format_error_response(str(exc), 500)
+            return await self._format_error_response(str(exc), 500)
 
     @expose(
         '/sessions/{session_id}/histories/{history_id}/messages/{message_id}',
@@ -636,23 +636,23 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             }
         }
     )
-    def delete_message(self, req: Request, session_id: int, history_id: int, message_id: int):
+    async def delete_message(self, req: Request, session_id: int, history_id: int, message_id: int):
         """Delete a specific message from a history."""
         try:
             # Verify session exists and is active
             session = ChatSession.query.filter_by(id=session_id, is_active=True).first()
             if not session:
-                return self._format_error_response('Session not found or inactive', 404)
+                return await self._format_error_response('Session not found or inactive', 404)
 
             # Verify history exists and belongs to session
             history = ChatHistory.query.filter_by(id=history_id, session_id=session_id).first()
             if not history:
-                return self._format_error_response('History not found', 404)
+                return await self._format_error_response('History not found', 404)
 
             # Find and delete the specific message
             message = ChatMessage.query.filter_by(id=message_id, history_id=history_id).first()
             if not message:
-                return self._format_error_response('Message not found', 404)
+                return await self._format_error_response('Message not found', 404)
 
             # Store message ID before deletion for response
             deleted_message_id = message.id
@@ -672,4 +672,4 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
-            return self._format_error_response(str(exc), 500)
+            return await self._format_error_response(str(exc), 500)

@@ -24,7 +24,7 @@ class Config:
     LOG_FILE = os.getenv('LOG_FILE', 'flask_errors.log')
 
     # WebSocket
-    SOCKETIO_ASYNC_MODE = os.getenv('SOCKETIO_ASYNC_MODE', 'threading')
+    SOCKETIO_ASYNC_MODE = os.getenv('SOCKETIO_ASYNC_MODE', 'asyncio')
     SOCKETIO_CORS_ORIGINS = os.getenv('SOCKETIO_CORS_ORIGINS', CORS_ORIGINS)
     SOCKETIO_LOGGER = os.getenv('SOCKETIO_LOGGER', str(DEBUG)).lower() == 'true'
     SOCKETIO_ENGINE_LOGGER = os.getenv('SOCKETIO_ENGINE_LOGGER', str(DEBUG)).lower() == 'true'
@@ -33,7 +33,7 @@ class Config:
     # Gunicorn - ALL SETTINGS HERE
     GUNICORN_BIND = os.getenv('GUNICORN_BIND', '0.0.0.0:5000')
     GUNICORN_WORKERS = int(os.getenv('GUNICORN_WORKERS', '4'))
-    GUNICORN_WORKER_CLASS = os.getenv('GUNICORN_WORKER_CLASS', 'sync')
+    GUNICORN_WORKER_CLASS = os.getenv('GUNICORN_WORKER_CLASS', 'uvicorn.workers.UvicornWorker')
     GUNICORN_WORKER_CONNECTIONS = int(os.getenv('GUNICORN_WORKER_CONNECTIONS', '1000'))
     GUNICORN_MAX_REQUESTS = int(os.getenv('GUNICORN_MAX_REQUESTS', '1000'))
     GUNICORN_MAX_REQUESTS_JITTER = int(os.getenv('GUNICORN_MAX_REQUESTS_JITTER', '100'))

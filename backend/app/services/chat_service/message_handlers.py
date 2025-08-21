@@ -9,7 +9,7 @@ from datetime import datetime
 class ChatMessageHandler(MessageTypeHandler):
     """Handle chat messages - explicit text messages."""
 
-    def handle(self, chat_service, session, persona, history_id: int, content: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle(self, chat_service, session, persona, history_id: int, content: Dict[str, Any]) -> Dict[str, Any]:
         # ✅ ALL VALUES ARE MANDATORY AND DIRECT - NO SESSION LOOKUPS!
 
         message_text = content.get('text', '')
@@ -29,7 +29,7 @@ class ChatMessageHandler(MessageTypeHandler):
 
         # Emit WebSocket events
         session_id = session.id             # ✅ Direct from session
-        chat_service.emit_chat_event(session_id, history_id, 'message_received', {
+        await chat_service.emit_chat_event(session_id, history_id, 'message_received', {
             'message_id': chat_msg.id,
             'role': chat_msg.role,
             'content': chat_msg.content_json,
@@ -37,8 +37,8 @@ class ChatMessageHandler(MessageTypeHandler):
         })
 
         # Start AI processing - persona is DIRECT PARAMETER!
-        asst_msg = chat_service._create_assistant_placeholder(history_id)
-        chat_service._submit_message_for_async_processing(
+        asst_msg = await chat_service._create_assistant_placeholder(history_id)
+        await chat_service._submit_message_for_async_processing(
             chat_msg.id, asst_msg.id, session_id, history_id, persona.id  # ✅ DIRECT persona.id!
         )
 
@@ -52,7 +52,7 @@ class ChatMessageHandler(MessageTypeHandler):
 class ToolCallMessageHandler(MessageTypeHandler):
     """Handle tool call messages - direct tool execution."""
 
-    def handle(self, chat_service, session, persona, history_id: int, content: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle(self, chat_service, session, persona, history_id: int, content: Dict[str, Any]) -> Dict[str, Any]:
         # ✅ ALL VALUES ARE MANDATORY AND DIRECT - NO SESSION LOOKUPS!
 
         tool_name = content.get('tool')
@@ -71,7 +71,7 @@ class ToolCallMessageHandler(MessageTypeHandler):
 
         # Emit WebSocket event for tool call received
         session_id = session.id             # ✅ Direct from session
-        chat_service.emit_chat_event(session_id, history_id, 'message_received', {
+        await chat_service.emit_chat_event(session_id, history_id, 'message_received', {
             'message_id': tool_call_msg.id,
             'role': tool_call_msg.role,
             'message_type': 'tool_call',
@@ -80,13 +80,13 @@ class ToolCallMessageHandler(MessageTypeHandler):
         })
 
         # Emit WebSocket event for tool execution started
-        chat_service.emit_tool_event(session_id, history_id, tool_name, 'started', args=tool_args)
+        await chat_service.emit_tool_event(session_id, history_id, tool_name, 'started', args=tool_args)
 
         # Execute tool - persona is DIRECT PARAMETER!
         exec_result = execute_tool(persona.id, tool_name, tool_args)  # ✅ DIRECT persona.id!
 
         # Emit WebSocket event for tool execution completed
-        chat_service.emit_tool_event(session_id, history_id, tool_name, 'completed', result=exec_result)
+        await chat_service.emit_tool_event(session_id, history_id, tool_name, 'completed', result=exec_result)
 
         # Create tool result message
         tool_result_msg = ChatMessage(
@@ -106,7 +106,7 @@ class ToolCallMessageHandler(MessageTypeHandler):
         db.session.commit()
 
         # Emit WebSocket event for tool result message
-        chat_service.emit_chat_event(session_id, history_id, 'message_received', {
+        await chat_service.emit_chat_event(session_id, history_id, 'message_received', {
             'message_id': tool_result_msg.id,
             'role': tool_result_msg.role,
             'message_type': 'tool',

@@ -72,27 +72,27 @@ def create_app() -> Flask:
 
 
     @socketio.on('connect')
-    def handle_connect():
+    async def handle_connect():
         print("----------------------------- WS CONNECT ")
         app.logger.info(f"WebSocket client connected: {request.sid}")
 
     @socketio.on('disconnect')
-    def handle_disconnect():
+    async def handle_disconnect():
         print("-----------------------------WS DISCONNECT")
         app.logger.info(f"WebSocket client disconnected: {request.sid}")
 
     @socketio.on('join')
-    def handle_join_room(room):
+    async def handle_join_room(room):
         print("-----------------------------WS JOIN")
         if room:
             app.logger.info(f"DEBUG: Attempting to join room '{room}' for client {request.sid}")
-            join_room(room)
+            await join_room(room)
 
     @socketio.on('leave')
-    def handle_leave_room(room):
+    async def handle_leave_room(room):
         print("-----------------------------WS LEAVE")
         if room:
-            leave_room(room)
+            await leave_room(room)
             app.logger.info(f"Client {request.sid} left room: {room}")
         else:
             app.logger.warning(f"Client {request.sid} tried to leave room but no room specified")

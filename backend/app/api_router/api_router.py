@@ -26,7 +26,7 @@ class APIRouter:
         self.documentation_router: 'DocumentationRouter' = DocumentationRouter(self)
         self.compact_generator: 'CompactApiGenerator' = CompactApiGenerator(self)
 
-    def register_service(self, service_name: str, service_class: type, *args, **kwargs) -> None:
+    async def register_service(self, service_name: str, service_class: type, *args, **kwargs) -> None:
         """Instantiate a service and create routes for any @expose methods."""
         service = service_class(*args, **kwargs)
 
@@ -38,14 +38,14 @@ class APIRouter:
         for attr_name in dir(service):
             method = getattr(service, attr_name)
             if callable(method) and hasattr(method, '_exposed'):
-                self._create_route(service_name, method)
+                await self._create_route(service_name, method)
 
         # Discover and register WebSocket channels
-        self._discover_websocket_channels(service_name, service)
+        await self._discover_websocket_channels(service_name, service)
 
-    def _discover_websocket_channels(self, service_name: str, service: BaseApiService) -> None:
+    async def _discover_websocket_channels(self, service_name: str, service: BaseApiService) -> None:
         """Discover @expose_ws methods and register WebSocket channels."""
-        ws_methods = service.get_exposed_ws_methods()
+        ws_methods = await service.get_exposed_ws_methods()
 
         for method_info in ws_methods:
             self.logger.info(
@@ -58,23 +58,23 @@ class APIRouter:
                 'service': service
             }
 
-    def _normalize_path(self, service_name: str, path: str) -> str:
+    async def _normalize_path(self, service_name: str, path: str) -> str:
         if not path.startswith('/'):
             path = '/' + path
         # Convert `{id}` style placeholders to Flask `<id>`
         flask_path = path.replace('{', '<').replace('}', '>')
         return f'/{service_name}{flask_path}'
 
-    def _create_route(self, service_name: str, method: Callable[..., Any]) -> None:
+    async def _create_route(self, service_name: str, method: Callable[..., Any]) -> None:
 
         # Bind the current method into the handler's defaults to avoid late-binding issues
-        def handler_factory(bound_method: Callable[..., Any]) -> Callable[..., Any]:
+        async def handler_factory(bound_method: Callable[..., Any]) -> Callable[..., Any]:
             @wraps(bound_method)
-            def handler(**kwargs):
+            async def handler(**kwargs):
                 try:
                     # Log the execution start
                     self.logger.info(f"🚀 Executing {service_name}.{bound_method.__name__} with kwargs: {kwargs}")
-                    result = bound_method(request, **kwargs)
+                    result = await bound_method(request, **kwargs)
                     # Log successful execution
                     self.logger.info(f"✅ Successfully executed {service_name}.{bound_method.__name__}")
                     return result
@@ -93,17 +93,17 @@ class APIRouter:
             return handler
 
         self.blueprint.add_url_rule(
-            self._normalize_path(service_name, getattr(method, '_path')),
-            endpoint=f"{service_name}:{getattr(method, '__name__', 'endpoint')}:{self._normalize_path(service_name, getattr(method, '_path'))}",
-            view_func=handler_factory(method),
+            await self._normalize_path(service_name, getattr(method, '_path')),
+            endpoint=f"{service_name}:{getattr(method, '__name__', 'endpoint')}:{await self._normalize_path(service_name, getattr(method, '_path'))}",
+            view_func=await handler_factory(method),
             methods=getattr(method, '_methods', ['GET'])
         )
 
-    def list_services(self) -> list[str]:
+    async def list_services(self) -> list[str]:
         return list(self.registered_services.keys())
 
-    def get_service(self, service_name: str) -> BaseApiService | None:
+    async def get_service(self, service_name: str) -> BaseApiService | None:
         return self.registered_services.get(service_name)
 
-    def get_websocket_channels(self) -> dict[str, dict]:
+    async def get_websocket_channels(self) -> dict[str, dict]:
         return self._websocket_channels

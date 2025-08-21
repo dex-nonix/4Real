@@ -11,7 +11,7 @@ class OpenAPIGenerator:
     def __init__(self) -> None:
         self.logger = logging.getLogger(__name__)
 
-    def generate_openapi_spec(self, registered_services: Dict[str, Any], service_filter: str = None) -> Dict[str, Any]:
+    async def generate_openapi_spec(self, registered_services: Dict[str, Any], service_filter: str = None) -> Dict[str, Any]:
         """Generate OpenAPI 3.0 specification from registered services
         
         Args:
@@ -35,7 +35,7 @@ class OpenAPIGenerator:
             if allowed_services and service_name.lower() not in allowed_services:
                 continue
 
-            service_swagger = service.to_swagger(service_name)
+            service_swagger = await service.to_swagger(service_name)
             if 'schemas' in service_swagger:
                 components["schemas"].update(service_swagger['schemas'])
 
@@ -68,10 +68,10 @@ class OpenAPIGenerator:
             "tags": unique_tags
         }
 
-    def _generate_path_info(self, service_name: str, method: Callable) -> Dict[str, Any]:
+    async def _generate_path_info(self, service_name: str, method: Callable) -> Dict[str, Any]:
         """Generate OpenAPI path information for a single method"""
 
-        full_path = self._normalize_path(service_name, getattr(method, '_path'))
+        full_path = await self._normalize_path(service_name, getattr(method, '_path'))
         methods = getattr(method, '_methods', ['GET'])
 
         path_info = {}
@@ -144,13 +144,13 @@ class OpenAPIGenerator:
 
             # Add path parameters if they exist
             if '{' in full_path:
-                operation["parameters"] = self._extract_path_parameters(full_path)
+                operation["parameters"] = await self._extract_path_parameters(full_path)
 
             path_info[full_path] = {method_lower: operation}
 
         return path_info
 
-    def _extract_path_parameters(self, path: str) -> List[Dict[str, Any]]:
+    async def _extract_path_parameters(self, path: str) -> List[Dict[str, Any]]:
         """Extract path parameters from Flask-style path"""
         parameters = []
         # Find all <param> placeholders
@@ -180,7 +180,7 @@ class OpenAPIGenerator:
 
         return parameters
 
-    def _normalize_path(self, service_name: str, path: str) -> str:
+    async def _normalize_path(self, service_name: str, path: str) -> str:
         if not path.startswith('/'):
             path = '/' + path
         # Convert `{id}` style placeholders to Flask `<id>`

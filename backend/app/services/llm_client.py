@@ -18,10 +18,10 @@ from ..utils.llm_message_utils import iter_messages, LCAIMessage, LCToolMessage
 logger = logging.getLogger(__name__)
 
 
-def create_langchain_tools(persona_id: int, available_tools_info: List[Dict[str, Any]]) -> List[StructuredTool]:
+async def create_langchain_tools(persona_id: int, available_tools_info: List[Dict[str, Any]]) -> List[StructuredTool]:
     """Create LangChain StructuredTool objects from persona tools with proper Pydantic schemas."""
 
-    def _get_field_type(param_type: str) -> type:
+    async def _get_field_type(param_type: str) -> type:
         """Extract the base Python type from a type annotation string."""
         if 'int' in param_type:
             return int

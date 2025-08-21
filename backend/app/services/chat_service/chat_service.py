@@ -43,50 +43,50 @@ class ChatService(BaseApiService, ChatSessionMixin, ChatMessageMixin, ChatHistor
         self._logger = logging.getLogger(__name__)
         self._logger.info("ChatService initialized with thread pool manager")
 
-    def emit_chat_event(self, session_id: int, history_id: int, event: str, data: dict) -> None:
+    async def emit_chat_event(self, session_id: int, history_id: int, event: str, data: dict) -> None:
         """IMPLEMENT: Emit chat event using BaseApiService method."""
         channel = f'chat/{session_id}/{history_id}'
         self._logger.debug(f"Emitting chat event: channel={channel}, event={event}, data={data}")
-        self.send_to_channel(channel, event, data)
+        await self.send_to_channel(channel, event, data)
 
-    def emit_llm_event(self, session_id: int, history_id: int, stage: str, message: str) -> None:
+    async def emit_llm_event(self, session_id: int, history_id: int, stage: str, message: str) -> None:
         """IMPLEMENT: Emit LLM status event."""
-        self.emit_chat_event(session_id, history_id, 'llm_status', {
+        await self.emit_chat_event(session_id, history_id, 'llm_status', {
             'stage': stage,
             'message': message,
             'timestamp': datetime.utcnow().isoformat()
         })
 
-    def emit_tool_event(self, session_id: int, history_id: int, tool_name: str, status: str, **extra) -> None:
+    async def emit_tool_event(self, session_id: int, history_id: int, tool_name: str, status: str, **extra) -> None:
         """IMPLEMENT: Emit tool execution event."""
-        self.emit_chat_event(session_id, history_id, 'tool_status', {
+        await self.emit_chat_event(session_id, history_id, 'tool_status', {
             'tool_name': tool_name,
             'status': status,
             'timestamp': datetime.utcnow().isoformat(),
             **extra
         })
 
-    def submit_async_task(self, func, *args, **kwargs):
+    async def submit_async_task(self, func, *args, **kwargs):
         """Submit a task to the thread pool for async execution."""
         try:
             # Check if function is async and use appropriate method
             if iscoroutinefunction(func):
-                future = self._thread_pool.submit_async_task(func, *args, **kwargs)
+                future = await self._thread_pool.submit_async_task(func, *args, **kwargs)
             else:
-                future = self._thread_pool.submit_task(func, *args, **kwargs)
+                future = await self._thread_pool.submit_task(func, *args, **kwargs)
             self._logger.debug(f"Task submitted to thread pool: {func.__name__}")
             return future
         except Exception as e:
             self._logger.error(f"Failed to submit task to thread pool: {e}", exc_info=True)
             raise
 
-    def get_thread_pool_health(self):
+    async def get_thread_pool_health(self):
         """Get thread pool health status for monitoring."""
-        return self._thread_pool.get_health_status()
+        return await self._thread_pool.get_health_status()
 
-    def get_thread_pool_stats(self):
+    async def get_thread_pool_stats(self):
         """Get thread pool statistics for monitoring."""
-        return self._thread_pool.get_stats()
+        return await self._thread_pool.get_stats()
 
     @expose(
         '/health/thread-pool',
@@ -111,10 +111,10 @@ class ChatService(BaseApiService, ChatSessionMixin, ChatMessageMixin, ChatHistor
             }
         }
     )
-    def thread_pool_health(self, req):
+    async def thread_pool_health(self, req):
         """Get thread pool health status for monitoring."""
         try:
-            health_status = self.get_thread_pool_health()
+            health_status = await self.get_thread_pool_health()
             return jsonify(health_status)
         except Exception as e:
             self._logger.error(f"Failed to get thread pool health: {e}", exc_info=True)

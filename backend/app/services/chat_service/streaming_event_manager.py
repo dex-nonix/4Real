@@ -9,48 +9,48 @@ class StreamingEventManager:
     def __init__(self, chat_service):
         self.chat_service = chat_service
 
-    def emit_chunk_event(self, session_id: int, history_id: int, chunk: StreamingChunk, message_id: int):
+    async def emit_chunk_event(self, session_id: int, history_id: int, chunk: StreamingChunk, message_id: int):
         """Emit chunk event via WebSocket."""
         if chunk.chunk_type == "text":
-            self.chat_service.emit_chat_event(session_id, history_id, 'assistant_message_chunk', {
+            await self.chat_service.emit_chat_event(session_id, history_id, 'assistant_message_chunk', {
                 'message_id': message_id,
                 'chunk': chunk.content,
                 'metadata': chunk.metadata,
                 'is_final': chunk.is_final
             })
         elif chunk.chunk_type == "ai_start":
-            self.chat_service.emit_chat_event(session_id, history_id, 'assistant_message_started', {
+            await self.chat_service.emit_chat_event(session_id, history_id, 'assistant_message_started', {
                 'message_id': message_id,
                 'status': 'streaming',
                 'metadata': chunk.metadata
             })
         elif chunk.chunk_type == "complete":
-            self.chat_service.emit_chat_event(session_id, history_id, 'assistant_message_complete', {
+            await self.chat_service.emit_chat_event(session_id, history_id, 'assistant_message_complete', {
                 'message_id': message_id,
                 'status': 'complete',
                 'metadata': chunk.metadata
             })
         elif chunk.chunk_type == "tool_start":
-            self.emit_tool_event(session_id, history_id,
+            await self.emit_tool_event(session_id, history_id,
                                  chunk.metadata.get("tool_name", "unknown"), "started",
                                  chunk.metadata)
         elif chunk.chunk_type == "tool_end":
-            self.emit_tool_event(session_id, history_id,
+            await self.emit_tool_event(session_id, history_id,
                                  chunk.metadata.get("tool_name", "unknown"), "completed",
                                  chunk.metadata)
 
-    def emit_tool_event(self, session_id: int, history_id: int, tool_name: str, status: str, **extra):
+    async def emit_tool_event(self, session_id: int, history_id: int, tool_name: str, status: str, **extra):
         """Emit tool execution event."""
         # Pass all extra data as keyword arguments to match ChatService.emit_tool_event signature
-        self.chat_service.emit_tool_event(session_id, history_id, tool_name, status, **extra)
+        await self.chat_service.emit_tool_event(session_id, history_id, tool_name, status, **extra)
 
-    def emit_llm_status_event(self, session_id: int, history_id: int, stage: str, message: str,
+    async def emit_llm_status_event(self, session_id: int, history_id: int, stage: str, message: str,
                               metadata: Dict[str, Any] = None):
         """Emit LLM status event."""
         # Call emit_llm_event with correct parameters (stage and message only)
-        self.chat_service.emit_llm_event(session_id, history_id, stage, message)
+        await self.chat_service.emit_llm_event(session_id, history_id, stage, message)
 
-    def emit_streaming_error(self, session_id: int, history_id: int, error_message: str,
+    async def emit_streaming_error(self, session_id: int, history_id: int, error_message: str,
                              error_type: str = "streaming_error", message_id: int = None):
         """Emit streaming error event."""
         error_data = {
@@ -61,9 +61,9 @@ class StreamingEventManager:
         if message_id:
             error_data['message_id'] = message_id
 
-        self.chat_service.emit_chat_event(session_id, history_id, 'streaming_error', error_data)
+        await self.chat_service.emit_chat_event(session_id, history_id, 'streaming_error', error_data)
 
-    def _get_timestamp(self) -> str:
+    async def _get_timestamp(self) -> str:
         """Get current timestamp in ISO format."""
         from datetime import datetime
         return datetime.utcnow().isoformat()

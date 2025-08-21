@@ -24,7 +24,7 @@ class InternalToolRegistry:
     def list(self) -> Dict[str, Callable[..., Any]]:
         return dict(self._registry)
 
-    def execute(self, qualified_name: str, args: dict | None = None) -> dict:
+    async def execute(self, qualified_name: str, args: dict | None = None) -> dict:
         func = self.get(qualified_name)
         if not func:
             return {'status': 'error', 'error': f'tool {qualified_name} not found'}
@@ -39,7 +39,7 @@ registry = InternalToolRegistry()
 
 
 # Admin tools
-def _admin_system_info() -> dict:
+async def _admin_system_info() -> dict:
     import platform, os
     return {
         'python_version': platform.python_version(),

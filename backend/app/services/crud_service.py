@@ -113,43 +113,43 @@ class CrudService(BaseApiService):
         return handler(*args, **kwargs)
 
     @expose('/', methods=['POST'])
-    def create(self, req: Request):
+    async def create(self, req: Request):
         return self._call_if_enabled('create', self._handle_create, req)
 
     @expose('/', methods=['GET'])
-    def list_all(self, req: Request):
+    async def list_all(self, req: Request):
         return self._call_if_enabled('list', self._handle_list, req)
 
     @expose('/{id}', methods=['GET'])
-    def read_one(self, req: Request, id: int):  # noqa: A002 - id is API param name
+    async def read_one(self, req: Request, id: int):  # noqa: A002 - id is API param name
         return self._call_if_enabled('read', self._handle_read, req, id)
 
     @expose('/{id}', methods=['PUT'])
-    def update(self, req: Request, id: int):  # noqa: A002
+    async def update(self, req: Request, id: int):  # noqa: A002
         return self._call_if_enabled('update', self._handle_update, req, id)
 
     @expose('/{id}', methods=['DELETE'])
-    def delete(self, req: Request, id: int):  # noqa: A002
+    async def delete(self, req: Request, id: int):  # noqa: A002
         return self._call_if_enabled('delete', self._handle_delete, req, id)
 
     @expose('/search', methods=['GET'])
-    def search(self, req: Request):
+    async def search(self, req: Request):
         return self._call_if_enabled('search', self._handle_search, req)
 
     @expose('/bulk', methods=['POST'])
-    def bulk_operations(self, req: Request):
+    async def bulk_operations(self, req: Request):
         return self._call_if_enabled('bulk', self._handle_bulk, req)
 
     @expose('/selector', methods=['GET'])
-    def selector(self, req: Request):
+    async def selector(self, req: Request):
         return self._call_if_enabled('selector', self._handle_selector, req)
 
     @expose('/selector/{id}', methods=['GET'])
-    def single_selector(self, req: Request, id: int):  # noqa: A002
+    async def single_selector(self, req: Request, id: int):  # noqa: A002
         return self._call_if_enabled('selector', self._handle_single_selector, req, id)
 
     # Handlers
-    def _handle_create(self, req: Request):
+    async def _handle_create(self, req: Request):
         try:
             data = req.get_json(silent=True) or {}
 
@@ -166,15 +166,15 @@ class CrudService(BaseApiService):
             db.session.rollback()
             return jsonify({'error': str(exc)}), 500
 
-    def _handle_list(self, req: Request):
+    async def _handle_list(self, req: Request):
         try:
             query = self.model.query
 
             if self.config['filters']['enabled']:
-                query = self._apply_filters(query, req.args)
+                query = await self._apply_filters(query, req.args)
 
             if self.config['sorting']['enabled']:
-                query = self._apply_sorting(query, req.args)
+                query = await self._apply_sorting(query, req.args)
 
             if self.config['pagination']['enabled']:
                 page = int(req.args.get('page', 1))
@@ -202,7 +202,7 @@ class CrudService(BaseApiService):
         except Exception as exc:  # noqa: BLE001
             return jsonify({'error': str(exc)}), 500
 
-    def _handle_read(self, req: Request, id: int):  # noqa: A002 - id is API param name
+    async def _handle_read(self, req: Request, id: int):  # noqa: A002 - id is API param name
         try:
             instance = self.model.query.filter_by(id=id).first()
             if not instance:
@@ -211,7 +211,7 @@ class CrudService(BaseApiService):
         except Exception as exc:  # noqa: BLE001
             return jsonify({'error': str(exc)}), 500
 
-    def _handle_update(self, req: Request, id: int):  # noqa: A002
+    async def _handle_update(self, req: Request, id: int):  # noqa: A002
         try:
             instance = self.model.query.filter_by(id=id).first()
             if not instance:
@@ -233,7 +233,7 @@ class CrudService(BaseApiService):
             db.session.rollback()
             return jsonify({'error': str(exc)}), 500
 
-    def _handle_delete(self, req: Request, id: int):  # noqa: A002
+    async def _handle_delete(self, req: Request, id: int):  # noqa: A002
         try:
             instance = self.model.query.filter_by(id=id).first()
             if not instance:
@@ -245,7 +245,7 @@ class CrudService(BaseApiService):
             db.session.rollback()
             return jsonify({'error': str(exc)}), 500
 
-    def _handle_search(self, req: Request):
+    async def _handle_search(self, req: Request):
         try:
             query_text = req.args.get('q', '')
             fields_param = req.args.get('fields', '')
@@ -292,7 +292,7 @@ class CrudService(BaseApiService):
         except Exception as exc:  # noqa: BLE001
             return jsonify({'error': str(exc)}), 500
 
-    def _handle_bulk(self, req: Request):
+    async def _handle_bulk(self, req: Request):
         try:
             payload = req.get_json(silent=True) or {}
             operation = payload.get('operation')
@@ -322,7 +322,7 @@ class CrudService(BaseApiService):
             db.session.rollback()
             return jsonify({'error': str(exc)}), 500
 
-    def _handle_selector(self, req: Request):
+    async def _handle_selector(self, req: Request):
         try:
             query = self.model.query
             search_query = req.args.get('q', '')
@@ -358,7 +358,7 @@ class CrudService(BaseApiService):
         except Exception as exc:  # noqa: BLE001
             return jsonify({'error': str(exc)}), 500
 
-    def _handle_single_selector(self, req: Request, id: int):  # noqa: A002
+    async def _handle_single_selector(self, req: Request, id: int):  # noqa: A002
         try:
             instance = self.model.query.filter_by(id=id).first()
             if not instance:
@@ -391,7 +391,7 @@ class CrudService(BaseApiService):
                 return str(getattr(item, field_name))
         return str(getattr(item, 'id'))
 
-    def _apply_filters(self, query, args):  # type: ignore[no-untyped-def]
+    async def _apply_filters(self, query, args):  # type: ignore[no-untyped-def]
         for key, value in args.items():
             if key.startswith('filter_'):
                 field_name = key[7:]
@@ -449,7 +449,7 @@ class CrudService(BaseApiService):
         except Exception:  # noqa: BLE001
             return raw
 
-    def _apply_sorting(self, query, args):  # type: ignore[no-untyped-def]
+    async def _apply_sorting(self, query, args):  # type: ignore[no-untyped-def]
         sort_field = args.get('sort', self.config['sorting']['default_sort'])
         sort_order = args.get('order', 'asc')
         if hasattr(self.model, sort_field):

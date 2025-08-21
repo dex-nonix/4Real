@@ -15,7 +15,7 @@ class BaseApiService(ABC):
         """Set SocketIO instance for WebSocket communication."""
         self._socketio = socketio_instance
 
-    def send_to_channel(self, channel: str, event: str, data: dict):
+    async def send_to_channel(self, channel: str, event: str, data: dict):
         """
         Send event to a specific WebSocket channel.
 
@@ -25,10 +25,10 @@ class BaseApiService(ABC):
             data: Event data payload
             room: Optional room name (defaults to channel)
         """
-        self._websocket_emit(event, data, channel)
+        await self._websocket_emit(event, data, channel)
 
 
-    def _websocket_emit(self, event, data: dict, target: str = None):
+    async def _websocket_emit(self, event, data: dict, target: str = None):
         _socketio = self._socketio
         if not self._socketio:
             self._logger.error(f"CRITICAL ERROR: SocketIO not initialized for {self.__class__.__name__} - WebSocket communication disabled!")
@@ -97,13 +97,13 @@ class BaseApiService(ABC):
                 
                 self._logger.info(f"=== End WebSocket Status ===")
             
-            self._socketio.emit(event, data, room=target)
+            await self._socketio.emit(event, data, room=target)
             self._logger.debug(f"Successfully emitted event '{event}' to room '{target}'")
         except Exception as e:
             self._logger.error(f"Failed to emit event '{event}' to room '{target}': {e}")
             raise
 
-    def get_exposed_ws_methods(self) -> List[Dict[str, Any]]:
+    async def get_exposed_ws_methods(self) -> List[Dict[str, Any]]:
         """Get all @expose_ws methods with their metadata."""
         exposed_ws_methods = []
 
@@ -120,7 +120,7 @@ class BaseApiService(ABC):
 
         return exposed_ws_methods
 
-    def to_swagger(self, service_name: str = None) -> Dict[str, Any]:
+    async def to_swagger(self, service_name: str = None) -> Dict[str, Any]:
         """
         Return Swagger/OpenAPI definitions for this service.
         Each service can override this to provide custom documentation.
@@ -132,14 +132,14 @@ class BaseApiService(ABC):
             Dict containing OpenAPI components, paths, and schemas
         """
         # Default implementation using the working method_to_swagger
-        exposed_methods = self.get_exposed_methods()
+        exposed_methods = await self.get_exposed_methods()
 
         paths = {}
         schemas = {}
 
         for method_info in exposed_methods:
             method = getattr(self, method_info['name'])
-            swagger_info = self.method_to_swagger(method, service_name)
+            swagger_info = await self.method_to_swagger(method, service_name)
 
             # Add service prefix to path for Swagger (matching API Router behavior)
             raw_path = swagger_info['path']
@@ -162,7 +162,7 @@ class BaseApiService(ABC):
             'tags': [service_name]  # ONLY ONE TAG - THE SERVICE NAME
         }
 
-    def get_exposed_methods(self) -> List[Dict[str, Any]]:
+    async def get_exposed_methods(self) -> List[Dict[str, Any]]:
         """Get all @expose methods with their metadata."""
         exposed_methods = []
 
@@ -211,7 +211,7 @@ class BaseApiService(ABC):
 
         return parameters
 
-    def method_to_swagger(self, method: Callable, service_name: str) -> Dict[str, Any]:
+    async def method_to_swagger(self, method: Callable, service_name: str) -> Dict[str, Any]:
         """DEFAULT: Convert @expose method to Swagger format. ALL subclasses use this by default."""
 
         # Extract ALL info from @expose decorator
@@ -235,7 +235,7 @@ class BaseApiService(ABC):
             status_codes = {200: 'Success', 400: 'Bad Request', 500: 'Internal Server Error'}
 
         # Extract path parameters from URL pattern
-        path_parameters = self._extract_path_parameters(path)
+        path_parameters = await self._extract_path_parameters(path)
 
         # Build operation object
         operation = {

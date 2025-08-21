@@ -14,7 +14,7 @@ class StreamingMessageHandler:
         self.assistant_message_id: Optional[int] = None
         self._logger = logging.getLogger(__name__)
 
-    def finalize_assistant_message(self, final_content: str = None, error: bool = False):
+    async def finalize_assistant_message(self, final_content: str = None, error: bool = False):
         """Mark assistant message as complete or error."""
         if not self.assistant_message_id:
             raise ValueError("Assistant message not created yet")
@@ -53,11 +53,11 @@ class StreamingMessageHandler:
             self._logger.error(f"Failed to finalize assistant message: {e}", exc_info=True)
             raise
 
-    def mark_as_error(self, error_message: str):
+    async def mark_as_error(self, error_message: str):
         """Mark assistant message as error."""
         return self.finalize_assistant_message(error_message, error=True)
 
-    def update_content_safely(self, chunk: str) -> bool:
+    async def update_content_safely(self, chunk: str) -> bool:
         """Update content with error handling, returns success status."""
         try:
             if not chunk or not isinstance(chunk, str):
@@ -87,7 +87,7 @@ class StreamingMessageHandler:
             self._logger.error(f"Failed to update content safely: {e}", exc_info=True)
             return False
 
-    def ensure_message_exists(self) -> bool:
+    async def ensure_message_exists(self) -> bool:
         """Ensure the assistant message exists and is accessible."""
         if not self.assistant_message_id:
             return False
@@ -99,7 +99,7 @@ class StreamingMessageHandler:
             self._logger.error(f"Failed to validate message existence: {e}", exc_info=True)
             return False
 
-    def cleanup_on_error(self):
+    async def cleanup_on_error(self):
         """Clean up resources and mark message as error if needed."""
         try:
             if self.assistant_message_id:

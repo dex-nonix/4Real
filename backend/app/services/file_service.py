@@ -36,7 +36,7 @@ class FileService(CrudService):
     }
 
     @expose('/upload', methods=['POST'])
-    def upload(self, req: Request) -> Any:
+    async def upload(self, req: Request) -> Any:
         try:
             if 'file' not in req.files:  # type: ignore[attr-defined]
                 return jsonify({'error': 'file is required'}), 400
@@ -72,7 +72,7 @@ class FileService(CrudService):
             # Derive metadata
             size_bytes = os.path.getsize(file_path)
             mime_type = getattr(file_storage, 'mimetype', 'application/octet-stream')
-            sha256 = self._file_sha256(file_path)
+            sha256 = await self._file_sha256(file_path)
 
             # Build absolute URL on the API server so clients always load from the same host
             public_base = str(getattr(current_app.config, 'PUBLIC_BASE_URL', '') or '').rstrip('/')
@@ -108,7 +108,7 @@ class FileService(CrudService):
             db.session.rollback()
             return jsonify({'error': str(exc)}), 500
 
-    def _file_sha256(self, path: str) -> str:
+    async def _file_sha256(self, path: str) -> str:
         try:
             h = hashlib.sha256()
             with open(path, 'rb') as f:

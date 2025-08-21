@@ -37,7 +37,7 @@ class ChatHistoryMixin:
             }
         }
     )
-    def list_session_histories(self, req: Request, id: int):  # noqa: A002
+    async def list_session_histories(self, req: Request, id: int):  # noqa: A002
         """List all histories for a specific session."""
         try:
             session = ChatSession.query.filter_by(id=id, is_active=True).first()
@@ -76,7 +76,7 @@ class ChatHistoryMixin:
             }
         }
     )
-    def create_session_history(self, req: Request, id: int):  # noqa: A002
+    async def create_session_history(self, req: Request, id: int):  # noqa: A002
         """Create a new history for a specific session."""
         try:
             session = ChatSession.query.filter_by(id=id, is_active=True).first()
@@ -120,7 +120,7 @@ class ChatHistoryMixin:
             }
         }
     )
-    def get_session_history(self, req: Request, id: int, history_id: int):
+    async def get_session_history(self, req: Request, id: int, history_id: int):
         """Get a specific history within a session."""
         try:
             session = ChatSession.query.filter_by(id=id, is_active=True).first()
@@ -162,7 +162,7 @@ class ChatHistoryMixin:
             }
         }
     )
-    def update_session_history(self, req: Request, id: int, history_id: int):  # noqa: A002
+    async def update_session_history(self, req: Request, id: int, history_id: int):  # noqa: A002
         """Update a specific history within a session."""
         try:
             session = ChatSession.query.filter_by(id=id, is_active=True).first()
@@ -197,7 +197,7 @@ class ChatHistoryMixin:
             }
         }
     )
-    def delete_session_history(self, req: Request, id: int, history_id: int):  # noqa: A002
+    async def delete_session_history(self, req: Request, id: int, history_id: int):  # noqa: A002
         """Delete a specific history within a session."""
         try:
             session = ChatSession.query.filter_by(id=id, is_active=True).first()
@@ -231,7 +231,7 @@ class ChatHistoryMixin:
             }
         }
     )
-    def clear_history_messages(self, req: Request, id: int, history_id: int):
+    async def clear_history_messages(self, req: Request, id: int, history_id: int):
         """Clear all messages in a specific history."""
         try:
             session = ChatSession.query.filter_by(id=id, is_active=True).first()

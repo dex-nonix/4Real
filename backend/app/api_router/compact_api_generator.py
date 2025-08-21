@@ -17,31 +17,31 @@ class CompactApiGenerator:
         self.openapi_generator = OpenAPIGenerator()
         self._add_routes()
 
-    def _add_routes(self):
+    async def _add_routes(self):
         """Add compact API routes to the blueprint."""
 
         @self.blueprint.route('/overview', methods=['GET'])
-        def get_compact_overview():
+        async def get_compact_overview():
             """Get compact YAML overview with optional service filtering."""
             try:
                 # Get optional service filter from query parameter
                 service_filter = request.args.get('services', '').strip()
 
                 # Get the full OpenAPI spec using the existing generator
-                openapi_spec = self.openapi_generator.generate_openapi_spec(
+                openapi_spec = await self.openapi_generator.generate_openapi_spec(
                     self.api_router.registered_services,
                     service_filter
                 )
 
                 # Convert OpenAPI spec to compact YAML
-                yaml_overview = self._convert_openapi_to_compact_yaml(openapi_spec, service_filter)
+                yaml_overview = await self._convert_openapi_to_compact_yaml(openapi_spec, service_filter)
 
                 return yaml_overview, 200, {'Content-Type': 'text/yaml'}
 
             except Exception as exc:
                 return f"# Error: {str(exc)}", 500, {'Content-Type': 'text/yaml'}
 
-    def _convert_openapi_to_compact_yaml(self, openapi_spec: Dict[str, Any], service_filter: str = '') -> str:
+    async def _convert_openapi_to_compact_yaml(self, openapi_spec: Dict[str, Any], service_filter: str = '') -> str:
         """Convert full OpenAPI spec to compact YAML overview."""
 
         # Header
@@ -51,7 +51,7 @@ class CompactApiGenerator:
             header = "# COMPACT API OVERVIEW - All Services\n"
 
         header += f"# Generated at: {datetime.now().isoformat()}\n"
-        header += f"# Total endpoints: {self._count_total_endpoints(openapi_spec)}\n"
+        header += f"# Total endpoints: {await self._count_total_endpoints(openapi_spec)}\n"
 
         # Add link to full OpenAPI JSON
         if service_filter:
@@ -67,7 +67,7 @@ class CompactApiGenerator:
             return header + "# No endpoints found\n"
 
         # Group by service (extract from tags or path patterns)
-        service_groups = self._group_paths_by_service(paths)
+        service_groups = await self._group_paths_by_service(paths)
 
         # Generate YAML for each service
         yaml_content = header
@@ -76,7 +76,7 @@ class CompactApiGenerator:
             yaml_content += f"{service_name}:\n"
 
             # Group paths by logical sections
-            sections = self._group_paths_by_section(service_paths)
+            sections = await self._group_paths_by_section(service_paths)
 
             for section_name, section_paths in sections.items():
                 yaml_content += f"  {section_name}:\n"
@@ -100,7 +100,7 @@ class CompactApiGenerator:
 
         return yaml_content
 
-    def _count_total_endpoints(self, openapi_spec: Dict[str, Any]) -> int:
+    async def _count_total_endpoints(self, openapi_spec: Dict[str, Any]) -> int:
         """Count total number of endpoints in OpenAPI spec."""
         total = 0
         paths = openapi_spec.get('paths', {})
@@ -110,7 +110,7 @@ class CompactApiGenerator:
                     total += 1
         return total
 
-    def _group_paths_by_service(self, paths: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    async def _group_paths_by_service(self, paths: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         """Group paths by service name."""
         service_groups = {}
 
@@ -125,7 +125,7 @@ class CompactApiGenerator:
 
         return service_groups
 
-    def _group_paths_by_section(self, service_paths: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    async def _group_paths_by_section(self, service_paths: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         """Group paths by logical section within a service."""
         sections = {}
 

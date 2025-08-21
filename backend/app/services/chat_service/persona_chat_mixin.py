@@ -31,7 +31,7 @@ class PersonaChatMixin:
         }
     }
 
-    def _build_persona_query(self, persona_id: int = None):
+    async def _build_persona_query(self, persona_id: int = None):
         """Build base query for personas with session counts."""
         query = db.session.query(
             Persona,
@@ -63,7 +63,7 @@ class PersonaChatMixin:
             }
         }
     )
-    def list_personas(self, req: Request):
+    async def list_personas(self, req: Request):
         """List all available personas with active session counts."""
         try:
             # Query personas with session counts using JOIN
@@ -86,7 +86,7 @@ class PersonaChatMixin:
         status_codes={200: 'OK', 404: 'Not Found'},
         response_schema=PERSONA_SCHEMA
     )
-    def get_persona_by_id(self, req: Request, persona_id: int):
+    async def get_persona_by_id(self, req: Request, persona_id: int):
         """Get a single persona by ID with active session count."""
         try:
             # Query persona with session count using JOIN
