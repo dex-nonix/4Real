@@ -244,7 +244,7 @@ class ChatThreadPoolManager:
             self._logger.error(f"Critical error in task completion callback: {e}", exc_info=True)
             # This is a meta-error - log it but don't crash the callback
 
-    async def _monitor_thread_pool(self):
+    def _monitor_thread_pool(self):
         """Monitor thread pool health and performance."""
         while not self._shutdown_event.is_set():
             try:
@@ -279,7 +279,7 @@ class ChatThreadPoolManager:
                 # Sleep longer on error to prevent spam
                 self._shutdown_event.wait(60)
 
-    async def get_stats(self) -> ThreadPoolStats:
+    def get_stats(self) -> ThreadPoolStats:
         """Get current thread pool statistics."""
         with self._lock:
             return ThreadPoolStats(

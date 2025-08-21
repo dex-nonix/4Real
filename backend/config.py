@@ -24,7 +24,7 @@ class Config:
     LOG_FILE = os.getenv('LOG_FILE', 'flask_errors.log')
 
     # WebSocket
-    SOCKETIO_ASYNC_MODE = os.getenv('SOCKETIO_ASYNC_MODE', 'asyncio')
+    SOCKETIO_ASYNC_MODE = os.getenv('SOCKETIO_ASYNC_MODE', 'threading')
     SOCKETIO_CORS_ORIGINS = os.getenv('SOCKETIO_CORS_ORIGINS', CORS_ORIGINS)
     SOCKETIO_LOGGER = os.getenv('SOCKETIO_LOGGER', str(DEBUG)).lower() == 'true'
     SOCKETIO_ENGINE_LOGGER = os.getenv('SOCKETIO_ENGINE_LOGGER', str(DEBUG)).lower() == 'true'

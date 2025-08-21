@@ -62,7 +62,7 @@ async def create_app() -> Flask:
 
 
     socketio = SocketIO(
-        async_mode=app.config.get('SOCKETIO_ASYNC_MODE', 'asyncio'),
+        async_mode=app.config.get('SOCKETIO_ASYNC_MODE', 'threading'),
         cors_allowed_origins=app.config.get('SOCKETIO_CORS_ORIGINS', '*'),
         logger=app.config.get('SOCKETIO_LOGGER', False),
         engineio_logger=app.config.get('SOCKETIO_ENGINE_LOGGER', False),
@@ -276,4 +276,4 @@ async def create_app() -> Flask:
 
 
 
-    return app, socketio
+    return app

@@ -24,7 +24,7 @@ class MessageTypeRegistry:
     def __init__(self):
         self._handlers: Dict[str, MessageTypeHandler] = {}
 
-    async def register(self, message_type: str, handler: MessageTypeHandler) -> None:
+    def register(self, message_type: str, handler: MessageTypeHandler) -> None:
         """Register a handler for a message type."""
         self._handlers[message_type] = handler
         print(f"Registered message type handler: {message_type}")

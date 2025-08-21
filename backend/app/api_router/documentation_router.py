@@ -26,7 +26,7 @@ class DocumentationRouter:
         # Add documentation routes
         self._add_documentation_routes()
 
-    async def _add_documentation_routes(self) -> None:
+    def _add_documentation_routes(self) -> None:
         """Add OpenAPI documentation endpoints to the blueprint"""
 
         @self.blueprint.route('/openapi.json')

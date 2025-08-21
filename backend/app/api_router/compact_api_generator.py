@@ -17,7 +17,7 @@ class CompactApiGenerator:
         self.openapi_generator = OpenAPIGenerator()
         self._add_routes()
 
-    async def _add_routes(self):
+    def _add_routes(self):
         """Add compact API routes to the blueprint."""
 
         @self.blueprint.route('/overview', methods=['GET'])
