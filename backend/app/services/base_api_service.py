@@ -33,8 +33,70 @@ class BaseApiService(ABC):
         if not self._socketio:
             self._logger.error(f"CRITICAL ERROR: SocketIO not initialized for {self.__class__.__name__} - WebSocket communication disabled!")
             return
+        
         self._logger.debug(f"Emitting event '{event}' to room '{target}' with data: {data}")
+        
         try:
+            if hasattr(_socketio, 'server') and hasattr(_socketio.server, 'manager'):
+                manager = _socketio.server.manager
+                
+                self._logger.info(f"=== WebSocket Connection Status ===")
+                
+                try:
+                    all_rooms = manager.rooms
+                    self._logger.info(f"Total rooms: {len(all_rooms)}")
+                    
+                    if all_rooms:
+                        self._logger.info(f"Active rooms: {list(all_rooms.keys())}")
+                        
+                        for room_name, room_data in all_rooms.items():
+                            try:
+                                if hasattr(room_data, 'sids'):
+                                    room_sids = list(room_data.sids)
+                                    self._logger.info(f"Room '{room_name}': {len(room_sids)} connections - SIDs: {room_sids}")
+                                elif hasattr(room_data, '__iter__'):
+                                    room_sids = list(room_data)
+                                    self._logger.info(f"Room '{room_name}': {len(room_sids)} connections - SIDs: {room_sids}")
+                                else:
+                                    self._logger.info(f"Room '{room_name}': {room_data}")
+                            except Exception as room_error:
+                                self._logger.warning(f"Could not process room '{room_name}': {room_error}")
+                    
+                    if target and target in all_rooms:
+                        target_room = all_rooms[target]
+                        try:
+                            if hasattr(target_room, 'sids'):
+                                target_sids = list(target_room.sids)
+                                self._logger.info(f"Target room '{target}': {len(target_sids)} connections - SIDs: {target_sids}")
+                            elif hasattr(target_room, '__iter__'):
+                                target_sids = list(target_room)
+                                self._logger.info(f"Target room '{target}': {len(target_sids)} connections - SIDs: {target_sids}")
+                            else:
+                                self._logger.info(f"Target room '{target}': {target_room}")
+                        except Exception as target_error:
+                            self._logger.warning(f"Could not process target room '{target}': {target_error}")
+                    elif target:
+                        self._logger.info(f"Target room '{target}' not found in active rooms")
+                        
+                except Exception as rooms_error:
+                    self._logger.warning(f"Could not access rooms: {rooms_error}")
+                
+                try:
+                    if hasattr(manager, 'get_participants'):
+                        participants = manager.get_participants()
+                        self._logger.info(f"Total participants: {len(participants) if participants else 0}")
+                    elif hasattr(manager, 'get_sids'):
+                        sids = manager.get_sids()
+                        self._logger.info(f"Total SIDs: {len(sids) if sids else 0}")
+                        if sids:
+                            self._logger.info(f"Active SIDs: {list(sids)[:10]}...")  # Show first 10
+                    else:
+                        self._logger.info("Manager does not have get_participants or get_sids method")
+                except Exception as sids_error:
+                    self._logger.warning(f"Could not get SIDs: {sids_error}")
+                
+                self._logger.info(f"=== End WebSocket Status ===")
+            
             self._socketio.emit(event, data, room=target, namespace='/')
             self._logger.debug(f"Successfully emitted event '{event}' to room '{target}'")
         except Exception as e:
