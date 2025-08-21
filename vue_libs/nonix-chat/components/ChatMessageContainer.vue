@@ -87,24 +87,6 @@ onMounted(() => {
   chatMessageTypeManager.registerMessageType('user', UserMessage);
   chatMessageTypeManager.registerMessageType('chat', UserMessage); // Handle 'chat' messages as user messages
   chatMessageTypeManager.registerMessageType('streaming', StreamingMessage);
-  
-  // WebSocket Integration
-  if (props.selectedSession && props.historyId) {
-    const room = `chat/${props.selectedSession.id}/${props.historyId}`;
-    
-    chatService.joinRoom(room);
-    
-    // Listen for real-time events
-    chatService.onWebSocketEvent('llm_status', handleLLMStatus);
-    chatService.onWebSocketEvent('tool_status', handleToolStatus);
-    chatService.onWebSocketEvent('message_received', handleMessageReceived);
-    chatService.onWebSocketEvent('message_processed', handleMessageProcessed);
-    
-    // Add streaming event listeners
-    chatService.onWebSocketEvent('assistant_message_started', handleAssistantStarted);
-    chatService.onWebSocketEvent('assistant_message_chunk', handleAssistantChunk);
-    chatService.onWebSocketEvent('assistant_message_complete', handleAssistantComplete);
-  }
 });
 
 // Cleanup WebSocket resources on unmount
@@ -117,6 +99,7 @@ onUnmounted(() => {
 
 // WebSocket Event Handlers
 const handleLLMStatus = (data) => {
+  console.log('🎯 LLM Status event received:', data);
   const { stage, message, timestamp } = data;
   console.log('LLM Status:', stage, message, timestamp);
   // Update UI state based on LLM stage
@@ -124,13 +107,15 @@ const handleLLMStatus = (data) => {
 };
 
 const handleToolStatus = (data) => {
+  console.log('🎯 Tool Status event received:', data);
   const { tool_name, status, result, error, timestamp } = data;
   console.log('Tool Status:', tool_name, status, result, error);
-  // Update UI state based on tool status
+  // Update UI state based on LLM stage
   updateToolStatus(tool_name, status, result, error);
 };
 
 const handleMessageReceived = (data) => {
+  console.log('🎯 Message Received event:', data);
   const { message_id, role, content, timestamp } = data;
   console.log('Message Received:', message_id, role, content);
   // Add message to chat
@@ -138,6 +123,7 @@ const handleMessageReceived = (data) => {
 };
 
 const handleMessageProcessed = (data) => {
+  console.log('🎯 Message Processed event:', data);
   const { message_id, status, timestamp } = data;
   console.log('Message Processed:', message_id, status);
   // Update message status
@@ -146,9 +132,11 @@ const handleMessageProcessed = (data) => {
 
 // Streaming event handlers
 const handleAssistantStarted = (data) => {
-  console.log('Assistant Message Started:', data);
+  console.log('🎯 Assistant Message Started event:', data);
   // Create empty assistant message
   const { message_id, status, metadata } = data;
+  console.log('Creating streaming message with ID:', message_id);
+  
   const assistantMessage = {
     id: message_id,
     role: 'assistant',
@@ -158,6 +146,7 @@ const handleAssistantStarted = (data) => {
     created_at: new Date().toISOString()
   };
   messages.value.push(assistantMessage);
+  console.log('Added streaming message to UI. Total messages:', messages.value.length);
   
   // Track streaming state
   streamingMessages.value.set(message_id, { content: '', status: 'streaming', metadata });
@@ -165,28 +154,37 @@ const handleAssistantStarted = (data) => {
 };
 
 const handleAssistantChunk = (data) => {
-  console.log('Assistant Message Chunk:', data);
+  console.log('🎯 Assistant Message Chunk event:', data);
   // Find existing assistant message and append chunk
-  const { chunk, metadata, is_final } = data;
-  const messageIndex = messages.value.findIndex(m => m.id === data.message_id);
+  const { message_id, chunk, metadata, is_final } = data;
+  console.log('Looking for message with ID:', message_id, 'in', messages.value.length, 'messages');
+  
+  const messageIndex = messages.value.findIndex(m => m.id === message_id);
+  console.log('Found message at index:', messageIndex);
+  
   if (messageIndex !== -1) {
     const currentText = messages.value[messageIndex].content_json?.text || '';
+    const newText = currentText + chunk;
+    console.log('Updating message text from:', currentText, 'to:', newText);
+    
     messages.value[messageIndex].content_json = { 
       type: 'text', 
-      text: currentText + chunk 
+      text: newText 
     };
     
     // Update streaming state
-    const streamingData = streamingMessages.value.get(data.message_id);
+    const streamingData = streamingMessages.value.get(message_id);
     if (streamingData) {
-      streamingData.content = currentText + chunk;
-      streamingMessages.value.set(data.message_id, streamingData);
+      streamingData.content = newText;
+      streamingMessages.value.set(message_id, streamingData);
     }
+  } else {
+    console.error('Message not found for chunk update. Available message IDs:', messages.value.map(m => m.id));
   }
 };
 
 const handleAssistantComplete = (data) => {
-  console.log('Assistant Message Complete:', data);
+  console.log('🎯 Assistant Message Complete event:', data);
   // Mark message as complete and change type to text
   const { message_id, status, metadata } = data;
   const messageIndex = messages.value.findIndex(m => m.id === message_id);
@@ -228,17 +226,22 @@ const updateMessageStatus = (messageId, status) => {
 
 // Watch for session/history changes and rejoin WebSocket rooms
 watch([() => props.selectedSession, () => props.historyId], ([newSession, newHistoryId], [oldSession, oldHistoryId]) => {
+  console.log('Session/History watch triggered:', { newSession, newHistoryId, oldSession, oldHistoryId });
+  
   // Leave old room if it exists
   if (oldSession && oldHistoryId) {
     const oldRoom = `chat/${oldSession.id}/${oldHistoryId}`;
+    console.log('Leaving old room:', oldRoom);
     chatService.leaveRoom(oldRoom);
   }
   
   // Join new room if it exists
   if (newSession && newHistoryId) {
     const newRoom = `chat/${newSession.id}/${newHistoryId}`;
+    console.log('Joining new room:', newRoom);
     chatService.joinRoom(newRoom);
     
+    console.log('Setting up WebSocket event listeners...');
     // Re-attach event listeners
     chatService.onWebSocketEvent('llm_status', handleLLMStatus);
     chatService.onWebSocketEvent('tool_status', handleToolStatus);
@@ -249,6 +252,9 @@ watch([() => props.selectedSession, () => props.historyId], ([newSession, newHis
     chatService.onWebSocketEvent('assistant_message_started', handleAssistantStarted);
     chatService.onWebSocketEvent('assistant_message_chunk', handleAssistantChunk);
     chatService.onWebSocketEvent('assistant_message_complete', handleAssistantComplete);
+    console.log('WebSocket event listeners attached successfully');
+  } else {
+    console.log('No session or history ID available for WebSocket setup');
   }
 }, { immediate: true });
 

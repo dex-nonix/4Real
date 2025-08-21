@@ -13,6 +13,8 @@ const props = defineProps({
   }
 });
 
+const emit = defineEmits(['deleteMessage']);
+
 // Handle different field names from API
 const messageContent = computed(() => props.message.content || props.message.content_json || props.message.text || 'No content');
 const userName = computed(() => props.message.metadata?.userName || `User ${props.message.senderId || props.message.role || ''}`);
