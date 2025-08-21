@@ -6,7 +6,7 @@ from ...models.style import Style
 from ...models.track import Track
 
 
-def track_list_by_album(album_id: int) -> Dict[str, Any]:
+async def track_list_by_album(album_id: int) -> Dict[str, Any]:
     """List tracks in an album with detailed information."""
     try:
         # Verify album exists
@@ -36,7 +36,7 @@ def track_list_by_album(album_id: int) -> Dict[str, Any]:
         return {'status': 'error', 'error': str(exc)}
 
 
-def style_list_all() -> Dict[str, Any]:
+async def style_list_all() -> Dict[str, Any]:
     """List all music styles."""
     try:
         # Get all styles ordered by name
@@ -63,7 +63,7 @@ def style_list_all() -> Dict[str, Any]:
         return {'status': 'error', 'error': str(exc)}
 
 
-def track_get_info(track_id: int) -> Dict[str, Any]:
+async def track_get_info(track_id: int) -> Dict[str, Any]:
     """Get detailed track information."""
     try:
         # Get track with related data

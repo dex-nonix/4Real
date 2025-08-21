@@ -57,7 +57,7 @@ async def create_langchain_tools(persona_id: int, available_tools_info: List[Dic
                     param_default = param['default']
 
                     # Get the base field type
-                    field_type = _get_field_type(param_type)
+                    field_type = await _get_field_type(param_type)
 
                     # Create the field - the logic is the same regardless of Optional/Union
                     if param_required:

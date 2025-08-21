@@ -13,7 +13,7 @@ async def llm_tool_wrapper(original_func, *args, **kwargs):
     """Create a LangChain-compatible wrapper that preserves partial binding."""
 
     async def wrapper(*w_args, **w_kwargs):
-        return original_func(*args, *w_args, **kwargs, **w_kwargs)
+        return await original_func(*args, *w_args, **kwargs, **w_kwargs)
 
     wrapper.__name__ = original_func.__name__
     wrapper.__doc__ = original_func.__doc__
@@ -130,13 +130,13 @@ async def execute_tool(persona_id: int, tool_name: str, args: Dict[str, Any] | N
 
     The callable may be a partial; args are passed through without mutation.
     """
-    tool_map = build_persona_tool_map(persona_id)
+    tool_map = await build_persona_tool_map(persona_id)
     func = tool_map.get(tool_name)
     if not callable(func):
         return {'status': 'error', 'error': 'Tool not allowed or not found'}
 
     try:
-        result = func(**(args or {})) if (args) else func()
+        result = await func(**(args or {})) if (args) else await func()
         return {'status': 'success', 'result': result}
     except Exception as exc:  # noqa: BLE001
         return {'status': 'error', 'error': str(exc)}

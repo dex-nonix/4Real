@@ -6,7 +6,7 @@ from ...models.file import File
 from ...models.file_category import FileCategory
 
 
-def file_list_artist_files(artist_id: int, category: str = None) -> Dict[str, Any]:
+async def file_list_artist_files(artist_id: int, category: str = None) -> Dict[str, Any]:
     """List files for an artist, optionally filtered by category."""
     try:
         # Verify artist exists
@@ -43,7 +43,7 @@ def file_list_artist_files(artist_id: int, category: str = None) -> Dict[str, An
         return {'status': 'error', 'error': str(exc)}
 
 
-def file_read_lyrics(file_id: int) -> Dict[str, Any]:
+async def file_read_lyrics(file_id: int) -> Dict[str, Any]:
     """Read lyric file content."""
     try:
         # Get file info

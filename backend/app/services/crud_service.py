@@ -17,6 +17,7 @@ class CrudService(BaseApiService):
 
     def __init__(self, model_class: Any | None = None, config: Optional[Dict[str, Any]] = None) -> None:
         # Model resolution: explicit arg wins; else existing attribute; else error
+        super().__init__()
         if model_class is not None:
             self.model = model_class
         elif not hasattr(self, 'model'):
@@ -154,14 +155,14 @@ class CrudService(BaseApiService):
             data = req.get_json(silent=True) or {}
 
             if self.config['validation']['enabled']:
-                errors = self._validate_create_data(data)
+                errors = await self._validate_create_data(data)
                 if errors:
                     return jsonify({'errors': errors}), 400
 
             instance = self.model(**data)
             db.session.add(instance)
             db.session.commit()
-            return jsonify({'message': 'Created successfully', 'data': self._serialize(instance)}), 201
+            return jsonify({'message': 'Created successfully', 'data': await self._serialize(instance)}), 201
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
             return jsonify({'error': str(exc)}), 500
@@ -185,8 +186,9 @@ class CrudService(BaseApiService):
 
                 # Flask-SQLAlchemy 3.x: use db.paginate instead of Query.paginate
                 pagination = db.paginate(query, page=page, per_page=per_page, error_out=False)
+                serialized_items = [await self._serialize(item) for item in pagination.items]
                 return jsonify({
-                    'data': [self._serialize(item) for item in pagination.items],
+                    'data': serialized_items,
                     'pagination': {
                         'page': page,
                         'per_page': per_page,
@@ -198,7 +200,8 @@ class CrudService(BaseApiService):
                 })
 
             items = query.all()
-            return jsonify({'data': [self._serialize(item) for item in items], 'total': len(items)})
+            serialized_items = [await self._serialize(item) for item in items]
+            return jsonify({'data': serialized_items, 'total': len(items)})
         except Exception as exc:  # noqa: BLE001
             return jsonify({'error': str(exc)}), 500
 
@@ -207,7 +210,7 @@ class CrudService(BaseApiService):
             instance = self.model.query.filter_by(id=id).first()
             if not instance:
                 return jsonify({'error': 'Not found'}), 404
-            return jsonify({'data': self._serialize(instance)})
+            return jsonify({'data': await self._serialize(instance)})
         except Exception as exc:  # noqa: BLE001
             return jsonify({'error': str(exc)}), 500
 
@@ -219,7 +222,7 @@ class CrudService(BaseApiService):
 
             data = req.get_json(silent=True) or {}
             if self.config['validation']['enabled']:
-                errors = self._validate_update_data(data, instance)
+                errors = await self._validate_update_data(data, instance)
                 if errors:
                     return jsonify({'errors': errors}), 400
 
@@ -228,7 +231,7 @@ class CrudService(BaseApiService):
                     setattr(instance, key, value)
 
             db.session.commit()
-            return jsonify({'message': 'Updated successfully', 'data': self._serialize(instance)})
+            return jsonify({'message': 'Updated successfully', 'data': await self._serialize(instance)})
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
             return jsonify({'error': str(exc)}), 500
@@ -277,8 +280,9 @@ class CrudService(BaseApiService):
                 )
                 # Flask-SQLAlchemy 3.x: use db.paginate instead of Query.paginate
                 pagination = db.paginate(base_query, page=page, per_page=per_page, error_out=False)
+                serialized_items = [await self._serialize(item) for item in pagination.items]
                 return jsonify({
-                    'data': [self._serialize(item) for item in pagination.items],
+                    'data': serialized_items,
                     'pagination': {
                         'page': page,
                         'per_page': per_page,
@@ -288,7 +292,8 @@ class CrudService(BaseApiService):
                 })
 
             items = base_query.all()
-            return jsonify({'data': [self._serialize(item) for item in items], 'total': len(items)})
+            serialized_items = [await self._serialize(item) for item in items]
+            return jsonify({'data': serialized_items, 'total': len(items)})
         except Exception as exc:  # noqa: BLE001
             return jsonify({'error': str(exc)}), 500
 
@@ -347,7 +352,7 @@ class CrudService(BaseApiService):
                 selector_item = {
                     'id': getattr(item, 'id'),
                     'value': getattr(item, 'id'),
-                    'label': self._format_selector_label(item),
+                    'label': await self._format_selector_label(item),
                 }
                 for field_name in selector_cfg['fields']:
                     if field_name != 'id' and hasattr(item, field_name):
@@ -366,7 +371,7 @@ class CrudService(BaseApiService):
             selector_item = {
                 'id': getattr(instance, 'id'),
                 'value': getattr(instance, 'id'),
-                'label': self._format_selector_label(instance),
+                'label': await self._format_selector_label(instance),
             }
             for field_name in self.config['selector']['fields']:
                 if field_name != 'id' and hasattr(instance, field_name):
@@ -376,7 +381,7 @@ class CrudService(BaseApiService):
             return jsonify({'error': str(exc)}), 500
 
     # Helpers
-    def _format_selector_label(self, item: Any) -> str:
+    async def _format_selector_label(self, item: Any) -> str:
         display_format: Optional[str] = self.config['selector'].get('display_format')
         if display_format:
             label = display_format
@@ -401,29 +406,29 @@ class CrudService(BaseApiService):
                 if ':' in value:
                     operator, filter_value = value.split(':', 1)
                     if operator == 'eq':
-                        query = query.filter(field == self._coerce_value(field, filter_value))
+                        query = query.filter(field == await self._coerce_value(field, filter_value))
                     elif operator == 'ne':
-                        query = query.filter(field != self._coerce_value(field, filter_value))
+                        query = query.filter(field != await self._coerce_value(field, filter_value))
                     elif operator == 'gt':
-                        query = query.filter(field > self._coerce_value(field, filter_value))
+                        query = query.filter(field > await self._coerce_value(field, filter_value))
                     elif operator == 'lt':
-                        query = query.filter(field < self._coerce_value(field, filter_value))
+                        query = query.filter(field < await self._coerce_value(field, filter_value))
                     elif operator == 'like':
                         query = query.filter(field.ilike(f'%{filter_value}%'))
                     elif operator == 'in':
-                        values = [self._coerce_value(field, v) for v in filter_value.split(',') if v]
+                        values = [await self._coerce_value(field, v) for v in filter_value.split(',') if v]
                         query = query.filter(field.in_(values))
                     elif operator == 'between':
                         parts = [p for p in filter_value.split(',') if p]
                         if len(parts) >= 2:
-                            low = self._coerce_value(field, parts[0])
-                            high = self._coerce_value(field, parts[1])
+                            low = await self._coerce_value(field, parts[0])
+                            high = await self._coerce_value(field, parts[1])
                             query = query.filter(field.between(low, high))
                 else:
-                    query = query.filter(field == self._coerce_value(field, value))
+                    query = query.filter(field == await self._coerce_value(field, value))
         return query
 
-    def _coerce_value(self, field, raw: str):  # type: ignore[no-untyped-def]
+    async def _coerce_value(self, field, raw: str):  # type: ignore[no-untyped-def]
         """Best-effort coercion of string filter values to the column's python_type."""
         try:
             column = field.property.columns[0]
@@ -457,7 +462,7 @@ class CrudService(BaseApiService):
             query = query.order_by(field.desc() if str(sort_order).lower() == 'desc' else field.asc())
         return query
 
-    def _validate_create_data(self, data: Dict[str, Any]) -> List[str]:
+    async def _validate_create_data(self, data: Dict[str, Any]) -> List[str]:
         errors: List[str] = []
         for field in self.config['validation']['required_fields']:
             if field not in data or data[field] in (None, ''):
@@ -470,7 +475,7 @@ class CrudService(BaseApiService):
                     errors.append(f'{field} must be unique')
         return errors
 
-    def _validate_update_data(self, data: Dict[str, Any], instance: Any) -> List[str]:
+    async def _validate_update_data(self, data: Dict[str, Any], instance: Any) -> List[str]:
         errors: List[str] = []
         for field in self.config['validation']['unique_fields']:
             if field in data:
@@ -481,7 +486,7 @@ class CrudService(BaseApiService):
                     errors.append(f'{field} must be unique')
         return errors
 
-    def _serialize(self, instance: Any) -> Dict[str, Any]:
+    async def _serialize(self, instance: Any) -> Dict[str, Any]:
         if hasattr(instance, 'to_dict'):
             return instance.to_dict()
         result: Dict[str, Any] = {}

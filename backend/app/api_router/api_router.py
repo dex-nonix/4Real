@@ -30,7 +30,7 @@ class APIRouter:
         """Instantiate a service and create routes for any @expose methods."""
         service = service_class(*args, **kwargs)
 
-        service.set_socketio(self.socketio)
+        await service.set_socketio(self.socketio)
 
         self.registered_services[service_name] = service
 

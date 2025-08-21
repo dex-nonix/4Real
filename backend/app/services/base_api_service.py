@@ -11,7 +11,7 @@ class BaseApiService(ABC):
         self._socketio = None  # Will be set by APIRouter during registration
         self._logger = None  # Will be set by subclasses
 
-    def set_socketio(self, socketio_instance):
+    async def set_socketio(self, socketio_instance):
         """Set SocketIO instance for WebSocket communication."""
         self._socketio = socketio_instance
 
@@ -184,7 +184,7 @@ class BaseApiService(ABC):
 
         return exposed_methods
 
-    def _extract_path_parameters(self, path: str) -> List[Dict[str, Any]]:
+    async def _extract_path_parameters(self, path: str) -> List[Dict[str, Any]]:
         """Extract path parameters from URL pattern like {param_name}."""
         parameters = []
 

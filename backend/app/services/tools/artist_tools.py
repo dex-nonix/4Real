@@ -4,7 +4,7 @@ from ...models.album import Album
 from ...models.artist import Artist
 
 
-def artist_list_albums(artist_id: int, page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+async def artist_list_albums(artist_id: int, page: int = 1, page_size: int = 20) -> Dict[str, Any]:
     """List albums for an artist with pagination."""
     try:
         # Verify artist exists
@@ -37,7 +37,7 @@ def artist_list_albums(artist_id: int, page: int = 1, page_size: int = 20) -> Di
         return {'status': 'error', 'error': str(exc)}
 
 
-def artist_get_info(artist_id: int) -> Dict[str, Any]:
+async def artist_get_info(artist_id: int) -> Dict[str, Any]:
     """Get artist details and metadata."""
     try:
         artist = Artist.query.filter_by(id=artist_id).first()
