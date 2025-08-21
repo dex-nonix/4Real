@@ -7,9 +7,9 @@
     "dev": "concurrently -n api,ui -c blue,green \"npm:dev:api\" \"npm:dev:ui\"",
     "dev:api": "./.venv/bin/python backend/cli.py run --host 0.0.0.0 --port 5000 --debug",
     "dev:ui": "vite --host 0.0.0.0 --port 5173",
-    "start": "gunicorn -c backend/gunicorn.conf.py backend.wsgi:app",
-    "start:prod": "gunicorn -c backend/gunicorn.conf.py backend.wsgi:app --env FLASK_ENV=production --env FLASK_DEBUG=0 --env LOG_LEVEL=INFO --env SOCKETIO_LOGGER=false --env SOCKETIO_ENGINE_LOGGER=false",
-    "start:dev": "gunicorn -c backend/gunicorn.conf.py backend.wsgi:app --env FLASK_ENV=development --env FLASK_DEBUG=1 --env LOG_LEVEL=DEBUG --env SOCKETIO_LOGGER=true --env SOCKETIO_ENGINE_LOGGER=true",
+    "start": "./.venv/bin/gunicorn -c backend/gunicorn.conf.py backend.wsgi:app",
+    "start:prod": "./.venv/bin/gunicorn -c backend/gunicorn.conf.py backend.wsgi:app --env FLASK_ENV=production --env FLASK_DEBUG=0 --env LOG_LEVEL=INFO --env SOCKETIO_LOGGER=false --env SOCKETIO_ENGINE_LOGGER=false",
+    "start:dev": "./.venv/bin/gunicorn -c backend/gunicorn.conf.py backend.wsgi:app --env FLASK_ENV=development --env FLASK_DEBUG=1 --env LOG_LEVEL=DEBUG --env SOCKETIO_LOGGER=true --env SOCKETIO_ENGINE_LOGGER=true",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0 --port 5174"
   },
