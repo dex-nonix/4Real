@@ -85,6 +85,7 @@ onMounted(() => {
   chatMessageTypeManager.registerMessageType('system', SystemMessage);
   chatMessageTypeManager.registerMessageType('tool', ToolMessage);
   chatMessageTypeManager.registerMessageType('user', UserMessage);
+  chatMessageTypeManager.registerMessageType('chat', UserMessage); // Handle 'chat' messages as user messages
   chatMessageTypeManager.registerMessageType('streaming', StreamingMessage);
   
   // WebSocket Integration
