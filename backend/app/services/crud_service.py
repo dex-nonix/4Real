@@ -51,7 +51,7 @@ class CrudService(BaseApiService):
 
         return merge(dict(provided_config), defaults)
 
-    def to_swagger(self, service_name: str) -> Dict[str, Any]:
+    async def to_swagger(self, service_name: str = None) -> Dict[str, Any]:
         """Generate Swagger documentation for CRUD operations from model + config."""
 
         # Validate service_name immediately (no default, no fallback)
@@ -60,7 +60,7 @@ class CrudService(BaseApiService):
 
         # Use the CrudSwaggerGenerator to handle all Swagger generation
         generator = CrudSwaggerGenerator(self, service_name)
-        return generator.generate_swagger(service_name)
+        return await generator.generate_swagger(service_name)
 
     def _get_default_config(self) -> Dict[str, Any]:
         return {
@@ -108,46 +108,46 @@ class CrudService(BaseApiService):
     def _is_enabled(self, op: str) -> bool:
         return bool(self.config.get('operations', {}).get(op, False))
 
-    def _call_if_enabled(self, op: str, handler, *args, **kwargs):
+    async def _call_if_enabled(self, op: str, handler, *args, **kwargs):
         if not self._is_enabled(op):
             return jsonify({'error': 'Operation disabled'}), 405
-        return handler(*args, **kwargs)
+        return await handler(*args, **kwargs)
 
     @expose('/', methods=['POST'])
     async def create(self, req: Request):
-        return self._call_if_enabled('create', self._handle_create, req)
+        return await self._call_if_enabled('create', self._handle_create, req)
 
     @expose('/', methods=['GET'])
     async def list_all(self, req: Request):
-        return self._call_if_enabled('list', self._handle_list, req)
+        return await self._call_if_enabled('list', self._handle_list, req)
 
     @expose('/{id}', methods=['GET'])
     async def read_one(self, req: Request, id: int):  # noqa: A002 - id is API param name
-        return self._call_if_enabled('read', self._handle_read, req, id)
+        return await self._call_if_enabled('read', self._handle_read, req, id)
 
     @expose('/{id}', methods=['PUT'])
     async def update(self, req: Request, id: int):  # noqa: A002
-        return self._call_if_enabled('update', self._handle_update, req, id)
+        return await self._call_if_enabled('update', self._handle_update, req, id)
 
     @expose('/{id}', methods=['DELETE'])
     async def delete(self, req: Request, id: int):  # noqa: A002
-        return self._call_if_enabled('delete', self._handle_delete, req, id)
+        return await self._call_if_enabled('delete', self._handle_delete, req, id)
 
     @expose('/search', methods=['GET'])
     async def search(self, req: Request):
-        return self._call_if_enabled('search', self._handle_search, req)
+        return await self._call_if_enabled('search', self._handle_search, req)
 
     @expose('/bulk', methods=['POST'])
     async def bulk_operations(self, req: Request):
-        return self._call_if_enabled('bulk', self._handle_bulk, req)
+        return await self._call_if_enabled('bulk', self._handle_bulk, req)
 
     @expose('/selector', methods=['GET'])
     async def selector(self, req: Request):
-        return self._call_if_enabled('selector', self._handle_selector, req)
+        return await self._call_if_enabled('selector', self._handle_selector, req)
 
     @expose('/selector/{id}', methods=['GET'])
     async def single_selector(self, req: Request, id: int):  # noqa: A002
-        return self._call_if_enabled('selector', self._handle_single_selector, req, id)
+        return await self._call_if_enabled('selector', self._handle_single_selector, req, id)
 
     # Handlers
     async def _handle_create(self, req: Request):
