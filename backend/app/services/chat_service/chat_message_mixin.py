@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List
+from datetime import datetime
 
 from flask import jsonify, Request
 
@@ -195,6 +196,14 @@ class ChatMessageMixin(WebSocketProtocol):
     def _format_error_response(self, error_message: str, status_code: int = 400):
         """Format error response consistently."""
         return jsonify({'error': error_message}), status_code
+
+    def emit_llm_event(self, session_id: int, history_id: int, stage: str, message: str):
+        """Emit LLM status event."""
+        self.emit_chat_event(session_id, history_id, 'llm_status', {
+            'stage': stage,
+            'message': message,
+            'timestamp': datetime.utcnow().isoformat()
+        })
 
     @expose(
         '/sessions/{id}/messages',

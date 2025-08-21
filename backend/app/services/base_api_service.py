@@ -32,7 +32,7 @@ class BaseApiService(ABC):
         target_room = room or channel
 
         # Emit event to specific room (NO broadcasting!)
-        self._socketio.emit(f'{channel}:{event}', data, room=target_room)
+        self._socketio.emit(event, data, room=target_room)
 
     def send_to_room(self, room: str, event: str, data: dict):
         """
