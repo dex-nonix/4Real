@@ -1,5 +1,12 @@
 from app import create_app
 
+# Create the Flask app and SocketIO instance for gunicorn
+app, socketio = create_app()
+
+# This is what gunicorn will import and serve
+# The app object contains the Flask application
+# The socketio object is attached to the app.extensions['socketio']
+
 
 def start_server(host='0.0.0.0', port=5000, debug=True):
     """THE ONE FUNCTION that starts everything."""

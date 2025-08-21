@@ -22,38 +22,56 @@ db = SQLAlchemy()
 def create_app() -> Flask:
     load_dotenv()
     app = Flask(__name__)
+    
+    # Load config FIRST
     app.config.from_object('config.Config')
+    
+    # Configure logging based on config
+    log_level = getattr(logging, app.config.get('LOG_LEVEL', 'INFO'))
+    
+    if app.config.get('DEBUG'):
+        # Development logging with colors
+        logging.basicConfig(
+            level=log_level,
+            format=app.config.get('LOG_FORMAT'),
+            handlers=[
+                logging.StreamHandler(sys.stdout),
+                logging.FileHandler(app.config.get('LOG_FILE'))
+            ]
+        )
+        
+        # Force immediate output (no buffering)
+        for handler in logging.root.handlers:
+            handler.setFormatter(logging.Formatter(
+                '\033[1m%(asctime)s\033[0m [\033[91m%(levelname)s\033[0m] \033[94m%(name)s\033[0m: %(message)s'
+            ))
+            handler.flush = lambda: None  # Force immediate flush
+    else:
+        # Production logging
+        logging.basicConfig(
+            level=log_level,
+            format=app.config.get('LOG_FORMAT'),
+            handlers=[
+                logging.FileHandler(app.config.get('LOG_FILE'))
+            ]
+        )
 
-    # Configure aggressive logging with colors and immediate output
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-        handlers=[
-            logging.StreamHandler(sys.stdout),
-            logging.FileHandler('flask_errors.log')  # Also log to file
-        ]
-    )
+    app.logger.setLevel(log_level)
 
-    # Force immediate output (no buffering)
-    for handler in logging.root.handlers:
-        handler.setFormatter(logging.Formatter(
-            '\033[1m%(asctime)s\033[0m [\033[91m%(levelname)s\033[0m] \033[94m%(name)s\033[0m: %(message)s'
-        ))
-        handler.flush = lambda: None  # Force immediate flush
-
-    app.logger.setLevel(logging.DEBUG)
-
-    CORS(app)
+    # Initialize CORS with config
+    CORS(app, origins=app.config.get('CORS_ORIGINS', '*'))
+    
+    # Initialize database with config
     db.init_app(app)
 
-    # Initialize Flask-SocketIO for WebSocket support
+    # Initialize Flask-SocketIO with config
     socketio = SocketIO(
-                        async_mode='gevent',  # Be explicit that you're using gevent
-                        cors_allowed_origins="*",
-                        logger=True,
-                        engineio_logger=True,
-                        path='/api/ws'  # SocketIO server runs on /api/ws path
-                        )
+        async_mode=app.config.get('SOCKETIO_ASYNC_MODE', 'gevent'),
+        cors_allowed_origins=app.config.get('SOCKETIO_CORS_ORIGINS', '*'),
+        logger=app.config.get('SOCKETIO_LOGGER', False),
+        engineio_logger=app.config.get('SOCKETIO_ENGINE_LOGGER', False),
+        path=app.config.get('SOCKETIO_PATH', '/api/ws')
+    )
     socketio.init_app(app)
 
 
