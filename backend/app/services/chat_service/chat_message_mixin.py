@@ -55,8 +55,14 @@ class ChatMessageMixin(WebSocketProtocol):
 
         if history_id:
             # Specific history requested
-            history = ChatHistory.query.filter_by(id=history_id, session_id=session_id).first()
-            if not history:
+            try:
+                history = ChatHistory.query.filter_by(id=history_id, session_id=session_id).first()
+                if not history:
+                    return session, None
+            except Exception as e:
+                # Log the error
+                import logging
+                logging.getLogger(__name__).error(f"Database error querying history {history_id}: {e}")
                 return session, None
         else:
             # Use current history or create new one
@@ -232,11 +238,9 @@ class ChatMessageMixin(WebSocketProtocol):
         except Exception as exc:  # noqa: BLE001
             return jsonify({'error': str(exc)}), 500
 
-    @expose(
-        '/sessions/{id}/send',
-        methods=['POST'],
-        status_codes={200: 'OK', 400: 'Bad Request', 404: 'Not Found'},
-        request_schema={
+    @expose('/sessions/{session_id}/histories/{history_id}/send',
+            methods=['POST'],
+            request_schema={
             "type": "object",
             "properties": {
                 "content": {
@@ -263,32 +267,26 @@ class ChatMessageMixin(WebSocketProtocol):
                     }
                 }
             }
-        }
-    )
-    @expose('/sessions/{session_id}/send')
-    @expose('/sessions/{session_id}/histories/{history_id}/send')
+        })
     def send_message(self, req: Request, session_id: int, history_id: int = None):
         """Send message to session - history_id is OPTIONAL in URL."""
         try:
-            session = self._get_session(session_id)
+            session, history = self._validate_session_history(session_id, history_id)
             if not session:
                 return self._format_error_response('Session not found', 404)
 
-            # ✅ EXTRACT persona DIRECTLY from session
             persona = session.persona
             if not persona:
                 return self._format_error_response('Session has no persona', 400)
             if not persona.is_active:
                 return self._format_error_response('Persona is not active', 400)
 
-            # ✅ OPTIONAL EXTRACTION: If no history_id provided, extract from session
-            if history_id is None:
+            if not history_id:
                 history_id = session.current_history_id
                 if not history_id:
                     return self._format_error_response('No current history', 400)
             else:
                 # Validate provided history_id belongs to session
-                history = self._get_history(history_id)
                 if not history or history.session_id != session_id:
                     return self._format_error_response('History not found or invalid', 404)
 
@@ -298,7 +296,7 @@ class ChatMessageMixin(WebSocketProtocol):
             if not user_content:
                 return self._format_error_response('content required', 400)
 
-            # ✅ MANDATORY: Content MUST be object with explicit type
+
             if not isinstance(user_content, dict) or 'type' not in user_content:
                 return self._format_error_response('Content must be object with explicit type', 400)
 
@@ -312,11 +310,11 @@ class ChatMessageMixin(WebSocketProtocol):
             if not handler:
                 return self._format_error_response(f'Unknown message type: {message_type}', 400)
 
-            # ✅ PASS persona as DIRECT PARAMETER to handler
+
             result = handler.handle(
                 chat_service=self,
-                session=session,           # Session object
-                persona=persona,           # ✅ PERSONA as DIRECT PARAMETER!
+                session=session,           
+                persona=persona,           
                 history_id=history_id,     # ALWAYS provided (extracted or from URL)
                 content=user_content
             )
@@ -419,75 +417,76 @@ class ChatMessageMixin(WebSocketProtocol):
             self.emit_llm_event(session_id, history_id, 'processing_failed', f"Async processing error: {str(e)}")
             self._logger.error(f"Error in _process_message_async: {e}", exc_info=True)
 
-    @expose(
-        '/sessions/{session_id}/histories/{history_id}/send',
-        methods=['POST'],
-        status_codes={200: 'OK', 400: 'Bad Request', 404: 'Not Found'},
-        request_schema={
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "object",
-                    "description": "Message content in JSON format",
-                    "additionalProperties": True
-                }
-            },
-            "required": ["content"]
-        },
-        response_schema={
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "properties": {
-                        "id": {"type": "integer"},
-                        "history_id": {"type": "integer"},
-                        "role": {"type": "string"},
-                        "message_type": {"type": "string"},
-                        "content_json": {"type": "object"},
-                        "created_at": {"type": "string", "format": "date-time"},
-                        "updated_at": {"type": "string", "format": "date-time"}
-                    }
-                }
-            }
-        }
-    )
-
-
-    @expose(
-        '/sessions/{id}/retry',
-        methods=['POST'],
-        status_codes={200: 'OK', 400: 'Bad Request'},
-        response_schema={
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "properties": {
-                        "id": {"type": "integer"},
-                        "history_id": {"type": "integer"},
-                        "role": {"type": "string"},
-                        "message_type": {"type": "string"},
-                        "content_json": {"type": "object"},
-                        "created_at": {"type": "string", "format": "date-time"},
-                        "updated_at": {"type": "string", "format": "date-time"}
-                    }
-                }
-            }
-        }
-    )
-    def retry_last(self, req: Request, id: int):  # noqa: A002
-        """Retry the last user message in a session."""
-        try:
-            last_user = ChatMessage.query.filter_by(session_id=id, role='user').order_by(
-                ChatMessage.created_at.desc()).first()
-            if not last_user:
-                return self._format_error_response('No user messages', 400)
-            # Reuse send logic by re-sending the last user content
-            mock_req = type('obj', (), {'get_json': lambda self, silent=True: {'content': last_user.content_json}})()
-            return self.send_message(mock_req, id)
-        except Exception as exc:  # noqa: BLE001
-            return self._format_error_response(str(exc), 500)
+    # @expose(
+    #     '/sessions/{session_id}/retry',
+    #     methods=['POST'],
+    #     status_codes={200: 'OK', 400: 'Bad Request'},
+    #     response_schema={
+    #         "type": "object",
+    #         "properties": {
+    #             "data": {
+    #                 "type": "object",
+    #                 "properties": {
+    #                     "id": {"type": "integer"},
+    #                     "history_id": {"type": "integer"},
+    #                     "role": {"type": "string"},
+    #                     "message_type": {"type": "string"},
+    #                     "content_json": {"type": "object"},
+    #                     "created_at": {"type": "string", "format": "date-time"},
+    #                     "updated_at": {"type": "string", "format": "date-time"}
+    #                 }
+    #             }
+    #         }
+    #     }
+    # )
+    # @expose(
+    #     '/sessions/{session_id}/histories/{history_id}/retry',
+    #     methods=['POST'],
+    #     status_codes={200: 'OK', 400: 'Bad Request'},
+    #     response_schema={
+    #         "type": "object",
+    #         "properties": {
+    #             "data": {
+    #                 "type": "object",
+    #                 "properties": {
+    #                     "id": {"type": "integer"},
+    #                     "history_id": {"type": "integer"},
+    #                     "role": {"type": "string"},
+    #                     "message_type": {"type": "string"},
+    #                     "content_json": {"type": "object"},
+    #                     "created_at": {"type": "string", "format": "date-time"},
+    #                     "updated_at": {"type": "string", "format": "date-time"}
+    #                 }
+    #             }
+    #         }
+    #     }
+    # )
+    # def retry_last(self, req: Request, session_id: int, history_id: int = None):
+    #     """Retry the last user message in a session - history_id is OPTIONAL in URL."""
+    #     try:
+    #         session, history = self._validate_session_history(session_id, history_id)
+    #         if not session:
+    #             return self._format_error_response('Session not found', 404)
+    #
+    #         # OPTIONAL EXTRACTION: If no history_id provided, extract from session
+    #         if not history_id:
+    #             history_id = session.current_history_id
+    #             if not history_id:
+    #                 return self._format_error_response('No current history', 400)
+    #         else:
+    #             # Validate provided history_id belongs to session
+    #             if not history or history.session_id != session_id:
+    #                 return self._format_error_response('History not found or invalid', 404)
+    #
+    #         last_user = ChatMessage.query.filter_by(session_id=session_id, role='user').order_by(
+    #             ChatMessage.created_at.desc()).first()
+    #         if not last_user:
+    #             return self._format_error_response('No user messages', 400)
+    #         # Reuse send logic by re-sending the last user content
+    #         mock_req = type('obj', (), {'get_json': lambda self, silent=True: {'content': last_user.content_json}})()
+    #         return self.send_message(mock_req, session_id, history_id)
+    #     except Exception as exc:  # noqa: BLE001
+    #         return self._format_error_response(str(exc), 500)
 
     @expose(
         '/sessions/{session_id}/histories/{history_id}/messages',

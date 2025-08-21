@@ -101,6 +101,42 @@ class ChatHistoryMixin:
 
     @expose(
         '/sessions/{id}/histories/{history_id}',
+        methods=['GET'],
+        status_codes={200: 'OK', 404: 'Not Found'},
+        response_schema={
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "session_id": {"type": "integer"},
+                        "title": {"type": "string"},
+                        "message_count": {"type": "integer"},
+                        "created_at": {"type": "string", "format": "date-time"},
+                        "updated_at": {"type": "string", "format": "date-time"}
+                    }
+                }
+            }
+        }
+    )
+    def get_session_history(self, req: Request, id: int, history_id: int):
+        """Get a specific history within a session."""
+        try:
+            session = ChatSession.query.filter_by(id=id, is_active=True).first()
+            if not session:
+                return jsonify({'error': 'Session not found or inactive'}), 404
+
+            history = ChatHistory.query.filter_by(id=history_id, session_id=id).first()
+            if not history:
+                return jsonify({'error': 'History not found'}), 404
+
+            return jsonify({'data': history.to_dict()})
+        except Exception as exc:
+            return jsonify({'error': str(exc)}), 500
+
+    @expose(
+        '/sessions/{id}/histories/{history_id}',
         methods=['PUT'],
         status_codes={200: 'OK', 404: 'Not Found'},
         request_schema={

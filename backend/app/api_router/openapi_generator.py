@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any, Callable, Dict, List
 
@@ -8,7 +9,7 @@ class OpenAPIGenerator:
     """Handles OpenAPI 3.0 specification generation from registered services."""
 
     def __init__(self) -> None:
-        pass
+        self.logger = logging.getLogger(__name__)
 
     def generate_openapi_spec(self, registered_services: Dict[str, Any], service_filter: str = None) -> Dict[str, Any]:
         """Generate OpenAPI 3.0 specification from registered services

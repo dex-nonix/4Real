@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import sys
@@ -231,12 +232,12 @@ def create_app() -> Flask:
                 status = '500 Internal Server Error'
                 response_headers = [('Content-type', 'application/json')]
                 start_response(status, response_headers)
-                return [jsonify({
+                return [json.dumps({
                     'error': 'WSGI Level Error',
                     'exception_type': type(e).__name__,
                     'message': str(e),
                     'traceback': traceback.format_exc() if app.config.get('DEBUG') else None
-                }).get_data()]
+                }).encode('utf-8')]
 
     # Wrap the app with our error-catching middleware
     app.wsgi_app = ErrorCatchingMiddleware(app.wsgi_app)

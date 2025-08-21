@@ -14,7 +14,7 @@ class ChatMessageHandler(MessageTypeHandler):
 
         message_text = content.get('text', '')
         if not message_text:
-            return self._format_error_response('Text content is required for chat messages', 400)
+            raise ValueError('Text content is required for chat messages')
 
         # Create chat message
         chat_msg = ChatMessage(

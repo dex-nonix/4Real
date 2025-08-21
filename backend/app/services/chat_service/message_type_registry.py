@@ -1,6 +1,5 @@
 from typing import Any, Callable, Dict
 from abc import ABC, abstractmethod
-
 class MessageTypeHandler(ABC):
     """Abstract base class for message type handlers."""
 
@@ -16,6 +15,8 @@ class MessageTypeHandler(ABC):
             content: Message content object (MANDATORY!)
         """
         pass
+
+
 
 class MessageTypeRegistry:
     """Dynamic registry for message type handlers."""
