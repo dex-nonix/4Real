@@ -100,7 +100,7 @@ def create_app() -> Flask:
             }), 500
         return None  # Let other handlers deal with it
 
-    # 4. WebSocket event handlers - SIMPLE and straightforward
+    # 4. WebSocket event handlers
     @socketio.on('connect')
     def handle_connect():
         app.logger.info(f"WebSocket client connected: {request.sid}")
@@ -111,18 +111,17 @@ def create_app() -> Flask:
 
     @socketio.on('join')
     def handle_join_room(room):
-        """Handle client joining a room - SIMPLE Socket.IO rooms."""
         if room:
-            join_room(room)
+            join_room(room, namespace="/")
             app.logger.info(f"Client {request.sid} joined room: {room}")
         else:
             app.logger.warning(f"Client {request.sid} tried to join room but no room specified")
 
     @socketio.on('leave')
     def handle_leave_room(room):
-        """Handle client leaving a room - SIMPLE Socket.IO rooms."""
+        """Handle client leaving a room"""
         if room:
-            leave_room(room)
+            leave_room(room, namespace="/")
             app.logger.info(f"Client {request.sid} left room: {room}")
         else:
             app.logger.warning(f"Client {request.sid} tried to leave room but no room specified")

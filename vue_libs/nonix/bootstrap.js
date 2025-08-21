@@ -58,10 +58,6 @@ export const mountNxApp = (target, config = {}) => {
     app.use(ToastService);
     app.directive('tooltip', Tooltip);
     app.provide('websocket-manager', new WebSocketManager());
-    
-    // AI-Hack: Make Vue app accessible for services to get injected dependencies
-    // window.__vueApp = app
-    
     loadConfigObject(app, config);
     iterObject( config.packages, (packageConfig)=> loadConfigObject(app, packageConfig));
     app.mount(target);
