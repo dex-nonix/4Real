@@ -1,27 +1,26 @@
 // BaseApiService.js - minimal fetch-based HTTP layer with WebSocket support
 import { API_BASE_URL } from '@/env.js'
+import {inject} from "vue";
 
 export default class BaseApiService {
-  constructor(options = {}) {
-    const { defaultHeaders = {}, onRequest, onResponse, onError, enableWebSocket = true } = options
+  constructor(app, options = {}) {
+    const { defaultHeaders = {}, onRequest, onResponse, onError} = options
     this.baseURL = API_BASE_URL.replace(/\/$/, '')
     this.defaultHeaders = { 'Content-Type': 'application/json', ...defaultHeaders }
     this.onRequest = onRequest
     this.onResponse = onResponse
     this.onError = onError
-    
-    // WebSocket functionality now comes from injected manager
-    this.enableWebSocket = enableWebSocket
+    this.wsManager = app._context.provides['websocket-manager'];
   }
 
   // Get WebSocket manager from Vue app context - PROPER dependency injection
-  get wsManager() {
-    // Get from Vue app context if available
-    if (window.__vueApp && window.__vueApp._context && window.__vueApp._context.provides) {
-      return window.__vueApp._context.provides['websocket-manager']
-    }
-    return null
-  }
+  // get wsManager() {
+  //   // Get from Vue app context if available
+  //   if (window.__vueApp && window.__vueApp._context && window.__vueApp._context.provides) {
+  //     return window.__vueApp._context.provides['websocket-manager']
+  //   }
+  //   return null
+  // }
 
   // WebSocket Methods - now delegate to injected manager
 
@@ -31,11 +30,6 @@ export default class BaseApiService {
    * @returns {boolean} - Success status
    */
   joinRoom(room) {
-    if (!this.enableWebSocket || !this.wsManager) {
-      console.warn('WebSocket not enabled or manager not available')
-      return false
-    }
-    
     return this.wsManager.joinRoom(room)
   }
 
@@ -45,10 +39,6 @@ export default class BaseApiService {
    * @returns {boolean} - Success status
    */
   leaveRoom(room) {
-    if (!this.enableWebSocket || !this.wsManager) {
-      return false
-    }
-    
     return this.wsManager.leaveRoom(room)
   }
 
@@ -59,11 +49,6 @@ export default class BaseApiService {
    * @returns {Function} - Unsubscribe function
    */
   onWebSocketEvent(event, callback) {
-    if (!this.enableWebSocket || !this.wsManager) {
-      console.warn('WebSocket not enabled or manager not available')
-      return () => {} // Return no-op unsubscribe function
-    }
-    
     return this.wsManager.on(event, callback)
   }
 
@@ -74,11 +59,6 @@ export default class BaseApiService {
    * @returns {boolean} - Success status
    */
   emitWebSocketEvent(event, data) {
-    if (!this.enableWebSocket || !this.wsManager) {
-      console.warn('WebSocket not enabled or manager not available')
-      return false
-    }
-    
     return this.wsManager.emit(event, data)
   }
 
@@ -90,11 +70,6 @@ export default class BaseApiService {
    * @returns {boolean} - Success status
    */
   emitWebSocketEventToRoom(room, event, data) {
-    if (!this.enableWebSocket || !this.wsManager) {
-      console.warn('WebSocket not enabled or manager not available')
-      return false
-    }
-    
     return this.wsManager.emitToRoom(room, event, data)
   }
 
@@ -103,10 +78,6 @@ export default class BaseApiService {
    * @returns {boolean} - Connection status
    */
   isWebSocketConnected() {
-    if (!this.enableWebSocket || !this.wsManager) {
-      return false
-    }
-    
     return this.wsManager.isConnected()
   }
 
@@ -115,10 +86,6 @@ export default class BaseApiService {
    * @returns {string} - Connection state
    */
   getWebSocketConnectionState() {
-    if (!this.enableWebSocket || !this.wsManager) {
-      return 'disabled'
-    }
-    
     return this.wsManager.getConnectionState()
   }
 
@@ -126,10 +93,6 @@ export default class BaseApiService {
    * Clean up WebSocket resources
    */
   disconnect() {
-    if (!this.enableWebSocket || !this.wsManager) {
-      return
-    }
-    
     // Note: We don't disconnect the manager, just leave our channels
     const channels = this.getSubscribedChannels()
     channels.forEach(channel => {

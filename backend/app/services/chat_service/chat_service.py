@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import asyncio
 import logging
+from asyncio import iscoroutinefunction
 from datetime import datetime
 
 from flask import jsonify
 
 from .chat_history_mixin import ChatHistoryMixin
 from .chat_message_mixin import ChatMessageMixin
-# Import all mixins
 from .chat_session_mixin import ChatSessionMixin
 from .persona_chat_mixin import PersonaChatMixin
 from .thread_pool_manager import ChatThreadPoolManager
@@ -71,7 +70,7 @@ class ChatService(BaseApiService, ChatSessionMixin, ChatMessageMixin, ChatHistor
         """Submit a task to the thread pool for async execution."""
         try:
             # Check if function is async and use appropriate method
-            if asyncio.iscoroutinefunction(func):
+            if iscoroutinefunction(func):
                 future = self._thread_pool.submit_async_task(func, *args, **kwargs)
             else:
                 future = self._thread_pool.submit_task(func, *args, **kwargs)

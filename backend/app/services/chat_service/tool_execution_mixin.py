@@ -1,21 +1,15 @@
 from __future__ import annotations
 
-from datetime import datetime
-
 from flask import jsonify, Request
 
-from .websocket_protocol import WebSocketProtocol
-from ..tool_runtime import build_persona_tool_map, execute_tool, list_persona_tools
-from ... import db
+from .websocket_protocol import WebSocketMixinProtocol
+from ..tool_runtime import list_persona_tools
 from ...decorators import expose
-from ...models.chat_message import ChatMessage
-from ...models.chat_history import ChatHistory
 from ...models.mcp_server import MCPServer
 from ...models.persona import Persona
-from ...models.tool_invocation_log import ToolInvocationLog
 
 
-class ToolExecutionMixin(WebSocketProtocol):
+class ToolExecutionMixin(WebSocketMixinProtocol):
     """Mixin for tool execution and MCP operations."""
 
     @expose(
@@ -77,8 +71,6 @@ class ToolExecutionMixin(WebSocketProtocol):
             }
         }
     )
-
-
     @expose(
         '/mcp/servers/status',
         methods=['GET'],

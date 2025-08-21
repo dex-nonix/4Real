@@ -2,8 +2,8 @@
 import CrudService from '@/services/CrudService.js'
 
 export default class StyleService extends CrudService {
-  constructor() {
-    super('styles', {
+  constructor(app) {
+    super(app,'styles', {
       table: {
         columns: [
           { field: 'name', header: 'Name', type: 'text', sortable: true },

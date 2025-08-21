@@ -19,7 +19,7 @@ We use Python Protocols to define the WebSocket contract, ensuring type safety a
 from typing import Protocol
 from datetime import datetime
 
-class WebSocketProtocol(Protocol):
+class WebSocketMixinProtocol(Protocol):
     """Protocol for WebSocket event emission - Python's way of defining contracts."""
     
     def emit_chat_event(self, session_id: int, history_id: int, event: str, data: dict) -> None:
@@ -39,8 +39,8 @@ class WebSocketProtocol(Protocol):
 
 ```python
 # backend/app/services/chat_service/chat_service.py
-class ChatService(BaseApiService, WebSocketProtocol, ChatSessionMixin, ChatMessageMixin, ChatHistoryMixin, PersonaChatMixin, ToolExecutionMixin):
-    """Chat service - inherits from BaseApiService AND WebSocketProtocol AND all mixins."""
+class ChatService(BaseApiService, WebSocketMixinProtocol, ChatSessionMixin, ChatMessageMixin, ChatHistoryMixin, PersonaChatMixin, ToolExecutionMixin):
+    """Chat service - inherits from BaseApiService AND WebSocketMixinProtocol AND all mixins."""
     
     def emit_chat_event(self, session_id: int, history_id: int, event: str, data: dict) -> None:
         """IMPLEMENT: Emit chat event using BaseApiService method."""
@@ -69,7 +69,7 @@ class ChatService(BaseApiService, WebSocketProtocol, ChatSessionMixin, ChatMessa
 
 ```python
 # backend/app/services/chat_service/tool_execution_mixin.py
-class ToolExecutionMixin(WebSocketProtocol):  # ✅ INHERITS FROM PROTOCOL
+class ToolExecutionMixin(WebSocketMixinProtocol):  # ✅ INHERITS FROM PROTOCOL
     """Mixin for tool execution - inherits from WebSocket protocol."""
     
     def persona_tool_execute(self, req: Request, persona_id: int):
@@ -86,7 +86,7 @@ class ToolExecutionMixin(WebSocketProtocol):  # ✅ INHERITS FROM PROTOCOL
         self.emit_tool_event(session_id, history_id, tool_name, 'completed')
 
 # backend/app/services/chat_service/chat_message_mixin.py
-class ChatMessageMixin(WebSocketProtocol):  # ✅ INHERITS FROM PROTOCOL
+class ChatMessageMixin(WebSocketMixinProtocol):  # ✅ INHERITS FROM PROTOCOL
     """Mixin for chat messages - inherits from WebSocket protocol."""
     
     def send_message(self, req: Request, id: int):
@@ -170,7 +170,7 @@ self.emit_chat_event(session_id, history_id, 'message_processed', {
 
 ```python
 # In backend/app/services/chat_service/tool_execution_mixin.py
-# Mixin inherits from WebSocketProtocol - has access to protocol methods
+# Mixin inherits from WebSocketMixinProtocol - has access to protocol methods
 
 def persona_tool_execute(self, req: Request, persona_id: int):
     """Execute a tool for a specific persona - uses protocol methods."""
@@ -206,7 +206,7 @@ def persona_tool_execute(self, req: Request, persona_id: int):
 
 ```python
 # In backend/app/services/chat_service/chat_message_mixin.py
-# Mixin inherits from WebSocketProtocol - has access to protocol methods
+# Mixin inherits from WebSocketMixinProtocol - has access to protocol methods
 
 def send_message(self, req: Request, id: int):
     """Send a message to a chat session - uses protocol methods."""
@@ -383,9 +383,9 @@ LLM detects tool need → Tool execution started → Tool runs → Tool complete
 ## Implementation Checklist
 
 ### **Backend Changes Required:**
-- [ ] **Create WebSocketProtocol** with protocol methods
-- [ ] **Make mixins inherit from WebSocketProtocol** (ToolExecutionMixin, ChatMessageMixin)
-- [ ] **Make ChatService inherit from WebSocketProtocol** AND implement the methods
+- [ ] **Create WebSocketMixinProtocol** with protocol methods
+- [ ] **Make mixins inherit from WebSocketMixinProtocol** (ToolExecutionMixin, ChatMessageMixin)
+- [ ] **Make ChatService inherit from WebSocketMixinProtocol** AND implement the methods
 - [ ] **Add WebSocket calls to existing mixin methods** using protocol methods
 - [ ] **Test WebSocket event emission** using protocol methods
 
@@ -407,7 +407,7 @@ LLM detects tool need → Tool execution started → Tool runs → Tool complete
 ```
 BaseApiService (has send_to_channel)
     ↓
-WebSocketProtocol (defines contract)
+WebSocketMixinProtocol (defines contract)
     ↓
 ChatService (implements protocol + has WebSocket methods)
     ↓

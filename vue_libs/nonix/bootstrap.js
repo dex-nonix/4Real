@@ -57,13 +57,10 @@ export const mountNxApp = (target, config = {}) => {
     app.use(PrimeVue);
     app.use(ToastService);
     app.directive('tooltip', Tooltip);
+    app.provide('websocket-manager', new WebSocketManager());
     
-    // Create and provide WebSocket manager at app level - PROPER dependency injection
-    const wsManager = new WebSocketManager()
-    app.provide('websocket-manager', wsManager)
-    
-    // Make Vue app accessible for services to get injected dependencies
-    window.__vueApp = app
+    // AI-Hack: Make Vue app accessible for services to get injected dependencies
+    // window.__vueApp = app
     
     loadConfigObject(app, config);
     iterObject( config.packages, (packageConfig)=> loadConfigObject(app, packageConfig));

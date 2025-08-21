@@ -2,8 +2,8 @@
 import CrudService from '@/services/CrudService.js'
 
 export default class FileService extends CrudService {
-  constructor() {
-    super('files', {
+  constructor(app) {
+    super(app,'files', {
       table: {
         columns: [
           { field: 'title', header: 'Title', type: 'text', sortable: true },

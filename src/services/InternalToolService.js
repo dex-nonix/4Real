@@ -2,8 +2,8 @@
 import CrudService from '@/services/CrudService.js'
 
 export default class InternalToolService extends CrudService {
-  constructor() {
-    super('internal-tools', {
+  constructor(app) {
+    super(app,'internal-tools', {
       table: {
         columns: [
           { field: 'qualified_name', header: 'Qualified Name', type: 'text', sortable: true },

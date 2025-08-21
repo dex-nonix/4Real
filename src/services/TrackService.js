@@ -2,8 +2,8 @@
 import CrudService from '@/services/CrudService.js'
 
 export default class TrackService extends CrudService {
-  constructor() {
-    super('tracks', {
+  constructor(app) {
+    super(app,'tracks', {
       table: {
         columns: [
           { field: 'title', header: 'Title', type: 'text', sortable: true },

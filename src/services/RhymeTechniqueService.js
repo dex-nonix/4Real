@@ -2,8 +2,8 @@
 import CrudService from '@/services/CrudService.js'
 
 export default class RhymeTechniqueService extends CrudService {
-  constructor() {
-    super('rhyme-techniques', {
+  constructor(app) {
+    super(app,'rhyme-techniques', {
       table: {
         columns: [
           { field: 'name', header: 'Name', type: 'text', sortable: true },

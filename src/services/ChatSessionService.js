@@ -2,8 +2,8 @@
 import CrudService from '@/services/CrudService.js'
 
 export default class ChatSessionService extends CrudService {
-  constructor() {
-    super('chat-sessions', {
+  constructor(app) {
+    super(app,'chat-sessions', {
       table: {
         columns: [
           { field: 'title', header: 'Title', type: 'text', sortable: true },

@@ -2,8 +2,8 @@
 import CrudService from '@/services/CrudService.js'
 
 export default class FileLinkService extends CrudService {
-  constructor() {
-    super('file-links', {
+  constructor(app) {
+    super(app,'file-links', {
       table: {
         columns: [
           { field: 'file_id', header: 'File', type: 'file_preview_fk', props: { entity: 'files' } },

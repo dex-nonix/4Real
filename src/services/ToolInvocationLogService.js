@@ -2,8 +2,8 @@
 import CrudService from '@/services/CrudService.js'
 
 export default class ToolInvocationLogService extends CrudService {
-  constructor() {
-    super('tool-invocation-logs', {
+  constructor(app) {
+    super(app,'tool-invocation-logs', {
       table: {
         columns: [
           { field: 'session_id', header: 'Session', type: 'number', sortable: true },

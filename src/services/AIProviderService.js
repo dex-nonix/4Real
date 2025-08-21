@@ -2,8 +2,8 @@
 import CrudService from '@/services/CrudService.js'
 
 export default class AIProviderService extends CrudService {
-  constructor() {
-    super('ai-providers', {
+  constructor(app) {
+    super(app,'ai-providers', {
       table: {
         columns: [
           { field: 'name', header: 'Name', type: 'text', sortable: true },

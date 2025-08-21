@@ -2,8 +2,8 @@
 import CrudService from '@/services/CrudService.js'
 
 export default class PersonaService extends CrudService {
-  constructor() {
-    super('personas', {
+  constructor(app) {
+    super(app,'personas', {
       table: {
         columns: [
           { field: 'name', header: 'Name', type: 'text', sortable: true },

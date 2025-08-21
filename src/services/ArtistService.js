@@ -2,8 +2,8 @@
 import CrudService from '@/services/CrudService.js'
 
 export default class ArtistService extends CrudService {
-  constructor() {
-    super('artists', {
+  constructor(app) {
+    super(app,'artists', {
       table: {
         columns: [
           { field: 'name', header: 'Artist Name', type: 'text', sortable: true },

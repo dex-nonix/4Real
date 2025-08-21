@@ -2,8 +2,8 @@
 import CrudService from '@/services/CrudService.js'
 
 export default class MCPServerService extends CrudService {
-  constructor() {
-    super('mcp-servers', {
+  constructor(app) {
+    super(app,'mcp-servers', {
       table: {
         columns: [
           { field: 'name', header: 'Name', type: 'text', sortable: true },

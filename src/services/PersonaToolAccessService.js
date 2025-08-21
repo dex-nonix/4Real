@@ -2,8 +2,8 @@
 import CrudService from '@/services/CrudService.js'
 
 export default class PersonaToolAccessService extends CrudService {
-  constructor() {
-    super('persona-tool-access', {
+  constructor(app) {
+    super(app,'persona-tool-access', {
       table: {
         columns: [
           { field: 'persona_id', header: 'Persona', type: 'fk_display', sortable: true, props: { entity: 'personas' } },

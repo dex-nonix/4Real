@@ -2,7 +2,7 @@ import logging
 from typing import Protocol
 
 
-class WebSocketProtocol(Protocol):
+class WebSocketMixinProtocol(Protocol):
     """Protocol for WebSocket event emission - Python's way of defining contracts."""
 
     def submit_async_task(self, func, *args, **kwargs):

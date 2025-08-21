@@ -2,8 +2,8 @@
 import CrudService from '@/services/CrudService.js'
 
 export default class AIModelMappingService extends CrudService {
-  constructor() {
-    super('ai-model-mappings', {
+  constructor(app) {
+    super(app,'ai-model-mappings', {
       table: {
         columns: [
           { field: 'provider_id', header: 'Provider', type: 'fk_display', sortable: true, props: { entity: 'ai-providers' } },

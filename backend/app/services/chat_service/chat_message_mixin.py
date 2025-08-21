@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
 from datetime import datetime
+from typing import Any, Dict, List
 
 from flask import jsonify, Request
 
+from .message_handlers import ChatMessageHandler, ToolCallMessageHandler
+from .message_type_registry import message_type_registry
 from .streaming_event_manager import StreamingEventManager
 from .streaming_interface import StreamingChunk
 from .streaming_message_handler import StreamingMessageHandler
-from .websocket_protocol import WebSocketProtocol
-from .message_type_registry import message_type_registry
-from .message_handlers import ChatMessageHandler, ToolCallMessageHandler
+from .websocket_protocol import WebSocketMixinProtocol
 from ..llm_client import run_chat_streaming
 from ..tool_runtime import execute_tool
 from ..tool_runtime import list_persona_tools
@@ -25,7 +25,7 @@ from ...models.persona import Persona
 from ...models.tool_invocation_log import ToolInvocationLog
 
 
-class ChatMessageMixin(WebSocketProtocol):
+class ChatMessageMixin(WebSocketMixinProtocol):
     """Mixin for chat message handling and sending operations."""
 
     def __init__(self):
@@ -37,23 +37,23 @@ class ChatMessageMixin(WebSocketProtocol):
     def _select_chat_model(self, persona_id: int) -> Dict[str, Any] | None:
         """Select AI model for persona with strict validation."""
         self._logger.debug(f"Selecting AI model for persona {persona_id}")
-        
+
         persona = Persona.query.filter_by(id=persona_id).first()
         if not persona:
             self._logger.warning(f"Persona {persona_id} not found")
             return None
-            
+
         mapping = None
         if persona and getattr(persona, 'ai_model_mapping_id', None):
             mapping = AIModelMapping.query.filter_by(id=persona.ai_model_mapping_id, is_active=True).first()
             self._logger.debug(f"AI model mapping found: {mapping}")
         else:
             self._logger.warning(f"Persona {persona_id} has no AI model mapping")
-            
+
         if not mapping:
             self._logger.warning(f"No active AI model mapping found for persona {persona_id}")
             return None
-            
+
         model_info = {
             'provider_id': mapping.provider_id,
             'model_name': mapping.model_name,
@@ -65,7 +65,7 @@ class ChatMessageMixin(WebSocketProtocol):
     def _validate_session_history(self, session_id: int, history_id: int = None):
         """Validate session and history, return tuple (session, history)."""
         self._logger.debug(f"Validating session {session_id} with history {history_id}")
-        
+
         session = ChatSession.query.filter_by(id=session_id, is_active=True).first()
         if not session:
             self._logger.warning(f"Session {session_id} not found or inactive")
@@ -74,10 +74,10 @@ class ChatMessageMixin(WebSocketProtocol):
         if history_id:
             # Specific history requested
             self._logger.debug(f"Querying history {history_id} for session {session_id}")
-            
+
             history = ChatHistory.query.filter_by(id=history_id, session_id=session_id).first()
             self._logger.debug(f"History query result: {history}")
-            
+
             if not history:
                 self._logger.warning(f"History {history_id} not found for session {session_id}")
                 return session, None
@@ -99,16 +99,18 @@ class ChatMessageMixin(WebSocketProtocol):
                 self._logger.debug(f"Using existing history {session.current_history_id} for session {session_id}")
                 history = ChatHistory.query.get(session.current_history_id)
                 if not history:
-                    self._logger.warning(f"Current history {session.current_history_id} not found for session {session_id}")
+                    self._logger.warning(
+                        f"Current history {session.current_history_id} not found for session {session_id}")
                     return session, None
 
-        self._logger.debug(f"Session validation successful: session={session.id}, history={history.id if history else None}")
+        self._logger.debug(
+            f"Session validation successful: session={session.id}, history={history.id if history else None}")
         return session, history
 
     def _create_user_message(self, history_id: int, content: Dict[str, Any]) -> ChatMessage:
         """Create and save user message."""
         self._logger.debug(f"Creating user message for history {history_id}")
-        
+
         user_msg = ChatMessage(
             history_id=history_id,
             role='user',
@@ -117,14 +119,14 @@ class ChatMessageMixin(WebSocketProtocol):
         )
         db.session.add(user_msg)
         db.session.commit()
-        
+
         self._logger.info(f"User message {user_msg.id} created successfully for history {history_id}")
         return user_msg
 
     def _create_assistant_placeholder(self, history_id: int) -> ChatMessage:
         """Create empty assistant message placeholder."""
         self._logger.debug(f"Creating assistant message placeholder for history {history_id}")
-        
+
         asst_msg = ChatMessage(
             history_id=history_id,
             role='assistant',
@@ -134,14 +136,14 @@ class ChatMessageMixin(WebSocketProtocol):
         )
         db.session.add(asst_msg)
         db.session.commit()
-        
+
         self._logger.info(f"Assistant message placeholder {asst_msg.id} created for history {history_id}")
         return asst_msg
 
     def _build_chat_history(self, history_id: int, user_msg_id: int) -> List[Dict[str, Any]]:
         """Build chat history for LLM processing."""
         self._logger.debug(f"Building chat history for history {history_id} up to message {user_msg_id}")
-        
+
         chat_history = []
 
         # Add system messages
@@ -169,7 +171,7 @@ class ChatMessageMixin(WebSocketProtocol):
     def _resolve_ai_model(self, persona_id: int):
         """Resolve AI model, provider, and mapping."""
         self._logger.debug(f"Resolving AI model components for persona {persona_id}")
-        
+
         model_info = self._select_chat_model(persona_id)
         if not model_info:
             self._logger.warning(f"Failed to select AI model for persona {persona_id}")
@@ -179,7 +181,7 @@ class ChatMessageMixin(WebSocketProtocol):
         if not provider:
             self._logger.warning(f"AI provider {model_info['provider_id']} not found or inactive")
             return None, None, None
-            
+
         mapping_obj = AIModelMapping.query.filter_by(id=persona_id, is_active=True).first()
         if not mapping_obj:
             self._logger.warning(f"AI model mapping {persona_id} not found or inactive")
@@ -193,7 +195,7 @@ class ChatMessageMixin(WebSocketProtocol):
         """Execute tool call and return result."""
         self._logger.info(f"Executing tool '{tool_name}' for persona {persona_id}")
         self._logger.debug(f"Tool arguments: {tool_args}")
-        
+
         if tool_name not in available_tools:
             self._logger.warning(f"Tool '{tool_name}' not allowed for persona {persona_id}")
             return None, f'Tool {tool_name} not allowed'
@@ -216,7 +218,7 @@ class ChatMessageMixin(WebSocketProtocol):
         log.status = 'success' if exec_result.get('status') == 'success' else 'error'
         log.output_json = exec_result
         db.session.commit()
-        
+
         status = 'success' if exec_result.get('status') == 'success' else 'error'
         self._logger.info(f"Tool '{tool_name}' execution completed with status: {status}")
 
@@ -237,7 +239,7 @@ class ChatMessageMixin(WebSocketProtocol):
                                   status: str = 'complete') -> ChatMessage:
         """Create and save assistant message."""
         self._logger.debug(f"Creating assistant message for history {history_id} with status '{status}'")
-        
+
         asst_msg = ChatMessage(
             history_id=history_id,
             role='assistant',
@@ -247,7 +249,7 @@ class ChatMessageMixin(WebSocketProtocol):
         )
         db.session.add(asst_msg)
         db.session.commit()
-        
+
         self._logger.info(f"Assistant message {asst_msg.id} created successfully for history {history_id}")
         return asst_msg
 
@@ -309,45 +311,45 @@ class ChatMessageMixin(WebSocketProtocol):
     @expose('/sessions/{session_id}/histories/{history_id}/send',
             methods=['POST'],
             request_schema={
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "object",
-                    "description": "Message content in JSON format",
-                    "additionalProperties": True
-                }
+                "type": "object",
+                "properties": {
+                    "content": {
+                        "type": "object",
+                        "description": "Message content in JSON format",
+                        "additionalProperties": True
+                    }
+                },
+                "required": ["content"]
             },
-            "required": ["content"]
-        },
-        response_schema={
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "properties": {
-                        "id": {"type": "integer"},
-                        "history_id": {"type": "integer"},
-                        "role": {"type": "string"},
-                        "message_type": {"type": "string"},
-                        "content_json": {"type": "object"},
-                        "created_at": {"type": "string", "format": "date-time"},
-                        "updated_at": {"type": "string", "format": "date-time"}
+            response_schema={
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "integer"},
+                            "history_id": {"type": "integer"},
+                            "role": {"type": "string"},
+                            "message_type": {"type": "string"},
+                            "content_json": {"type": "object"},
+                            "created_at": {"type": "string", "format": "date-time"},
+                            "updated_at": {"type": "string", "format": "date-time"}
+                        }
                     }
                 }
-            }
-        })
+            })
     def send_message(self, req: Request, session_id: int, history_id: int = None):
         """Send message to session."""
         self._logger.info(f"Processing send_message request for session {session_id}, history {history_id}")
-        
+
         try:
             # Convert string parameters to integers (Flask converts URL params to strings)
             session_id = int(session_id)
             if history_id:
                 history_id = int(history_id)
-            
+
             self._logger.debug(f"Parameter conversion: session_id={session_id}, history_id={history_id}")
-            
+
             session, history = self._validate_session_history(session_id, history_id)
             if not session:
                 self._logger.warning(f"Session {session_id} not found")
@@ -362,7 +364,8 @@ class ChatMessageMixin(WebSocketProtocol):
                 return self._format_error_response('Persona is not active', 400)
 
             if not history_id:
-                self._logger.debug(f"No history_id provided, using session.current_history_id: {session.current_history_id}")
+                self._logger.debug(
+                    f"No history_id provided, using session.current_history_id: {session.current_history_id}")
                 history_id = session.current_history_id
                 if not history_id:
                     self._logger.warning(f"No current history found for session {session_id}")
@@ -380,7 +383,6 @@ class ChatMessageMixin(WebSocketProtocol):
             if not user_content:
                 return self._format_error_response('content required', 400)
 
-
             if not isinstance(user_content, dict) or 'type' not in user_content:
                 return self._format_error_response('Content must be object with explicit type', 400)
 
@@ -391,7 +393,8 @@ class ChatMessageMixin(WebSocketProtocol):
 
             self._logger.info(f"Processing message type: {message_type}")
             self._logger.debug(f"Available message types: {message_type_registry.list_types()}")
-            self._logger.debug(f"Handler found for type '{message_type}': {message_type_registry.has_handler(message_type)}")
+            self._logger.debug(
+                f"Handler found for type '{message_type}': {message_type_registry.has_handler(message_type)}")
 
             # Get handler from registry
             handler = message_type_registry.get_handler(message_type)
@@ -400,15 +403,14 @@ class ChatMessageMixin(WebSocketProtocol):
                 self._logger.error(f"Unknown message type: {message_type}")
                 return self._format_error_response(f'Unknown message type: {message_type}', 400)
 
-
             result = handler.handle(
                 chat_service=self,
-                session=session,           
-                persona=persona,           
-                history_id=history_id,     # ALWAYS provided (extracted or from URL)
+                session=session,
+                persona=persona,
+                history_id=history_id,  # ALWAYS provided (extracted or from URL)
                 content=user_content
             )
-            
+
             self._logger.info(f"Message processed successfully by handler, returning result")
             return jsonify({'data': result})
 

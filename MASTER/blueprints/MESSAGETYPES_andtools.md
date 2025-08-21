@@ -340,7 +340,7 @@ from .message_handlers import (
     ToolCallMessageHandler        # ✅ Tool calls
 )
 
-class ChatMessageMixin(WebSocketProtocol):
+class ChatMessageMixin(WebSocketMixinProtocol):
     def __init__(self):
         # Register ONLY the message type handlers we actually need
         message_type_registry.register('chat', ChatMessageHandler())           # ✅ Explicit chat

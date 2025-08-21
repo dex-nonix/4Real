@@ -2,8 +2,8 @@
 import CrudService from '@/services/CrudService.js'
 
 export default class PersonaMCPServerService extends CrudService {
-  constructor() {
-    super('persona-mcp-servers', {
+  constructor(app) {
+    super(app,'persona-mcp-servers', {
       table: {
         columns: [
           { field: 'persona_id', header: 'Persona', type: 'fk_display', sortable: true, props: { entity: 'personas' } },

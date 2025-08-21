@@ -2,14 +2,14 @@
 import BaseApiService from '@nonix/services/BaseApiService.js'
 
 export default class CrudService extends BaseApiService {
-  constructor(entity, uiConfig) {
+  constructor(app, entity, uiConfig) {
     if (!entity) {
       throw new Error('CrudService requires an entity string')
     }
     if (!uiConfig) {
       throw new Error('CrudService requires an uiConfig ')
     }
-    super()
+    super(app)
     this.entity = entity
     this.config = this.#withDefaults(uiConfig)
   }

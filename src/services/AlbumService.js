@@ -2,8 +2,8 @@
 import CrudService from '@/services/CrudService.js'
 
 export default class AlbumService extends CrudService {
-  constructor() {
-    super('albums', {
+  constructor(app) {
+    super(app, 'albums', {
       table: {
         columns: [
           { field: 'title', header: 'Title', type: 'text', sortable: true },
