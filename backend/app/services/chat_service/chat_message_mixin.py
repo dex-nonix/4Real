@@ -55,14 +55,15 @@ class ChatMessageMixin(WebSocketProtocol):
 
         if history_id:
             # Specific history requested
-            try:
-                history = ChatHistory.query.filter_by(id=history_id, session_id=session_id).first()
-                if not history:
-                    return session, None
-            except Exception as e:
-                # Log the error
-                import logging
-                logging.getLogger(__name__).error(f"Database error querying history {history_id}: {e}")
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"DEBUG: Querying history {history_id} for session {session_id}")
+            
+            history = ChatHistory.query.filter_by(id=history_id, session_id=session_id).first()
+            logger.info(f"DEBUG: Query result: {history}")
+            
+            if not history:
+                logger.info(f"DEBUG: History not found")
                 return session, None
         else:
             # Use current history or create new one
@@ -269,8 +270,13 @@ class ChatMessageMixin(WebSocketProtocol):
             }
         })
     def send_message(self, req: Request, session_id: int, history_id: int = None):
-        """Send message to session - history_id is OPTIONAL in URL."""
+        """Send message to session."""
         try:
+            # Convert string parameters to integers (Flask converts URL params to strings)
+            session_id = int(session_id)
+            if history_id:
+                history_id = int(history_id)
+            
             session, history = self._validate_session_history(session_id, history_id)
             if not session:
                 return self._format_error_response('Session not found', 404)
@@ -281,13 +287,20 @@ class ChatMessageMixin(WebSocketProtocol):
             if not persona.is_active:
                 return self._format_error_response('Persona is not active', 400)
 
+            import logging
+            logger = logging.getLogger(__name__)
+            
             if not history_id:
+                logger.info(f"DEBUG: No history_id provided, using session.current_history_id")
                 history_id = session.current_history_id
                 if not history_id:
+                    logger.info(f"DEBUG: No current history found, returning 400")
                     return self._format_error_response('No current history', 400)
             else:
+                logger.info(f"DEBUG: history_id provided: {history_id}, history object: {history}")
                 # Validate provided history_id belongs to session
                 if not history or history.session_id != session_id:
+                    logger.info(f"DEBUG: History validation failed - history: {history}, session_id: {session_id}")
                     return self._format_error_response('History not found or invalid', 404)
 
             # Get user content - MUST be object with type
@@ -305,8 +318,15 @@ class ChatMessageMixin(WebSocketProtocol):
             if not message_type:
                 return self._format_error_response('Message type is required', 400)
 
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"DEBUG: Message type: {message_type}")
+            logger.info(f"DEBUG: Available types: {message_type_registry.list_types()}")
+            logger.info(f"DEBUG: Has handler for {message_type}: {message_type_registry.has_handler(message_type)}")
+
             # Get handler from registry
             handler = message_type_registry.get_handler(message_type)
+            logger.info(f"DEBUG: Handler found: {handler}")
             if not handler:
                 return self._format_error_response(f'Unknown message type: {message_type}', 400)
 

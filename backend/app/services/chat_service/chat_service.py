@@ -37,6 +37,9 @@ class ChatService(BaseApiService, ChatSessionMixin, ChatMessageMixin, ChatHistor
         self.app = app
         self._thread_pool = ChatThreadPoolManager(app)
 
+        # Initialize mixins
+        ChatMessageMixin.__init__(self)
+
         # Log initialization
         self._logger = logging.getLogger(__name__)
         self._logger.info("ChatService initialized with thread pool manager")
