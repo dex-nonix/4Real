@@ -1,7 +1,3 @@
-import gevent.monkey
-gevent.monkey.patch_all()
-
-
 import json
 import logging
 import os
@@ -64,9 +60,9 @@ def create_app() -> Flask:
     # Initialize database with config
     db.init_app(app)
 
-    # Initialize Flask-SocketIO with config
+    # Initialize Flask-SocketIO with config - using asyncio mode
     socketio = SocketIO(
-        async_mode=app.config.get('SOCKETIO_ASYNC_MODE', 'gevent'),
+        async_mode=app.config.get('SOCKETIO_ASYNC_MODE', 'asyncio'),
         cors_allowed_origins=app.config.get('SOCKETIO_CORS_ORIGINS', '*'),
         logger=app.config.get('SOCKETIO_LOGGER', False),
         engineio_logger=app.config.get('SOCKETIO_ENGINE_LOGGER', False),
