@@ -15,7 +15,7 @@ from .api_router.api_router import APIRouter
 db = SQLAlchemy()
 
 
-def create_app() -> Flask:
+async def create_app() -> Flask:
     load_dotenv()
     app = Flask(__name__)
     
@@ -60,9 +60,9 @@ def create_app() -> Flask:
     # Initialize database with config
     db.init_app(app)
 
-    # Initialize Flask-SocketIO with config - using threading mode
+
     socketio = SocketIO(
-        async_mode=app.config.get('SOCKETIO_ASYNC_MODE', 'threading'),
+        async_mode=app.config.get('SOCKETIO_ASYNC_MODE', 'asyncio'),
         cors_allowed_origins=app.config.get('SOCKETIO_CORS_ORIGINS', '*'),
         logger=app.config.get('SOCKETIO_LOGGER', False),
         engineio_logger=app.config.get('SOCKETIO_ENGINE_LOGGER', False),
@@ -183,27 +183,27 @@ def create_app() -> Flask:
 
             app.logger.info("Registering services...")
 
-            api_router.register_service('artists', ArtistService)
-            api_router.register_service('albums', AlbumService)
-            api_router.register_service('tracks', TrackService)
-            api_router.register_service('styles', StyleService)
-            api_router.register_service('rhyme-techniques', RhymeTechniqueService)
-            api_router.register_service('ai-providers', AIProviderService)
-            api_router.register_service('ai-model-mappings', AIModelMappingService)
-            api_router.register_service('ai-analysis-results', AIAnalysisResultService)
-            api_router.register_service('personas', PersonaService)
-            api_router.register_service('internal-tools', InternalToolService)
-            api_router.register_service('persona-tool-access', PersonaToolAccessService)
-            api_router.register_service('mcp-servers', MCPServerService)
-            api_router.register_service('persona-mcp-servers', PersonaMCPServerService)
-            api_router.register_service('chat-sessions', ChatSessionService)
-            api_router.register_service('chat-messages', ChatMessageService)
-            api_router.register_service('chat-histories', ChatHistoryService)
-            api_router.register_service('tool-invocation-logs', ToolInvocationLogService)
-            api_router.register_service('chat', ChatService, app=app)
-            api_router.register_service('file-categories', FileCategoryService)
-            api_router.register_service('files', FileService)
-            api_router.register_service('file-links', FileLinkService)
+            await api_router.register_service('artists', ArtistService)
+            await api_router.register_service('albums', AlbumService)
+            await api_router.register_service('tracks', TrackService)
+            await api_router.register_service('styles', StyleService)
+            await api_router.register_service('rhyme-techniques', RhymeTechniqueService)
+            await api_router.register_service('ai-providers', AIProviderService)
+            await api_router.register_service('ai-model-mappings', AIModelMappingService)
+            await api_router.register_service('ai-analysis-results', AIAnalysisResultService)
+            await api_router.register_service('personas', PersonaService)
+            await api_router.register_service('internal-tools', InternalToolService)
+            await api_router.register_service('persona-tool-access', PersonaToolAccessService)
+            await api_router.register_service('mcp-servers', MCPServerService)
+            await api_router.register_service('persona-mcp-servers', PersonaMCPServerService)
+            await api_router.register_service('chat-sessions', ChatSessionService)
+            await api_router.register_service('chat-messages', ChatMessageService)
+            await api_router.register_service('chat-histories', ChatHistoryService)
+            await api_router.register_service('tool-invocation-logs', ToolInvocationLogService)
+            await api_router.register_service('chat', ChatService, app=app)
+            await api_router.register_service('file-categories', FileCategoryService)
+            await api_router.register_service('files', FileService)
+            await api_router.register_service('file-links', FileLinkService)
 
 
 

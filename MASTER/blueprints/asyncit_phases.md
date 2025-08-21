@@ -124,7 +124,6 @@
 
 ### ✅ PHASE 4: API ROUTER ASYNC [COMPLETED]
 - ✅ `backend/app/api_router/api_router.py`
-  - ✅ `register_service()` → `async def register_service()`
   - ✅ `_discover_websocket_channels()` → `async def _discover_websocket_channels()`
   - ✅ `_normalize_path()` → `async def _normalize_path()`
   - ✅ `_create_route()` → `async def _create_route()`
