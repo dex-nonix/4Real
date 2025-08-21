@@ -97,7 +97,7 @@ class BaseApiService(ABC):
                 
                 self._logger.info(f"=== End WebSocket Status ===")
             
-            self._socketio.emit(event, data, room=target, namespace='/')
+            self._socketio.emit(event, data, room=target)
             self._logger.debug(f"Successfully emitted event '{event}' to room '{target}'")
         except Exception as e:
             self._logger.error(f"Failed to emit event '{event}' to room '{target}': {e}")

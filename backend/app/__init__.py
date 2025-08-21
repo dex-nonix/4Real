@@ -1,3 +1,7 @@
+import gevent.monkey
+gevent.monkey.patch_all()
+
+
 import json
 import logging
 import os
@@ -43,70 +47,43 @@ def create_app() -> Flask:
     db.init_app(app)
 
     # Initialize Flask-SocketIO for WebSocket support
-    socketio = SocketIO(app,
+    socketio = SocketIO(
+                        async_mode='gevent',  # Be explicit that you're using gevent
                         cors_allowed_origins="*",
                         logger=True,
                         engineio_logger=True,
                         path='/api/ws'  # SocketIO server runs on /api/ws path
                         )
+    socketio.init_app(app)
 
-    # Make SocketIO available as app extension
-    app.extensions['socketio'] = socketio
 
-    # Register WebSocket event handlers IMMEDIATELY after SocketIO creation
     @socketio.on('connect')
     def handle_connect():
+        print("----------------------------- WS CONNECT ")
         app.logger.info(f"WebSocket client connected: {request.sid}")
 
     @socketio.on('disconnect')
     def handle_disconnect():
+        print("-----------------------------WS DISCONNECT")
         app.logger.info(f"WebSocket client disconnected: {request.sid}")
 
     @socketio.on('join')
     def handle_join_room(room):
+        print("-----------------------------WS JOIN")
         if room:
             app.logger.info(f"DEBUG: Attempting to join room '{room}' for client {request.sid}")
-            try:
-                join_room(room, namespace="/")
-                app.logger.info(f"DEBUG: join_room() called successfully for room '{room}'")
-                app.logger.info(f"Client {request.sid} joined room: {room}")
-                
-                # Debug: Check if room was actually created
-                if hasattr(socketio, 'server') and hasattr(socketio.server, 'manager'):
-                    manager = socketio.server.manager
-                    try:
-                        all_rooms = manager.rooms
-                        app.logger.info(f"DEBUG: After join, total rooms: {len(all_rooms)}")
-                        if all_rooms:
-                            app.logger.info(f"DEBUG: Active rooms: {list(all_rooms.keys())}")
-                        
-                        if room in all_rooms:
-                            room_data = all_rooms[room]
-                            if hasattr(room_data, 'sids'):
-                                room_sids = list(room_data.sids)
-                                app.logger.info(f"DEBUG: Room '{room}' now has {len(room_sids)} connections: {room_sids}")
-                            else:
-                                app.logger.info(f"DEBUG: Room '{room}' created with data: {room_data}")
-                        else:
-                            app.logger.warning(f"DEBUG: Room '{room}' was NOT created!")
-                            app.logger.warning(f"DEBUG: Available rooms: {list(all_rooms.keys()) if all_rooms else 'None'}")
-                    except Exception as e:
-                        app.logger.error(f"DEBUG: Error checking room status: {e}")
-                else:
-                    app.logger.warning(f"DEBUG: SocketIO server or manager not accessible")
-            except Exception as e:
-                app.logger.error(f"DEBUG: Error in join_room: {e}")
-        else:
-            app.logger.warning(f"Client {request.sid} tried to join room but no room specified")
+            join_room(room)
 
     @socketio.on('leave')
     def handle_leave_room(room):
-        """Handle client leaving a room"""
+        print("-----------------------------WS LEAVE")
         if room:
-            leave_room(room, namespace="/")
+            leave_room(room)
             app.logger.info(f"Client {request.sid} left room: {room}")
         else:
             app.logger.warning(f"Client {request.sid} tried to leave room but no room specified")
+
+    app.extensions['socketio'] = socketio
 
     app.logger.info("WebSocket event handlers registered successfully!")
 
@@ -246,7 +223,7 @@ def create_app() -> Flask:
     register_blueprint_with_error_handling(api_router.blueprint, url_prefix='/api')
 
     # Register SocketIO with the Flask app
-    socketio.init_app(app)
+    # socketio.init_app(app)
 
     app.logger.info("Flask app initialized successfully with comprehensive error logging")
 
@@ -276,4 +253,13 @@ def create_app() -> Flask:
     # Wrap the app with our error-catching middleware
     app.wsgi_app = ErrorCatchingMiddleware(app.wsgi_app)
 
-    return app
+    # Dev static serving for uploads
+    upload_dir = app.config.get('UPLOAD_DIR')
+    if upload_dir and os.path.isdir(upload_dir):
+        @app.route('/uploads/<path:filename>')
+        def uploads(filename):
+            return send_from_directory(upload_dir, filename)
+
+
+
+    return app, socketio
