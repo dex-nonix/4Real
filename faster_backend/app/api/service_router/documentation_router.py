@@ -7,7 +7,7 @@ from flask import jsonify
 from flask import request
 
 if TYPE_CHECKING:
-    from .api_router import APIRouter
+    from .service_router import ServiceRouter
 
 from .generators.openapi_generator import OpenAPIGenerator
 from .generators.swagger_ui_generator import SwaggerUIGenerator
@@ -16,8 +16,8 @@ from .generators.swagger_ui_generator import SwaggerUIGenerator
 class DocumentationRouter:
     """Handles documentation-related routes and endpoints."""
 
-    def __init__(self, router: 'APIRouter') -> None:
-        self.router: 'APIRouter' = router
+    def __init__(self, router: 'ServiceRouter') -> None:
+        self.router: 'ServiceRouter' = router
         self.blueprint = router.blueprint
         self.openapi_generator = OpenAPIGenerator()
         self.swagger_ui_generator = SwaggerUIGenerator()

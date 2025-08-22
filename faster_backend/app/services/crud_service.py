@@ -7,13 +7,13 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import or_, select
 
-from ..api.api_router.base_api_service import BaseApiService
+from ..api.service_router.base_service import BaseService
 from .chat_service.crud_swagger_generator import CrudSwaggerGenerator
 from ..database import AsyncSessionLocal
-from ..api.api_router.decorators import expose
+from ..api.service_router.decorators import expose
 
 
-class CrudService(BaseApiService):
+class CrudService(BaseService):
     """Generic CRUD service that handles ALL operations automatically using config."""
 
     def __init__(self, model_class: Any | None = None, config: Optional[Dict[str, Any]] = None) -> None:

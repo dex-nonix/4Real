@@ -12,7 +12,7 @@ class CrudSwaggerGenerator:
     async def method_to_swagger(self, method: Callable, service_name: str) -> Dict[str, Any]:
         """ONLY CRUD service overrides this - adds dynamic model schemas."""
 
-        # Get base method info from BaseApiService
+        # Get base method info from BaseService
         method_info = self.service.__class__.__bases__[0]().method_to_swagger(method, service_name)
         method_name = method.__name__
 
@@ -225,7 +225,7 @@ class CrudSwaggerGenerator:
             tags = method_info['tags']
             status_codes = method_info['status_codes']
 
-            # Provide sensible defaults for missing decorator info (like BaseApiService does)
+            # Provide sensible defaults for missing decorator info (like BaseService does)
             if not summary:
                 summary = f"{method_name.replace('_', ' ').title()}"
             if not description:

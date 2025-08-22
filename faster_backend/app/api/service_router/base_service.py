@@ -3,12 +3,12 @@ from abc import ABC
 from typing import Dict, Any, List, Callable
 
 
-class BaseApiService(ABC):
+class BaseService(ABC):
     """Base class for all API services with Swagger documentation capability."""
 
     def __init__(self):
         """Initialize WebSocket integration."""
-        self._socketio = None  # Will be set by APIRouter during registration
+        self._socketio = None  # Will be set by ServiceRouter during registration
         self._logger = None  # Will be set by subclasses
 
     async def set_socketio(self, socketio_instance):

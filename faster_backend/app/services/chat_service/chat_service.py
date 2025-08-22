@@ -12,11 +12,11 @@ from .mixins.chat_session_mixin import ChatSessionMixin
 from .mixins.persona_chat_mixin import PersonaChatMixin
 from .mixins.tool_execution_mixin import ToolExecutionMixin
 from .thread_pool_manager import ChatThreadPoolManager
-from ...api.api_router.base_api_service import BaseApiService
-from ...api.api_router.decorators import expose
+from ...api.service_router.base_service import BaseService
+from ...api.service_router.decorators import expose
 
 
-class ChatService(BaseApiService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMixin, PersonaChatMixin,
+class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMixin, PersonaChatMixin,
                   ToolExecutionMixin):
     """Complete chat service handling session lifecycle, messaging, and tool execution.
     
@@ -44,7 +44,7 @@ class ChatService(BaseApiService, ChatSessionMixin, ChatMessageMixin, ChatHistor
         self._logger.info("ChatService initialized with thread pool manager")
 
     async def emit_chat_event(self, session_id: int, history_id: int, event: str, data: dict) -> None:
-        """IMPLEMENT: Emit chat event using BaseApiService method."""
+        """IMPLEMENT: Emit chat event using BaseService method."""
         channel = f'chat/{session_id}/{history_id}'
         self._logger.debug(f"Emitting chat event: channel={channel}, event={event}, data={data}")
         await self.send_to_channel(channel, event, data)

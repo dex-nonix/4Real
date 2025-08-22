@@ -8,17 +8,18 @@ from typing import Callable, Any
 from flask import Blueprint, request, current_app
 from fastapi.responses import JSONResponse
 
+from .base_service import BaseService
 from .generators.compact_api_generator import CompactApiGenerator
 from .documentation_router import DocumentationRouter
-from ..services.base_api_service import BaseApiService
 
 
-class APIRouter:
+
+class ServiceRouter:
     """Blueprint that auto-registers all services and creates API routes."""
 
     def __init__(self, socketio_instance: Any = None) -> None:
         self.blueprint: Blueprint = Blueprint('api', __name__)
-        self.registered_services: dict[str, BaseApiService] = {}
+        self.registered_services: dict[str, BaseService] = {}
         self.logger: logging.Logger = logging.getLogger(__name__)
         self.socketio: Any = socketio_instance  # Store SocketIO instance for WebSocket support
         self._websocket_channels: dict[str, dict] = {}  # Initialize WebSocket channels dict
@@ -43,7 +44,7 @@ class APIRouter:
         # Discover and register WebSocket channels
         await self._discover_websocket_channels(service_name, service)
 
-    async def _discover_websocket_channels(self, service_name: str, service: BaseApiService) -> None:
+    async def _discover_websocket_channels(self, service_name: str, service: BaseService) -> None:
         """Discover @expose_ws methods and register WebSocket channels."""
         ws_methods = await service.get_exposed_ws_methods()
 
@@ -102,7 +103,7 @@ class APIRouter:
     async def list_services(self) -> list[str]:
         return list(self.registered_services.keys())
 
-    async def get_service(self, service_name: str) -> BaseApiService | None:
+    async def get_service(self, service_name: str) -> BaseService | None:
         return self.registered_services.get(service_name)
 
     async def get_websocket_channels(self) -> dict[str, dict]:

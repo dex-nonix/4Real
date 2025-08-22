@@ -11,9 +11,9 @@ from .openapi_generator import OpenAPIGenerator
 class CompactApiGenerator:
     """Generates compact YAML overviews from the full OpenAPI spec."""
 
-    def __init__(self, api_router):
-        self.api_router = api_router
-        self.blueprint = api_router.blueprint
+    def __init__(self, service_router):
+        self.service_router = service_router
+        self.blueprint = service_router.blueprint
         self.openapi_generator = OpenAPIGenerator()
         self._add_routes()
 
@@ -29,7 +29,7 @@ class CompactApiGenerator:
 
                 # Get the full OpenAPI spec using the existing generator
                 openapi_spec = await self.openapi_generator.generate_openapi_spec(
-                    self.api_router.registered_services,
+                    self.service_router.registered_services,
                     service_filter
                 )
 
