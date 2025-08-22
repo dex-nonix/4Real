@@ -3,8 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any, TYPE_CHECKING
 
-from flask import jsonify
-from flask import request
+
 
 if TYPE_CHECKING:
     from .service_router import ServiceRouter
@@ -18,7 +17,7 @@ class DocumentationRouter:
 
     def __init__(self, router: 'ServiceRouter') -> None:
         self.router: 'ServiceRouter' = router
-        self.blueprint = router.blueprint
+        self.fastapi_router = router.router
         self.openapi_generator = OpenAPIGenerator()
         self.swagger_ui_generator = SwaggerUIGenerator()
         self.logger = logging.getLogger(__name__)
@@ -27,14 +26,14 @@ class DocumentationRouter:
         self._add_documentation_routes()
 
     def _add_documentation_routes(self) -> None:
-        """Add OpenAPI documentation endpoints to the blueprint"""
+        """Add OpenAPI documentation endpoints to the FastAPI router"""
 
-        @self.blueprint.route('/openapi.json')
-        async def openapi_spec():
-            service_filter = request.args.get('services', None)
+        @self.fastapi_router.get('/openapi.json')
+        async def openapi_spec(services: str = None):
+            service_filter = services
 
             # Log OpenAPI request details
-            self.logger.info(f"OpenAPI request: {request.method} {request.url} (filter: {service_filter})")
+            self.logger.info(f"OpenAPI request: GET /openapi.json (filter: {service_filter})")
 
             # Use the router directly - no need for get_instance() crap
             if self.router:
@@ -47,13 +46,13 @@ class DocumentationRouter:
                     service_filter
                 )
                 self.logger.info(f"✅ Generated OpenAPI spec with {len(result.get('paths', {}))} paths")
-                return jsonify(result)
-            return jsonify({"error": "No services registered"}), 500
+                return result
+            return {"error": "No services registered"}
 
-        @self.blueprint.route('/docs')
-        async def swagger_ui():
+        @self.fastapi_router.get('/docs')
+        async def swagger_ui(services: str = None):
             """Return Swagger UI HTML page"""
-            current_filter = request.args.get('services', None)
+            current_filter = services
 
             return await self.swagger_ui_generator.generate_swagger_ui(current_filter)
 

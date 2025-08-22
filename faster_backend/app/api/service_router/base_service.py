@@ -4,104 +4,41 @@ from typing import Dict, Any, List, Callable
 
 
 class BaseService(ABC):
-    """Base class for all API services with Swagger documentation capability."""
+    """Base class for all API services with FastAPI WebSocket support."""
 
     def __init__(self):
-        """Initialize WebSocket integration."""
-        self._socketio = None  # Will be set by ServiceRouter during registration
+        """Initialize service."""
         self._logger = None  # Will be set by subclasses
+        self._service_router = None  # Will be set by ServiceRouter during registration
 
-    async def set_socketio(self, socketio_instance):
-        """Set SocketIO instance for WebSocket communication."""
-        self._socketio = socketio_instance
+    def set_service_router(self, service_router):
+        """Set reference to the service router for FastAPI WebSocket support - REQUIRED!"""
+        if service_router is None:
+            raise ValueError("Service router cannot be None - WebSocket communication requires it!")
+        self._service_router = service_router
+    
+    @property
+    def service_router(self):
+        """Get the service router - guaranteed to be available after registration."""
+        if self._service_router is None:
+            raise RuntimeError("Service router not set! Call set_service_router() during registration.")
+        return self._service_router
 
     async def send_to_channel(self, channel: str, event: str, data: dict):
         """
-        Send event to a specific WebSocket channel.
+        Send event to a specific WebSocket channel using FastAPI WebSocket.
 
         Args:
             channel: Channel path (e.g., 'service/channel/123')
             event: Event name (e.g., 'status_updated')
             data: Event data payload
-            room: Optional room name (defaults to channel)
         """
-        await self._websocket_emit(event, data, channel)
-
-
-    async def _websocket_emit(self, event, data: dict, target: str = None):
-        _socketio = self._socketio
-        if not self._socketio:
-            self._logger.error(f"CRITICAL ERROR: SocketIO not initialized for {self.__class__.__name__} - WebSocket communication disabled!")
-            return
-        
-        self._logger.debug(f"Emitting event '{event}' to room '{target}' with data: {data}")
-        
-        try:
-            if hasattr(_socketio, 'server') and hasattr(_socketio.server, 'manager'):
-                manager = _socketio.server.manager
-                
-                self._logger.info(f"=== WebSocket Connection Status ===")
-                
-                try:
-                    all_rooms = manager.rooms
-                    self._logger.info(f"Total rooms: {len(all_rooms)}")
-                    
-                    if all_rooms:
-                        self._logger.info(f"Active rooms: {list(all_rooms.keys())}")
-                        
-                        for room_name, room_data in all_rooms.items():
-                            try:
-                                if hasattr(room_data, 'sids'):
-                                    room_sids = list(room_data.sids)
-                                    self._logger.info(f"Room '{room_name}': {len(room_sids)} connections - SIDs: {room_sids}")
-                                elif hasattr(room_data, '__iter__'):
-                                    room_sids = list(room_data)
-                                    self._logger.info(f"Room '{room_name}': {len(room_sids)} connections - SIDs: {room_sids}")
-                                else:
-                                    self._logger.info(f"Room '{room_name}': {room_data}")
-                            except Exception as room_error:
-                                self._logger.warning(f"Could not process room '{room_name}': {room_error}")
-                    
-                    if target and target in all_rooms:
-                        target_room = all_rooms[target]
-                        try:
-                            if hasattr(target_room, 'sids'):
-                                target_sids = list(target_room.sids)
-                                self._logger.info(f"Target room '{target}': {len(target_sids)} connections - SIDs: {target_sids}")
-                            elif hasattr(target_room, '__iter__'):
-                                target_sids = list(target_room)
-                                self._logger.info(f"Target room '{target}': {len(target_sids)} connections - SIDs: {target_sids}")
-                            else:
-                                self._logger.info(f"Target room '{target}': {target_room}")
-                        except Exception as target_error:
-                            self._logger.warning(f"Could not process target room '{target}': {target_error}")
-                    elif target:
-                        self._logger.info(f"Target room '{target}' not found in active rooms")
-                        
-                except Exception as rooms_error:
-                    self._logger.warning(f"Could not access rooms: {rooms_error}")
-                
-                try:
-                    if hasattr(manager, 'get_participants'):
-                        participants = manager.get_participants()
-                        self._logger.info(f"Total participants: {len(participants) if participants else 0}")
-                    elif hasattr(manager, 'get_sids'):
-                        sids = manager.get_sids()
-                        self._logger.info(f"Total SIDs: {len(sids) if sids else 0}")
-                        if sids:
-                            self._logger.info(f"Active SIDs: {list(sids)[:10]}...")  # Show first 10
-                    else:
-                        self._logger.info("Manager does not have get_participants or get_sids method")
-                except Exception as sids_error:
-                    self._logger.warning(f"Could not get SIDs: {sids_error}")
-                
-                self._logger.info(f"=== End WebSocket Status ===")
-            
-            await self._socketio.emit(event, data, room=target)
-            self._logger.debug(f"Successfully emitted event '{event}' to room '{target}'")
-        except Exception as e:
-            self._logger.error(f"Failed to emit event '{event}' to room '{target}': {e}")
-            raise
+        await self.service_router.broadcast_to_channel(channel, {
+            'event': event,
+            'data': data,
+            'service': self.__class__.__name__,
+            'timestamp': __import__('datetime').datetime.now().isoformat()
+        })
 
     async def get_exposed_ws_methods(self) -> List[Dict[str, Any]]:
         """Get all @expose_ws methods with their metadata."""

@@ -3,8 +3,6 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict
 
-from flask import request
-
 from .openapi_generator import OpenAPIGenerator
 
 
@@ -13,33 +11,8 @@ class CompactApiGenerator:
 
     def __init__(self, service_router):
         self.service_router = service_router
-        self.blueprint = service_router.blueprint
         self.openapi_generator = OpenAPIGenerator()
-        self._add_routes()
 
-    def _add_routes(self):
-        """Add compact API routes to the blueprint."""
-
-        @self.blueprint.route('/overview', methods=['GET'])
-        async def get_compact_overview():
-            """Get compact YAML overview with optional service filtering."""
-            try:
-                # Get optional service filter from query parameter
-                service_filter = request.args.get('services', '').strip()
-
-                # Get the full OpenAPI spec using the existing generator
-                openapi_spec = await self.openapi_generator.generate_openapi_spec(
-                    self.service_router.registered_services,
-                    service_filter
-                )
-
-                # Convert OpenAPI spec to compact YAML
-                yaml_overview = await self._convert_openapi_to_compact_yaml(openapi_spec, service_filter)
-
-                return yaml_overview, 200, {'Content-Type': 'text/yaml'}
-
-            except Exception as exc:
-                return f"# Error: {str(exc)}", 500, {'Content-Type': 'text/yaml'}
 
     async def _convert_openapi_to_compact_yaml(self, openapi_spec: Dict[str, Any], service_filter: str = '') -> str:
         """Convert full OpenAPI spec to compact YAML overview."""

@@ -151,16 +151,16 @@ class OpenAPIGenerator:
         return path_info
 
     async def _extract_path_parameters(self, path: str) -> List[Dict[str, Any]]:
-        """Extract path parameters from Flask-style path"""
+        """Extract path parameters from FastAPI-style path"""
         parameters = []
-        # Find all <param> placeholders
-        matches = re.findall(r'<([^>]+)>', path)
+        # Find all {param} placeholders
+        matches = re.findall(r'\{([^}]+)\}', path)
 
         for param in matches:
-            # Handle type hints like <int:id>
+            # Handle type hints like {id:int}
             if ':' in param:
-                param_type, param_name = param.split(':', 1)
-                # Map Flask types to OpenAPI types
+                param_name, param_type = param.split(':', 1)
+                # Map FastAPI types to OpenAPI types
                 openapi_type = {
                     'int': 'integer',
                     'float': 'number',
@@ -183,6 +183,5 @@ class OpenAPIGenerator:
     async def _normalize_path(self, service_name: str, path: str) -> str:
         if not path.startswith('/'):
             path = '/' + path
-        # Convert `{id}` style placeholders to Flask `<id>`
-        flask_path = path.replace('{', '<').replace('}', '>')
-        return f'/{service_name}{flask_path}'
+        # Keep {id} style placeholders for FastAPI
+        return f'/{service_name}{path}'

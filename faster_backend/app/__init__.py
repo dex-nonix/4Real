@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from .api import api_router
 from .api.health import router as health_router
 from .api.upload import router as upload_router
+from .api.service_router.service_router import ServiceRouter
 from .config import settings
 from .database import init_db, close_db
 from .websocket import handle_websocket
@@ -40,9 +41,13 @@ def create_app() -> FastAPI:
 
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
+    # Initialize service router
+    service_router_instance = ServiceRouter()
+    
     app.include_router(health_router, prefix="/api", tags=["health"])
     app.include_router(upload_router, prefix="/api", tags=["upload"])
     app.include_router(api_router, tags=["api"])
+    app.include_router(service_router_instance.router, tags=["services"])
 
     @app.websocket(settings.WEBSOCKET_PATH)
     async def websocket_endpoint(websocket):
