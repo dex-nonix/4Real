@@ -14,6 +14,18 @@ from .....models.persona import Persona
 class ChatSessionMixin:
     """Mixin for chat session management operations."""
 
+    async def _get_persona_by_id(self, db_session, persona_id: int):
+        """Get persona by ID with validation."""
+        persona_stmt = select(Persona).filter_by(id=persona_id, is_active=True)
+        persona_result = await db_session.execute(persona_stmt)
+        return persona_result.scalar_one_or_none()
+
+    async def _get_session_by_id(self, db_session, session_id: int):
+        """Get session by ID with validation."""
+        session_stmt = select(ChatSession).filter_by(id=session_id, is_active=True)
+        session_result = await db_session.execute(session_stmt)
+        return session_result.scalar_one_or_none()
+
     async def _get_sessions_with_history_counts(self, persona_id: int = None, session_id: int = None):
         """Utility method to get sessions with history counts using single JOIN query."""
 
@@ -78,12 +90,9 @@ class ChatSessionMixin:
                 persona_id = int(payload.get('persona_id'))
                 
                 # Get persona first to check if exists and get name
-                persona_stmt = select(Persona).filter_by(id=persona_id, is_active=True)
-                persona_result = await db_session.execute(persona_stmt)
-                persona = persona_result.scalar_one_or_none()
-                
+                persona = await self._get_persona_by_id(db_session, persona_id)
                 if not persona:
-                    return JSONResponse({'error': 'Persona not found or inactive'}, status_code=404)
+                    return JSONResponse({'error': 'Persona not found or inactive'}, 404)
                 
                 session_name = payload.get('session_name') or f'Chat with {persona.name}'
                 session_icon = payload.get('session_icon')
@@ -124,7 +133,7 @@ class ChatSessionMixin:
                     await db_session.commit()
 
                 return JSONResponse({'data': session.to_dict()})
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc: 
                 await db_session.rollback()
                 return JSONResponse({'error': str(exc)}, status_code=500)
 
@@ -169,8 +178,8 @@ class ChatSessionMixin:
                 session_data['history_count'] = history_count  # Just the count, no objects
                 result.append(session_data)
             return JSONResponse({'data': result, 'total': len(result)})
-        except Exception as exc:  # noqa: BLE001
-            return JSONResponse({'error': str(exc)}, status_code=500)
+        except Exception as exc: 
+            return JSONResponse({'error': str(exc)}, 500)
 
     @expose(
         '/sessions/{id}',
@@ -196,7 +205,7 @@ class ChatSessionMixin:
             }
         }
     )
-    async def get_session(self, req: Request, id: int):  # noqa: A002
+    async def get_session(self, req: Request, id: int):
         """Get a specific chat session by ID."""
         try:
             # Use utility method for single JOIN query with COUNT
@@ -204,15 +213,15 @@ class ChatSessionMixin:
             session_with_count = sessions_result.first()
 
             if not session_with_count:
-                return JSONResponse({'error': 'Session not found or inactive'}, status_code=404)
+                return JSONResponse({'error': 'Session not found or inactive'}, 404)
 
             session, history_count = session_with_count
             session_data = session.to_dict()
             session_data['history_count'] = history_count  # Just the count, no objects
 
             return JSONResponse({'data': session_data})
-        except Exception as exc:  # noqa: BLE001
-            return JSONResponse({'error': str(exc)}, status_code=500)
+        except Exception as exc: 
+            return JSONResponse({'error': str(exc)}, 500)
 
     @expose(
         '/sessions/{id}',
@@ -245,16 +254,13 @@ class ChatSessionMixin:
             }
         }
     )
-    async def update_session(self, req: Request, payload: dict = None, id: int = None):  # noqa: A002
+    async def update_session(self, req: Request, payload: dict = None, id: int = None):
         """Update a chat session."""
         async with AsyncSessionLocal() as db_session:
             try:
-                session_stmt = select(ChatSession).filter_by(id=id, is_active=True)
-                session_result = await db_session.execute(session_stmt)
-                session = session_result.scalar_one_or_none()
-                
+                session = await self._get_session_by_id(db_session, id)
                 if not session:
-                    return JSONResponse({'error': 'Session not found or inactive'}, status_code=404)
+                    return JSONResponse({'error': 'Session not found or inactive'}, 404)
 
                 data = payload or {}
                 allowed_fields = ['session_name', 'session_icon', 'current_history_id']
@@ -265,9 +271,9 @@ class ChatSessionMixin:
 
                 await db_session.commit()
                 return JSONResponse({'data': session.to_dict()})
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 await db_session.rollback()
-                return JSONResponse({'error': str(exc)}, status_code=500)
+                return JSONResponse({'error': str(exc)}, 500)
 
     @expose(
         '/sessions/{id}',
@@ -280,23 +286,20 @@ class ChatSessionMixin:
             }
         }
     )
-    async def delete_session(self, req: Request, id: int):  # noqa: A002
+    async def delete_session(self, req: Request, id: int):
         """Delete a chat session (soft delete by setting is_active=False)."""
         async with AsyncSessionLocal() as db_session:
             try:
-                session_stmt = select(ChatSession).filter_by(id=id, is_active=True)
-                session_result = await db_session.execute(session_stmt)
-                session = session_result.scalar_one_or_none()
-                
+                session = await self._get_session_by_id(db_session, id)
                 if not session:
-                    return JSONResponse({'error': 'Session not found or inactive'}, status_code=404)
+                    return JSONResponse({'error': 'Session not found or inactive'}, 404)
 
                 session.is_active = False
                 await db_session.commit()
                 return JSONResponse({'message': 'Session deleted successfully'})
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 await db_session.rollback()
-                return JSONResponse({'error': str(exc)}, status_code=500)
+                return JSONResponse({'error': str(exc)}, 500)
 
     @expose(
         '/personas/{persona_id}/sessions',
@@ -330,12 +333,9 @@ class ChatSessionMixin:
         """Get all sessions for a specific persona."""
         async with AsyncSessionLocal() as db_session:
             try:
-                persona_stmt = select(Persona).filter_by(id=persona_id, is_active=True)
-                persona_result = await db_session.execute(persona_stmt)
-                persona = persona_result.scalar_one_or_none()
-                
+                persona = await self._get_persona_by_id(db_session, persona_id)
                 if not persona:
-                    return JSONResponse({'error': 'Persona not found or inactive'}, status_code=404)
+                    return JSONResponse({'error': 'Persona not found or inactive'}, 404)
 
                 # Use utility method for single JOIN query with COUNT
                 sessions_result = await self._get_sessions_with_history_counts(persona_id=persona_id)
@@ -348,8 +348,8 @@ class ChatSessionMixin:
                     sessions_data.append(session_data)
 
                 return JSONResponse({'data': sessions_data, 'total': len(sessions_data)})
-            except Exception as exc:  # noqa: BLE001
-                return JSONResponse({'error': str(exc)}, status_code=500)
+            except Exception as exc:
+                return JSONResponse({'error': str(exc)}, 500)
 
     @expose(
         '/personas/{persona_id}/start-chat',
@@ -385,12 +385,9 @@ class ChatSessionMixin:
         """Start a new chat session with a persona."""
         async with AsyncSessionLocal() as db_session:
             try:
-                persona_stmt = select(Persona).filter_by(id=persona_id, is_active=True)
-                persona_result = await db_session.execute(persona_stmt)
-                persona = persona_result.scalar_one_or_none()
-                
+                persona = await self._get_persona_by_id(db_session, persona_id)
                 if not persona:
-                    return JSONResponse({'error': 'Persona not found or inactive'}, status_code=404)
+                    return JSONResponse({'error': 'Persona not found or inactive'}, 404)
 
                 payload = payload or {}
                 session_name = payload.get('session_name') or f'Chat with {persona.name}'
@@ -432,7 +429,7 @@ class ChatSessionMixin:
                     db_session.add(sys_msg)
                     await db_session.commit()
 
-                return JSONResponse({'data': session.to_dict()}, status_code=201)
-            except Exception as exc:  # noqa: BLE001
+                return JSONResponse({'data': session.to_dict()}, 201)
+            except Exception as exc:
                 await db_session.rollback()
-                return JSONResponse({'error': str(exc)}, status_code=500)
+                return JSONResponse({'error': str(exc)}, 500)

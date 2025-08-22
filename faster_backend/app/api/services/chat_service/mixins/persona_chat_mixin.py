@@ -4,7 +4,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import func
 
-from ...import db
+from .....database import AsyncSessionLocal
 from ....service_router.decorators import expose
 from .....models.chat_session import ChatSession
 from .....models.persona import Persona
@@ -32,9 +32,9 @@ class PersonaChatMixin:
         }
     }
 
-    async def _build_persona_query(self, persona_id: int = None):
+    def _build_persona_query(self, db_session, persona_id: int = None):
         """Build base query for personas with session counts."""
-        query = db.session.query(
+        query = db_session.query(
             Persona,
             func.count(ChatSession.id).label('session_count')
         ).outerjoin(
@@ -68,8 +68,10 @@ class PersonaChatMixin:
         """List all available personas with active session counts."""
         try:
             # Query personas with session counts using JOIN
-            query = await self._build_persona_query()
-            personas_with_counts = query.all()
+            async with AsyncSessionLocal() as db_session:
+                query = self._build_persona_query(db_session)
+                personas_with_counts = await db_session.execute(query)
+                personas_with_counts = personas_with_counts.all()
 
             result = []
             for persona, session_count in personas_with_counts:
@@ -92,8 +94,10 @@ class PersonaChatMixin:
         """Get a single persona by ID with active session count."""
         try:
             # Query persona with session count using JOIN
-            query = await self._build_persona_query(persona_id)
-            result = query.first()
+            async with AsyncSessionLocal() as db_session:
+                query = self._build_persona_query(db_session, persona_id)
+                result = await db_session.execute(query)
+                result = result.first()
 
             if not result:
                 return JSONResponse({'error': 'Persona not found'}, status_code=404)
