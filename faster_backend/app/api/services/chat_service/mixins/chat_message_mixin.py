@@ -15,7 +15,7 @@ from ..websocket_protocol import WebSocketMixinProtocol
 from .....llm.llm_client import run_chat_streaming
 from .....llm.tool_runtime import execute_tool
 from .....llm.tool_runtime import list_persona_tools
-from ..... import db
+from .....database import AsyncSessionLocal
 from ....service_router.decorators import expose
 from .....models.ai_model_mapping import AIModelMapping
 from .....models.ai_provider import AIProvider
@@ -39,135 +39,157 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         """Select AI model for persona with strict validation."""
         self._logger.debug(f"Selecting AI model for persona {persona_id}")
 
-        persona = Persona.query.filter_by(id=persona_id).first()
-        if not persona:
-            self._logger.warning(f"Persona {persona_id} not found")
-            return None
+        async with AsyncSessionLocal() as db_session:
+            persona = await db_session.execute(
+                db_session.query(Persona).filter_by(id=persona_id)
+            ).scalar_one_or_none()
+            
+            if not persona:
+                self._logger.warning(f"Persona {persona_id} not found")
+                return None
 
-        mapping = None
-        if persona and getattr(persona, 'ai_model_mapping_id', None):
-            mapping = AIModelMapping.query.filter_by(id=persona.ai_model_mapping_id, is_active=True).first()
-            self._logger.debug(f"AI model mapping found: {mapping}")
-        else:
-            self._logger.warning(f"Persona {persona_id} has no AI model mapping")
+            mapping = None
+            if persona and getattr(persona, 'ai_model_mapping_id', None):
+                mapping = await db_session.execute(
+                    db_session.query(AIModelMapping).filter_by(id=persona.ai_model_mapping_id, is_active=True)
+                ).scalar_one_or_none()
+                self._logger.debug(f"AI model mapping found: {mapping}")
+            else:
+                self._logger.warning(f"Persona {persona_id} has no AI model mapping")
 
-        if not mapping:
-            self._logger.warning(f"No active AI model mapping found for persona {persona_id}")
-            return None
+            if not mapping:
+                self._logger.warning(f"No active AI model mapping found for persona {persona_id}")
+                return None
 
-        model_info = {
-            'provider_id': mapping.provider_id,
-            'model_name': mapping.model_name,
-            'parameters': mapping.parameters_json or {},
-        }
-        self._logger.info(f"Selected AI model: {mapping.model_name} (provider: {mapping.provider_id})")
-        return model_info
+            model_info = {
+                'provider_id': mapping.provider_id,
+                'model_name': mapping.model_name,
+                'parameters': mapping.parameters_json or {},
+            }
+            self._logger.info(f"Selected AI model: {mapping.model_name} (provider: {mapping.provider_id})")
+            return model_info
 
     async def _validate_session_history(self, session_id: int, history_id: int = None):
         """Validate session and history, return tuple (session, history)."""
         self._logger.debug(f"Validating session {session_id} with history {history_id}")
 
-        session = ChatSession.query.filter_by(id=session_id, is_active=True).first()
-        if not session:
-            self._logger.warning(f"Session {session_id} not found or inactive")
-            return None, None
+        async with AsyncSessionLocal() as db_session:
+            session = await db_session.execute(
+                db_session.query(ChatSession).filter_by(id=session_id, is_active=True)
+            ).scalar_one_or_none()
+            
+            if not session:
+                self._logger.warning(f"Session {session_id} not found or inactive")
+                return None, None
 
-        if history_id:
-            # Specific history requested
-            self._logger.debug(f"Querying history {history_id} for session {session_id}")
+            if history_id:
+                # Specific history requested
+                self._logger.debug(f"Querying history {history_id} for session {session_id}")
 
-            history = ChatHistory.query.filter_by(id=history_id, session_id=session_id).first()
-            self._logger.debug(f"History query result: {history}")
+                history = await db_session.execute(
+                    db_session.query(ChatHistory).filter_by(id=history_id, session_id=session_id)
+                ).scalar_one_or_none()
+                self._logger.debug(f"History query result: {history}")
 
-            if not history:
-                self._logger.warning(f"History {history_id} not found for session {session_id}")
-                return session, None
-        else:
-            # Use current history or create new one
-            if not session.current_history_id:
-                self._logger.info(f"Creating new history for session {session_id}")
-                history = ChatHistory(
-                    session_id=session_id,
-                    title='New Conversation',
-                    message_count=0
-                )
-                db.session.add(history)
-                db.session.commit()
-                session.current_history_id = history.id
-                db.session.commit()
-                self._logger.info(f"New history {history.id} created for session {session_id}")
-            else:
-                self._logger.debug(f"Using existing history {session.current_history_id} for session {session_id}")
-                history = ChatHistory.query.get(session.current_history_id)
                 if not history:
-                    self._logger.warning(
-                        f"Current history {session.current_history_id} not found for session {session_id}")
+                    self._logger.warning(f"History {history_id} not found for session {session_id}")
                     return session, None
+            else:
+                # Use current history or create new one
+                if not session.current_history_id:
+                    self._logger.info(f"Creating new history for session {session_id}")
+                    history = ChatHistory(
+                        session_id=session_id,
+                        title='New Conversation',
+                        message_count=0
+                    )
+                    db_session.add(history)
+                    await db_session.commit()
+                    await db_session.refresh(history)
+                    session.current_history_id = history.id
+                    await db_session.commit()
+                    self._logger.info(f"New history {history.id} created for session {session_id}")
+                else:
+                    self._logger.debug(f"Using existing history {session.current_history_id} for session {session_id}")
+                    history = await db_session.get(ChatHistory, session.current_history_id)
+                    if not history:
+                        self._logger.warning(
+                            f"Current history {session.current_history_id} not found for session {session_id}")
+                        return session, None
 
-        self._logger.debug(
-            f"Session validation successful: session={session.id}, history={history.id if history else None}")
-        return session, history
+            self._logger.debug(
+                f"Session validation successful: session={session.id}, history={history.id if history else None}")
+            return session, history
 
     async def _create_user_message(self, history_id: int, content: Dict[str, Any]) -> ChatMessage:
         """Create and save user message."""
         self._logger.debug(f"Creating user message for history {history_id}")
 
-        user_msg = ChatMessage(
-            history_id=history_id,
-            role='user',
-            message_type='text',
-            content_json=content
-        )
-        db.session.add(user_msg)
-        db.session.commit()
+        async with AsyncSessionLocal() as db_session:
+            user_msg = ChatMessage(
+                history_id=history_id,
+                role='user',
+                message_type='text',
+                content_json=content
+            )
+            db_session.add(user_msg)
+            await db_session.commit()
+            await db_session.refresh(user_msg)
 
-        self._logger.info(f"User message {user_msg.id} created successfully for history {history_id}")
-        return user_msg
+            self._logger.info(f"User message {user_msg.id} created successfully for history {history_id}")
+            return user_msg
 
     async def _create_assistant_placeholder(self, history_id: int) -> ChatMessage:
         """Create empty assistant message placeholder."""
         self._logger.debug(f"Creating assistant message placeholder for history {history_id}")
 
-        asst_msg = ChatMessage(
-            history_id=history_id,
-            role='assistant',
-            message_type='text',
-            content_json={'type': 'text', 'text': ''},
-            status='processing'
-        )
-        db.session.add(asst_msg)
-        db.session.commit()
+        async with AsyncSessionLocal() as db_session:
+            asst_msg = ChatMessage(
+                history_id=history_id,
+                role='assistant',
+                message_type='text',
+                content_json={'type': 'text', 'text': ''},
+                status='processing'
+            )
+            db_session.add(asst_msg)
+            await db_session.commit()
+            await db_session.refresh(asst_msg)
 
-        self._logger.info(f"Assistant message placeholder {asst_msg.id} created for history {history_id}")
-        return asst_msg
+            self._logger.info(f"Assistant message placeholder {asst_msg.id} created for history {history_id}")
+            return asst_msg
 
     async def _build_chat_history(self, history_id: int, user_msg_id: int) -> List[Dict[str, Any]]:
         """Build chat history for LLM processing."""
         self._logger.debug(f"Building chat history for history {history_id} up to message {user_msg_id}")
 
-        chat_history = []
+        async with AsyncSessionLocal() as db_session:
+            chat_history = []
 
-        # Add system messages
-        system_msgs = ChatMessage.query.filter_by(history_id=history_id, role='system').order_by(
-            ChatMessage.created_at.asc()).all()
-        self._logger.debug(f"Found {len(system_msgs)} system messages")
-        for sm in system_msgs:
-            content = sm.content_json if isinstance(sm.content_json, dict) else {'text': str(sm.content_json)}
-            chat_history.append({'role': 'system', 'content': content})
+            # Add system messages
+            system_msgs = await db_session.execute(
+                db_session.query(ChatMessage).filter_by(history_id=history_id, role='system').order_by(
+                    ChatMessage.created_at.asc())
+            ).scalars().all()
+            self._logger.debug(f"Found {len(system_msgs)} system messages")
+            for sm in system_msgs:
+                content = sm.content_json if isinstance(sm.content_json, dict) else {'text': str(sm.content_json)}
+                chat_history.append({'role': 'system', 'content': content})
 
-        # Add user and assistant messages up to current user message
-        user_msgs = ChatMessage.query.filter(ChatMessage.history_id == history_id,
-                                             ChatMessage.id <= user_msg_id).order_by(ChatMessage.created_at.asc()).all()
-        self._logger.debug(f"Found {len(user_msgs)} user/assistant messages")
-        for um in user_msgs:
-            role = um.role
-            if role not in ('user', 'assistant'):
-                continue
-            content = um.content_json if isinstance(um.content_json, dict) else {'text': str(um.content_json)}
-            chat_history.append({'role': role, 'content': content})
+            # Add user and assistant messages up to current user message
+            user_msgs = await db_session.execute(
+                db_session.query(ChatMessage).filter(ChatMessage.history_id == history_id,
+                                                     ChatMessage.id <= user_msg_id).order_by(ChatMessage.created_at.asc())
+            ).scalars().all()
+            self._logger.debug(f"Found {len(user_msgs)} user/assistant messages")
+            for um in user_msgs:
+                role = um.role
+                if role not in ('user', 'assistant'):
+                    continue
+                content = um.content_json if isinstance(um.content_json, dict) else {'text': str(um.content_json)}
+                chat_history.append({'role': role, 'content': content})
 
-        self._logger.info(f"Built chat history with {len(chat_history)} total messages")
-        return chat_history
+            self._logger.info(f"Built chat history with {len(chat_history)} total messages")
+            return chat_history
 
     async def _resolve_ai_model(self, persona_id: int):
         """Resolve AI model, provider, and mapping."""
@@ -178,18 +200,25 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             self._logger.warning(f"Failed to select AI model for persona {persona_id}")
             return None, None, None
 
-        provider = AIProvider.query.filter_by(id=model_info['provider_id'], is_active=True).first()
-        if not provider:
-            self._logger.warning(f"AI provider {model_info['provider_id']} not found or inactive")
-            return None, None, None
+        async with AsyncSessionLocal() as db_session:
+            provider = await db_session.execute(
+                db_session.query(AIProvider).filter_by(id=model_info['provider_id'], is_active=True)
+            ).scalar_one_or_none()
+            
+            if not provider:
+                self._logger.warning(f"AI provider {model_info['provider_id']} not found or inactive")
+                return None, None, None
 
-        mapping_obj = AIModelMapping.query.filter_by(id=persona_id, is_active=True).first()
-        if not mapping_obj:
-            self._logger.warning(f"AI model mapping {persona_id} not found or inactive")
-            return None, None, None
+            mapping_obj = await db_session.execute(
+                db_session.query(AIModelMapping).filter_by(id=persona_id, is_active=True)
+            ).scalar_one_or_none()
+            
+            if not mapping_obj:
+                self._logger.warning(f"AI model mapping {persona_id} not found or inactive")
+                return None, None, None
 
-        self._logger.info(f"AI model resolved successfully: provider={provider.name}, model={model_info['model_name']}")
-        return model_info, provider, mapping_obj
+            self._logger.info(f"AI model resolved successfully: provider={provider.name}, model={model_info['model_name']}")
+            return model_info, provider, mapping_obj
 
     async def _execute_tool_call(self, persona_id: int, tool_name: str, tool_args: Dict[str, Any],
                            history_id: int, user_msg_id: int, available_tools: Dict[str, Any]):
@@ -201,58 +230,63 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             self._logger.warning(f"Tool '{tool_name}' not allowed for persona {persona_id}")
             return None, f'Tool {tool_name} not allowed'
 
-        # Log tool execution
-        log = ToolInvocationLog(
-            history_id=history_id,
-            message_id=user_msg_id,
-            tool_name=tool_name,
-            input_json=tool_args,
-            status='started'
-        )
-        db.session.add(log)
-        db.session.commit()
-        self._logger.debug(f"Tool invocation logged with ID {log.id}")
+        async with AsyncSessionLocal() as db_session:
+            # Log tool execution
+            log = ToolInvocationLog(
+                history_id=history_id,
+                message_id=user_msg_id,
+                tool_name=tool_name,
+                input_json=tool_args,
+                status='started'
+            )
+            db_session.add(log)
+            await db_session.commit()
+            await db_session.refresh(log)
+            self._logger.debug(f"Tool invocation logged with ID {log.id}")
 
-        # Execute tool
-        self._logger.debug(f"Calling execute_tool for '{tool_name}'")
-        exec_result = execute_tool(persona_id, tool_name, tool_args)
-        log.status = 'success' if exec_result.get('status') == 'success' else 'error'
-        log.output_json = exec_result
-        db.session.commit()
+            # Execute tool
+            self._logger.debug(f"Calling execute_tool for '{tool_name}'")
+            exec_result = execute_tool(persona_id, tool_name, tool_args)
+            log.status = 'success' if exec_result.get('status') == 'success' else 'error'
+            log.output_json = exec_result
+            await db_session.commit()
 
-        status = 'success' if exec_result.get('status') == 'success' else 'error'
-        self._logger.info(f"Tool '{tool_name}' execution completed with status: {status}")
+            status = 'success' if exec_result.get('status') == 'success' else 'error'
+            self._logger.info(f"Tool '{tool_name}' execution completed with status: {status}")
 
-        # Create tool result message
-        tool_msg = ChatMessage(
-            history_id=history_id,
-            role='tool',
-            message_type='tool_result',
-            content_json={'type': 'tool_result', 'tool': tool_name, 'input': tool_args, 'output': exec_result}
-        )
-        db.session.add(tool_msg)
-        db.session.commit()
-        self._logger.debug(f"Tool result message {tool_msg.id} created")
+            # Create tool result message
+            tool_msg = ChatMessage(
+                history_id=history_id,
+                role='tool',
+                message_type='tool_result',
+                content_json={'type': 'tool_result', 'tool': tool_name, 'input': tool_args, 'output': exec_result}
+            )
+            db_session.add(tool_msg)
+            await db_session.commit()
+            await db_session.refresh(tool_msg)
+            self._logger.debug(f"Tool result message {tool_msg.id} created")
 
-        return exec_result, None
+            return exec_result, None
 
     async def _create_assistant_message(self, history_id: int, content: Dict[str, Any],
                                   status: str = 'complete') -> ChatMessage:
         """Create and save assistant message."""
         self._logger.debug(f"Creating assistant message for history {history_id} with status '{status}'")
 
-        asst_msg = ChatMessage(
-            history_id=history_id,
-            role='assistant',
-            message_type='text',
-            content_json=content,
-            status=status
-        )
-        db.session.add(asst_msg)
-        db.session.commit()
+        async with AsyncSessionLocal() as db_session:
+            asst_msg = ChatMessage(
+                history_id=history_id,
+                role='assistant',
+                message_type='text',
+                content_json=content,
+                status=status
+            )
+            db_session.add(asst_msg)
+            await db_session.commit()
+            await db_session.refresh(asst_msg)
 
-        self._logger.info(f"Assistant message {asst_msg.id} created successfully for history {history_id}")
-        return asst_msg
+            self._logger.info(f"Assistant message {asst_msg.id} created successfully for history {history_id}")
+            return asst_msg
 
     async def _format_error_response(self, error_message: str, status_code: int = 400):
         """Format error response consistently."""
@@ -263,7 +297,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         await self.emit_chat_event(session_id, history_id, 'llm_status', {
             'stage': stage,
             'message': message,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(datetime.timezone.utc).isoformat()
         })
 
     @expose(
@@ -295,19 +329,26 @@ class ChatMessageMixin(WebSocketMixinProtocol):
     async def list_messages(self, req: Request, id: int):  # noqa: A002
         """List messages from a chat session's current history."""
         try:
-            session = ChatSession.query.filter_by(id=id, is_active=True).first()
-            if not session:
-                return JSONResponse({'error': 'Session not found or inactive'}, 404)
+            async with AsyncSessionLocal() as db_session:
+                session = await db_session.execute(
+                    db_session.query(ChatSession).filter_by(id=id, is_active=True)
+                ).scalar_one_or_none()
+                
+                if not session:
+                    return JSONResponse({'error': 'Session not found or inactive'}, status_code=404)
 
-            # Get messages from current history
-            if not session.current_history_id:
-                return {'data': [], 'total': 0}
+                # Get messages from current history
+                if not session.current_history_id:
+                    return {'data': [], 'total': 0}
 
-            msgs = ChatMessage.query.filter_by(history_id=session.current_history_id).order_by(
-                ChatMessage.created_at.asc()).all()
-            return {'data': [m.to_dict() for m in msgs], 'total': len(msgs)}
+                msgs = await db_session.execute(
+                    db_session.query(ChatMessage).filter_by(history_id=session.current_history_id).order_by(
+                        ChatMessage.created_at.asc())
+                ).scalars().all()
+                
+                return {'data': [m.to_dict() for m in msgs], 'total': len(msgs)}
         except Exception as exc:  # noqa: BLE001
-            return JSONResponse({'error': str(exc)}, 500)
+            return JSONResponse({'error': str(exc)}, status_code=500)
 
     @expose('/sessions/{session_id}/histories/{history_id}/send',
             methods=['POST'],
@@ -417,7 +458,6 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
         except Exception as exc:
             self._logger.error(f"Error in send_message: {exc}", exc_info=True)
-            db.session.rollback()
             return await self._format_error_response(str(exc), 500)
 
     async def _submit_message_for_async_processing(self, user_msg_id: int, asst_msg_id: int, session_id: int, history_id: int,
@@ -620,8 +660,11 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             if not history:
                 return await self._format_error_response('History not found', 404)
 
-            msgs = ChatMessage.query.filter_by(history_id=history_id).order_by(ChatMessage.created_at.asc()).all()
-            return JSONResponse({'data': [m.to_dict() for m in msgs], 'total': len(msgs)})
+            async with AsyncSessionLocal() as db_session:
+                msgs = await db_session.execute(
+                    db_session.query(ChatMessage).filter_by(history_id=history_id).order_by(ChatMessage.created_at.asc())
+                ).scalars().all()
+                return JSONResponse({'data': [m.to_dict() for m in msgs], 'total': len(msgs)})
         except Exception as exc:  # noqa: BLE001
             return await self._format_error_response(str(exc), 500)
 
@@ -640,37 +683,46 @@ class ChatMessageMixin(WebSocketMixinProtocol):
     async def delete_message(self, req: Request, session_id: int, history_id: int, message_id: int):
         """Delete a specific message from a history."""
         try:
-            # Verify session exists and is active
-            session = ChatSession.query.filter_by(id=session_id, is_active=True).first()
-            if not session:
-                return await self._format_error_response('Session not found or inactive', 404)
+            async with AsyncSessionLocal() as db_session:
+                # Verify session exists and is active
+                session = await db_session.execute(
+                    db_session.query(ChatSession).filter_by(id=session_id, is_active=True)
+                ).scalar_one_or_none()
+                
+                if not session:
+                    return await self._format_error_response('Session not found or inactive', 404)
 
-            # Verify history exists and belongs to session
-            history = ChatHistory.query.filter_by(id=history_id, session_id=session_id).first()
-            if not history:
-                return await self._format_error_response('History not found', 404)
+                # Verify history exists and belongs to session
+                history = await db_session.execute(
+                    db_session.query(ChatHistory).filter_by(id=history_id, session_id=session_id)
+                ).scalar_one_or_none()
+                
+                if not history:
+                    return await self._format_error_response('History not found', 404)
 
-            # Find and delete the specific message
-            message = ChatMessage.query.filter_by(id=message_id, history_id=history_id).first()
-            if not message:
-                return await self._format_error_response('Message not found', 404)
+                # Find and delete the specific message
+                message = await db_session.execute(
+                    db_session.query(ChatMessage).filter_by(id=message_id, history_id=history_id)
+                ).scalar_one_or_none()
+                
+                if not message:
+                    return await self._format_error_response('Message not found', 404)
 
-            # Store message ID before deletion for response
-            deleted_message_id = message.id
+                # Store message ID before deletion for response
+                deleted_message_id = message.id
 
-            # Delete the message
-            db.session.delete(message)
+                # Delete the message
+                await db_session.delete(message)
 
-            # Update history message count
-            history.message_count = max(0, history.message_count - 1)
+                # Update history message count
+                history.message_count = max(0, history.message_count - 1)
 
-            db.session.commit()
+                await db_session.commit()
 
-            return JSONResponse({
-                'message': 'Message deleted successfully',
-                'deleted_message_id': deleted_message_id
-            })
+                return JSONResponse({
+                    'message': 'Message deleted successfully',
+                    'deleted_message_id': deleted_message_id
+                })
 
         except Exception as exc:  # noqa: BLE001
-            db.session.rollback()
             return await self._format_error_response(str(exc), 500)
