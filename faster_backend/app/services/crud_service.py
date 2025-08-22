@@ -3,12 +3,15 @@ from __future__ import annotations
 from datetime import datetime, date
 from typing import Any, Dict, List, Optional
 
-from flask import jsonify, Request
-from sqlalchemy import or_
+from fastapi import Request
+from fastapi.responses import JSONResponse
+from sqlalchemy import or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from .base_api_service import BaseApiService
 from .chat_service.crud_swagger_generator import CrudSwaggerGenerator
-from .. import db
+from ..database import AsyncSessionLocal
 from ..api.api_router.decorators import expose
 
 
@@ -110,7 +113,7 @@ class CrudService(BaseApiService):
 
     async def _call_if_enabled(self, op: str, handler, *args, **kwargs):
         if not self._is_enabled(op):
-            return jsonify({'error': 'Operation disabled'}), 405
+            return JSONResponse({'error': 'Operation disabled'}, 405)   
         return await handler(*args, **kwargs)
 
     @expose('/', methods=['POST'])
@@ -152,233 +155,288 @@ class CrudService(BaseApiService):
     # Handlers
     async def _handle_create(self, req: Request):
         try:
-            data = req.get_json(silent=True) or {}
+            data = await req.json()
 
             if self.config['validation']['enabled']:
                 errors = await self._validate_create_data(data)
                 if errors:
-                    return jsonify({'errors': errors}), 400
+                    return JSONResponse({'errors': errors}, 400)
 
-            instance = self.model(**data)
-            db.session.add(instance)
-            db.session.commit()
-            return jsonify({'message': 'Created successfully', 'data': await self._serialize(instance)}), 201
+            async with AsyncSessionLocal() as session:
+                instance = self.model(**data)
+                session.add(instance)
+                await session.commit()
+                await session.refresh(instance)
+                return JSONResponse({'message': 'Created successfully', 'data': await self._serialize(instance)}, 201)
         except Exception as exc:  # noqa: BLE001
-            db.session.rollback()
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, 500)
 
     async def _handle_list(self, req: Request):
         try:
-            query = self.model.query
+            async with AsyncSessionLocal() as session:
+                query = select(self.model)
 
-            if self.config['filters']['enabled']:
-                query = await self._apply_filters(query, req.args)
+                if self.config['filters']['enabled']:
+                    query = await self._apply_filters(query, req.query_params)
 
-            if self.config['sorting']['enabled']:
-                query = await self._apply_sorting(query, req.args)
+                if self.config['sorting']['enabled']:
+                    query = await self._apply_sorting(query, req.query_params)
 
-            if self.config['pagination']['enabled']:
-                page = int(req.args.get('page', 1))
-                per_page = min(
-                    int(req.args.get('per_page', self.config['pagination']['default_page_size'])),
-                    self.config['pagination']['max_page_size'],
-                )
+                if self.config['pagination']['enabled']:
+                    page = int(req.query_params.get('page', 1))
+                    per_page = min(
+                        int(req.query_params.get('per_page', self.config['pagination']['default_page_size'])),
+                        self.config['pagination']['max_page_size'],
+                    )
 
-                # Flask-SQLAlchemy 3.x: use db.paginate instead of Query.paginate
-                pagination = db.paginate(query, page=page, per_page=per_page, error_out=False)
-                serialized_items = [await self._serialize(item) for item in pagination.items]
-                return jsonify({
-                    'data': serialized_items,
-                    'pagination': {
-                        'page': page,
-                        'per_page': per_page,
-                        'total': pagination.total,
-                        'pages': pagination.pages,
-                        'has_next': pagination.has_next,
-                        'has_prev': pagination.has_prev,
-                    },
-                })
+                    # Manual pagination with async SQLAlchemy
+                    offset = (page - 1) * per_page
+                    query = query.offset(offset).limit(per_page)
+                    
+                    result = await session.execute(query)
+                    items = result.scalars().all()
+                    
+                    # Get total count
+                    count_query = select(self.model)
+                    if self.config['filters']['enabled']:
+                        count_query = await self._apply_filters(count_query, req.query_params)
+                    count_result = await session.execute(count_query)
+                    total = len(count_result.scalars().all())
+                    
+                    serialized_items = [await self._serialize(item) for item in items]
+                    pages = (total + per_page - 1) // per_page
+                    
+                    return {
+                        'data': serialized_items,
+                        'pagination': {
+                            'page': page,
+                            'per_page': per_page,
+                            'total': total,
+                            'pages': pages,
+                            'has_next': page < pages,
+                            'has_prev': page > 1,
+                        },
+                    }
 
-            items = query.all()
+            result = await session.execute(query)
+            items = result.scalars().all()
             serialized_items = [await self._serialize(item) for item in items]
-            return jsonify({'data': serialized_items, 'total': len(items)})
+            return JSONResponse({'data': serialized_items, 'total': len(items)})
         except Exception as exc:  # noqa: BLE001
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, 500)
 
     async def _handle_read(self, req: Request, id: int):  # noqa: A002 - id is API param name
         try:
-            instance = self.model.query.filter_by(id=id).first()
-            if not instance:
-                return jsonify({'error': 'Not found'}), 404
-            return jsonify({'data': await self._serialize(instance)})
+            async with AsyncSessionLocal() as session:
+                query = select(self.model).where(self.model.id == id)
+                result = await session.execute(query)
+                instance = result.scalar_one_or_none()
+                
+                if not instance:
+                    return JSONResponse({'error': 'Not found'}, 404)
+                return JSONResponse({'data': await self._serialize(instance)})
         except Exception as exc:  # noqa: BLE001
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, 500)
 
     async def _handle_update(self, req: Request, id: int):  # noqa: A002
         try:
-            instance = self.model.query.filter_by(id=id).first()
-            if not instance:
-                return jsonify({'error': 'Not found'}), 404
+            async with AsyncSessionLocal() as session:
+                query = select(self.model).where(self.model.id == id)
+                result = await session.execute(query)
+                instance = result.scalar_one_or_none()
+                
+                if not instance:
+                    return JSONResponse({'error': 'Not found'}, 404)
 
-            data = req.get_json(silent=True) or {}
-            if self.config['validation']['enabled']:
-                errors = await self._validate_update_data(data, instance)
-                if errors:
-                    return jsonify({'errors': errors}), 400
+                data = await req.json()
+                if self.config['validation']['enabled']:
+                    errors = await self._validate_update_data(data, instance)
+                    if errors:
+                        return JSONResponse({'errors': errors}, 400)
 
-            for key, value in data.items():
-                if hasattr(instance, key):
-                    setattr(instance, key, value)
+                for key, value in data.items():
+                    if hasattr(instance, key):
+                        setattr(instance, key, value)
 
-            db.session.commit()
-            return jsonify({'message': 'Updated successfully', 'data': await self._serialize(instance)})
+                await session.commit()
+                return JSONResponse({'message': 'Updated successfully', 'data': await self._serialize(instance)})
         except Exception as exc:  # noqa: BLE001
-            db.session.rollback()
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, 500)
 
     async def _handle_delete(self, req: Request, id: int):  # noqa: A002
         try:
-            instance = self.model.query.filter_by(id=id).first()
-            if not instance:
-                return jsonify({'error': 'Not found'}), 404
-            db.session.delete(instance)
-            db.session.commit()
-            return jsonify({'message': 'Deleted successfully'})
+            async with AsyncSessionLocal() as session:
+                query = select(self.model).where(self.model.id == id)
+                result = await session.execute(query)
+                instance = result.scalar_one_or_none()
+                
+                if not instance:
+                    return JSONResponse({'error': 'Not found'}, 404)
+                    
+                await session.delete(instance)
+                await session.commit()
+                return JSONResponse({'message': 'Deleted successfully'})
         except Exception as exc:  # noqa: BLE001
-            db.session.rollback()
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, 500)
 
     async def _handle_search(self, req: Request):
         try:
-            query_text = req.args.get('q', '')
-            fields_param = req.args.get('fields', '')
-            fields = [f for f in fields_param.split(',') if f] if fields_param else []
+            async with AsyncSessionLocal() as session:
+                query_text = req.query_params.get('q', '')
+                fields_param = req.query_params.get('fields', '')
+                fields = [f for f in fields_param.split(',') if f] if fields_param else []
 
-            if not query_text:
-                return jsonify({'error': 'Search query required'}), 400
+                if not query_text:
+                    return JSONResponse({'error': 'Search query required'}, 400)
 
-            base_query = self.model.query
-            conditions = []
-            if fields:
-                for field in fields:
-                    if hasattr(self.model, field):
-                        conditions.append(getattr(self.model, field).ilike(f'%{query_text}%'))
-            else:
-                for column in self.model.__table__.columns:
-                    # Heuristic: use ilike for textual columns
-                    if hasattr(column.type, 'length') or column.type.python_type is str:  # type: ignore[attr-defined]
-                        conditions.append(column.ilike(f'%{query_text}%'))  # type: ignore[arg-type]
+                base_query = select(self.model)
+                conditions = []
+                if fields:
+                    for field in fields:
+                        if hasattr(self.model, field):
+                            conditions.append(getattr(self.model, field).ilike(f'%{query_text}%'))
+                else:
+                    for column in self.model.__table__.columns:
+                        # Heuristic: use ilike for textual columns
+                        if hasattr(column.type, 'length') or column.type.python_type is str:  # type: ignore[attr-defined]
+                            conditions.append(column.ilike(f'%{query_text}%'))  # type: ignore[arg-type]
 
-            if conditions:
-                base_query = base_query.filter(or_(*conditions))
+                if conditions:
+                    base_query = base_query.where(or_(*conditions))
 
-            if self.config['pagination']['enabled']:
-                page = int(req.args.get('page', 1))
-                per_page = min(
-                    int(req.args.get('per_page', self.config['pagination']['default_page_size'])),
-                    self.config['pagination']['max_page_size'],
-                )
-                # Flask-SQLAlchemy 3.x: use db.paginate instead of Query.paginate
-                pagination = db.paginate(base_query, page=page, per_page=per_page, error_out=False)
-                serialized_items = [await self._serialize(item) for item in pagination.items]
-                return jsonify({
-                    'data': serialized_items,
-                    'pagination': {
-                        'page': page,
-                        'per_page': per_page,
-                        'total': pagination.total,
-                        'pages': pagination.pages,
-                    },
-                })
+                if self.config['pagination']['enabled']:
+                    page = int(req.query_params.get('page', 1))
+                    per_page = min(
+                        int(req.query_params.get('per_page', self.config['pagination']['default_page_size'])),
+                        self.config['pagination']['max_page_size'],
+                    )
+                    
+                    # Manual pagination with async SQLAlchemy
+                    offset = (page - 1) * per_page
+                    paginated_query = base_query.offset(offset).limit(per_page)
+                    
+                    result = await session.execute(paginated_query)
+                    items = result.scalars().all()
+                    
+                    # Get total count
+                    count_result = await session.execute(base_query)
+                    total = len(count_result.scalars().all())
+                    pages = (total + per_page - 1) // per_page
+                    
+                    serialized_items = [await self._serialize(item) for item in items]
+                    return {
+                        'data': serialized_items,
+                        'pagination': {
+                            'page': page,
+                            'per_page': per_page,
+                            'total': total,
+                            'pages': pages,
+                        },
+                    }
 
-            items = base_query.all()
-            serialized_items = [await self._serialize(item) for item in items]
-            return jsonify({'data': serialized_items, 'total': len(items)})
+                result = await session.execute(base_query)
+                items = result.scalars().all()
+                serialized_items = [await self._serialize(item) for item in items]
+                return JSONResponse({'data': serialized_items, 'total': len(items)})
         except Exception as exc:  # noqa: BLE001
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, 500)
 
     async def _handle_bulk(self, req: Request):
         try:
-            payload = req.get_json(silent=True) or {}
-            operation = payload.get('operation')
-            ids: List[int] = payload.get('ids', [])
+            async with AsyncSessionLocal() as session:
+                payload = await req.json()
+                operation = payload.get('operation')
+                ids: List[int] = payload.get('ids', [])
 
-            if not operation or not ids:
-                return jsonify({'error': 'Operation and IDs required'}), 400
+                if not operation or not ids:
+                    return JSONResponse({'error': 'Operation and IDs required'}, 400)
 
-            if operation == 'delete':
-                items = self.model.query.filter(self.model.id.in_(ids)).all()
-                for item in items:
-                    db.session.delete(item)
-                db.session.commit()
-                return jsonify({'message': f'Deleted {len(items)} records successfully'})
-            elif operation == 'update':
-                update_data: Dict[str, Any] = payload.get('data', {})
-                items = self.model.query.filter(self.model.id.in_(ids)).all()
-                for item in items:
-                    for key, value in update_data.items():
-                        if hasattr(item, key):
-                            setattr(item, key, value)
-                db.session.commit()
-                return jsonify({'message': f'Updated {len(items)} records successfully'})
-            else:
-                return jsonify({'error': 'Invalid operation'}), 400
+                if operation == 'delete':
+                    query = select(self.model).where(self.model.id.in_(ids))
+                    result = await session.execute(query)
+                    items = result.scalars().all()
+                    
+                    for item in items:
+                        await session.delete(item)
+                    await session.commit()
+                    return JSONResponse({'message': f'Deleted {len(items)} records successfully'})
+                elif operation == 'update':
+                    update_data: Dict[str, Any] = payload.get('data', {})
+                    query = select(self.model).where(self.model.id.in_(ids))
+                    result = await session.execute(query)
+                    items = result.scalars().all()
+                    
+                    for item in items:
+                        for key, value in update_data.items():
+                            if hasattr(item, key):
+                                setattr(item, key, value)
+                    await session.commit()
+                    return JSONResponse({'message': f'Updated {len(items)} records successfully'})
+                else:
+                    return JSONResponse({'error': 'Invalid operation'}, 400)
         except Exception as exc:  # noqa: BLE001
-            db.session.rollback()
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, 500)
 
     async def _handle_selector(self, req: Request):
         try:
-            query = self.model.query
-            search_query = req.args.get('q', '')
-            selector_cfg = self.config['selector']
+            async with AsyncSessionLocal() as session:
+                query = select(self.model)
+                search_query = req.query_params.get('q', '')
+                selector_cfg = self.config['selector']
 
-            if search_query and selector_cfg['search_fields']:
-                conditions = []
-                for field_name in selector_cfg['search_fields']:
-                    if hasattr(self.model, field_name):
-                        conditions.append(getattr(self.model, field_name).ilike(f'%{search_query}%'))
-                if conditions:
-                    query = query.filter(or_(*conditions))
+                if search_query and selector_cfg['search_fields']:
+                    conditions = []
+                    for field_name in selector_cfg['search_fields']:
+                        if hasattr(self.model, field_name):
+                            conditions.append(getattr(self.model, field_name).ilike(f'%{search_query}%'))
+                    if conditions:
+                        query = query.where(or_(*conditions))
 
-            order_field = selector_cfg['order_by']
-            if hasattr(self.model, order_field):
-                query = query.order_by(getattr(self.model, order_field).asc())
+                order_field = selector_cfg['order_by']
+                if hasattr(self.model, order_field):
+                    query = query.order_by(getattr(self.model, order_field).asc())
 
-            items = query.limit(selector_cfg['limit']).all()
+                query = query.limit(selector_cfg['limit'])
+                result = await session.execute(query)
+                items = result.scalars().all()
 
-            selector_data = []
-            for item in items:
-                selector_item = {
-                    'id': getattr(item, 'id'),
-                    'value': getattr(item, 'id'),
-                    'label': await self._format_selector_label(item),
-                }
-                for field_name in selector_cfg['fields']:
-                    if field_name != 'id' and hasattr(item, field_name):
-                        selector_item[field_name] = getattr(item, field_name)
-                selector_data.append(selector_item)
+                selector_data = []
+                for item in items:
+                    selector_item = {
+                        'id': getattr(item, 'id'),
+                        'value': getattr(item, 'id'),
+                        'label': await self._format_selector_label(item),
+                    }
+                    for field_name in selector_cfg['fields']:
+                        if field_name != 'id' and hasattr(item, field_name):
+                            selector_item[field_name] = getattr(item, field_name)
+                    selector_data.append(selector_item)
 
-            return jsonify({'data': selector_data, 'total': len(selector_data)})
+                return JSONResponse({'data': selector_data, 'total': len(selector_data)})
         except Exception as exc:  # noqa: BLE001
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, 500)
 
     async def _handle_single_selector(self, req: Request, id: int):  # noqa: A002
         try:
-            instance = self.model.query.filter_by(id=id).first()
-            if not instance:
-                return jsonify({'error': 'Not found'}), 404
-            selector_item = {
-                'id': getattr(instance, 'id'),
-                'value': getattr(instance, 'id'),
-                'label': await self._format_selector_label(instance),
-            }
-            for field_name in self.config['selector']['fields']:
-                if field_name != 'id' and hasattr(instance, field_name):
-                    selector_item[field_name] = getattr(instance, field_name)
-            return jsonify({'data': selector_item})
+            async with AsyncSessionLocal() as session:
+                query = select(self.model).where(self.model.id == id)
+                result = await session.execute(query)
+                instance = result.scalar_one_or_none()
+                
+                if not instance:
+                    return JSONResponse({'error': 'Not found'}, 404)
+                    
+                selector_item = {
+                    'id': getattr(instance, 'id'),
+                    'value': getattr(instance, 'id'),
+                    'label': await self._format_selector_label(instance),
+                }
+                for field_name in self.config['selector']['fields']:
+                    if field_name != 'id' and hasattr(instance, field_name):
+                        selector_item[field_name] = getattr(instance, field_name)
+                return JSONResponse({'data': selector_item})
         except Exception as exc:  # noqa: BLE001
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, 500)
 
     # Helpers
     async def _format_selector_label(self, item: Any) -> str:
@@ -470,20 +528,27 @@ class CrudService(BaseApiService):
 
         for field in self.config['validation']['unique_fields']:
             if field in data:
-                existing = self.model.query.filter(getattr(self.model, field) == data[field]).first()
-                if existing:
-                    errors.append(f'{field} must be unique')
+                async with AsyncSessionLocal() as session:
+                    query = select(self.model).where(getattr(self.model, field) == data[field])
+                    result = await session.execute(query)
+                    existing = result.scalar_one_or_none()
+                    if existing:
+                        errors.append(f'{field} must be unique')
         return errors
 
     async def _validate_update_data(self, data: Dict[str, Any], instance: Any) -> List[str]:
         errors: List[str] = []
         for field in self.config['validation']['unique_fields']:
             if field in data:
-                existing = self.model.query.filter(
-                    getattr(self.model, field) == data[field], self.model.id != instance.id
-                ).first()
-                if existing:
-                    errors.append(f'{field} must be unique')
+                async with AsyncSessionLocal() as session:
+                    query = select(self.model).where(
+                        getattr(self.model, field) == data[field], 
+                        self.model.id != instance.id
+                    )
+                    result = await session.execute(query)
+                    existing = result.scalar_one_or_none()
+                    if existing:
+                        errors.append(f'{field} must be unique')
         return errors
 
     async def _serialize(self, instance: Any) -> Dict[str, Any]:
