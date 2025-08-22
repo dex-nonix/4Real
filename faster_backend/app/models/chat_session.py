@@ -10,9 +10,9 @@ class ChatSession(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     persona_id = db.Column(db.Integer, db.ForeignKey('personas.id'),
-                           nullable=False)  # NOT unique - multiple sessions per persona
-    session_name = db.Column(db.String(255))  # NEW: Optional custom name
-    session_icon = db.Column(db.String(512))  # NEW: Optional custom icon
+                           nullable=False) 
+    session_name = db.Column(db.String(255))
+    session_icon = db.Column(db.String(512)) 
     current_history_id = db.Column(db.Integer, db.ForeignKey('chat_histories.id'), nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, server_default=db.text('1'))
     created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
