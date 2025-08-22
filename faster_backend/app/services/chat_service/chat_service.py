@@ -4,7 +4,8 @@ import logging
 from asyncio import iscoroutinefunction
 from datetime import datetime
 
-from flask import jsonify
+from fastapi import HTTPException
+from fastapi.responses import JSONResponse
 
 from .mixins.chat_history_mixin import ChatHistoryMixin
 from .mixins.chat_message_mixin import ChatMessageMixin
@@ -115,11 +116,10 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
         """Get thread pool health status for monitoring."""
         try:
             health_status = await self.get_thread_pool_health()
-            return jsonify(health_status)
+            return health_status
         except Exception as e:
             self._logger.error(f"Failed to get thread pool health: {e}", exc_info=True)
-            return jsonify({
-                'status': 'error',
-                'error': str(e),
-                'timestamp': datetime.utcnow().isoformat()
-            }), 500
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Failed to get thread pool health: {e}"
+            )
