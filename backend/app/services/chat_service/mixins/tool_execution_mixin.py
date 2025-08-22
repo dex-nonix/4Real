@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from flask import jsonify, Request
 
-from .websocket_protocol import WebSocketMixinProtocol
-from ...llm.tool_runtime import list_persona_tools
-from ...decorators import expose
-from ...models.mcp_server import MCPServer
-from ...models.persona import Persona
+from ..websocket_protocol import WebSocketMixinProtocol
+from ....llm.tool_runtime import list_persona_tools
+from ....decorators import expose
+from ....models.mcp_server import MCPServer
+from ....models.persona import Persona
 
 
 class ToolExecutionMixin(WebSocketMixinProtocol):

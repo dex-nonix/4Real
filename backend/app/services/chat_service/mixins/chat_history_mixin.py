@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from flask import jsonify, Request
 
-from ... import db
-from ...decorators import expose
-from ...models.chat_history import ChatHistory
-from ...models.chat_message import ChatMessage
-from ...models.chat_session import ChatSession
+from .... import db
+from ....decorators import expose
+from ....models.chat_history import ChatHistory
+from ....models.chat_message import ChatMessage
+from ....models.chat_session import ChatSession
 
 
 class ChatHistoryMixin:

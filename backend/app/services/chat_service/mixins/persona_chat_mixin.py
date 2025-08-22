@@ -3,10 +3,10 @@ from __future__ import annotations
 from flask import jsonify, Request
 from sqlalchemy import func
 
-from ... import db
-from ...decorators import expose
-from ...models.chat_session import ChatSession
-from ...models.persona import Persona
+from .... import db
+from ....decorators import expose
+from ....models.chat_session import ChatSession
+from ....models.persona import Persona
 
 
 class PersonaChatMixin:

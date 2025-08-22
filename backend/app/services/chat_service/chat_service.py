@@ -6,12 +6,12 @@ from datetime import datetime
 
 from flask import jsonify
 
-from .chat_history_mixin import ChatHistoryMixin
-from .chat_message_mixin import ChatMessageMixin
-from .chat_session_mixin import ChatSessionMixin
-from .persona_chat_mixin import PersonaChatMixin
+from .mixins.chat_history_mixin import ChatHistoryMixin
+from .mixins.chat_message_mixin import ChatMessageMixin
+from .mixins.chat_session_mixin import ChatSessionMixin
+from .mixins.persona_chat_mixin import PersonaChatMixin
+from .mixins.tool_execution_mixin import ToolExecutionMixin
 from .thread_pool_manager import ChatThreadPoolManager
-from .tool_execution_mixin import ToolExecutionMixin
 from ..base_api_service import BaseApiService
 from ...decorators import expose
 

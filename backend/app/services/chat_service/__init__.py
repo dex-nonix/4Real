@@ -12,12 +12,12 @@ This module provides a modular chat service implementation split into logical mi
 The main ChatService class inherits from all mixins to provide complete functionality.
 """
 
-from .chat_history_mixin import ChatHistoryMixin
-from .chat_message_mixin import ChatMessageMixin
+from backend.app.services.chat_service.mixins.chat_history_mixin import ChatHistoryMixin
+from backend.app.services.chat_service.mixins.chat_message_mixin import ChatMessageMixin
 from .chat_service import ChatService
-from .chat_session_mixin import ChatSessionMixin
-from .persona_chat_mixin import PersonaChatMixin
-from .tool_execution_mixin import ToolExecutionMixin
+from backend.app.services.chat_service.mixins.chat_session_mixin import ChatSessionMixin
+from backend.app.services.chat_service.mixins.persona_chat_mixin import PersonaChatMixin
+from backend.app.services.chat_service.mixins.tool_execution_mixin import ToolExecutionMixin
 from .websocket_protocol import WebSocketMixinProtocol
 
 __all__ = [
