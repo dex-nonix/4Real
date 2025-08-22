@@ -114,7 +114,7 @@ class ChatTaskManager:
                 if asyncio.iscoroutinefunction(func):
                     result = await func(*args, **kwargs)
                 else:
-                    # Run sync functions in thread pool
+                    # Run sync functions in executor
                     loop = asyncio.get_event_loop()
                     result = await loop.run_in_executor(None, func, *args, **kwargs)
                 return result

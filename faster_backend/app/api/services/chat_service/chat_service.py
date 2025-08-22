@@ -28,7 +28,7 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
     """
 
     def __init__(self, app):
-        """Initialize chat service with thread pool manager."""
+        """Initialize chat service with task manager."""
         super().__init__()
 
         # Initialize task manager

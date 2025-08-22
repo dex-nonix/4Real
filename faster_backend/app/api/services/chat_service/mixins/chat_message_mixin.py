@@ -465,21 +465,21 @@ class ChatMessageMixin(WebSocketMixinProtocol):
     async def _submit_message_for_async_processing(self, user_msg_id: int, asst_msg_id: int, session_id: int,
                                                    history_id: int,
                                                    persona_id: int):
-        """Submit message processing to thread pool for async execution."""
+        """Submit message processing to task manager for async execution."""
         try:
-            # Use the thread pool manager from the parent ChatService
+            # Use the task manager from the parent ChatService
             future = await self.submit_async_task(
                 self._process_message_async,
                 user_msg_id, asst_msg_id, session_id, history_id, persona_id
             )
 
             # Log successful submission with proper logger
-            self._logger.info(f"Message {user_msg_id} submitted to thread pool for async processing")
+            self._logger.info(f"Message {user_msg_id} submitted to task manager for async processing")
             return future
 
         except Exception as e:
             # Log error with full stack trace
-            self._logger.error(f"Failed to submit message {user_msg_id} to thread pool: {e}", exc_info=True)
+            self._logger.error(f"Failed to submit message {user_msg_id} to task manager: {e}", exc_info=True)
             # Emit error event
             await self.emit_llm_event(session_id, history_id, 'processing_failed', f'Failed to start processing: {e}')
             raise
