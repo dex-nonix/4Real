@@ -165,7 +165,7 @@ class CrudService(BaseService):
                 session.add(instance)
                 await session.commit()
                 await session.refresh(instance)
-                return JSONResponse({'message': 'Created successfully', 'data': await self._serialize(instance)}, 201)
+                return JSONResponse({'message': 'Created successfully', 'data': self._serialize(instance)}, 201)
         except Exception as exc:  # noqa: BLE001
             return JSONResponse({'error': str(exc)}, 500)
 
@@ -178,7 +178,7 @@ class CrudService(BaseService):
                     query = await self._apply_filters(query, req.query_params)
 
                 if self.config['sorting']['enabled']:
-                    query = await self._apply_sorting(query, req.query_params)
+                    query = self._apply_sorting(query, req.query_params)
 
                 if self.config['pagination']['enabled']:
                     page = int(req.query_params.get('page', 1))
@@ -201,7 +201,7 @@ class CrudService(BaseService):
                     count_result = await session.execute(count_query)
                     total = len(count_result.scalars().all())
 
-                    serialized_items = [await self._serialize(item) for item in items]
+                    serialized_items = [self._serialize(item) for item in items]
                     pages = (total + per_page - 1) // per_page
 
                     return {
@@ -218,7 +218,7 @@ class CrudService(BaseService):
 
             result = await session.execute(query)
             items = result.scalars().all()
-            serialized_items = [await self._serialize(item) for item in items]
+            serialized_items = [self._serialize(item) for item in items]
             return JSONResponse({'data': serialized_items, 'total': len(items)})
         except Exception as exc:  # noqa: BLE001
             return JSONResponse({'error': str(exc)}, 500)
@@ -232,7 +232,7 @@ class CrudService(BaseService):
 
                 if not instance:
                     return JSONResponse({'error': 'Not found'}, 404)
-                return JSONResponse({'data': await self._serialize(instance)})
+                return JSONResponse({'data': self._serialize(instance)})
         except Exception as exc:  # noqa: BLE001
             return JSONResponse({'error': str(exc)}, 500)
 
@@ -257,7 +257,7 @@ class CrudService(BaseService):
                         setattr(instance, key, value)
 
                 await session.commit()
-                return JSONResponse({'message': 'Updated successfully', 'data': await self._serialize(instance)})
+                return JSONResponse({'message': 'Updated successfully', 'data': self._serialize(instance)})
         except Exception as exc:  # noqa: BLE001
             return JSONResponse({'error': str(exc)}, 500)
 
@@ -322,7 +322,7 @@ class CrudService(BaseService):
                     total = len(count_result.scalars().all())
                     pages = (total + per_page - 1) // per_page
 
-                    serialized_items = [await self._serialize(item) for item in items]
+                    serialized_items = [self._serialize(item) for item in items]
                     return {
                         'data': serialized_items,
                         'pagination': {
@@ -335,7 +335,7 @@ class CrudService(BaseService):
 
                 result = await session.execute(base_query)
                 items = result.scalars().all()
-                serialized_items = [await self._serialize(item) for item in items]
+                serialized_items = [self._serialize(item) for item in items]
                 return JSONResponse({'data': serialized_items, 'total': len(items)})
         except Exception as exc:  # noqa: BLE001
             return JSONResponse({'error': str(exc)}, 500)
@@ -404,7 +404,7 @@ class CrudService(BaseService):
                     selector_item = {
                         'id': getattr(item, 'id'),
                         'value': getattr(item, 'id'),
-                        'label': await self._format_selector_label(item),
+                        'label': self._format_selector_label(item),
                     }
                     for field_name in selector_cfg['fields']:
                         if field_name != 'id' and hasattr(item, field_name):
@@ -428,7 +428,7 @@ class CrudService(BaseService):
                 selector_item = {
                     'id': getattr(instance, 'id'),
                     'value': getattr(instance, 'id'),
-                    'label': await self._format_selector_label(instance),
+                    'label': self._format_selector_label(instance),
                 }
                 for field_name in self.config['selector']['fields']:
                     if field_name != 'id' and hasattr(instance, field_name):
@@ -438,7 +438,7 @@ class CrudService(BaseService):
             return JSONResponse({'error': str(exc)}, 500)
 
     # Helpers
-    async def _format_selector_label(self, item: Any) -> str:
+    def _format_selector_label(self, item: Any) -> str:
         display_format: Optional[str] = self.config['selector'].get('display_format')
         if display_format:
             label = display_format
@@ -511,7 +511,7 @@ class CrudService(BaseService):
         except Exception:  # noqa: BLE001
             return raw
 
-    async def _apply_sorting(self, query, args):  # type: ignore[no-untyped-def]
+    def _apply_sorting(self, query, args):  # type: ignore[no-untyped-def]
         sort_field = args.get('sort', self.config['sorting']['default_sort'])
         sort_order = args.get('order', 'asc')
         if hasattr(self.model, sort_field):
@@ -550,7 +550,7 @@ class CrudService(BaseService):
                         errors.append(f'{field} must be unique')
         return errors
 
-    async def _serialize(self, instance: Any) -> Dict[str, Any]:
+    def _serialize(self, instance: Any) -> Dict[str, Any]:
         if hasattr(instance, 'to_dict'):
             return instance.to_dict()
         result: Dict[str, Any] = {}

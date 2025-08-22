@@ -75,7 +75,7 @@ class FileService(CrudService):
             # Derive metadata and create file record
             size_bytes = os.path.getsize(file_path)
             mime_type = file.content_type or 'application/octet-stream'
-            sha256 = await self._file_sha256(file_path)
+            sha256 = self._file_sha256(file_path)
             storage_url = f"/{upload_dir}/{safe_name}"
 
             rec = File(
@@ -101,7 +101,7 @@ class FileService(CrudService):
         except Exception as exc:
             raise HTTPException(status_code=500, detail=f"Upload failed: {exc}")
 
-    async def _file_sha256(self, path: str) -> str:
+    def _file_sha256(self, path: str) -> str:
         try:
             h = hashlib.sha256()
             with open(path, 'rb') as f:
