@@ -16,6 +16,13 @@ from .generators.openapi_generator import OpenAPIGenerator
 from ...config import settings
 
 
+def _normalize_path(service_name: str, path: str) -> str:
+    if not path.startswith('/'):
+        path = '/' + path
+    # Keep {id} syntax for FastAPI
+    return f'/{service_name}{path}'
+
+
 class ServiceRouter:
     """FastAPI Router that auto-registers all services and creates API routes."""
 
@@ -47,7 +54,7 @@ class ServiceRouter:
 
         self.logger.info("🚀 ServiceRouter initialized with FastAPI APIRouter")
 
-    async def register_service(self, service_name: str, service_class: type, *args, **kwargs) -> None:
+    def register_service(self, service_name: str, service_class: type, *args, **kwargs) -> None:
         """Instantiate a service and create routes for any @expose methods."""
         try:
             self.logger.info(f"🔧 Registering service: {service_name}")
@@ -64,13 +71,13 @@ class ServiceRouter:
             for attr_name in dir(service):
                 method = getattr(service, attr_name)
                 if callable(method) and hasattr(method, '_exposed'):
-                    await self._create_route(service_name, method)
+                    self._create_route(service_name, method)
                     exposed_methods += 1
 
             self.logger.info(f"📡 Registered {exposed_methods} HTTP endpoints for {service_name}")
 
             # Discover and register WebSocket channels
-            await self._discover_websocket_channels(service_name, service)
+            self._discover_websocket_channels(service_name, service)
 
             self.logger.info(f"✅ Successfully registered service: {service_name}")
 
@@ -78,9 +85,9 @@ class ServiceRouter:
             self.logger.error(f"💥 Failed to register service {service_name}: {e}")
             raise
 
-    async def _discover_websocket_channels(self, service_name: str, service: BaseService) -> None:
+    def _discover_websocket_channels(self, service_name: str, service: BaseService) -> None:
         """Discover @expose_ws methods and register WebSocket channels."""
-        ws_methods = await service.get_exposed_ws_methods()
+        ws_methods = service.get_exposed_ws_methods()
 
         for method_info in ws_methods:
             self.logger.info(
@@ -93,17 +100,11 @@ class ServiceRouter:
                 'service': service
             }
 
-    async def _normalize_path(self, service_name: str, path: str) -> str:
-        if not path.startswith('/'):
-            path = '/' + path
-        # Keep {id} syntax for FastAPI
-        return f'/{service_name}{path}'
-
-    async def _create_route(self, service_name: str, method: Callable[..., Any]) -> None:
+    def _create_route(self, service_name: str, method: Callable[..., Any]) -> None:
         """Create FastAPI route for a service method."""
 
         # Create a proper FastAPI handler function
-        async def create_handler(bound_method: Callable[..., Any]) -> Callable[..., Any]:
+        def create_handler(bound_method: Callable[..., Any]) -> Callable[..., Any]:
             @wraps(bound_method)
             async def handler(request: Request, **kwargs):
                 # Validate that required path parameters are present
@@ -187,7 +188,7 @@ class ServiceRouter:
             return handler
 
         # Create FastAPI route dynamically
-        path = await self._normalize_path(service_name, getattr(method, '_path'))
+        path = _normalize_path(service_name, getattr(method, '_path'))
         methods = getattr(method, '_methods', ['GET'])
 
         # Log route creation
@@ -208,20 +209,20 @@ class ServiceRouter:
                 self.logger.error(f"💥 Failed to register {method_name.upper()} route for {path}: {route_error}")
                 raise
 
-    async def list_services(self) -> list[str]:
+    def list_services(self) -> list[str]:
         return list(self.registered_services.keys())
 
-    async def get_service(self, service_name: str) -> BaseService | None:
+    def get_service(self, service_name: str) -> BaseService | None:
         return self.registered_services.get(service_name)
 
-    async def get_websocket_channels(self) -> dict[str, dict]:
+    def get_websocket_channels(self) -> dict[str, dict]:
         return self._websocket_channels
 
     def get_router(self) -> APIRouter:
         """Get the FastAPI APIRouter instance."""
         return self.router
 
-    async def get_service_info(self, service_name: str) -> dict[str, Any] | None:
+    def get_service_info(self, service_name: str) -> dict[str, Any] | None:
         """Get detailed information about a registered service."""
         service = self.registered_services.get(service_name)
         if not service:
@@ -249,10 +250,10 @@ class ServiceRouter:
                                    info['service_name'] == service_name]
         }
 
-    async def get_all_services_info(self) -> dict[str, dict[str, Any]]:
+    def get_all_services_info(self) -> dict[str, dict[str, Any]]:
         """Get information about all registered services."""
         return {
-            service_name: await self.get_service_info(service_name)
+            service_name: self.get_service_info(service_name)
             for service_name in self.registered_services.keys()
         }
 
@@ -262,17 +263,17 @@ class ServiceRouter:
         @self.router.get("/services")
         async def list_services_endpoint():
             """List all registered services."""
-            return await self.list_services()
+            return self.list_services()
 
         @self.router.get("/services/info")
         async def get_services_info_endpoint():
             """Get detailed information about all services."""
-            return await self.get_all_services_info()
+            return self.get_all_services_info()
 
         @self.router.get("/services/{service_name}")
         async def get_service_info_endpoint(service_name: str):
             """Get information about a specific service."""
-            service_info = await self.get_service_info(service_name)
+            service_info = self.get_service_info(service_name)
             if not service_info:
                 raise HTTPException(status_code=404, detail=f"Service '{service_name}' not found")
             return service_info
@@ -301,8 +302,7 @@ class ServiceRouter:
                 )
 
                 # Convert OpenAPI spec to compact YAML
-                yaml_overview = await self.compact_generator._convert_openapi_to_compact_yaml(openapi_spec,
-                                                                                              service_filter)
+                yaml_overview = self.compact_generator.convert_openapi_to_compact_yaml(openapi_spec, service_filter)
 
                 return Response(
                     content=yaml_overview,

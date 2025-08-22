@@ -136,7 +136,7 @@
 - ✅ `backend/app/api_router/compact_api_generator.py`
   - ✅ `_add_routes()` → `async def _add_routes()`
   - ✅ `get_compact_overview()` → `async def get_compact_overview()`
-  - ✅ `_convert_openapi_to_compact_yaml()` → `async def _convert_openapi_to_compact_yaml()`
+  - ✅ `convert_openapi_to_compact_yaml()` → `async def convert_openapi_to_compact_yaml()`
   - ✅ `_count_total_endpoints()` → `async def _count_total_endpoints()`
   - ✅ `_group_paths_by_service()` → `async def _group_paths_by_service()`
   - ✅ `_group_paths_by_section()` → `async def _group_paths_by_section()`

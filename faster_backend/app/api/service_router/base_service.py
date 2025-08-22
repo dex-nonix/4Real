@@ -40,7 +40,7 @@ class BaseService(ABC):
             'timestamp': __import__('datetime').datetime.now().isoformat()
         })
 
-    async def get_exposed_ws_methods(self) -> List[Dict[str, Any]]:
+    def get_exposed_ws_methods(self) -> List[Dict[str, Any]]:
         """Get all @expose_ws methods with their metadata."""
         exposed_ws_methods = []
 

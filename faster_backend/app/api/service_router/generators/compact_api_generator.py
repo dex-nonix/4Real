@@ -13,7 +13,7 @@ class CompactApiGenerator:
         self.service_router = service_router
         self.openapi_generator = OpenAPIGenerator()
 
-    async def _convert_openapi_to_compact_yaml(self, openapi_spec: Dict[str, Any], service_filter: str = '') -> str:
+    def convert_openapi_to_compact_yaml(self, openapi_spec: Dict[str, Any], service_filter: str = '') -> str:
         """Convert full OpenAPI spec to compact YAML overview."""
 
         # Header
@@ -23,7 +23,7 @@ class CompactApiGenerator:
             header = "# COMPACT API OVERVIEW - All Services\n"
 
         header += f"# Generated at: {datetime.now().isoformat()}\n"
-        header += f"# Total endpoints: {await self._count_total_endpoints(openapi_spec)}\n"
+        header += f"# Total endpoints: {self._count_total_endpoints(openapi_spec)}\n"
 
         # Add link to full OpenAPI JSON
         if service_filter:
@@ -39,7 +39,7 @@ class CompactApiGenerator:
             return header + "# No endpoints found\n"
 
         # Group by service (extract from tags or path patterns)
-        service_groups = await self._group_paths_by_service(paths)
+        service_groups = self._group_paths_by_service(paths)
 
         # Generate YAML for each service
         yaml_content = header
@@ -48,7 +48,7 @@ class CompactApiGenerator:
             yaml_content += f"{service_name}:\n"
 
             # Group paths by logical sections
-            sections = await self._group_paths_by_section(service_paths)
+            sections = self._group_paths_by_section(service_paths)
 
             for section_name, section_paths in sections.items():
                 yaml_content += f"  {section_name}:\n"
@@ -72,7 +72,7 @@ class CompactApiGenerator:
 
         return yaml_content
 
-    async def _count_total_endpoints(self, openapi_spec: Dict[str, Any]) -> int:
+    def _count_total_endpoints(self, openapi_spec: Dict[str, Any]) -> int:
         """Count total number of endpoints in OpenAPI spec."""
         total = 0
         paths = openapi_spec.get('paths', {})
@@ -82,7 +82,7 @@ class CompactApiGenerator:
                     total += 1
         return total
 
-    async def _group_paths_by_service(self, paths: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    def _group_paths_by_service(self, paths: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         """Group paths by service name."""
         service_groups = {}
 
@@ -97,7 +97,7 @@ class CompactApiGenerator:
 
         return service_groups
 
-    async def _group_paths_by_section(self, service_paths: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    def _group_paths_by_section(self, service_paths: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         """Group paths by logical section within a service."""
         sections = {}
 
