@@ -11,7 +11,8 @@ class OpenAPIGenerator:
     def __init__(self) -> None:
         self.logger = logging.getLogger(__name__)
 
-    async def generate_openapi_spec(self, registered_services: Dict[str, Any], service_filter: str = None) -> Dict[str, Any]:
+    async def generate_openapi_spec(self, registered_services: Dict[str, Any], service_filter: str = None) -> Dict[
+        str, Any]:
         """Generate OpenAPI 3.0 specification from registered services
         
         Args:

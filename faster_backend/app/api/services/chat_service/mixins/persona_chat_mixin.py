@@ -4,8 +4,8 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import func
 
-from .....database import AsyncSessionLocal
 from ....service_router.decorators import expose
+from .....database import AsyncSessionLocal
 from .....models.chat_session import ChatSession
 from .....models.persona import Persona
 

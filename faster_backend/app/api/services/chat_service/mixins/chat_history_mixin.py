@@ -19,21 +19,21 @@ class ChatHistoryMixin:
         session = await db_session.execute(
             db_session.query(ChatSession).filter_by(id=session_id, is_active=True)
         ).scalar_one_or_none()
-        
+
         if not session:
             return None, None, JSONResponse({'error': 'Session not found or inactive'}, status_code=404)
-        
+
         # If history_id provided, validate history too
         if history_id:
             history = await db_session.execute(
                 db_session.query(ChatHistory).filter_by(id=history_id, session_id=session_id)
             ).scalar_one_or_none()
-            
+
             if not history:
                 return session, None, JSONResponse({'error': 'History not found'}, status_code=404)
-            
+
             return session, history, None
-        
+
         return session, None, None
 
     @expose(
@@ -74,7 +74,7 @@ class ChatHistoryMixin:
                     db_session.query(ChatHistory).filter_by(session_id=id)
                 )
                 histories = histories_result.scalars().all()
-                
+
                 return JSONResponse({'data': [h.to_dict() for h in histories], 'total': len(histories)})
             except Exception as exc:  # noqa: BLE001
                 return JSONResponse({'error': str(exc)}, status_code=500)

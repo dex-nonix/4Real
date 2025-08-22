@@ -5,7 +5,7 @@ from ...models.ai_model_mapping import AIModelMapping
 
 
 class AIModelMappingService(CrudService):
-    model= AIModelMapping
+    model = AIModelMapping
     config = {
         'filters': {
             'fields': ['provider_id', 'name', 'model_name', 'is_active'],
@@ -24,4 +24,3 @@ class AIModelMappingService(CrudService):
             'search_fields': ['name', 'model_name'],
         },
     }
-    

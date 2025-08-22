@@ -13,7 +13,6 @@ class CompactApiGenerator:
         self.service_router = service_router
         self.openapi_generator = OpenAPIGenerator()
 
-
     async def _convert_openapi_to_compact_yaml(self, openapi_spec: Dict[str, Any], service_filter: str = '') -> str:
         """Convert full OpenAPI spec to compact YAML overview."""
 

@@ -41,7 +41,7 @@ class ToolExecutionMixin(WebSocketMixinProtocol):
             if not persona:
                 return JSONResponse({'error': 'Not found'}, 404)
             return JSONResponse({'data': list_persona_tools(persona.id)})
-        except Exception as exc: 
+        except Exception as exc:
             return JSONResponse({'error': str(exc)}, 500)
 
     @expose(
@@ -102,5 +102,5 @@ class ToolExecutionMixin(WebSocketMixinProtocol):
         try:
             servers = MCPServer.query.all()
             return JSONResponse({'data': [s.to_dict() for s in servers]})
-        except Exception as exc: 
+        except Exception as exc:
             return JSONResponse({'error': str(exc)}, 500)

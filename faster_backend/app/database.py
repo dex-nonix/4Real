@@ -21,7 +21,6 @@ AsyncSessionLocal = async_sessionmaker(
 Base = declarative_base()
 
 # Import all models to register them with Base.metadata
-from . import models
 
 
 async def get_db():

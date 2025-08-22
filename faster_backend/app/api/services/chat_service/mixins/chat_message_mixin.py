@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List
 
-from fastapi import Request, HTTPException
+from fastapi import Request
 from fastapi.responses import JSONResponse
 
 from ..message_handlers import ChatMessageHandler, ToolCallMessageHandler
@@ -12,11 +12,11 @@ from ..streaming_event_manager import StreamingEventManager
 from ..streaming_interface import StreamingChunk
 from ..streaming_message_handler import StreamingMessageHandler
 from ..websocket_protocol import WebSocketMixinProtocol
+from ....service_router.decorators import expose
+from .....database import AsyncSessionLocal
 from .....llm.llm_client import run_chat_streaming
 from .....llm.tool_runtime import execute_tool
 from .....llm.tool_runtime import list_persona_tools
-from .....database import AsyncSessionLocal
-from ....service_router.decorators import expose
 from .....models.ai_model_mapping import AIModelMapping
 from .....models.ai_provider import AIProvider
 from .....models.chat_history import ChatHistory
@@ -43,7 +43,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             persona = await db_session.execute(
                 db_session.query(Persona).filter_by(id=persona_id)
             ).scalar_one_or_none()
-            
+
             if not persona:
                 self._logger.warning(f"Persona {persona_id} not found")
                 return None
@@ -77,7 +77,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             session = await db_session.execute(
                 db_session.query(ChatSession).filter_by(id=session_id, is_active=True)
             ).scalar_one_or_none()
-            
+
             if not session:
                 self._logger.warning(f"Session {session_id} not found or inactive")
                 return None, None
@@ -178,7 +178,8 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             # Add user and assistant messages up to current user message
             user_msgs = await db_session.execute(
                 db_session.query(ChatMessage).filter(ChatMessage.history_id == history_id,
-                                                     ChatMessage.id <= user_msg_id).order_by(ChatMessage.created_at.asc())
+                                                     ChatMessage.id <= user_msg_id).order_by(
+                    ChatMessage.created_at.asc())
             ).scalars().all()
             self._logger.debug(f"Found {len(user_msgs)} user/assistant messages")
             for um in user_msgs:
@@ -204,7 +205,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             provider = await db_session.execute(
                 db_session.query(AIProvider).filter_by(id=model_info['provider_id'], is_active=True)
             ).scalar_one_or_none()
-            
+
             if not provider:
                 self._logger.warning(f"AI provider {model_info['provider_id']} not found or inactive")
                 return None, None, None
@@ -212,16 +213,17 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             mapping_obj = await db_session.execute(
                 db_session.query(AIModelMapping).filter_by(id=persona_id, is_active=True)
             ).scalar_one_or_none()
-            
+
             if not mapping_obj:
                 self._logger.warning(f"AI model mapping {persona_id} not found or inactive")
                 return None, None, None
 
-            self._logger.info(f"AI model resolved successfully: provider={provider.name}, model={model_info['model_name']}")
+            self._logger.info(
+                f"AI model resolved successfully: provider={provider.name}, model={model_info['model_name']}")
             return model_info, provider, mapping_obj
 
     async def _execute_tool_call(self, persona_id: int, tool_name: str, tool_args: Dict[str, Any],
-                           history_id: int, user_msg_id: int, available_tools: Dict[str, Any]):
+                                 history_id: int, user_msg_id: int, available_tools: Dict[str, Any]):
         """Execute tool call and return result."""
         self._logger.info(f"Executing tool '{tool_name}' for persona {persona_id}")
         self._logger.debug(f"Tool arguments: {tool_args}")
@@ -269,7 +271,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             return exec_result, None
 
     async def _create_assistant_message(self, history_id: int, content: Dict[str, Any],
-                                  status: str = 'complete') -> ChatMessage:
+                                        status: str = 'complete') -> ChatMessage:
         """Create and save assistant message."""
         self._logger.debug(f"Creating assistant message for history {history_id} with status '{status}'")
 
@@ -333,7 +335,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 session = await db_session.execute(
                     db_session.query(ChatSession).filter_by(id=id, is_active=True)
                 ).scalar_one_or_none()
-                
+
                 if not session:
                     return JSONResponse({'error': 'Session not found or inactive'}, status_code=404)
 
@@ -345,7 +347,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                     db_session.query(ChatMessage).filter_by(history_id=session.current_history_id).order_by(
                         ChatMessage.created_at.asc())
                 ).scalars().all()
-                
+
                 return {'data': [m.to_dict() for m in msgs], 'total': len(msgs)}
         except Exception as exc:  # noqa: BLE001
             return JSONResponse({'error': str(exc)}, status_code=500)
@@ -460,8 +462,9 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             self._logger.error(f"Error in send_message: {exc}", exc_info=True)
             return await self._format_error_response(str(exc), 500)
 
-    async def _submit_message_for_async_processing(self, user_msg_id: int, asst_msg_id: int, session_id: int, history_id: int,
-                                             persona_id: int):
+    async def _submit_message_for_async_processing(self, user_msg_id: int, asst_msg_id: int, session_id: int,
+                                                   history_id: int,
+                                                   persona_id: int):
         """Submit message processing to thread pool for async execution."""
         try:
             # Use the thread pool manager from the parent ChatService
@@ -505,8 +508,8 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 error_msg = "AI model, provider, or mapping not available"
                 await message_handler.mark_as_error(error_msg)
                 await event_manager.emit_chunk_event(session_id, history_id,
-                                               StreamingChunk(content="", chunk_type="complete", is_final=True),
-                                               asst_msg_id)
+                                                     StreamingChunk(content="", chunk_type="complete", is_final=True),
+                                                     asst_msg_id)
                 return
 
             # Build chat history using helper method
@@ -529,11 +532,11 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
                     elif message.chunk_type == "tool_start":
                         await event_manager.emit_tool_event(session_id, history_id,
-                                                      message.metadata["tool_name"], "started")
+                                                            message.metadata["tool_name"], "started")
 
                     elif message.chunk_type == "tool_end":
                         await event_manager.emit_tool_event(session_id, history_id,
-                                                      message.metadata["tool_name"], "completed")
+                                                            message.metadata["tool_name"], "completed")
 
                     elif message.chunk_type == "complete":
                         await message_handler.finalize_assistant_message()
@@ -545,7 +548,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 await message_handler.mark_as_error(f"Streaming error: {str(e)}")
                 await message_handler.cleanup_on_error()  # Clean up on error
                 await event_manager.emit_streaming_error(session_id, history_id, f"Streaming error: {str(e)}",
-                                                   "streaming_error", asst_msg_id)
+                                                         "streaming_error", asst_msg_id)
                 await self.emit_llm_event(session_id, history_id, 'processing_failed', f"Streaming error: {str(e)}")
 
         except Exception as e:
@@ -662,7 +665,8 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
             async with AsyncSessionLocal() as db_session:
                 msgs = await db_session.execute(
-                    db_session.query(ChatMessage).filter_by(history_id=history_id).order_by(ChatMessage.created_at.asc())
+                    db_session.query(ChatMessage).filter_by(history_id=history_id).order_by(
+                        ChatMessage.created_at.asc())
                 ).scalars().all()
                 return JSONResponse({'data': [m.to_dict() for m in msgs], 'total': len(msgs)})
         except Exception as exc:  # noqa: BLE001
@@ -688,7 +692,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 session = await db_session.execute(
                     db_session.query(ChatSession).filter_by(id=session_id, is_active=True)
                 ).scalar_one_or_none()
-                
+
                 if not session:
                     return await self._format_error_response('Session not found or inactive', 404)
 
@@ -696,7 +700,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 history = await db_session.execute(
                     db_session.query(ChatHistory).filter_by(id=history_id, session_id=session_id)
                 ).scalar_one_or_none()
-                
+
                 if not history:
                     return await self._format_error_response('History not found', 404)
 
@@ -704,7 +708,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 message = await db_session.execute(
                     db_session.query(ChatMessage).filter_by(id=message_id, history_id=history_id)
                 ).scalar_one_or_none()
-                
+
                 if not message:
                     return await self._format_error_response('Message not found', 404)
 

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from asyncio import iscoroutinefunction
 from datetime import datetime
 
 from fastapi.responses import JSONResponse

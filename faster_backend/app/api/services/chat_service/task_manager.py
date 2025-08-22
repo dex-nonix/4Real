@@ -88,7 +88,7 @@ class ChatTaskManager:
         try:
             # Create and start the task
             task = asyncio.create_task(self._execute_task(func, *args, **kwargs))
-            
+
             # Track task
             self._active_tasks.append(task)
             self._total_submissions += 1
@@ -128,7 +128,7 @@ class ChatTaskManager:
             # Remove from active tasks
             if task in self._active_tasks:
                 self._active_tasks.remove(task)
-            
+
             self._completed_tasks += 1
             self._last_activity = datetime.utcnow()
 

@@ -3,8 +3,9 @@ from __future__ import annotations
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
-from .....database import AsyncSessionLocal
+
 from ....service_router.decorators import expose
+from .....database import AsyncSessionLocal
 from .....models.chat_history import ChatHistory
 from .....models.chat_message import ChatMessage
 from .....models.chat_session import ChatSession
@@ -46,7 +47,7 @@ class ChatSessionMixin:
                 stmt = stmt.filter(ChatSession.id == session_id)
 
             stmt = stmt.group_by(ChatSession.id)
-            
+
             result = await db_session.execute(stmt)
             return result
 
@@ -88,12 +89,12 @@ class ChatSessionMixin:
             try:
                 payload = payload or {}
                 persona_id = int(payload.get('persona_id'))
-                
+
                 # Get persona first to check if exists and get name
                 persona = await self._get_persona_by_id(db_session, persona_id)
                 if not persona:
                     return JSONResponse({'error': 'Persona not found or inactive'}, 404)
-                
+
                 session_name = payload.get('session_name') or f'Chat with {persona.name}'
                 session_icon = payload.get('session_icon')
 
@@ -133,7 +134,7 @@ class ChatSessionMixin:
                     await db_session.commit()
 
                 return JSONResponse({'data': session.to_dict()})
-            except Exception as exc: 
+            except Exception as exc:
                 await db_session.rollback()
                 return JSONResponse({'error': str(exc)}, status_code=500)
 
@@ -178,7 +179,7 @@ class ChatSessionMixin:
                 session_data['history_count'] = history_count  # Just the count, no objects
                 result.append(session_data)
             return JSONResponse({'data': result, 'total': len(result)})
-        except Exception as exc: 
+        except Exception as exc:
             return JSONResponse({'error': str(exc)}, 500)
 
     @expose(
@@ -220,7 +221,7 @@ class ChatSessionMixin:
             session_data['history_count'] = history_count  # Just the count, no objects
 
             return JSONResponse({'data': session_data})
-        except Exception as exc: 
+        except Exception as exc:
             return JSONResponse({'error': str(exc)}, 500)
 
     @expose(

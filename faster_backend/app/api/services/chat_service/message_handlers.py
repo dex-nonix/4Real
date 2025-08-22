@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
 from typing import Any, Dict
 
-from ....llm.tool_runtime import execute_tool
 from .message_type_registry import MessageTypeHandler
 from ....database import AsyncSessionLocal
+from ....llm.tool_runtime import execute_tool
 from ....models.chat_message import ChatMessage
 
 
@@ -11,7 +11,6 @@ class ChatMessageHandler(MessageTypeHandler):
     """Handle chat messages - explicit text messages."""
 
     async def handle(self, chat_service, session, persona, history_id: int, content: Dict[str, Any]) -> Dict[str, Any]:
-
         message_text = content.get('text', '')
         if not message_text:
             raise ValueError('Text content is required for chat messages')
@@ -26,14 +25,14 @@ class ChatMessageHandler(MessageTypeHandler):
                 content_json=content,
                 status='complete'
             )
-            
+
             # Use async database operations
             db_session.add(chat_msg)
             await db_session.commit()
             await db_session.refresh(chat_msg)
 
         # Emit WebSocket events
-        session_id = session.id 
+        session_id = session.id
         await chat_service.emit_chat_event(session_id, history_id, 'message_received', {
             'message_id': chat_msg.id,
             'role': chat_msg.role,
@@ -43,7 +42,8 @@ class ChatMessageHandler(MessageTypeHandler):
 
         # Start AI processing - persona is DIRECT PARAMETER!
         asst_msg = await chat_service._create_assistant_placeholder(history_id)
-        await chat_service._submit_message_for_async_processing(chat_msg.id, asst_msg.id, session_id, history_id, persona.id)
+        await chat_service._submit_message_for_async_processing(chat_msg.id, asst_msg.id, session_id, history_id,
+                                                                persona.id)
 
         return {
             'chat_message_id': chat_msg.id,
@@ -70,7 +70,7 @@ class ToolCallMessageHandler(MessageTypeHandler):
                 content_json=content,
                 status='complete'
             )
-            
+
             # Use async database operations
             db_session.add(tool_call_msg)
             await db_session.commit()
@@ -89,7 +89,7 @@ class ToolCallMessageHandler(MessageTypeHandler):
         # Emit WebSocket event for tool execution started
         await chat_service.emit_tool_event(session_id, history_id, tool_name, 'started', args=tool_args)
 
-        exec_result = execute_tool(persona.id, tool_name, tool_args) 
+        exec_result = execute_tool(persona.id, tool_name, tool_args)
 
         # Emit WebSocket event for tool execution completed
         await chat_service.emit_tool_event(session_id, history_id, tool_name, 'completed', result=exec_result)
@@ -98,7 +98,7 @@ class ToolCallMessageHandler(MessageTypeHandler):
         async with AsyncSessionLocal() as db_session:
             # Create tool result message
             tool_result_msg = ChatMessage(
-                history_id=history_id, 
+                history_id=history_id,
                 role='tool',
                 message_type='tool',
                 content_json={
@@ -110,7 +110,7 @@ class ToolCallMessageHandler(MessageTypeHandler):
                     'executionTime': datetime.now(timezone.utc).isoformat()
                 }
             )
-            
+
             # Use async database operations
             db_session.add(tool_result_msg)
             await db_session.commit()

@@ -14,10 +14,11 @@ The main ChatService class inherits from all mixins to provide complete function
 
 from backend.app.services.chat_service.mixins.chat_history_mixin import ChatHistoryMixin
 from backend.app.services.chat_service.mixins.chat_message_mixin import ChatMessageMixin
-from .chat_service import ChatService
 from backend.app.services.chat_service.mixins.chat_session_mixin import ChatSessionMixin
 from backend.app.services.chat_service.mixins.persona_chat_mixin import PersonaChatMixin
 from backend.app.services.chat_service.mixins.tool_execution_mixin import ToolExecutionMixin
+
+from .chat_service import ChatService
 from .websocket_protocol import WebSocketMixinProtocol
 
 __all__ = [
