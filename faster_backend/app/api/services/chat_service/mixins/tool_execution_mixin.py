@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
-from ..websocket_protocol import WebSocketMixinProtocol
-from ....service_router.decorators import expose
 from .....llm.tool_runtime import list_persona_tools
 from .....models.mcp_server import MCPServer
 from .....models.persona import Persona
+from .....database import AsyncSessionLocal
+from sqlalchemy import select
+
+from ..websocket_protocol import WebSocketMixinProtocol
+from ....service_router.decorators import expose
 
 
 class ToolExecutionMixin(WebSocketMixinProtocol):
@@ -37,10 +41,14 @@ class ToolExecutionMixin(WebSocketMixinProtocol):
     async def persona_tools(self, req: Request, persona_id: int):
         """Get available tools for a specific persona."""
         try:
-            persona = Persona.query.filter_by(id=persona_id).first()
-            if not persona:
-                return JSONResponse({'error': 'Not found'}, 404)
-            return JSONResponse({'data': list_persona_tools(persona.id)})
+            async with AsyncSessionLocal() as db_session:
+                stmt = select(Persona).where(Persona.id == persona_id)
+                result = await db_session.execute(stmt)
+                persona = result.scalar_one_or_none()
+                
+                if not persona:
+                    return JSONResponse({'error': 'Not found'}, 404)
+                return JSONResponse({'data': await list_persona_tools(persona.id)})
         except Exception as exc:
             return JSONResponse({'error': str(exc)}, 500)
 
@@ -100,7 +108,11 @@ class ToolExecutionMixin(WebSocketMixinProtocol):
     async def mcp_status(self, req: Request):
         """Get status of all MCP servers."""
         try:
-            servers = MCPServer.query.all()
-            return JSONResponse({'data': [s.to_dict() for s in servers]})
+            async with AsyncSessionLocal() as db_session:
+                stmt = select(MCPServer)
+                result = await db_session.execute(stmt)
+                servers = result.scalars().all()
+                
+                return JSONResponse({'data': [s.to_dict() for s in servers]})
         except Exception as exc:
             return JSONResponse({'error': str(exc)}, 500)

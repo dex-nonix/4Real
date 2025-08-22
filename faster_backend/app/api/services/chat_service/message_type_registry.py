@@ -30,15 +30,15 @@ class MessageTypeRegistry:
         self._handlers[message_type] = handler
         print(f"Registered message type handler: {message_type}")
 
-    async def get_handler(self, message_type: str) -> MessageTypeHandler:
+    def get_handler(self, message_type: str) -> MessageTypeHandler:
         """Get handler for message type."""
         return self._handlers.get(message_type)
 
-    async def has_handler(self, message_type: str) -> bool:
+    def has_handler(self, message_type: str) -> bool:
         """Check if a handler exists for the message type."""
         return message_type in self._handlers
 
-    async def list_types(self) -> list[str]:
+    def list_types(self) -> list[str]:
         """List all registered message types."""
         return list(self._handlers.keys())
 

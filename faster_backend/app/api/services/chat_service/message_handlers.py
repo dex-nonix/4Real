@@ -89,7 +89,7 @@ class ToolCallMessageHandler(MessageTypeHandler):
         # Emit WebSocket event for tool execution started
         await chat_service.emit_tool_event(session_id, history_id, tool_name, 'started', args=tool_args)
 
-        exec_result = execute_tool(persona.id, tool_name, tool_args)
+        exec_result = await execute_tool(persona.id, tool_name, tool_args)
 
         # Emit WebSocket event for tool execution completed
         await chat_service.emit_tool_event(session_id, history_id, tool_name, 'completed', result=exec_result)

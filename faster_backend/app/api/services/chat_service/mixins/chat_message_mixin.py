@@ -468,7 +468,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         """Submit message processing to thread pool for async execution."""
         try:
             # Use the thread pool manager from the parent ChatService
-            future = self.submit_async_task(
+            future = await self.submit_async_task(
                 self._process_message_async,
                 user_msg_id, asst_msg_id, session_id, history_id, persona_id
             )

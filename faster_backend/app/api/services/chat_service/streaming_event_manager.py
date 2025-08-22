@@ -64,6 +64,6 @@ class StreamingEventManager:
 
         await self.chat_service.emit_chat_event(session_id, history_id, 'streaming_error', error_data)
 
-    async def _get_timestamp(self) -> str:
+    def _get_timestamp(self) -> str:
         """Get current timestamp in ISO format."""
         return datetime.utcnow().isoformat()

@@ -127,7 +127,7 @@ class CrudSwaggerGenerator:
                 continue
 
             # Add field to schema
-            field_schema = self._column_to_openapi_schema(column)
+            field_schema = await self._column_to_openapi_schema(column)
             schema["properties"][column.name] = field_schema
 
             # Mark as required if in config
@@ -151,7 +151,7 @@ class CrudSwaggerGenerator:
                 continue
 
             # Add field to schema
-            field_schema = self._column_to_openapi_schema(column)
+            field_schema = await self._column_to_openapi_schema(column)
             schema["properties"][column.name] = field_schema
 
         return schema
@@ -168,7 +168,7 @@ class CrudSwaggerGenerator:
 
         for column in model.__table__.columns:
             # Add field to schema
-            field_schema = self._column_to_openapi_schema(column)
+            field_schema = await self._column_to_openapi_schema(column)
             schema["properties"][column.name] = field_schema
 
             # Mark as required if in config or if it's a core field
