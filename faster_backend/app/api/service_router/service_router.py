@@ -152,14 +152,15 @@ class ServiceRouter:
                     return result
 
                 except Exception as e:
-                    self.logger.error(f"💥 CRASH in {service_name}.{bound_method.__name__}: {str(e)}", exc_info=True)
+                    se = str(e)
+                    self.logger.error(f"💥 CRASH in {service_name}.{bound_method.__name__}: {se}", exc_info=True)
 
                     # Return proper FastAPI error response with appropriate status code
                     error_content = {
                         'error': 'Service Error',
                         'service': service_name,
                         'method': bound_method.__name__,
-                        'message': str(e)
+                        'message': se
                     }
                     
                     # Add traceback only in debug mode
@@ -168,7 +169,7 @@ class ServiceRouter:
                     
                     # Determine appropriate status code based on exception type
                     status_code = 500  # Default to internal server error
-                    error_str = str(e).lower()
+                    error_str = se.lower()
                     if "not found" in error_str or "does not exist" in error_str:
                         status_code = 404
                     elif "validation" in error_str or "invalid" in error_str:
@@ -178,10 +179,7 @@ class ServiceRouter:
                     elif "forbidden" in error_str:
                         status_code = 403
                     
-                    return JSONResponse(
-                        status_code=status_code,
-                        content=error_content
-                    )
+                    return JSONResponse(error_content, status_code)
 
             return handler
 
