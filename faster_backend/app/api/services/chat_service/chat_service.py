@@ -4,7 +4,7 @@ import logging
 from asyncio import iscoroutinefunction
 from datetime import datetime
 
-from fastapi import HTTPException
+from fastapi.responses import JSONResponse
 
 from .mixins.chat_history_mixin import ChatHistoryMixin
 from .mixins.chat_message_mixin import ChatMessageMixin
@@ -118,7 +118,4 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
             return health_status
         except Exception as e:
             self._logger.error(f"Failed to get thread pool health: {e}", exc_info=True)
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to get thread pool health: {e}"
-            )
+            return JSONResponse(f"Failed to get thread pool health: {e}", 500)

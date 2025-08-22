@@ -1,5 +1,5 @@
 from typing import Dict, Any
-
+from datetime import datetime
 from .streaming_interface import StreamingChunk
 
 
@@ -65,5 +65,4 @@ class StreamingEventManager:
 
     async def _get_timestamp(self) -> str:
         """Get current timestamp in ISO format."""
-        from datetime import datetime
         return datetime.utcnow().isoformat()
