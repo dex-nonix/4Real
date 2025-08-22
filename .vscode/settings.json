@@ -9,6 +9,11 @@
             "folderPath": "4Real/vue_libs/",
             "color": "foldercolorizer.color_9966ff",
             "isFolderOnly": true
+        },
+        {
+            "folderPath": "4Real/backend/",
+            "color": "foldercolorizer.color_99cc33",
+            "isFolderOnly": true
         }
     ]
 }

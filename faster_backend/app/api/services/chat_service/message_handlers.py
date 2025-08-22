@@ -1,10 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict
 
-from faster_backend.app.llm.tool_runtime import execute_tool
+from ....llm.tool_runtime import execute_tool
 from .message_type_registry import MessageTypeHandler
-from ... import db
-from ....models import ChatMessage
+from ....database import AsyncSessionLocal
+from ....models.chat_message import ChatMessage
 
 
 class ChatMessageHandler(MessageTypeHandler):
@@ -17,16 +17,21 @@ class ChatMessageHandler(MessageTypeHandler):
         if not message_text:
             raise ValueError('Text content is required for chat messages')
 
-        # Create chat message
-        chat_msg = ChatMessage(
-            history_id=history_id,  # ✅ Direct value
-            role='user',
-            message_type='chat',
-            content_json=content,
-            status='complete'
-        )
-        db.session.add(chat_msg)
-        db.session.commit()
+        # Create async database session
+        async with AsyncSessionLocal() as db_session:
+            # Create chat message
+            chat_msg = ChatMessage(
+                history_id=history_id,  # ✅ Direct value
+                role='user',
+                message_type='chat',
+                content_json=content,
+                status='complete'
+            )
+            
+            # Use async database operations
+            db_session.add(chat_msg)
+            await db_session.commit()
+            await db_session.refresh(chat_msg)
 
         # Emit WebSocket events
         session_id = session.id  # ✅ Direct from session
@@ -60,16 +65,21 @@ class ToolCallMessageHandler(MessageTypeHandler):
         tool_name = content.get('tool')
         tool_args = content.get('args', {})
 
-        # Create tool call message
-        tool_call_msg = ChatMessage(
-            history_id=history_id,  # ✅ Direct value
-            role='user',
-            message_type='tool_call',
-            content_json=content,
-            status='complete'
-        )
-        db.session.add(tool_call_msg)
-        db.session.commit()
+        # Create async database session
+        async with AsyncSessionLocal() as db_session:
+            # Create tool call message
+            tool_call_msg = ChatMessage(
+                history_id=history_id,  # ✅ Direct value
+                role='user',
+                message_type='tool_call',
+                content_json=content,
+                status='complete'
+            )
+            
+            # Use async database operations
+            db_session.add(tool_call_msg)
+            await db_session.commit()
+            await db_session.refresh(tool_call_msg)
 
         # Emit WebSocket event for tool call received
         session_id = session.id  # ✅ Direct from session
@@ -90,22 +100,27 @@ class ToolCallMessageHandler(MessageTypeHandler):
         # Emit WebSocket event for tool execution completed
         await chat_service.emit_tool_event(session_id, history_id, tool_name, 'completed', result=exec_result)
 
-        # Create tool result message
-        tool_result_msg = ChatMessage(
-            history_id=history_id,  # ✅ Direct value
-            role='tool',
-            message_type='tool',
-            content_json={
-                'toolName': tool_name,
-                'toolParams': tool_args,
-                'executionStatus': 'success' if exec_result.get('status') == 'success' else 'error',
-                'result': exec_result,
-                'executedBy': 'user',
-                'executionTime': datetime.utcnow().isoformat()
-            }
-        )
-        db.session.add(tool_result_msg)
-        db.session.commit()
+        # Create second async database session for tool result message
+        async with AsyncSessionLocal() as db_session:
+            # Create tool result message
+            tool_result_msg = ChatMessage(
+                history_id=history_id,  # ✅ Direct value
+                role='tool',
+                message_type='tool',
+                content_json={
+                    'toolName': tool_name,
+                    'toolParams': tool_args,
+                    'executionStatus': 'success' if exec_result.get('status') == 'success' else 'error',
+                    'result': exec_result,
+                    'executedBy': 'user',
+                    'executionTime': datetime.now(timezone.utc).isoformat()
+                }
+            )
+            
+            # Use async database operations
+            db_session.add(tool_result_msg)
+            await db_session.commit()
+            await db_session.refresh(tool_result_msg)
 
         # Emit WebSocket event for tool result message
         await chat_service.emit_chat_event(session_id, history_id, 'message_received', {
