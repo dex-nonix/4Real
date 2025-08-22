@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
-
-from ...import db
+from sqlalchemy import func, select
+from .....database import AsyncSessionLocal
 from ....service_router.decorators import expose
 from .....models.chat_history import ChatHistory
 from .....models.chat_message import ChatMessage
@@ -16,23 +16,27 @@ class ChatSessionMixin:
 
     async def _get_sessions_with_history_counts(self, persona_id: int = None, session_id: int = None):
         """Utility method to get sessions with history counts using single JOIN query."""
-        from sqlalchemy import func
 
-        query = db.session.query(
-            ChatSession,
-            func.count(ChatHistory.id).label('history_count')
-        ).outerjoin(
-            ChatHistory, ChatSession.id == ChatHistory.session_id
-        ).filter(
-            ChatSession.is_active == True
-        )
+        async with AsyncSessionLocal() as db_session:
+            # Build the query using select
+            stmt = select(
+                ChatSession,
+                func.count(ChatHistory.id).label('history_count')
+            ).outerjoin(
+                ChatHistory, ChatSession.id == ChatHistory.session_id
+            ).filter(
+                ChatSession.is_active == True
+            )
 
-        if persona_id:
-            query = query.filter(ChatSession.persona_id == persona_id)
-        if session_id:
-            query = query.filter(ChatSession.id == session_id)
+            if persona_id:
+                stmt = stmt.filter(ChatSession.persona_id == persona_id)
+            if session_id:
+                stmt = stmt.filter(ChatSession.id == session_id)
 
-        return query.group_by(ChatSession.id)
+            stmt = stmt.group_by(ChatSession.id)
+            
+            result = await db_session.execute(stmt)
+            return result
 
     @expose(
         '/sessions',
@@ -68,54 +72,61 @@ class ChatSessionMixin:
     )
     async def create_session(self, req: Request, payload: dict = None):
         """Create a new chat session."""
-        try:
-            payload = payload or {}
-            persona_id = int(payload.get('persona_id'))
-            session_name = payload.get(
-                'session_name') or f'Chat with {Persona.query.get(persona_id).name if Persona.query.get(persona_id) else "Persona"}'
-            session_icon = payload.get('session_icon')
+        async with AsyncSessionLocal() as db_session:
+            try:
+                payload = payload or {}
+                persona_id = int(payload.get('persona_id'))
+                
+                # Get persona first to check if exists and get name
+                persona_stmt = select(Persona).filter_by(id=persona_id, is_active=True)
+                persona_result = await db_session.execute(persona_stmt)
+                persona = persona_result.scalar_one_or_none()
+                
+                if not persona:
+                    return JSONResponse({'error': 'Persona not found or inactive'}, status_code=404)
+                
+                session_name = payload.get('session_name') or f'Chat with {persona.name}'
+                session_icon = payload.get('session_icon')
 
-            persona = Persona.query.filter_by(id=persona_id, is_active=True).first()
-            if not persona:
-                return JSONResponse({'error': 'Persona not found or inactive'}, 404)
-
-            session = ChatSession(
-                persona_id=persona_id,
-                session_name=session_name,
-                session_icon=session_icon,
-                is_active=True
-            )
-            db.session.add(session)
-            db.session.commit()
-
-            # Create initial history for the session
-            history = ChatHistory(
-                session_id=session.id,
-                title='New Conversation',
-                message_count=0
-            )
-            db.session.add(history)
-            db.session.commit()
-
-            # Set this as the current history
-            session.current_history_id = history.id
-            db.session.commit()
-
-            # Optional initial system message from persona.system_prompt
-            if persona.system_prompt:
-                sys_msg = ChatMessage(
-                    history_id=history.id,
-                    role='system',
-                    message_type='text',
-                    content_json={'type': 'system', 'text': persona.system_prompt}
+                session = ChatSession(
+                    persona_id=persona_id,
+                    session_name=session_name,
+                    session_icon=session_icon,
+                    is_active=True
                 )
-                db.session.add(sys_msg)
-                db.session.commit()
+                db_session.add(session)
+                await db_session.commit()
+                await db_session.refresh(session)
 
-            return {'data': session.to_dict()}
-        except Exception as exc:  # noqa: BLE001
-            db.session.rollback()
-            return JSONResponse({'error': str(exc)}, 500)
+                # Create initial history for the session
+                history = ChatHistory(
+                    session_id=session.id,
+                    title='New Conversation',
+                    message_count=0
+                )
+                db_session.add(history)
+                await db_session.commit()
+                await db_session.refresh(history)
+
+                # Set this as the current history
+                session.current_history_id = history.id
+                await db_session.commit()
+
+                # Optional initial system message from persona.system_prompt
+                if persona.system_prompt:
+                    sys_msg = ChatMessage(
+                        history_id=history.id,
+                        role='system',
+                        message_type='text',
+                        content_json={'type': 'system', 'text': persona.system_prompt}
+                    )
+                    db_session.add(sys_msg)
+                    await db_session.commit()
+
+                return JSONResponse({'data': session.to_dict()})
+            except Exception as exc:  # noqa: BLE001
+                await db_session.rollback()
+                return JSONResponse({'error': str(exc)}, status_code=500)
 
     @expose(
         '/sessions',
@@ -149,7 +160,8 @@ class ChatSessionMixin:
         """List all active chat sessions."""
         try:
             # Use utility method for single JOIN query with COUNT
-            sessions_with_counts = (await self._get_sessions_with_history_counts()).all()
+            sessions_result = await self._get_sessions_with_history_counts()
+            sessions_with_counts = sessions_result.all()
 
             result = []
             for session, history_count in sessions_with_counts:
@@ -188,8 +200,8 @@ class ChatSessionMixin:
         """Get a specific chat session by ID."""
         try:
             # Use utility method for single JOIN query with COUNT
-            sessions_query = await self._get_sessions_with_history_counts(session_id=id)
-            session_with_count = sessions_query.first()
+            sessions_result = await self._get_sessions_with_history_counts(session_id=id)
+            session_with_count = sessions_result.first()
 
             if not session_with_count:
                 return JSONResponse({'error': 'Session not found or inactive'}, status_code=404)
@@ -235,23 +247,27 @@ class ChatSessionMixin:
     )
     async def update_session(self, req: Request, payload: dict = None, id: int = None):  # noqa: A002
         """Update a chat session."""
-        try:
-            session = ChatSession.query.filter_by(id=id, is_active=True).first()
-            if not session:
-                return JSONResponse({'error': 'Session not found or inactive'}, status_code=404)
+        async with AsyncSessionLocal() as db_session:
+            try:
+                session_stmt = select(ChatSession).filter_by(id=id, is_active=True)
+                session_result = await db_session.execute(session_stmt)
+                session = session_result.scalar_one_or_none()
+                
+                if not session:
+                    return JSONResponse({'error': 'Session not found or inactive'}, status_code=404)
 
-            data = payload or {}
-            allowed_fields = ['session_name', 'session_icon', 'current_history_id']
+                data = payload or {}
+                allowed_fields = ['session_name', 'session_icon', 'current_history_id']
 
-            for field in allowed_fields:
-                if field in data:
-                    setattr(session, field, data[field])
+                for field in allowed_fields:
+                    if field in data:
+                        setattr(session, field, data[field])
 
-            db.session.commit()
-            return JSONResponse({'data': session.to_dict()})
-        except Exception as exc:  # noqa: BLE001
-            db.session.rollback()
-            return JSONResponse({'error': str(exc)}, status_code=500)
+                await db_session.commit()
+                return JSONResponse({'data': session.to_dict()})
+            except Exception as exc:  # noqa: BLE001
+                await db_session.rollback()
+                return JSONResponse({'error': str(exc)}, status_code=500)
 
     @expose(
         '/sessions/{id}',
@@ -266,17 +282,21 @@ class ChatSessionMixin:
     )
     async def delete_session(self, req: Request, id: int):  # noqa: A002
         """Delete a chat session (soft delete by setting is_active=False)."""
-        try:
-            session = ChatSession.query.filter_by(id=id, is_active=True).first()
-            if not session:
-                return JSONResponse({'error': 'Session not found or inactive'}, status_code=404)
+        async with AsyncSessionLocal() as db_session:
+            try:
+                session_stmt = select(ChatSession).filter_by(id=id, is_active=True)
+                session_result = await db_session.execute(session_stmt)
+                session = session_result.scalar_one_or_none()
+                
+                if not session:
+                    return JSONResponse({'error': 'Session not found or inactive'}, status_code=404)
 
-            session.is_active = False
-            db.session.commit()
-            return JSONResponse({'message': 'Session deleted successfully'})
-        except Exception as exc:  # noqa: BLE001
-            db.session.rollback()
-            return JSONResponse({'error': str(exc)}, status_code=500)
+                session.is_active = False
+                await db_session.commit()
+                return JSONResponse({'message': 'Session deleted successfully'})
+            except Exception as exc:  # noqa: BLE001
+                await db_session.rollback()
+                return JSONResponse({'error': str(exc)}, status_code=500)
 
     @expose(
         '/personas/{persona_id}/sessions',
@@ -308,23 +328,28 @@ class ChatSessionMixin:
     )
     async def get_persona_sessions(self, req: Request, persona_id: int):
         """Get all sessions for a specific persona."""
-        try:
-            persona = Persona.query.filter_by(id=persona_id, is_active=True).first()
-            if not persona:
-                return JSONResponse({'error': 'Persona not found or inactive'}, status_code=404)
+        async with AsyncSessionLocal() as db_session:
+            try:
+                persona_stmt = select(Persona).filter_by(id=persona_id, is_active=True)
+                persona_result = await db_session.execute(persona_stmt)
+                persona = persona_result.scalar_one_or_none()
+                
+                if not persona:
+                    return JSONResponse({'error': 'Persona not found or inactive'}, status_code=404)
 
-            # Use utility method for single JOIN query with COUNT
-            sessions_with_counts = await self._get_sessions_with_history_counts(persona_id=persona_id).all()
+                # Use utility method for single JOIN query with COUNT
+                sessions_result = await self._get_sessions_with_history_counts(persona_id=persona_id)
+                sessions_with_counts = sessions_result.all()
 
-            sessions_data = []
-            for session, history_count in sessions_with_counts:
-                session_data = session.to_dict()
-                session_data['history_count'] = history_count  # Just the count, no objects
-                sessions_data.append(session_data)
+                sessions_data = []
+                for session, history_count in sessions_with_counts:
+                    session_data = session.to_dict()
+                    session_data['history_count'] = history_count  # Just the count, no objects
+                    sessions_data.append(session_data)
 
-            return JSONResponse({'data': sessions_data, 'total': len(sessions_data)})
-        except Exception as exc:  # noqa: BLE001
-            return JSONResponse({'error': str(exc)}, status_code=500)
+                return JSONResponse({'data': sessions_data, 'total': len(sessions_data)})
+            except Exception as exc:  # noqa: BLE001
+                return JSONResponse({'error': str(exc)}, status_code=500)
 
     @expose(
         '/personas/{persona_id}/start-chat',
@@ -358,50 +383,56 @@ class ChatSessionMixin:
     )
     async def start_chat_with_persona(self, req: Request, payload: dict = None, persona_id: int = None):
         """Start a new chat session with a persona."""
-        try:
-            persona = Persona.query.filter_by(id=persona_id, is_active=True).first()
-            if not persona:
-                return JSONResponse({'error': 'Persona not found or inactive'}, status_code=404)
+        async with AsyncSessionLocal() as db_session:
+            try:
+                persona_stmt = select(Persona).filter_by(id=persona_id, is_active=True)
+                persona_result = await db_session.execute(persona_stmt)
+                persona = persona_result.scalar_one_or_none()
+                
+                if not persona:
+                    return JSONResponse({'error': 'Persona not found or inactive'}, status_code=404)
 
-            payload = payload or {}
-            session_name = payload.get('session_name') or f'Chat with {persona.name}'
-            session_icon = payload.get('session_icon')
+                payload = payload or {}
+                session_name = payload.get('session_name') or f'Chat with {persona.name}'
+                session_icon = payload.get('session_icon')
 
-            # Create new session
-            session = ChatSession(
-                persona_id=persona_id,
-                session_name=session_name,
-                session_icon=session_icon,
-                is_active=True
-            )
-            db.session.add(session)
-            db.session.commit()
-
-            # Create initial history
-            history = ChatHistory(
-                session_id=session.id,
-                title='New Conversation',
-                message_count=0
-            )
-            db.session.add(history)
-            db.session.commit()
-
-            # Set as current history
-            session.current_history_id = history.id
-            db.session.commit()
-
-            # Add system message if persona has one
-            if persona.system_prompt:
-                sys_msg = ChatMessage(
-                    history_id=history.id,
-                    role='system',
-                    message_type='text',
-                    content_json={'type': 'system', 'text': persona.system_prompt}
+                # Create new session
+                session = ChatSession(
+                    persona_id=persona_id,
+                    session_name=session_name,
+                    session_icon=session_icon,
+                    is_active=True
                 )
-                db.session.add(sys_msg)
-                db.session.commit()
+                db_session.add(session)
+                await db_session.commit()
+                await db_session.refresh(session)
 
-            return JSONResponse({'data': session.to_dict()}, status_code=201)
-        except Exception as exc:  # noqa: BLE001
-            db.session.rollback()
-            return JSONResponse({'error': str(exc)}, status_code=500)
+                # Create initial history
+                history = ChatHistory(
+                    session_id=session.id,
+                    title='New Conversation',
+                    message_count=0
+                )
+                db_session.add(history)
+                await db_session.commit()
+                await db_session.refresh(history)
+
+                # Set as current history
+                session.current_history_id = history.id
+                await db_session.commit()
+
+                # Add system message if persona has one
+                if persona.system_prompt:
+                    sys_msg = ChatMessage(
+                        history_id=history.id,
+                        role='system',
+                        message_type='text',
+                        content_json={'type': 'system', 'text': persona.system_prompt}
+                    )
+                    db_session.add(sys_msg)
+                    await db_session.commit()
+
+                return JSONResponse({'data': session.to_dict()}, status_code=201)
+            except Exception as exc:  # noqa: BLE001
+                await db_session.rollback()
+                return JSONResponse({'error': str(exc)}, status_code=500)
