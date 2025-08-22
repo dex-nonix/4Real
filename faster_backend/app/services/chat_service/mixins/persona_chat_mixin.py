@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from flask import jsonify, Request
+from fastapi import Request, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy import func
 
 from .... import db
-from ....decorators import expose
+from ....api.service_router.decorators import expose
 from ....models.chat_session import ChatSession
 from ....models.persona import Persona
 
@@ -77,9 +78,9 @@ class PersonaChatMixin:
                 persona_data['active_sessions_count'] = session_count
                 result.append(persona_data)
 
-            return jsonify({'data': result, 'total': len(result)})
+            return JSONResponse({'data': result, 'total': len(result)})
         except Exception as exc:  # noqa: BLE001
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, status_code=500)
 
     @expose(
         '/personas/{int:persona_id}',
@@ -95,12 +96,12 @@ class PersonaChatMixin:
             result = query.first()
 
             if not result:
-                return jsonify({'error': 'Persona not found'}), 404
+                return JSONResponse({'error': 'Persona not found'}, status_code=404)
 
             persona, session_count = result
             persona_data = persona.to_dict()
             persona_data['active_sessions_count'] = session_count
 
-            return jsonify(persona_data)
+            return JSONResponse(persona_data)
         except Exception as exc:  # noqa: BLE001
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, status_code=500)

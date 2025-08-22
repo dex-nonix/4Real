@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from flask import jsonify, Request
+from fastapi import Request, HTTPException
+from fastapi.responses import JSONResponse
 
 from .... import db
-from ....decorators import expose
+from ....api.service_router.decorators import expose
 from ....models.chat_history import ChatHistory
 from ....models.chat_message import ChatMessage
 from ....models.chat_session import ChatSession
@@ -65,10 +66,10 @@ class ChatSessionMixin:
             }
         }
     )
-    async def create_session(self, req: Request):
+    async def create_session(self, req: Request, payload: dict = None):
         """Create a new chat session."""
         try:
-            payload = req.get_json(silent=True) or {}
+            payload = payload or {}
             persona_id = int(payload.get('persona_id'))
             session_name = payload.get(
                 'session_name') or f'Chat with {Persona.query.get(persona_id).name if Persona.query.get(persona_id) else "Persona"}'
@@ -76,7 +77,7 @@ class ChatSessionMixin:
 
             persona = Persona.query.filter_by(id=persona_id, is_active=True).first()
             if not persona:
-                return jsonify({'error': 'Persona not found or inactive'}), 404
+                return JSONResponse({'error': 'Persona not found or inactive'}, 404)
 
             session = ChatSession(
                 persona_id=persona_id,
@@ -111,10 +112,10 @@ class ChatSessionMixin:
                 db.session.add(sys_msg)
                 db.session.commit()
 
-            return jsonify({'data': session.to_dict()}), 201
+            return {'data': session.to_dict()}
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, 500)
 
     @expose(
         '/sessions',
@@ -155,9 +156,9 @@ class ChatSessionMixin:
                 session_data = session.to_dict()
                 session_data['history_count'] = history_count  # Just the count, no objects
                 result.append(session_data)
-            return jsonify({'data': result, 'total': len(result)})
+            return JSONResponse({'data': result, 'total': len(result)})
         except Exception as exc:  # noqa: BLE001
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, status_code=500)
 
     @expose(
         '/sessions/{id}',
@@ -191,15 +192,15 @@ class ChatSessionMixin:
             session_with_count = sessions_query.first()
 
             if not session_with_count:
-                return jsonify({'error': 'Session not found or inactive'}), 404
+                return JSONResponse({'error': 'Session not found or inactive'}, status_code=404)
 
             session, history_count = session_with_count
             session_data = session.to_dict()
             session_data['history_count'] = history_count  # Just the count, no objects
 
-            return jsonify({'data': session_data})
+            return JSONResponse({'data': session_data})
         except Exception as exc:  # noqa: BLE001
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, status_code=500)
 
     @expose(
         '/sessions/{id}',
@@ -232,14 +233,14 @@ class ChatSessionMixin:
             }
         }
     )
-    async def update_session(self, req: Request, id: int):  # noqa: A002
+    async def update_session(self, req: Request, payload: dict = None, id: int = None):  # noqa: A002
         """Update a chat session."""
         try:
             session = ChatSession.query.filter_by(id=id, is_active=True).first()
             if not session:
-                return jsonify({'error': 'Session not found or inactive'}), 404
+                return JSONResponse({'error': 'Session not found or inactive'}, status_code=404)
 
-            data = req.get_json(silent=True) or {}
+            data = payload or {}
             allowed_fields = ['session_name', 'session_icon', 'current_history_id']
 
             for field in allowed_fields:
@@ -247,10 +248,10 @@ class ChatSessionMixin:
                     setattr(session, field, data[field])
 
             db.session.commit()
-            return jsonify({'data': session.to_dict()})
+            return JSONResponse({'data': session.to_dict()})
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, status_code=500)
 
     @expose(
         '/sessions/{id}',
@@ -268,14 +269,14 @@ class ChatSessionMixin:
         try:
             session = ChatSession.query.filter_by(id=id, is_active=True).first()
             if not session:
-                return jsonify({'error': 'Session not found or inactive'}), 404
+                return JSONResponse({'error': 'Session not found or inactive'}, status_code=404)
 
             session.is_active = False
             db.session.commit()
-            return jsonify({'message': 'Session deleted successfully'})
+            return JSONResponse({'message': 'Session deleted successfully'})
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, status_code=500)
 
     @expose(
         '/personas/{persona_id}/sessions',
@@ -310,7 +311,7 @@ class ChatSessionMixin:
         try:
             persona = Persona.query.filter_by(id=persona_id, is_active=True).first()
             if not persona:
-                return jsonify({'error': 'Persona not found or inactive'}), 404
+                return JSONResponse({'error': 'Persona not found or inactive'}, status_code=404)
 
             # Use utility method for single JOIN query with COUNT
             sessions_with_counts = await self._get_sessions_with_history_counts(persona_id=persona_id).all()
@@ -321,9 +322,9 @@ class ChatSessionMixin:
                 session_data['history_count'] = history_count  # Just the count, no objects
                 sessions_data.append(session_data)
 
-            return jsonify({'data': sessions_data, 'total': len(sessions_data)})
+            return JSONResponse({'data': sessions_data, 'total': len(sessions_data)})
         except Exception as exc:  # noqa: BLE001
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, status_code=500)
 
     @expose(
         '/personas/{persona_id}/start-chat',
@@ -355,14 +356,14 @@ class ChatSessionMixin:
             }
         }
     )
-    async def start_chat_with_persona(self, req: Request, persona_id: int):
+    async def start_chat_with_persona(self, req: Request, payload: dict = None, persona_id: int = None):
         """Start a new chat session with a persona."""
         try:
             persona = Persona.query.filter_by(id=persona_id, is_active=True).first()
             if not persona:
-                return jsonify({'error': 'Persona not found or inactive'}), 404
+                return JSONResponse({'error': 'Persona not found or inactive'}, status_code=404)
 
-            payload = req.get_json(silent=True) or {}
+            payload = payload or {}
             session_name = payload.get('session_name') or f'Chat with {persona.name}'
             session_icon = payload.get('session_icon')
 
@@ -400,7 +401,7 @@ class ChatSessionMixin:
                 db.session.add(sys_msg)
                 db.session.commit()
 
-            return jsonify({'data': session.to_dict()}), 201
+            return JSONResponse({'data': session.to_dict()}, status_code=201)
         except Exception as exc:  # noqa: BLE001
             db.session.rollback()
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, status_code=500)

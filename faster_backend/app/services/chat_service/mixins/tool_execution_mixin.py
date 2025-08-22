@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from flask import jsonify, Request
+from fastapi import Request, HTTPException
+from fastapi.responses import JSONResponse
 
 from ..websocket_protocol import WebSocketMixinProtocol
 from ....llm.tool_runtime import list_persona_tools
-from ....decorators import expose
+from ....api.service_router.decorators import expose
 from ....models.mcp_server import MCPServer
 from ....models.persona import Persona
 
@@ -38,10 +39,10 @@ class ToolExecutionMixin(WebSocketMixinProtocol):
         try:
             persona = Persona.query.filter_by(id=persona_id).first()
             if not persona:
-                return jsonify({'error': 'Not found'}), 404
-            return jsonify({'data': list_persona_tools(persona.id)})
+                return JSONResponse({'error': 'Not found'}, status_code=404)
+            return JSONResponse({'data': list_persona_tools(persona.id)})
         except Exception as exc:  # noqa: BLE001
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, status_code=500)
 
     @expose(
         '/personas/{persona_id}/tools/execute',
@@ -100,6 +101,6 @@ class ToolExecutionMixin(WebSocketMixinProtocol):
         """Get status of all MCP servers."""
         try:
             servers = MCPServer.query.all()
-            return jsonify({'data': [s.to_dict() for s in servers]})
+            return JSONResponse({'data': [s.to_dict() for s in servers]})
         except Exception as exc:  # noqa: BLE001
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, status_code=500)

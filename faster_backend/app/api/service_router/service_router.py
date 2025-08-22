@@ -137,8 +137,11 @@ class ServiceRouter:
                         except Exception as body_error:
                             self.logger.warning(f"Could not parse request body: {body_error}")
                     
-                    # Call the service method with the request object and path parameters
-                    result = await bound_method(request, **kwargs)
+                    # Call the service method with the request object, parsed body, and path parameters
+                    if request_body is not None:
+                        result = await bound_method(request, request_body, **kwargs)
+                    else:
+                        result = await bound_method(request, **kwargs)
                     
                     # Log successful execution
                     self.logger.info(f"✅ Successfully executed {service_name}.{bound_method.__name__}")

@@ -3,7 +3,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List
 
-from flask import jsonify, Request
+from fastapi import Request, HTTPException
+from fastapi.responses import JSONResponse
 
 from ..message_handlers import ChatMessageHandler, ToolCallMessageHandler
 from ..message_type_registry import message_type_registry
@@ -15,7 +16,7 @@ from ....llm.llm_client import run_chat_streaming
 from ....llm.tool_runtime import execute_tool
 from ....llm.tool_runtime import list_persona_tools
 from .... import db
-from ....decorators import expose
+from ....api.service_router.decorators import expose
 from ....models.ai_model_mapping import AIModelMapping
 from ....models.ai_provider import AIProvider
 from ....models.chat_history import ChatHistory
@@ -255,7 +256,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
     async def _format_error_response(self, error_message: str, status_code: int = 400):
         """Format error response consistently."""
-        return jsonify({'error': error_message}), status_code
+        return JSONResponse({'error': error_message}, status_code)
 
     async def emit_llm_event(self, session_id: int, history_id: int, stage: str, message: str):
         """Emit LLM status event."""
@@ -296,17 +297,17 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         try:
             session = ChatSession.query.filter_by(id=id, is_active=True).first()
             if not session:
-                return jsonify({'error': 'Session not found or inactive'}), 404
+                return JSONResponse({'error': 'Session not found or inactive'}, 404)
 
             # Get messages from current history
             if not session.current_history_id:
-                return jsonify({'data': [], 'total': 0})
+                return {'data': [], 'total': 0}
 
             msgs = ChatMessage.query.filter_by(history_id=session.current_history_id).order_by(
                 ChatMessage.created_at.asc()).all()
-            return jsonify({'data': [m.to_dict() for m in msgs], 'total': len(msgs)})
+            return {'data': [m.to_dict() for m in msgs], 'total': len(msgs)}
         except Exception as exc:  # noqa: BLE001
-            return jsonify({'error': str(exc)}), 500
+            return JSONResponse({'error': str(exc)}, 500)
 
     @expose('/sessions/{session_id}/histories/{history_id}/send',
             methods=['POST'],
@@ -338,7 +339,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                     }
                 }
             })
-    async def send_message(self, req: Request, session_id: int, history_id: int = None):
+    async def send_message(self, req: Request, payload: dict = None, session_id: int = None, history_id: int = None):
         """Send message to session."""
         self._logger.info(f"Processing send_message request for session {session_id}, history {history_id}")
 
@@ -378,7 +379,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                     return await self._format_error_response('History not found or invalid', 404)
 
             # Get user content - MUST be object with type
-            payload = req.get_json(silent=True) or {}
+            payload = payload or {}
             user_content = payload.get('content')
             if not user_content:
                 return await self._format_error_response('content required', 400)
@@ -412,7 +413,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             )
 
             self._logger.info(f"Message processed successfully by handler, returning result")
-            return jsonify({'data': result})
+            return JSONResponse({'data': result})
 
         except Exception as exc:
             self._logger.error(f"Error in send_message: {exc}", exc_info=True)
@@ -620,7 +621,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 return await self._format_error_response('History not found', 404)
 
             msgs = ChatMessage.query.filter_by(history_id=history_id).order_by(ChatMessage.created_at.asc()).all()
-            return jsonify({'data': [m.to_dict() for m in msgs], 'total': len(msgs)})
+            return JSONResponse({'data': [m.to_dict() for m in msgs], 'total': len(msgs)})
         except Exception as exc:  # noqa: BLE001
             return await self._format_error_response(str(exc), 500)
 
@@ -665,7 +666,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
             db.session.commit()
 
-            return jsonify({
+            return JSONResponse({
                 'message': 'Message deleted successfully',
                 'deleted_message_id': deleted_message_id
             })
