@@ -11,7 +11,7 @@ from .mixins.chat_message_mixin import ChatMessageMixin
 from .mixins.chat_session_mixin import ChatSessionMixin
 from .mixins.persona_chat_mixin import PersonaChatMixin
 from .mixins.tool_execution_mixin import ToolExecutionMixin
-from .thread_pool_manager import ChatThreadPoolManager
+from .task_manager import ChatTaskManager
 from ...service_router.base_service import BaseService
 from ...service_router.decorators import expose
 
@@ -32,16 +32,16 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
         """Initialize chat service with thread pool manager."""
         super().__init__()
 
-        # Initialize thread pool manager
+        # Initialize task manager
         self.app = app
-        self._thread_pool = ChatThreadPoolManager(app)
+        self._task_manager = ChatTaskManager()
 
         # Initialize mixins
         ChatMessageMixin.__init__(self)
 
         # Log initialization
         self._logger = logging.getLogger(__name__)
-        self._logger.info("ChatService initialized with thread pool manager")
+        self._logger.info("ChatService initialized with task manager")
 
     async def emit_chat_event(self, session_id: int, history_id: int, event: str, data: dict) -> None:
         """IMPLEMENT: Emit chat event using BaseService method."""
@@ -67,29 +67,26 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
         })
 
     async def submit_async_task(self, func, *args, **kwargs):
-        """Submit a task to the thread pool for async execution."""
+        """Submit a task to the task manager for async execution."""
         try:
-            # Check if function is async and use appropriate method
-            if iscoroutinefunction(func):
-                future = await self._thread_pool.submit_async_task(func, *args, **kwargs)
-            else:
-                future = await self._thread_pool.submit_task(func, *args, **kwargs)
-            self._logger.debug(f"Task submitted to thread pool: {func.__name__}")
+            # Submit task (ChatTaskManager handles both async and sync functions)
+            future = await self._task_manager.submit_task(func, *args, **kwargs)
+            self._logger.debug(f"Task submitted to task manager: {func.__name__}")
             return future
         except Exception as e:
-            self._logger.error(f"Failed to submit task to thread pool: {e}", exc_info=True)
+            self._logger.error(f"Failed to submit task to task manager: {e}", exc_info=True)
             raise
 
-    async def get_thread_pool_health(self):
-        """Get thread pool health status for monitoring."""
-        return await self._thread_pool.get_health_status()
+    async def get_task_manager_health(self):
+        """Get task manager health status for monitoring."""
+        return await self._task_manager.get_health_status()
 
-    async def get_thread_pool_stats(self):
-        """Get thread pool statistics for monitoring."""
-        return await self._thread_pool.get_stats()
+    async def get_task_manager_stats(self):
+        """Get task manager statistics for monitoring."""
+        return await self._task_manager.get_stats()
 
     @expose(
-        '/health/thread-pool',
+        '/health/task-manager',
         methods=['GET'],
         status_codes={200: 'OK'},
         response_schema={
@@ -101,7 +98,7 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
                     "type": "object",
                     "properties": {
                         "active_tasks": {"type": "integer"},
-                        "thread_pool_size": {"type": "integer"},
+                        "max_concurrent_tasks": {"type": "integer"},
                         "utilization": {"type": "string"},
                         "failure_rate": {"type": "string"},
                         "total_submissions": {"type": "integer"},
@@ -111,11 +108,11 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
             }
         }
     )
-    async def thread_pool_health(self, req):
-        """Get thread pool health status for monitoring."""
+    async def task_manager_health(self, req):
+        """Get task manager health status for monitoring."""
         try:
-            health_status = await self.get_thread_pool_health()
+            health_status = await self.get_task_manager_health()
             return health_status
         except Exception as e:
-            self._logger.error(f"Failed to get thread pool health: {e}", exc_info=True)
-            return JSONResponse(f"Failed to get thread pool health: {e}", 500)
+            self._logger.error(f"Failed to get task manager health: {e}", exc_info=True)
+            return JSONResponse(f"Failed to get task manager health: {e}", 500)
