@@ -1,6 +1,7 @@
 # FastAPI Backend Base System
 
 ## Architecture Overview
+
 - **Framework**: FastAPI (async-first, modern Python web framework)
 - **WebSocket**: Native FastAPI WebSocket support (no Flask-SocketIO needed)
 - **File Uploads**: Static upload folder with FastAPI file handling
@@ -10,6 +11,7 @@
 ## Implementation Phases
 
 ### Phase 1: Base FastAPI Setup ✅
+
 - [x] FastAPI app initialization
 - [x] CORS configuration
 - [x] Static file serving (uploads folder)
@@ -17,30 +19,35 @@
 - [x] Health check endpoint
 
 ### Phase 2: WebSocket Foundation ✅
+
 - [x] WebSocket manager
 - [x] Connection handling
 - [x] Room management
 - [x] Event broadcasting
 
 ### Phase 3: Database Integration ✅
+
 - [x] Async SQLAlchemy setup
 - [x] Database models migration
 - [x] Connection pooling
 - [x] Migration scripts
 
 ### Phase 4: API Router Migration
+
 - [ ] Core API router structure
 - [ ] Service layer migration
 - [ ] CRUD operations
 - [ ] Authentication/authorization
 
 ### Phase 5: Chat System Migration
+
 - [ ] WebSocket chat handlers
 - [ ] Message processing
 - [ ] Persona system
 - [ ] Tool execution
 
 ## File Structure
+
 ```
 faster_backend/
 ├── app/
@@ -58,6 +65,7 @@ faster_backend/
 ```
 
 ## Key Benefits of FastAPI
+
 - **Native async/await**: No more sync/async mixing issues
 - **Built-in WebSocket**: No Flask-SocketIO compatibility problems
 - **Auto-documentation**: OpenAPI/Swagger out of the box

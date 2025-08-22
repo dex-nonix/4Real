@@ -1,20 +1,21 @@
 from __future__ import annotations
 
+from sqlalchemy import Column, Date, DateTime, Integer, String, Text
 from sqlalchemy.sql import func
 
-from .. import db
+from ..database import Base
 
 
-class Artist(db.Model):
+class Artist(Base):
     __tablename__ = 'artists'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), unique=True, nullable=False)
-    abbreviation = db.Column(db.String(50))
-    persona = db.Column(db.Text)
-    birth_date = db.Column(db.Date)
-    created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
-    updated_at = db.Column(db.DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), unique=True, nullable=False)
+    abbreviation = Column(String(50))
+    persona = Column(Text)
+    birth_date = Column(Date)
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
+    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     # Relationships
     # personas relationship is handled by backref in Persona model

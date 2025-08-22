@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from sqlalchemy import Boolean, relationship, DateTime, Integer, JSON
+from sqlalchemy import Boolean, Column, ForeignKey, text, DateTime, Integer, JSON
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 
 from ..database import Base
@@ -31,5 +32,5 @@ class PersonaMCPServer(Base):
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }
 
-    def __repr__(self) -> str:  
+    def __repr__(self) -> str:  # pragma: no cover
         return f"<PersonaMCPServer id={self.id} persona_id={self.persona_id} mcp_server_id={self.mcp_server_id}>"

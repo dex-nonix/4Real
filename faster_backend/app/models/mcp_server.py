@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import Boolean, DateTime, Integer, JSON, String
+from sqlalchemy import Boolean, Column, text, DateTime, Integer, JSON, String
 from sqlalchemy.sql import func
 
 from ..database import Base
@@ -30,5 +30,5 @@ class MCPServer(Base):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
 
-    def __repr__(self) -> str:  
+    def __repr__(self) -> str:  # pragma: no cover
         return f"<MCPServer id={self.id} name={self.name!r}>"

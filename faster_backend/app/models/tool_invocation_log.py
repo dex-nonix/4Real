@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from sqlalchemy import DateTime, relationship, Integer, JSON, String
+from sqlalchemy import Column, ForeignKey, DateTime, Integer, JSON, String
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 
 from ..database import Base
@@ -38,5 +39,5 @@ class ToolInvocationLog(Base):
             'duration_ms': self.duration_ms,
         }
 
-    def __repr__(self) -> str:  
+    def __repr__(self) -> str:  # pragma: no cover
         return f"<ToolInvocationLog id={self.id} tool_name={self.tool_name!r} status={self.status!r}>"

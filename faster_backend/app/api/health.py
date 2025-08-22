@@ -1,7 +1,9 @@
 from fastapi import APIRouter
+
 from ..websocket import manager
 
 router = APIRouter()
+
 
 @router.get("/health")
 async def health_check():
@@ -11,6 +13,7 @@ async def health_check():
         "websocket_connections": manager.get_connection_count(),
         "active_rooms": len(manager.room_connections)
     }
+
 
 @router.get("/status")
 async def status_check():

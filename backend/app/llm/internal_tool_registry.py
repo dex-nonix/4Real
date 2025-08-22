@@ -3,10 +3,9 @@ from __future__ import annotations
 from typing import Any, Callable, Dict
 
 from .tools.album_tools import album_list_tracks, album_get_info
-# Import all tool functions
 from .tools.artist_tools import artist_list_albums, artist_get_info
 from .tools.file_tools import file_list_artist_files, file_read_lyrics
-from .tools.music_tools import track_list_by_album, style_list_all, track_get_info
+from .tools.music_tools import track_list_by_album, track_get_info, style_list_all
 
 
 class InternalToolRegistry:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from sqlalchemy import DateTime, relationship, Integer, String, Text
+from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from ..database import Base
@@ -18,7 +19,7 @@ class ChatHistory(Base):
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    session = relationship('ChatSession', foreign_keys=[session_id], backref=backref('histories', lazy=True))
+    session = relationship('ChatSession', backref='histories')
 
     # messages relationship is handled by backref in ChatMessage model
 
@@ -33,5 +34,5 @@ class ChatHistory(Base):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
 
-    def __repr__(self) -> str:  
+    def __repr__(self) -> str:  # pragma: no cover
         return f"<ChatHistory id={self.id} title={self.title!r} session_id={self.session_id}>"

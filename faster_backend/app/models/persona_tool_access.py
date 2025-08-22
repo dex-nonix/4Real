@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from sqlalchemy import Boolean, relationship, DateTime, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, text, DateTime, Integer, String
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 
 from ..database import Base
@@ -26,5 +27,5 @@ class PersonaToolAccess(Base):
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }
 
-    def __repr__(self) -> str:  
+    def __repr__(self) -> str:  # pragma: no cover
         return f"<PersonaToolAccess id={self.id} persona_id={self.persona_id} pattern={self.pattern!r}>"

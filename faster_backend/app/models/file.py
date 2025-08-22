@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from sqlalchemy import DateTime, relationship, Integer, String
+from sqlalchemy import Column, ForeignKey, DateTime, Integer, String
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 
 from ..database import Base
@@ -43,5 +44,5 @@ class File(Base):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
 
-    def __repr__(self) -> str:  
+    def __repr__(self) -> str:  # pragma: no cover
         return f"<File id={self.id} original={self.original_filename!r}>"

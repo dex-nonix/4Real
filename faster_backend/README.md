@@ -14,13 +14,16 @@ A modern, async-first backend built with FastAPI to replace the Flask backend.
 ## Quick Start
 
 ### 1. Install Dependencies
+
 ```bash
 cd faster_backend
 pip install -r requirements.txt
 ```
 
 ### 2. Configure Environment
+
 Create a `.env` file in the `faster_backend` directory:
+
 ```env
 DATABASE_URL=postgresql+asyncpg://user:password@localhost/4real_db
 SECRET_KEY=your-secret-key-here
@@ -28,6 +31,7 @@ DEBUG=true
 ```
 
 ### 3. Run the Application
+
 ```bash
 # Development mode
 python -m app.main
@@ -48,6 +52,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ## WebSocket Events
 
 ### Client to Server
+
 - `join_room`: Join a chat room
 - `leave_room`: Leave a chat room
 - `chat_message`: Send a chat message
@@ -55,6 +60,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - `ping`: Keep connection alive
 
 ### Server to Client
+
 - `connection_established`: Connection confirmed
 - `room_joined`: Successfully joined room
 - `room_left`: Successfully left room

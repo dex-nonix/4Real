@@ -1,28 +1,29 @@
 from __future__ import annotations
 
+from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Boolean, JSON
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from .. import db
+from ..database import Base
 
 
-class Persona(db.Model):
+class Persona(Base):
     __tablename__ = 'personas'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), unique=True, nullable=False)
-    avatar_url = db.Column(db.String(512), nullable=True)  # NEW: Optional avatar
-    is_active = db.Column(db.Boolean, nullable=False, server_default=db.text('1'))
-    system_prompt = db.Column(db.Text)
-    metadata_json = db.Column(db.JSON)
-    artist_id = db.Column(db.Integer, db.ForeignKey('artists.id'), nullable=True)
-    ai_model_mapping_id = db.Column(db.Integer, db.ForeignKey('ai_model_mappings.id'), nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
-    updated_at = db.Column(db.DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), unique=True, nullable=False)
+    avatar_url = Column(String(512), nullable=True)  # NEW: Optional avatar
+    is_active = Column(Boolean, nullable=False, server_default='1')
+    system_prompt = Column(Text)
+    metadata_json = Column(JSON)
+    artist_id = Column(Integer, ForeignKey('artists.id'), nullable=True)
+    ai_model_mapping_id = Column(Integer, ForeignKey('ai_model_mappings.id'), nullable=False)
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
+    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    artist = db.relationship('Artist', foreign_keys=[artist_id], backref=db.backref('personas', lazy=True))
-    ai_model_mapping = db.relationship('AIModelMapping', foreign_keys=[ai_model_mapping_id],
-                                       backref=db.backref('personas', lazy=True))
+    artist = relationship('Artist', backref='personas')
+    ai_model_mapping = relationship('AIModelMapping', backref='personas')
 
     def to_dict(self) -> dict:
         return {

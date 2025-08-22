@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.pool import NullPool
+
 from .config import settings
 
 engine = create_async_engine(
@@ -19,6 +20,10 @@ AsyncSessionLocal = async_sessionmaker(
 
 Base = declarative_base()
 
+# Import all models to register them with Base.metadata
+from . import models
+
+
 async def get_db():
     async with AsyncSessionLocal() as session:
         try:
@@ -26,9 +31,11 @@ async def get_db():
         finally:
             await session.close()
 
+
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
 
 async def close_db():
     await engine.dispose()

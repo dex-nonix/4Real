@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import Boolean, DateTime, Integer, JSON, String, Text
+from sqlalchemy import Boolean, Column, text, DateTime, Integer, JSON, String, Text
 from sqlalchemy.sql import func
 
 from ..database import Base
@@ -32,5 +32,5 @@ class InternalTool(Base):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
 
-    def __repr__(self) -> str:  
+    def __repr__(self) -> str:  # pragma: no cover
         return f"<InternalTool id={self.id} qualified_name={self.qualified_name!r}>"

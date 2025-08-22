@@ -1,23 +1,25 @@
 from __future__ import annotations
 
+from sqlalchemy import Column, Date, ForeignKey, DateTime, Integer, String, Text
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 
-from .. import db
+from ..database import Base
 
 
-class Album(db.Model):
+class Album(Base):
     __tablename__ = 'albums'
 
-    id = db.Column(db.Integer, primary_key=True)
-    artist_id = db.Column(db.Integer, db.ForeignKey('artists.id'), nullable=False)
-    title = db.Column(db.String(255), nullable=False)
-    release_date = db.Column(db.Date)
-    description = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
-    updated_at = db.Column(db.DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    id = Column(Integer, primary_key=True)
+    artist_id = Column(Integer, ForeignKey('artists.id'), nullable=False)
+    title = Column(String(255), nullable=False)
+    release_date = Column(Date)
+    description = Column(Text)
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
+    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    artist = db.relationship('Artist', backref=db.backref('albums', lazy=True))
+    artist = relationship('Artist', backref=backref('albums', lazy=True))
 
     def to_dict(self) -> dict:
         return {

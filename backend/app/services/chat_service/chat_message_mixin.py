@@ -11,9 +11,9 @@ from .streaming_event_manager import StreamingEventManager
 from .streaming_interface import StreamingChunk
 from .streaming_message_handler import StreamingMessageHandler
 from .websocket_protocol import WebSocketMixinProtocol
-from ..llm_client import run_chat_streaming
-from ..tool_runtime import execute_tool
-from ..tool_runtime import list_persona_tools
+from ...llm.llm_client import run_chat_streaming
+from ...llm.tool_runtime import execute_tool
+from ...llm.tool_runtime import list_persona_tools
 from ... import db
 from ...decorators import expose
 from ...models.ai_model_mapping import AIModelMapping

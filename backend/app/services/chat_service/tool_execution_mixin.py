@@ -3,7 +3,7 @@ from __future__ import annotations
 from flask import jsonify, Request
 
 from .websocket_protocol import WebSocketMixinProtocol
-from ..tool_runtime import list_persona_tools
+from ...llm.tool_runtime import list_persona_tools
 from ...decorators import expose
 from ...models.mcp_server import MCPServer
 from ...models.persona import Persona

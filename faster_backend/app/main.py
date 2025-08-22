@@ -1,4 +1,5 @@
 import uvicorn
+
 from . import create_app
 from .config import settings
 

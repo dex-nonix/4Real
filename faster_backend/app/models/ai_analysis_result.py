@@ -1,24 +1,26 @@
 from __future__ import annotations
 
+from sqlalchemy import Column, DateTime, Integer, JSON, String, ForeignKey
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 
-from .. import db
+from ..database import Base
 
 
-class AIAnalysisResult(db.Model):
+class AIAnalysisResult(Base):
     __tablename__ = 'ai_analysis_results'
 
-    id = db.Column(db.Integer, primary_key=True)
-    track_id = db.Column(db.Integer, db.ForeignKey('tracks.id'), nullable=False)
-    provider_id = db.Column(db.Integer, db.ForeignKey('ai_providers.id'), nullable=False)
-    model_name = db.Column(db.String(255))
-    analysis_type = db.Column(db.String(255), nullable=False)
-    result_json = db.Column(db.JSON)
-    created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
+    id = Column(Integer, primary_key=True)
+    track_id = Column(Integer, ForeignKey('tracks.id'), nullable=False)
+    provider_id = Column(Integer, ForeignKey('ai_providers.id'), nullable=False)
+    model_name = Column(String(255))
+    analysis_type = Column(String(255), nullable=False)
+    result_json = Column(JSON)
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
 
     # Relationships
-    track = db.relationship('Track', backref=db.backref('analysis_results', lazy=True))
-    provider = db.relationship('AIProvider', backref=db.backref('analysis_results', lazy=True))
+    track = relationship('Track', backref=backref('analysis_results', lazy=True))
+    provider = relationship('AIProvider', backref=backref('analysis_results', lazy=True))
 
     def to_dict(self) -> dict:
         return {

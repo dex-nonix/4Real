@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from sqlalchemy import Boolean, relationship, DateTime, Integer, JSON, String
+from sqlalchemy import Boolean, Column, ForeignKey, text, DateTime, Integer, JSON, String
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 
 from ..database import Base
@@ -19,8 +20,7 @@ class AIModelMapping(Base):
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    provider = relationship('AIProvider', foreign_keys=[provider_id],
-                               backref=backref('model_mappings', lazy=True))
+    provider = relationship('AIProvider', backref=backref('model_mappings', lazy=True))
 
     # personas relationship is handled by backref in Persona model
 
@@ -36,5 +36,5 @@ class AIModelMapping(Base):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
 
-    def __repr__(self) -> str:  
+    def __repr__(self) -> str:  # pragma: no cover
         return f"<AIModelMapping id={self.id} name={self.name!r} model={self.model_name!r}>"

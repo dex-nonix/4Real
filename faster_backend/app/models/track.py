@@ -1,24 +1,26 @@
 from __future__ import annotations
 
+from sqlalchemy import Column, ForeignKey, DateTime, Integer, String, Text
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 
-from .. import db
+from ..database import Base
 
 
-class Track(db.Model):
+class Track(Base):
     __tablename__ = 'tracks'
 
-    id = db.Column(db.Integer, primary_key=True)
-    album_id = db.Column(db.Integer, db.ForeignKey('albums.id'), nullable=False)
-    title = db.Column(db.String(255), nullable=False)
-    track_number = db.Column(db.Integer)
-    duration_seconds = db.Column(db.Integer)
-    lyrics = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
-    updated_at = db.Column(db.DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    id = Column(Integer, primary_key=True)
+    album_id = Column(Integer, ForeignKey('albums.id'), nullable=False)
+    title = Column(String(255), nullable=False)
+    track_number = Column(Integer)
+    duration_seconds = Column(Integer)
+    lyrics = Column(Text)
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
+    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    album = db.relationship('Album', backref=db.backref('tracks', lazy=True))
+    album = relationship('Album', backref=backref('tracks', lazy=True))
 
     def to_dict(self) -> dict:
         return {

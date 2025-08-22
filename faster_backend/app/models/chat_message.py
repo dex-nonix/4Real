@@ -1,26 +1,27 @@
 from __future__ import annotations
 
+from sqlalchemy import Column, Integer, String, DateTime, JSON, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from .. import db
+from ..database import Base
 
 
-class ChatMessage(db.Model):
+class ChatMessage(Base):
     __tablename__ = 'chat_messages'
 
-    id = db.Column(db.Integer, primary_key=True)
-    history_id = db.Column(db.Integer, db.ForeignKey('chat_histories.id'), nullable=False)
-    role = db.Column(db.String(50), nullable=False)  # system|user|assistant|tool
-    message_type = db.Column(db.String(50), nullable=False)  # text|tool_call|tool_result|image|file
-    content_json = db.Column(db.JSON)  # Structured content
-    status = db.Column(db.String(50), nullable=False)
-    parent_message_id = db.Column(db.Integer, db.ForeignKey('chat_messages.id'), nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
+    id = Column(Integer, primary_key=True)
+    history_id = Column(Integer, ForeignKey('chat_histories.id'), nullable=False)
+    role = Column(String(50), nullable=False)  # system|user|assistant|tool
+    message_type = Column(String(50), nullable=False)  # text|tool_call|tool_result|image|file
+    content_json = Column(JSON)  # Structured content
+    status = Column(String(50), nullable=False)
+    parent_message_id = Column(Integer, ForeignKey('chat_messages.id'), nullable=True)
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
 
     # Relationships
-    history = db.relationship('ChatHistory', foreign_keys=[history_id], backref=db.backref('messages', lazy=True))
-    parent_message = db.relationship('ChatMessage', foreign_keys=[parent_message_id], remote_side=[id],
-                                     backref='child_messages')
+    history = relationship('ChatHistory', backref='messages')
+    parent_message = relationship('ChatMessage', remote_side=[id], backref='child_messages')
 
     def to_dict(self) -> dict:
         return {

@@ -7,7 +7,7 @@ from flask import jsonify, Request
 from sqlalchemy import or_
 
 from .base_api_service import BaseApiService
-from .crud_swagger_generator import CrudSwaggerGenerator
+from .chat_service.crud_swagger_generator import CrudSwaggerGenerator
 from .. import db
 from ..decorators import expose
 
