@@ -3,8 +3,6 @@ from __future__ import annotations
 import logging
 from typing import Any, TYPE_CHECKING
 
-
-
 if TYPE_CHECKING:
     from .service_router import ServiceRouter
 
@@ -56,6 +54,7 @@ class DocumentationRouter:
 
             return await self.swagger_ui_generator.generate_swagger_ui(current_filter)
 
-    async def generate_openapi_spec(self, registered_services: dict[str, Any], service_filter: str = None) -> dict[str, Any]:
+    async def generate_openapi_spec(self, registered_services: dict[str, Any], service_filter: str = None) -> dict[
+        str, Any]:
         """Generate OpenAPI specification for external use"""
         return await self.openapi_generator.generate_openapi_spec(registered_services, service_filter)

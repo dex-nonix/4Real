@@ -5,13 +5,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from .websocket.handlers import handle_websocket
 from .api import api_router
 from .api.health import router as health_router
 from .api.upload import router as upload_router
 from .api.service_router.service_router import ServiceRouter
 from .config import settings
 from .database import init_db, close_db
-from .websocket import handle_websocket
+
 
 
 def create_app() -> FastAPI:

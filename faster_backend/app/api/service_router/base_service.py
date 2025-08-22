@@ -16,7 +16,7 @@ class BaseService(ABC):
         if service_router is None:
             raise ValueError("Service router cannot be None - WebSocket communication requires it!")
         self._service_router = service_router
-    
+
     @property
     def service_router(self):
         """Get the service router - guaranteed to be available after registration."""
