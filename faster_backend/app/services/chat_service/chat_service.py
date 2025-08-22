@@ -12,8 +12,8 @@ from .mixins.chat_session_mixin import ChatSessionMixin
 from .mixins.persona_chat_mixin import PersonaChatMixin
 from .mixins.tool_execution_mixin import ToolExecutionMixin
 from .thread_pool_manager import ChatThreadPoolManager
-from ..base_api_service import BaseApiService
-from ...decorators import expose
+from ...api.api_router.base_api_service import BaseApiService
+from ...api.api_router.decorators import expose
 
 
 class ChatService(BaseApiService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMixin, PersonaChatMixin,

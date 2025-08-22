@@ -6,10 +6,8 @@ from typing import Any, Dict, List, Optional
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from .base_api_service import BaseApiService
+from ..api.api_router.base_api_service import BaseApiService
 from .chat_service.crud_swagger_generator import CrudSwaggerGenerator
 from ..database import AsyncSessionLocal
 from ..api.api_router.decorators import expose
