@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from .tool_runtime import build_persona_tool_map
 from ..services.chat_service.streaming_interface import StreamingChunk
-from ..utils.llm_message_utils import iter_messages, LCAIMessage, LCToolMessage
+from .llm_message_utils import iter_messages, LCAIMessage, LCToolMessage
 
 # Get logger for this module
 logger = logging.getLogger(__name__)
