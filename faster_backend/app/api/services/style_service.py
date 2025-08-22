@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from .crud_service import CrudService
 from ...models.style import Style
 

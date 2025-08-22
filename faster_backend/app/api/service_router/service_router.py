@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 import logging
 import traceback
@@ -24,7 +22,7 @@ class ServiceRouter:
     def __init__(self) -> None:
         self.router: APIRouter = APIRouter(
             prefix="/api",
-            tags=["services"],
+            tags=["api"],
             responses={
                 400: {"description": "Bad Request"},
                 401: {"description": "Unauthorized"},
