@@ -67,7 +67,8 @@ class PersonaChatMixin:
         """List all available personas with active session counts."""
         try:
             # Query personas with session counts using JOIN
-            personas_with_counts = self._build_persona_query().all()
+            query = await self._build_persona_query()
+            personas_with_counts = query.all()
 
             result = []
             for persona, session_count in personas_with_counts:
@@ -90,7 +91,8 @@ class PersonaChatMixin:
         """Get a single persona by ID with active session count."""
         try:
             # Query persona with session count using JOIN
-            result = self._build_persona_query(persona_id).first()
+            query = await self._build_persona_query(persona_id)
+            result = query.first()
 
             if not result:
                 return jsonify({'error': 'Persona not found'}), 404

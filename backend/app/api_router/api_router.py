@@ -6,7 +6,7 @@ from functools import wraps
 from typing import Callable, Any
 
 from flask import Blueprint, request, current_app
-from flask import jsonify
+from fastapi.responses import JSONResponse
 
 from .compact_api_generator import CompactApiGenerator
 from .documentation_router import DocumentationRouter
@@ -82,13 +82,13 @@ class APIRouter:
                 except Exception as e:
                     self.logger.error(f"💥 CRASH in {service_name}.{bound_method.__name__}: {str(e)}", exc_info=True)
 
-                    return jsonify({
+                    return JSONResponse({
                         'error': 'Service Error',
                         'service': service_name,
                         'method': bound_method.__name__,
                         'message': str(e),
                         'traceback': traceback.format_exc() if current_app.config.get('DEBUG') else None
-                    }), 500
+                    },500)
 
             return handler
 

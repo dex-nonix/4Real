@@ -33,7 +33,7 @@ class Config:
     # Gunicorn - ALL SETTINGS HERE
     GUNICORN_BIND = os.getenv('GUNICORN_BIND', '0.0.0.0:5000')
     GUNICORN_WORKERS = int(os.getenv('GUNICORN_WORKERS', '4'))
-    GUNICORN_WORKER_CLASS = os.getenv('GUNICORN_WORKER_CLASS', 'uvicorn.workers.UvicornWorker')
+    GUNICORN_WORKER_CLASS = os.getenv('GUNICORN_WORKER_CLASS', 'gunicorn.workers.sync.SyncWorker')
     GUNICORN_WORKER_CONNECTIONS = int(os.getenv('GUNICORN_WORKER_CONNECTIONS', '1000'))
     GUNICORN_MAX_REQUESTS = int(os.getenv('GUNICORN_MAX_REQUESTS', '1000'))
     GUNICORN_MAX_REQUESTS_JITTER = int(os.getenv('GUNICORN_MAX_REQUESTS_JITTER', '100'))

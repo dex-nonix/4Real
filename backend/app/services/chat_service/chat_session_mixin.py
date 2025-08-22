@@ -187,7 +187,8 @@ class ChatSessionMixin:
         """Get a specific chat session by ID."""
         try:
             # Use utility method for single JOIN query with COUNT
-            session_with_count = await self._get_sessions_with_history_counts(session_id=id).first()
+            sessions_query = await self._get_sessions_with_history_counts(session_id=id)
+            session_with_count = sessions_query.first()
 
             if not session_with_count:
                 return jsonify({'error': 'Session not found or inactive'}), 404
