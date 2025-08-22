@@ -4,13 +4,14 @@ import hashlib
 import os
 from typing import Any
 
-from flask import current_app, jsonify, Request
-from werkzeug.utils import secure_filename
+from fastapi import Request, HTTPException, UploadFile, Form
+from fastapi.responses import JSONResponse
 
 from .crud_service import CrudService
-from .. import db
-from ..decorators import expose
+from ..api.service_router.decorators import expose
 from ..models.file import File
+from ..config import settings
+from ..database import AsyncSessionLocal
 
 
 class FileService(CrudService):
@@ -36,25 +37,26 @@ class FileService(CrudService):
     }
 
     @expose('/upload', methods=['POST'])
-    async def upload(self, req: Request) -> Any:
+    async def upload(self, file: UploadFile, title: str = Form(None), category_id: int = Form(None)) -> Any:
         try:
-            if 'file' not in req.files:  # type: ignore[attr-defined]
-                return jsonify({'error': 'file is required'}), 400
+            if not file or not file.filename:
+                raise HTTPException(status_code=400, detail="File is required")
 
-            file_storage = req.files['file']  # type: ignore[attr-defined]
-            if not file_storage or file_storage.filename is None:
-                return jsonify({'error': 'invalid file'}), 400
+            # Validate file and get content
+            content = await file.read()
+            filename = file.filename
+            
+            # Validation checks
+            if not filename or filename.strip() == "":
+                raise HTTPException(status_code=400, detail="Invalid filename")
+            if len(content) > settings.MAX_FILE_SIZE:
+                raise HTTPException(status_code=400, detail=f"File too large. Max size: {settings.MAX_FILE_SIZE} bytes")
+            file_ext = os.path.splitext(filename)[1].lower()
+            if file_ext not in settings.ALLOWED_EXTENSIONS:
+                raise HTTPException(status_code=400, detail=f"File type not allowed. Allowed: {settings.ALLOWED_EXTENSIONS}")
 
-            filename = secure_filename(file_storage.filename)
-            if not filename:
-                return jsonify({'error': 'invalid filename'}), 400
-
-            # Configured upload directory
-            upload_dir = getattr(current_app.config, 'UPLOAD_DIR', None)
-            if not upload_dir:
-                # fallback: backend/app/uploads under current file
-                base_dir = os.path.dirname(os.path.dirname(__file__))
-                upload_dir = os.path.join(base_dir, 'uploads')
+            # Use config for upload directory
+            upload_dir = settings.UPLOAD_FOLDER
             os.makedirs(upload_dir, exist_ok=True)
 
             # Ensure unique filename
@@ -67,46 +69,37 @@ class FileService(CrudService):
 
             # Save file
             file_path = os.path.join(upload_dir, safe_name)
-            file_storage.save(file_path)
+            with open(file_path, "wb") as buffer:
+                buffer.write(content)
 
-            # Derive metadata
+            # Derive metadata and create file record
             size_bytes = os.path.getsize(file_path)
-            mime_type = getattr(file_storage, 'mimetype', 'application/octet-stream')
+            mime_type = file.content_type or 'application/octet-stream'
             sha256 = await self._file_sha256(file_path)
-
-            # Build absolute URL on the API server so clients always load from the same host
-            public_base = str(getattr(current_app.config, 'PUBLIC_BASE_URL', '') or '').rstrip('/')
-            if not public_base:
-                # Use request.url_root if no explicit public base configured
-                try:
-                    public_base = (req.url_root or '').rstrip('/')  # type: ignore[attr-defined]
-                except Exception:
-                    public_base = ''
-            if public_base:
-                storage_url = f"{public_base}/uploads/{safe_name}"
-            else:
-                storage_url = f"/uploads/{safe_name}"
-
-            title = (req.form.get('title') or '').strip()  # type: ignore[attr-defined]
-            category_id_raw = req.form.get('category_id')  # type: ignore[attr-defined]
-            category_id = int(category_id_raw) if category_id_raw else None
+            storage_url = f"/{upload_dir}/{safe_name}"
 
             rec = File(
                 category_id=category_id,
-                title=title or None,
+                title=title,
                 original_filename=filename,
                 mime_type=mime_type,
                 size_bytes=size_bytes,
                 storage_url=storage_url,
                 sha256=sha256,
             )
-            db.session.add(rec)
-            db.session.commit()
 
-            return jsonify({'data': rec.to_dict()}), 201
-        except Exception as exc:  # noqa: BLE001
-            db.session.rollback()
-            return jsonify({'error': str(exc)}), 500
+            # Save to database using async session
+            async with AsyncSessionLocal() as session:
+                session.add(rec)
+                await session.commit()
+                await session.refresh(rec)
+
+            return {"data": rec.to_dict(), "status": "success"}
+
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Upload failed: {exc}")
 
     async def _file_sha256(self, path: str) -> str:
         try:
