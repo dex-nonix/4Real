@@ -24,6 +24,7 @@ class Settings(BaseSettings):
 
     # File Uploads
     UPLOAD_FOLDER: str = "static/uploads"
+    STATIC_URL_PREFIX: str = "/static/uploads"
     MAX_FILE_SIZE: int = 100 * 1024 * 1024  # 100MB
     ALLOWED_EXTENSIONS: List[str] = [".jpg", ".jpeg", ".png", ".gif", ".pdf", ".txt", ".md", ".xml"]
 

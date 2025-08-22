@@ -17,6 +17,11 @@ def is_allowed_file(filename: str) -> bool:
     return get_file_extension(filename) in settings.ALLOWED_EXTENSIONS
 
 
+def build_file_url(filename: str) -> str:
+    """Build the public URL for a file."""
+    return f"{settings.STATIC_URL_PREFIX}/{filename}"
+
+
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     if not file.filename:
@@ -28,14 +33,20 @@ async def upload_file(file: UploadFile = File(...)):
             detail=f"File type not allowed. Allowed: {', '.join(settings.ALLOWED_EXTENSIONS)}"
         )
 
-    if file.size and file.size > settings.MAX_FILE_SIZE:
+    # Get config values once since used multiple times
+    max_file_size = settings.MAX_FILE_SIZE
+    
+    if file.size and file.size > max_file_size:
         raise HTTPException(
             status_code=400,
-            detail=f"File too large. Max size: {settings.MAX_FILE_SIZE // (1024 * 1024)}MB"
+            detail=f"File too large. Max size: {max_file_size // (1024 * 1024)}MB"
         )
 
-    os.makedirs(settings.UPLOAD_FOLDER, exist_ok=True)
-    file_path = os.path.join(settings.UPLOAD_FOLDER, file.filename)
+    # Get config values once since used multiple times
+    upload_folder = settings.UPLOAD_FOLDER
+    
+    os.makedirs(upload_folder, exist_ok=True)
+    file_path = os.path.join(upload_folder, file.filename)
 
     try:
         async with aiofiles.open(file_path, 'wb') as f:
@@ -45,7 +56,7 @@ async def upload_file(file: UploadFile = File(...)):
         return {
             "filename": file.filename,
             "size": len(content),
-            "path": f"/static/uploads/{file.filename}",
+            "path": build_file_url(file.filename),
             "message": "File uploaded successfully"
         }
     except Exception as e:
@@ -55,18 +66,21 @@ async def upload_file(file: UploadFile = File(...)):
 @router.get("/files")
 async def list_files():
     try:
-        os.makedirs(settings.UPLOAD_FOLDER, exist_ok=True)
+        # Get config values once since used multiple times
+        upload_folder = settings.UPLOAD_FOLDER
+        
+        os.makedirs(upload_folder, exist_ok=True)
         files = []
 
-        for filename in os.listdir(settings.UPLOAD_FOLDER):
-            file_path = os.path.join(settings.UPLOAD_FOLDER, filename)
+        for filename in os.listdir(upload_folder):
+            file_path = os.path.join(upload_folder, filename)
             if os.path.isfile(file_path):
                 stat = os.stat(file_path)
                 files.append({
                     "filename": filename,
                     "size": stat.st_size,
                     "modified": stat.st_mtime,
-                    "path": f"/static/uploads/{filename}"
+                    "path": build_file_url(filename)
                 })
 
         return {"files": files}
@@ -76,7 +90,9 @@ async def list_files():
 
 @router.get("/files/{filename}")
 async def get_file(filename: str):
-    file_path = os.path.join(settings.UPLOAD_FOLDER, filename)
+    # Get config values once since used multiple times
+    upload_folder = settings.UPLOAD_FOLDER
+    file_path = os.path.join(upload_folder, filename)
 
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found")
