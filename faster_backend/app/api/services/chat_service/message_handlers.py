@@ -49,7 +49,7 @@ class ChatMessageHandler(MessageTypeHandler):
             'chat_message_id': chat_msg.id,
             'assistant_message_id': asst_msg.id,
             'status': 'processing',
-            'websocket_channel': f'chat/{session_id}/{history_id}'
+            'websocket_room': f'chat/{session_id}/{history_id}'
         }
 
 

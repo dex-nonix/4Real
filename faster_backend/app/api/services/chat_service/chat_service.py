@@ -42,9 +42,13 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
 
     async def emit_chat_event(self, session_id: int, history_id: int, event: str, data: dict) -> None:
         """IMPLEMENT: Emit chat event using BaseService method."""
-        channel = f'chat/{session_id}/{history_id}'
-        self._logger.debug(f"Emitting chat event: channel={channel}, event={event}, data={data}")
-        await self.send_to_channel(channel, event, data)
+        room = f'chat/{session_id}/{history_id}'
+        self._logger.debug(f"Emitting chat event: room={room}, event={event}, data={data}")
+        await self.send_message(room, {
+            'event': event,
+            'data': data,
+            'timestamp': datetime.utcnow().isoformat()
+        })
 
     async def emit_llm_event(self, session_id: int, history_id: int, stage: str, message: str) -> None:
         """IMPLEMENT: Emit LLM status event."""

@@ -1,7 +1,7 @@
 import re
 from abc import ABC
 from typing import Dict, Any, List, Callable
-
+from ...websocket.manager import manager
 
 class BaseService(ABC):
     """Base class for all API services with FastAPI WebSocket support."""
@@ -24,38 +24,24 @@ class BaseService(ABC):
             raise RuntimeError("Service router not set! Call set_service_router() during registration.")
         return self._service_router
 
-    async def send_to_channel(self, channel: str, event: str, data: dict):
+    async def send_message(self, room: str, message: dict):
         """
-        Send event to a specific WebSocket channel using FastAPI WebSocket.
-
+        Send message to a specific room using existing ConnectionManager.
+        
         Args:
-            channel: Channel path (e.g., 'service/channel/123')
-            event: Event name (e.g., 'status_updated')
-            data: Event data payload
+            room: Room name to send message to
+            message: Message data to send
         """
-        await self.service_router.broadcast_to_channel(channel, {
-            'event': event,
-            'data': data,
-            'service': self.__class__.__name__,
-            'timestamp': __import__('datetime').datetime.now().isoformat()
-        })
-
-    def get_exposed_ws_methods(self) -> List[Dict[str, Any]]:
-        """Get all @expose_ws methods with their metadata."""
-        exposed_ws_methods = []
-
-        for attr_name in dir(self):
-            method = getattr(self, attr_name)
-            if callable(method) and hasattr(method, '_expose_ws'):
-                method_info = {
-                    'name': attr_name,
-                    'channel': getattr(method, '_channel'),
-                    'summary': getattr(method, '_summary'),
-                    'description': getattr(method, '_description')
-                }
-                exposed_ws_methods.append(method_info)
-
-        return exposed_ws_methods
+        try:
+            
+            # Send message to room using existing system
+            await manager.broadcast_to_room(message, room)
+            
+        except Exception as e:
+            if self._logger:
+                self._logger.error(f"Failed to send message to room {room}: {e}")
+            else:
+                print(f"Failed to send message to room {room}: {e}")
 
     async def to_swagger(self, service_name: str = None) -> Dict[str, Any]:
         """
