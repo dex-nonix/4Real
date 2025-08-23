@@ -38,10 +38,8 @@ class BaseService(ABC):
             await manager.broadcast_to_room(message, room)
             
         except Exception as e:
-            if self._logger:
-                self._logger.error(f"Failed to send message to room {room}: {e}")
-            else:
-                print(f"Failed to send message to room {room}: {e}")
+            self._logger.error(f"Failed to send message to room {room}: {e}")
+            
 
     async def to_swagger(self, service_name: str = None) -> Dict[str, Any]:
         """

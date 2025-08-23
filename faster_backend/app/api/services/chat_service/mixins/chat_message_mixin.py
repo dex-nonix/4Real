@@ -294,13 +294,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         """Format error response consistently."""
         return JSONResponse({'error': error_message}, status_code)
 
-    async def emit_llm_event(self, session_id: int, history_id: int, stage: str, message: str):
-        """Emit LLM status event."""
-        await self.emit_chat_event(session_id, history_id, 'llm_status', {
-            'stage': stage,
-            'message': message,
-            'timestamp': datetime.now(datetime.timezone.utc).isoformat()
-        })
+
 
     @expose(
         '/sessions/{id}/messages',
