@@ -85,7 +85,7 @@ class PersonaChatMixin:
             return JSONResponse({'error': str(exc)}, status_code=500)
 
     @expose(
-        '/personas/{int:persona_id}',
+        '/personas/{persona_id:int}',
         methods=['GET'],
         status_codes={200: 'OK', 404: 'Not Found'},
         response_schema=PERSONA_SCHEMA
