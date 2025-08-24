@@ -71,7 +71,6 @@ class ChatHistoryMixin:
     @route(
         '/sessions/{id}/histories',
         methods=['POST'],
-        request_model=CreateHistoryRequest,
         response_model=HistoryResponse
     )
     async def create_session_history(self, req: Request, payload: CreateHistoryRequest, id: int = None):  # noqa: A002
@@ -120,7 +119,6 @@ class ChatHistoryMixin:
     @route(
         '/sessions/{id}/histories/{history_id}',
         methods=['PUT'],
-        request_model=UpdateHistoryRequest,
         response_model=HistoryResponse
     )
     async def update_session_history(self, req: Request, payload: UpdateHistoryRequest, id: int, history_id: int):  # noqa: A002

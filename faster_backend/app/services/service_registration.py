@@ -3,6 +3,7 @@ from .ai_model_mapping import AIModelMappingService
 from .ai_provider import AIProviderService
 from .album import AlbumService
 from .artist.artist_service import ArtistService
+from .chat import ChatService
 from .chat_history import ChatHistoryService
 from .chat_message import ChatMessageService
 from .chat_session import ChatSessionService
@@ -20,6 +21,7 @@ from .tool_invocation_log import ToolInvocationLogService
 from .track import TrackService
 
 ALL_SERVICES = [
+    lambda app: ChatService.to_router(app=app),
     ArtistService,
     AlbumService,
     AIAnalysisResultService,
@@ -39,5 +41,6 @@ ALL_SERVICES = [
     RhymeTechniqueService,
     StyleService,
     ToolInvocationLogService,
-    TrackService
+    TrackService,
+
 ]

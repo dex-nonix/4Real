@@ -41,19 +41,14 @@ class StreamingEventManager:
                                        chunk.metadata)
 
     async def emit_tool_event(self, session_id: int, history_id: int, tool_name: str, status: str, **extra):
-        """Emit tool execution event."""
-        # Pass all extra data as keyword arguments to match ChatService.emit_tool_event signature
         await self.chat_service.emit_tool_event(session_id, history_id, tool_name, status, **extra)
 
     async def emit_llm_status_event(self, session_id: int, history_id: int, stage: str, message: str,
                                     metadata: Dict[str, Any] = None):
-        """Emit LLM status event."""
-        # Call emit_llm_event with correct parameters (stage and message only)
         await self.chat_service.emit_llm_event(session_id, history_id, stage, message)
 
     async def emit_streaming_error(self, session_id: int, history_id: int, error_message: str,
                                    error_type: str = "streaming_error", message_id: int = None):
-        """Emit streaming error event."""
         error_data = {
             'error_type': error_type,
             'error_message': error_message,
@@ -65,5 +60,4 @@ class StreamingEventManager:
         await self.chat_service.emit_chat_event(session_id, history_id, 'streaming_error', error_data)
 
     def _get_timestamp(self) -> str:
-        """Get current timestamp in ISO format."""
         return datetime.utcnow().isoformat()

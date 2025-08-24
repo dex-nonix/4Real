@@ -5,7 +5,6 @@ from typing import AsyncGenerator, Dict, Any, Optional, List
 
 @dataclass
 class StreamingChunk:
-    """Represents a single chunk of streaming content."""
     content: str
     chunk_type: str  # 'text', 'tool_start', 'tool_end', 'complete'
     metadata: Optional[Dict[str, Any]] = None

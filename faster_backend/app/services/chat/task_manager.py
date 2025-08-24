@@ -32,23 +32,15 @@ class ChatTaskManager:
     - Graceful shutdown procedures
     - Comprehensive error handling
     """
+    def __init__(
+            self,
+            max_concurrent_tasks: int = 20,
+            monitoring_interval: int = 30
+    ):
 
-    def __init__(self,
-                 max_concurrent_tasks: int = 20,
-                 monitoring_interval: int = 30,
-                 log_level: str = "INFO"):
-        """
-        Initialize the task manager.
-        
-        Args:
-            max_concurrent_tasks: Maximum number of concurrent async tasks
-            monitoring_interval: Monitoring check interval in seconds
-            log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-        """
         self._max_concurrent_tasks = max_concurrent_tasks
         self._monitoring_interval = monitoring_interval
 
-        # Task management
         self._semaphore = asyncio.Semaphore(max_concurrent_tasks)
         self._active_tasks: List[asyncio.Task] = []
         self._completed_tasks = 0
@@ -56,13 +48,8 @@ class ChatTaskManager:
         self._total_submissions = 0
         self._last_activity = datetime.utcnow()
         self._shutdown_event = asyncio.Event()
-
-        # Logging setup
         self._logger = logging.getLogger(__name__)
-
-        # Start monitoring task
         self._monitor_task = asyncio.create_task(self._monitor_tasks())
-
         self._logger.debug(f"ChatTaskManager initialized with {max_concurrent_tasks} max concurrent tasks")
 
     async def submit_task(self, func: Callable, *args, **kwargs) -> asyncio.Task:

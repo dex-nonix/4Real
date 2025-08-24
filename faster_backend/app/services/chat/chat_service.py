@@ -26,23 +26,14 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
     - ToolExecutionMixin: Tool execution and MCP operations
     """
 
-    def __init__(self, app):
-        """Initialize chat service with task manager."""
-        super().__init__()
-
-        # Initialize task manager
+    def __init__(self, router, app):
+        super().__init__(router)
         self.app = app
         self._task_manager = ChatTaskManager()
-
-        # Initialize mixins
         ChatMessageMixin.__init__(self)
-
-        # Log initialization
-        self._logger = logging.getLogger(__name__)
         self._logger.info("ChatService initialized with task manager")
 
     async def emit_chat_event(self, session_id: int, history_id: int, event: str, data: dict) -> None:
-        """IMPLEMENT: Emit chat event using BaseService method."""
         room = f'chat/{session_id}/{history_id}'
         self._logger.debug(f"Emitting chat event: room={room}, event={event}, data={data}")
         await self.send_ws_message(room, {
@@ -52,7 +43,6 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
         })
 
     async def emit_llm_event(self, session_id: int, history_id: int, stage: str, message: str) -> None:
-        """IMPLEMENT: Emit LLM status event."""
         await self.emit_chat_event(session_id, history_id, 'llm_status', {
             'stage': stage,
             'message': message,
@@ -60,7 +50,6 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
         })
 
     async def emit_tool_event(self, session_id: int, history_id: int, tool_name: str, status: str, **extra) -> None:
-        """IMPLEMENT: Emit tool execution event."""
         await self.emit_chat_event(session_id, history_id, 'tool_status', {
             'tool_name': tool_name,
             'status': status,
@@ -69,9 +58,7 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
         })
 
     async def submit_async_task(self, func, *args, **kwargs):
-        """Submit a task to the task manager for async execution."""
         try:
-            # Submit task (ChatTaskManager handles both async and sync functions)
             future = await self._task_manager.submit_task(func, *args, **kwargs)
             self._logger.debug(f"Task submitted to task manager: {func.__name__}")
             return future
@@ -80,7 +67,6 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
             raise
 
     def get_task_manager_health(self):
-        """Get task manager health status for monitoring."""
         return self._task_manager.get_health_status()
 
     def get_task_manager_stats(self):
@@ -93,7 +79,6 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
         response_model=TaskManagerHealthResponse
     )
     async def task_manager_health(self, req):
-        """Get task manager health status for monitoring."""
         try:
             health_status = self.get_task_manager_health()
             return health_status

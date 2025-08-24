@@ -43,7 +43,7 @@ class ToolExecutionMixin(WebSocketMixinProtocol):
     @route(
         '/personas/{persona_id}/tools/execute',
         methods=['POST'],
-        request_model=ToolExecutionRequest,
+
         response_model=ToolExecutionResponse
     )
     async def execute_tool(self, req: Request, payload: ToolExecutionRequest, persona_id: int):

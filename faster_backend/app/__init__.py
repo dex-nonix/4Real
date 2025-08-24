@@ -1,5 +1,6 @@
 import os
 from contextlib import asynccontextmanager
+from inspect import isclass
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -46,8 +47,13 @@ def create_app() -> FastAPI:
 
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-    for services in ALL_SERVICES:
-        app.include_router(services.to_router(), prefix="/api")
+    for service in ALL_SERVICES:
+        if not isclass(service) and  callable(service):
+            router = service(app)
+        else:
+            router = service.to_router()
+
+        app.include_router(router, prefix="/api")
 
     # app.include_router(health_router, prefix="/api", tags=["health"])
     # app.include_router(upload_router, prefix="/api", tags=["upload"])

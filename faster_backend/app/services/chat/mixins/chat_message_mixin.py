@@ -330,7 +330,6 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
     @route('/sessions/{session_id}/histories/{history_id}/send',
             methods=['POST'],
-            request_model=SendMessageToHistoryRequest,
             response_model=MessageResponse)
     async def send_message(self, req: Request, payload: SendMessageToHistoryRequest, session_id: int = None, history_id: int = None):
         """Send message to session."""

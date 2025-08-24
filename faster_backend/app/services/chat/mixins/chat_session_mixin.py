@@ -59,7 +59,6 @@ class ChatSessionMixin:
     @route(
         '/sessions',
         methods=['POST'],
-        request_model=CreateSessionRequest,
         response_model=SessionResponse
     )
     async def create_session(self, req: Request, payload: CreateSessionRequest):
@@ -163,7 +162,6 @@ class ChatSessionMixin:
     @route(
         '/sessions/{id}',
         methods=['PUT'],
-        request_model=UpdateSessionRequest,
         response_model=SessionResponse
     )
     async def update_session(self, req: Request, payload: UpdateSessionRequest, id: int = None):
@@ -237,7 +235,7 @@ class ChatSessionMixin:
     @route(
         '/personas/{persona_id}/start-chat',
         methods=['POST'],
-        request_model=CreateSessionRequest,
+
         response_model=SessionResponse
     )
     async def start_chat_with_persona(self, req: Request, payload: CreateSessionRequest, persona_id: int = None):
