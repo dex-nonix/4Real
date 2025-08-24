@@ -1,7 +1,4 @@
-from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
 from .artist_schemas import ArtistCreate, ArtistUpdate, ArtistInDB
 from ..base_service import routed_service, route
 from ...crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, GenericCRUDService
@@ -32,10 +29,9 @@ class ArtistService(GenericCRUDService):
         )
     )
 
-    ####### his ist just a demo method  as example how to correctly route
     @route("/{item_id}/persona_summary", methods=["GET"])
-    async def persona_summary(self, item_id: int, db: AsyncSession = Depends(get_db)):
-        artist = await self.service.get_one(db, item_id)
+    async def persona_summary(self, item_id: int):
+        artist = await self.get_one(item_id)
         persona_text = artist.persona or ""
         return {"artist_name": artist.name, "persona_length": len(persona_text),
                 "summary": f"{persona_text[:75]}..." if len(persona_text) > 75 else persona_text}
