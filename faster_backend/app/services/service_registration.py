@@ -10,6 +10,8 @@ from .file import FileService
 from .file_category import FileCategoryService
 from .file_link import FileLinkService
 from .internal_tool import InternalToolService
+from .mcp_server import MCPServerService
+from .persona_mcp_server import PersonaMCPServerService
 
 ALL_SERVICES = [
     ArtistService,
@@ -23,5 +25,7 @@ ALL_SERVICES = [
     FileCategoryService,
     FileLinkService,
     FileService,
-    InternalToolService
+    InternalToolService,
+    MCPServerService,
+    PersonaMCPServerService
 ]
