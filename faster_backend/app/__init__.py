@@ -1,14 +1,15 @@
 import os
 from contextlib import asynccontextmanager
 from inspect import isclass
+from typing import Optional, List
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.openapi.utils import get_openapi
+from fastapi.openapi.docs import get_swagger_ui_html
 
-from .api.health import router as health_router
-from .api.upload import router as upload_router
 from .config import settings
 from .database import init_db, close_db
 from .services.service_registration import ALL_SERVICES
@@ -32,8 +33,9 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.APP_NAME,
         debug=settings.DEBUG,
-        docs_url="/docs",
-        redoc_url="/redoc",
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
         lifespan=lifespan
     )
 
@@ -57,6 +59,75 @@ def create_app() -> FastAPI:
 
     # app.include_router(health_router, prefix="/api", tags=["health"])
     # app.include_router(upload_router, prefix="/api", tags=["upload"])
+
+    def custom_openapi(tags: Optional[List[str]] = None):
+        print(f"🔍 DEBUG: custom_openapi called with tags: {tags}")
+        
+        # Don't cache when filtering by tags
+        if tags:
+            all_routes = app.routes
+            print(f"🔍 DEBUG: Total routes: {len(all_routes)}")
+            
+            filtered_routes = []
+            for route in all_routes:
+                print(f"🔍 DEBUG: Route {route.path} has tags: {getattr(route, 'tags', 'NO_TAGS')}")
+                if hasattr(route, 'tags') and route.tags:
+                    route_tags = [str(tag).lower() for tag in route.tags]
+                    print(f"🔍 DEBUG: Route {route.path} route_tags: {route_tags}")
+                    if any(tag.lower() in route_tags for tag in tags):
+                        filtered_routes.append(route)
+                        print(f"🔍 DEBUG: Route {route.path} MATCHED!")
+            all_routes = filtered_routes
+            print(f"🔍 DEBUG: Filtered routes: {len(all_routes)}")
+            
+            return get_openapi(
+                title=app.title,
+                version=app.version,
+                openapi_version=app.openapi_version,
+                description=app.description,
+                routes=all_routes,
+                tags=app.openapi_tags,
+                servers=app.servers,
+            )
+        
+        # Cache only for unfiltered requests
+        if not app.openapi_schema:
+            app.openapi_schema = get_openapi(
+                title=app.title,
+                version=app.version,
+                openapi_version=app.openapi_version,
+                description=app.description,
+                routes=app.routes,
+                tags=app.openapi_tags,
+                servers=app.servers,
+            )
+        return app.openapi_schema
+
+    app.openapi = custom_openapi
+
+    def create_swagger_ui_html(tags: str = None):
+        openapi_url = f"/openapi.json?tags={tags}" if tags else "/openapi.json"
+        title_suffix = f" - {tags}" if tags else ""
+        
+        return get_swagger_ui_html(
+            openapi_url=openapi_url,
+            title=f"{app.title} - API Documentation{title_suffix}",
+            swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
+            swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
+        )
+
+    @app.get("/openapi.json")
+    async def openapi_spec(request: Request):
+        tags = request.query_params.get("tags")
+        if tags:
+            tag_list = [t.strip() for t in tags.split(",")]
+            return custom_openapi(tags=tag_list)
+        return custom_openapi()
+
+    @app.get("/docs")
+    @app.get("/docs/{tags}")
+    async def docs(tags: str = None):
+        return create_swagger_ui_html(tags)
 
     @app.websocket(settings.WEBSOCKET_PATH)
     async def websocket_endpoint(websocket):
