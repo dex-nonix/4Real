@@ -1,0 +1,30 @@
+from .chat_history_schemas import ChatHistoryCreate, ChatHistoryUpdate, ChatHistoryInDB
+from ..base_service import routed_service, route
+from ...crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, GenericCRUDService
+from ...models import ChatHistory
+
+
+@routed_service("/chat_histories", tags=["Chat Histories"])
+class ChatHistoryService(GenericCRUDService):
+    config = CRUDConfig(
+        model=ChatHistory,
+        create_schema=ChatHistoryCreate,
+        update_schema=ChatHistoryUpdate,
+        response_schema=ChatHistoryInDB,
+        filters=FilterConfig(
+            allowed_fields=['session_id', 'title']
+        ),
+        sorting=SortingConfig(
+            default_sort='updated_at',
+            allowed_fields=['created_at', 'updated_at', 'title', 'message_count']
+        ),
+        validation=ValidationConfig(
+            unique_fields=[]
+        ),
+        selector=SelectorConfig(
+            fields=['title', 'summary'],
+            display_format='{title}',
+            search_fields=['title'],
+            order_by='updated_at'
+        )
+    )

@@ -16,6 +16,7 @@ from .services.ai_model_mapping import AIModelMappingService
 from .services.ai_provider import AIProviderService
 from .services.album import AlbumService
 from .services.artist.artist_service import ArtistService
+from .services.chat_history import ChatHistoryService
 from .websocket.handlers import handle_websocket
 
 
@@ -109,6 +110,7 @@ def create_app() -> FastAPI:
     app.include_router(AIAnalysisResultService.to_router(), prefix="/api")
     app.include_router(AIModelMappingService.to_router(), prefix="/api")
     app.include_router(AIProviderService.to_router(), prefix="/api")
+    app.include_router(ChatHistoryService.to_router(), prefix="/api")
 
     # app.include_router(health_router, prefix="/api", tags=["health"])
     # app.include_router(upload_router, prefix="/api", tags=["upload"])
