@@ -49,7 +49,8 @@ class ChatTaskManager:
         self._last_activity = datetime.utcnow()
         self._shutdown_event = asyncio.Event()
         self._logger = logging.getLogger(__name__)
-        self._monitor_task = asyncio.create_task(self._monitor_tasks())
+        # self._monitor_task = asyncio.create_task(self._monitor_tasks())
+        self._monitor_task = None
         self._logger.debug(f"ChatTaskManager initialized with {max_concurrent_tasks} max concurrent tasks")
 
     async def submit_task(self, func: Callable, *args, **kwargs) -> asyncio.Task:
@@ -67,6 +68,9 @@ class ChatTaskManager:
         Raises:
             RuntimeError: If task manager is shutdown
         """
+        if self._monitor_task is None:
+            self._monitor_task = asyncio.create_task(self._monitor_tasks())
+
         if self._shutdown_event.is_set():
             error_msg = "Task manager is shutdown"
             self._logger.error(error_msg)
