@@ -1,3 +1,5 @@
-from .manager import manager, ConnectionManager
+from fastapi_socketio import SocketManager
 
-__all__ = ["manager", "ConnectionManager"]
+socket_manager = SocketManager()
+
+__all__ = ["socket_manager"]

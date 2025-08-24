@@ -12,7 +12,7 @@ from starlette.routing import (
 )
 from starlette.types import ASGIApp, Lifespan
 
-from app.websocket import manager
+from app.websocket import socket_manager
 
 
 @dataclass
@@ -182,7 +182,7 @@ class BaseService(ABC):
 
     async def send_ws_message(self, room: str, message: dict):
         try:
-            await manager.broadcast_to_room(message, room)
+            await socket_manager.emit('message', message, room=room)
         except Exception as e:
             self._logger.error(f"Failed to send message to room {room}: {e}")
 

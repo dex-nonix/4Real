@@ -9,11 +9,12 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.utils import get_openapi
 from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi_socketio import SocketManager
 
 from .config import settings
 from .database import init_db, close_db
 from .services.service_registration import ALL_SERVICES
-from .websocket.handlers import handle_websocket
+from .websocket import socket_manager
 
 
 @asynccontextmanager
@@ -47,9 +48,7 @@ def create_app() -> FastAPI:
         allow_headers=settings.CORS_ALLOW_HEADERS,
     )
 
-    @app.websocket(settings.WEBSOCKET_PATH)
-    async def websocket_endpoint(websocket):
-        await handle_websocket(websocket)
+    socket_manager.init_app(app, cors_allowed_origins=settings.CORS_ORIGINS)
 
     app.mount("/static", StaticFiles(directory="static"), name="static")
 

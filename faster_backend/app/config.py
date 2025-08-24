@@ -41,10 +41,6 @@ class Settings :#(BaseSettings):
     MAX_FILE_SIZE: int = 100 * 1024 * 1024  # 100MB
     ALLOWED_EXTENSIONS: List[str] = [".jpg", ".jpeg", ".png", ".gif", ".pdf", ".txt", ".md", ".xml"]
 
-    # WebSocket
-    WEBSOCKET_PATH: str = "/ws"
-    WEBSOCKET_MAX_CONNECTIONS: int = 1000
-
     # Security
     SECRET_KEY: str = "your-secret-key-here-change-in-production"
 

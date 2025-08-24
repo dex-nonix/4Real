@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from ..websocket import manager
+from ..websocket import socket_manager
 
 router = APIRouter()
 
@@ -10,8 +10,8 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "4Real FastAPI Backend",
-        "websocket_connections": manager.get_connection_count(),
-        "active_rooms": len(manager.room_connections)
+        "websocket_connections": len(socket_manager.server.manager.rooms),
+        "active_rooms": len(socket_manager.server.manager.rooms)
     }
 
 
@@ -19,8 +19,8 @@ async def health_check():
 async def status_check():
     return {
         "websocket": {
-            "active_connections": manager.get_connection_count(),
-            "active_rooms": len(manager.room_connections)
+            "active_connections": len(socket_manager.server.manager.rooms),
+            "active_rooms": len(socket_manager.server.manager.rooms)
         },
         "database": "connected",
         "file_uploads": "ready"
