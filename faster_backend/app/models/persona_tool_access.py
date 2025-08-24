@@ -16,7 +16,8 @@ class PersonaToolAccess(Base):
     allow = Column(Boolean, nullable=False, server_default=text('1'))
     created_at = Column(DateTime, nullable=False, server_default=func.now())
 
-    persona = relationship('Persona', backref=backref('tool_access', lazy=True))
+    # Relationships
+    persona = relationship('Persona', foreign_keys=[persona_id], backref=backref('tool_access', lazy=True))
 
     def to_dict(self) -> dict:
         return {

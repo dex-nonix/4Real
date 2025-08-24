@@ -20,7 +20,7 @@ class AIModelMapping(Base):
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    provider = relationship('AIProvider', backref=backref('model_mappings', lazy=True))
+    provider = relationship('AIProvider', foreign_keys=[provider_id], backref=backref('model_mappings', lazy=True))
 
     # personas relationship is handled by backref in Persona model
 

@@ -20,7 +20,7 @@ class Track(Base):
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    album = relationship('Album', backref=backref('tracks', lazy=True))
+    album = relationship('Album', foreign_keys=[album_id], backref=backref('tracks', lazy=True))
 
     def to_dict(self) -> dict:
         return {

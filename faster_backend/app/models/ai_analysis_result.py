@@ -19,8 +19,8 @@ class AIAnalysisResult(Base):
     created_at = Column(DateTime, nullable=False, server_default=func.now())
 
     # Relationships
-    track = relationship('Track', backref=backref('analysis_results', lazy=True))
-    provider = relationship('AIProvider', backref=backref('analysis_results', lazy=True))
+    track = relationship('Track', foreign_keys=[track_id], backref=backref('analysis_results', lazy=True))
+    provider = relationship('AIProvider', foreign_keys=[provider_id], backref=backref('analysis_results', lazy=True))
 
     def to_dict(self) -> dict:
         return {

@@ -22,7 +22,7 @@ class ChatSession(Base):
     )
 
     # Relationships
-    persona = relationship("Persona", backref="chat_sessions")
+    persona = relationship("Persona", foreign_keys=[persona_id], backref="chat_sessions")
     current_history = relationship("ChatHistory", foreign_keys=[current_history_id])
 
     # histories relationship is handled by backref in ChatHistory model

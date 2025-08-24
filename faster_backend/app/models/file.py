@@ -25,7 +25,7 @@ class File(Base):
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    category = relationship('FileCategory', backref=backref('files', lazy=True))
+    category = relationship('FileCategory', foreign_keys=[category_id], backref=backref('files', lazy=True))
 
     def to_dict(self) -> dict:
         return {

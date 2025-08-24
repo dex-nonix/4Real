@@ -21,7 +21,7 @@ class FileLink(Base):
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    file = relationship('File', backref=backref('links', lazy=True, cascade='all, delete-orphan'))
+    file = relationship('File', foreign_keys=[file_id], backref=backref('links', lazy=True, cascade='all, delete-orphan'))
 
     def to_dict(self) -> dict:
         return {

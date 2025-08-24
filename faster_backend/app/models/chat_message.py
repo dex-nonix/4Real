@@ -20,8 +20,8 @@ class ChatMessage(Base):
     created_at = Column(DateTime, nullable=False, server_default=func.now())
 
     # Relationships
-    history = relationship('ChatHistory', backref='messages')
-    parent_message = relationship('ChatMessage', remote_side=[id], backref='child_messages')
+    history = relationship('ChatHistory', foreign_keys=[history_id], backref='messages')
+    parent_message = relationship('ChatMessage', foreign_keys=[parent_message_id], remote_side=[id], backref='child_messages')
 
     def to_dict(self) -> dict:
         return {

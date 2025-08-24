@@ -18,8 +18,9 @@ class PersonaMCPServer(Base):
     is_active = Column(Boolean, nullable=False, server_default=text('1'))
     created_at = Column(DateTime, nullable=False, server_default=func.now())
 
-    persona = relationship('Persona', backref=backref('persona_mcp_servers', lazy=True))
-    mcp_server = relationship('MCPServer', backref=backref('persona_mcp_servers', lazy=True))
+    # Relationships
+    persona = relationship('Persona', foreign_keys=[persona_id], backref=backref('persona_mcp_servers', lazy=True))
+    mcp_server = relationship('MCPServer', foreign_keys=[mcp_server_id], backref=backref('persona_mcp_servers', lazy=True))
 
     def to_dict(self) -> dict:
         return {

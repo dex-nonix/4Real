@@ -22,8 +22,8 @@ class ToolInvocationLog(Base):
     duration_ms = Column(Integer)
 
     # Relationships
-    history = relationship('ChatHistory', backref=backref('tool_logs', lazy=True))
-    message = relationship('ChatMessage', backref=backref('tool_logs', lazy=True))
+    history = relationship('ChatHistory', foreign_keys=[history_id], backref=backref('tool_logs', lazy=True))
+    message = relationship('ChatMessage', foreign_keys=[message_id], backref=backref('tool_logs', lazy=True))
 
     def to_dict(self) -> dict:
         return {

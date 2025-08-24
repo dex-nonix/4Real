@@ -22,8 +22,8 @@ class Persona(Base):
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    artist = relationship('Artist', backref='personas')
-    ai_model_mapping = relationship('AIModelMapping', backref='personas')
+    artist = relationship('Artist', foreign_keys=[artist_id], backref='personas')
+    ai_model_mapping = relationship('AIModelMapping', foreign_keys=[ai_model_mapping_id], backref='personas')
 
     def to_dict(self) -> dict:
         return {

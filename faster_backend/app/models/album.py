@@ -19,7 +19,7 @@ class Album(Base):
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    artist = relationship('Artist', backref=backref('albums', lazy=True))
+    artist = relationship('Artist', foreign_keys=[artist_id], backref=backref('albums', lazy=True))
 
     def to_dict(self) -> dict:
         return {

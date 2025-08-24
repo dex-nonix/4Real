@@ -19,7 +19,7 @@ class ChatHistory(Base):
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    session = relationship('ChatSession', backref='histories')
+    session = relationship('ChatSession', foreign_keys=[session_id], backref='histories')
 
     # messages relationship is handled by backref in ChatMessage model
 
