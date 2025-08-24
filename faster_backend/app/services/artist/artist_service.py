@@ -8,7 +8,7 @@ from ...crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, S
 from ...models import Artist
 
 
-@routed_service(prefix="/artists", tags=["Artists"])
+@routed_service("/artists", tags=["Artists"])
 class ArtistService(GenericCRUDService):
     config = CRUDConfig(
         model=Artist,
