@@ -32,6 +32,7 @@ class ArtistService(GenericCRUDService):
         )
     )
 
+    ####### his ist just a demo method  as example how to correctly route
     @route("/{item_id}/persona_summary", methods=["GET"])
     async def persona_summary(self, item_id: int, db: AsyncSession = Depends(get_db)):
         artist = await self.service.get_one(db, item_id)
