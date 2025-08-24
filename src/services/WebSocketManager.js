@@ -3,7 +3,6 @@ import {io} from 'socket.io-client'
 
 export default class WebSocketManager {
     constructor(app) {
-        // Simple reactive connection state
         this.connectionState = ref('disconnected')
         this.socket = null
         this.app = app;
@@ -15,7 +14,7 @@ export default class WebSocketManager {
         try {
             // Connect directly to backend
             this.socket = io('http://localhost:5000', {
-                path: '/api/ws',
+                path: '/ws',
                 transports: ['websocket', 'polling'],
                 autoConnect: true,
                 reconnection: true,

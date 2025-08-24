@@ -47,7 +47,12 @@ def create_app() -> FastAPI:
         allow_headers=settings.CORS_ALLOW_HEADERS,
     )
 
+    @app.websocket(settings.WEBSOCKET_PATH)
+    async def websocket_endpoint(websocket):
+        await handle_websocket(websocket)
+
     app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
     for service in ALL_SERVICES:
         if not isclass(service) and  callable(service):
@@ -129,9 +134,6 @@ def create_app() -> FastAPI:
     async def docs(tags: str = None):
         return create_swagger_ui_html(tags)
 
-    @app.websocket(settings.WEBSOCKET_PATH)
-    async def websocket_endpoint(websocket):
-        await handle_websocket(websocket)
 
     @app.get("/")
     async def root():

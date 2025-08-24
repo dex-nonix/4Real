@@ -42,7 +42,7 @@ class Settings :#(BaseSettings):
     ALLOWED_EXTENSIONS: List[str] = [".jpg", ".jpeg", ".png", ".gif", ".pdf", ".txt", ".md", ".xml"]
 
     # WebSocket
-    WEBSOCKET_PATH: str = "/api/ws"
+    WEBSOCKET_PATH: str = "/ws"
     WEBSOCKET_MAX_CONNECTIONS: int = 1000
 
     # Security
