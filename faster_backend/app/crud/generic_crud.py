@@ -159,7 +159,7 @@ class BaseCRUDService:
         return {"message": msg}
 
 
-class GenericCRUDRouter(BaseService):
+class GenericCRUDService(BaseService):
     config: CRUDConfig
 
     def __init__(self, router: APIRouter, db_dependency: callable):
