@@ -21,7 +21,7 @@ from .tool_invocation_log import ToolInvocationLogService
 from .track import TrackService
 
 ALL_SERVICES = [
-    lambda app: ChatService.to_router(app=app),
+    ChatService,
     ArtistService,
     AlbumService,
     AIAnalysisResultService,

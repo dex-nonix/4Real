@@ -1,9 +1,9 @@
 import uvicorn
 
-from app import create_app
-from app.config import settings
+from nonix_web import create_nx_app
+from nonix_web.config import settings
 
-app = create_app()
+app = create_nx_app()
 
 if __name__ == "__main__":
     uvicorn.run(

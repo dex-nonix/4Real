@@ -148,8 +148,8 @@ class QueryProcessor:
 class GenericCRUDService(BaseService):
     config: CRUDConfig
 
-    def __init__(self, router: APIRouter):
-        super().__init__(router)
+    def __init__(self, app, router: APIRouter):
+        super().__init__(app, router)
         self.model = self.config.model
         self.query_processor = QueryProcessor(model=self.model, config=self.config)
         self._register_routes()

@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
     await close_db()
 
 
-def create_app() -> FastAPI:
+def create_nx_app() -> FastAPI:
     app = FastAPI(
         title=settings.APP_NAME,
         debug=settings.DEBUG,
@@ -47,19 +47,13 @@ def create_app() -> FastAPI:
         allow_methods=settings.CORS_ALLOW_METHODS,
         allow_headers=settings.CORS_ALLOW_HEADERS,
     )
-    app.socket_manager = SocketManager(app) # dumb CRAP as that is a cheap ugly wrapper
+    app.socket_manager = SocketManager(app)
     # socket_manager.init_app(app, cors_allowed_origins=settings.CORS_ORIGINS)
 
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
-
     for service in ALL_SERVICES:
-        if not isclass(service) and  callable(service):
-            router = service(app)
-        else:
-            router = service.to_router()
-
-        app.include_router(router, prefix="/api")
+        app.include_router(service.to_router(app), prefix="/api")
 
     # app.include_router(health_router, prefix="/api", tags=["health"])
     # app.include_router(upload_router, prefix="/api", tags=["upload"])

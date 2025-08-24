@@ -12,7 +12,7 @@ from starlette.routing import (
 )
 from starlette.types import ASGIApp, Lifespan
 
-from app.websocket import socket_manager
+# from nonix_web.websocket import socket_manager
 
 
 @dataclass
@@ -176,20 +176,21 @@ def _get_route_info(cls) -> _RoutedServiceMethodDefinition:
 
 
 class BaseService(ABC):
-    def __init__(self, router):
+    def __init__(self, app, router):
+        self.app = app
         self.router = router
         self._logger = logging.getLogger(self.__class__.__name__)
 
     async def send_ws_message(self, room: str, message: dict):
         try:
-            await socket_manager.emit('message', message, room=room)
+            await self.app.sio.emit('message', message, room=room)
         except Exception as e:
             self._logger.error(f"Failed to send message to room {room}: {e}")
 
     @classmethod
-    def to_router(cls, *args, **kwargs) -> APIRouter:
+    def to_router(cls, app, *args, **kwargs) -> APIRouter:
         router = APIRouter(**asdict(_get_routed_service_definition(cls)))
-        inst = cls(router, *args, **kwargs)
+        inst = cls(app, router, *args, **kwargs)
         for method_name in dir(inst):
             method = getattr(inst, method_name)
             route_definition = _get_route_info(method)
