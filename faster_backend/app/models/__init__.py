@@ -1,3 +1,4 @@
+from .ai_analysis_result import AIAnalysisResult
 from .ai_model_mapping import AIModelMapping
 from .ai_provider import AIProvider
 from .album import Album

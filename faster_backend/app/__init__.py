@@ -7,9 +7,11 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .api.health import router as health_router
+
 from .api.upload import router as upload_router
 from .config import settings
 from .database import init_db, close_db
+from .services.ai_analysis_result import AIAnalysisResultService
 from .services.album import AlbumService
 from .services.artist.artist_service import ArtistService
 from .websocket.handlers import handle_websocket
@@ -25,7 +27,6 @@ async def register_all_services(service_router: "ServiceRouter", app: FastAPI) -
     from .api.services.file_service import FileService
     from .api.services.chat_service.chat_service import ChatService
     from .api.services.persona_service import PersonaService
-    from .api.services.ai_analysis_result_service import AIAnalysisResultService
     from .api.services.ai_model_mapping_service import AIModelMappingService
     from .api.services.ai_provider_service import AIProviderService
     from .api.services.chat_history_service import ChatHistoryService
@@ -46,7 +47,6 @@ async def register_all_services(service_router: "ServiceRouter", app: FastAPI) -
     service_router.register_service("albums", AlbumService)
     service_router.register_service("tracks", TrackService)
     service_router.register_service("personas", PersonaService)
-    service_router.register_service("ai-analysis-results", AIAnalysisResultService)
     service_router.register_service("ai-model-mappings", AIModelMappingService)
     service_router.register_service("ai-providers", AIProviderService)
     service_router.register_service("chat-histories", ChatHistoryService)
@@ -104,6 +104,7 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory="static"), name="static")
     app.include_router(ArtistService.to_router(), prefix="/api")
     app.include_router(AlbumService.to_router(), prefix="/api")
+    app.include_router(AIAnalysisResultService.to_router(), prefix="/api")
 
     # app.include_router(health_router, prefix="/api", tags=["health"])
     # app.include_router(upload_router, prefix="/api", tags=["upload"])
