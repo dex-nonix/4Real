@@ -47,8 +47,7 @@ def create_nx_app() -> FastAPI:
         allow_methods=settings.CORS_ALLOW_METHODS,
         allow_headers=settings.CORS_ALLOW_HEADERS,
     )
-    app.socket_manager = SocketManager(app)
-    # socket_manager.init_app(app, cors_allowed_origins=settings.CORS_ORIGINS)
+    app.socket_manager = SocketManager(app, cors_allowed_origins=settings.CORS_ORIGINS, mount_location="/ws")
 
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -134,7 +133,6 @@ def create_nx_app() -> FastAPI:
             "message": "4Real FastAPI Backend",
             "version": "1.0.0",
             "docs": "/docs",
-            "websocket": settings.WEBSOCKET_PATH,
             "api": "/api"
         }
 
