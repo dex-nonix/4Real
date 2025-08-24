@@ -9,7 +9,7 @@ class Settings :#(BaseSettings):
     APP_NAME: str = "4Real FastAPI Backend"
     DEBUG: bool = True
     HOST: str = "0.0.0.0"
-    PORT: int = 8000
+    PORT: int = 5000
 
     # CORS
     CORS_ORIGINS: List[str] = ["*"]
