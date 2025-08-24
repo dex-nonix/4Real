@@ -33,20 +33,13 @@ def expose(
         setattr(func, '_exposed', True)
         setattr(func, '_path', path)
         setattr(func, '_methods', methods)
-
-        # Set OpenAPI metadata (new functionality)
         setattr(func, '_summary', summary)
         setattr(func, '_description', description)
         setattr(func, '_tags', tags or [])
         setattr(func, '_status_codes', status_codes or {200: 'Success'})
-
-        # 🚀 Direct schema support
         setattr(func, '_request_schema', request_schema)
         setattr(func, '_response_schema', response_schema)
 
         return func
 
     return decorator
-
-
-

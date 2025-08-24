@@ -9,7 +9,7 @@ from .mixins.chat_session_mixin import ChatSessionMixin
 from .mixins.persona_chat_mixin import PersonaChatMixin
 from .mixins.tool_execution_mixin import ToolExecutionMixin
 from .task_manager import ChatTaskManager
-from ...service_router.base_service import BaseService
+from app.api.services.base.base_service import BaseService
 from ...service_router.decorators import expose
 
 

@@ -1,15 +1,12 @@
-import json
 import logging
 import traceback
 from functools import wraps
 from typing import Callable, Any
 
 from fastapi import APIRouter, Request
-from fastapi import HTTPException
 from fastapi.responses import JSONResponse
-from fastapi.responses import Response
 
-from .base_service import BaseService
+from app.api.services.base.base_service import BaseService
 from .documentation_router import DocumentationRouter
 from .generators.compact_api_generator import CompactApiGenerator
 from .generators.openapi_generator import OpenAPIGenerator
