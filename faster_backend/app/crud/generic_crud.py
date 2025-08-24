@@ -20,7 +20,7 @@ ModelType = TypeVar("ModelType")
 
 
 def create_paginated_response(
-    data: List, page: int = 1, per_page: int = 10, total: int = 0, **overrides
+        data: List, page: int = 1, per_page: int = 10, total: int = 0, **overrides
 ):
     pages = math.ceil(total / per_page) if per_page > 0 else 0
     pagination = {
@@ -38,8 +38,40 @@ def create_paginated_response(
 async def execute_scalar_one(session: AsyncSession, query) -> Any:
     return (await session.execute(query)).scalar_one()
 
+
 async def execute_query_all(session: AsyncSession, query) -> List[ModelType]:
     return (await session.execute(query)).scalars().all()
+
+
+async def get_list_for_query_params(session, model, query_params):
+    base_query = select(model).where(*query_params["filters"])
+    total_query = select(func.count(literal_column("1"))).select_from(
+        base_query.subquery()
+    )
+    total = await execute_scalar_one(session, total_query)
+    query = base_query
+    if query_params["sort_clause"] is not None:
+        query = query.order_by(query_params["sort_clause"])
+    query = query.offset(query_params["offset"]).limit(query_params["limit"])
+    items = await execute_query_all(session, query)
+    return create_paginated_response(
+        data=items,
+        page=query_params["page"],
+        per_page=query_params["per_page"],
+        total=total,
+    )
+
+
+async def get_item_by_id(session: AsyncSession, model, item_id: int) -> ModelType:
+    instance = (
+        await session.execute(select(model).where(model.id == item_id))
+    ).scalar_one_or_none()
+    if not instance:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Not found"
+        )
+    return instance
+
 
 class QueryProcessor:
     def __init__(self, model: Type[ModelType], config: CRUDConfig):
@@ -122,18 +154,6 @@ class GenericCRUDService(BaseService):
         self.query_processor = QueryProcessor(model=self.model, config=self.config)
         self._register_routes()
 
-    async def _get_item_by_id(self, session: AsyncSession, item_id: int) -> ModelType:
-        instance = (
-            await session.execute(select(self.model).where(self.model.id == item_id))
-        ).scalar_one_or_none()
-        if not instance:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Not found"
-            )
-        return instance
-
-
-
     async def create(self, data: BaseModel) -> ModelType:
         async with AsyncSessionLocal() as session:
             instance = self.model(**data.model_dump())
@@ -144,30 +164,15 @@ class GenericCRUDService(BaseService):
 
     async def get_all(self, query_params: dict) -> Dict:
         async with AsyncSessionLocal() as session:
-            base_query = select(self.model).where(*query_params["filters"])
-            total_query = select(func.count(literal_column("1"))).select_from(
-                base_query.subquery()
-            )
-            total = await execute_scalar_one(session, total_query)
-            query = base_query
-            if query_params["sort_clause"] is not None:
-                query = query.order_by(query_params["sort_clause"])
-            query = query.offset(query_params["offset"]).limit(query_params["limit"])
-            items = await execute_query_all(session, query)
-            return create_paginated_response(
-                data=items,
-                page=query_params["page"],
-                per_page=query_params["per_page"],
-                total=total,
-            )
+            return await get_list_for_query_params(session, self.model, query_params)
 
     async def get_one(self, item_id: int) -> Optional[ModelType]:
         async with AsyncSessionLocal() as session:
-            return await self._get_item_by_id(session, item_id)
+            return await get_item_by_id(session, self.model, item_id)
 
     async def update(self, item_id: int, data: BaseModel) -> ModelType:
         async with AsyncSessionLocal() as session:
-            instance = await self._get_item_by_id(session, item_id)
+            instance = await get_item_by_id(session, self.model, item_id)
             for key, value in data.model_dump(exclude_unset=True).items():
                 setattr(instance, key, value)
             await session.commit()
@@ -176,7 +181,7 @@ class GenericCRUDService(BaseService):
 
     async def delete(self, item_id: int):
         async with AsyncSessionLocal() as session:
-            instance = await self._get_item_by_id(session, item_id)
+            instance = await get_item_by_id(session, self.model, item_id)
             await session.delete(instance)
             await session.commit()
 
@@ -185,47 +190,27 @@ class GenericCRUDService(BaseService):
             q = request.query_params.get("q", "")
             if not q:
                 return create_paginated_response(data=[], page=1, per_page=10, total=0)
+            model = self.model
             fields_param = request.query_params.get("fields", "")
             search_fields = (
-                fields_param.split(",")
-                if fields_param
-                else [
-                    c.name
-                    for c in self.model.__table__.columns
-                    if hasattr(c.type, "length")
-                ]
+                fields_param.split(",") if
+                fields_param else
+                [c.name for c in model.__table__.columns if hasattr(c.type, "length")]
             )
             conditions = [
-                getattr(self.model, field).ilike(f"%{q}%")
+                getattr(model, field).ilike(f"%{q}%")
                 for field in search_fields
-                if hasattr(self.model, field)
+                if hasattr(model, field)
             ]
             query_params["filters"].extend(conditions)
 
-            base_query = select(self.model).where(*query_params["filters"])
-            total_query = select(func.count(literal_column("1"))).select_from(
-                base_query.subquery()
-            )
-            total = await execute_scalar_one(session, total_query)
-            query = base_query
-            if query_params["sort_clause"] is not None:
-                query = query.order_by(query_params["sort_clause"])
-            query = query.offset(query_params["offset"]).limit(query_params["limit"])
-            items = await execute_query_all(session, query)
-            return create_paginated_response(
-                data=items,
-                page=query_params["page"],
-                per_page=query_params["per_page"],
-                total=total,
-            )
+            return await get_list_for_query_params(session, model, query_params)
 
     def _format_selector_label(self, item: ModelType) -> str:
         selector_cfg = self.config.selector
         if selector_cfg.display_format:
             try:
-                item_dict = {
-                    c.name: getattr(item, c.name) for c in item.__table__.columns
-                }
+                item_dict = {c.name: getattr(item, c.name) for c in item.__table__.columns}
                 return selector_cfg.display_format.format(**item_dict)
             except (KeyError, AttributeError):
                 return str(item.id)
@@ -238,10 +223,7 @@ class GenericCRUDService(BaseService):
             selector_cfg = self.config.selector
             query = select(self.model)
             if q and selector_cfg.search_fields:
-                conditions = [
-                    getattr(self.model, field).ilike(f"%{q}%")
-                    for field in selector_cfg.search_fields
-                ]
+                conditions = [getattr(self.model, field).ilike(f"%{q}%") for field in selector_cfg.search_fields]
                 query = query.where(or_(*conditions))
             query = query.order_by(
                 getattr(self.model, selector_cfg.order_by).asc()
@@ -280,9 +262,7 @@ class GenericCRUDService(BaseService):
                 for field in self.config.validation.unique_fields:
                     value = getattr(data, field, None)
                     if value is not None:
-                        q = select(self.model).where(
-                            getattr(self.model, field) == value
-                        )
+                        q = select(self.model).where(getattr(self.model, field) == value)
                         if item_id:
                             q = q.where(self.model.id != item_id)
                         if (await session.execute(q)).scalar_one_or_none():
@@ -293,7 +273,6 @@ class GenericCRUDService(BaseService):
 
         ops = self.config.operations
         if ops.create:
-
             @self.router.post(
                 "/",
                 response_model=self.config.response_schema,
@@ -304,7 +283,6 @@ class GenericCRUDService(BaseService):
                 return await self.create(data)
 
         if ops.list:
-
             @self.router.get(
                 "/", response_model=PaginatedResponse[self.config.response_schema]
             )
@@ -313,26 +291,22 @@ class GenericCRUDService(BaseService):
                 return await self.get_all(q_params)
 
         if ops.read:
-
             @self.router.get("/{item_id}", response_model=self.config.response_schema)
             async def read_one(item_id: int):
                 return await self.get_one(item_id)
 
         if ops.update:
-
             @self.router.put("/{item_id}", response_model=self.config.response_schema)
             async def update(item_id: int, data: self.config.update_schema):
                 await _validate(data, item_id)
                 return await self.update(item_id, data)
 
         if ops.delete:
-
             @self.router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
             async def delete(item_id: int):
                 await self.delete(item_id)
 
         if ops.search:
-
             @self.router.get(
                 "/search/",
                 response_model=PaginatedResponse[self.config.response_schema],
@@ -342,13 +316,11 @@ class GenericCRUDService(BaseService):
                 return await self.search(request, q_params)
 
         if ops.bulk:
-
             @self.router.post("/bulk/", response_model=Dict[str, str])
             async def bulk(payload: BulkOperationsPayload):
                 return await self.bulk(payload)
 
         if ops.selector:
-
             @self.router.get("/selector/", response_model=List[SelectorItem])
             async def selector(q: Optional[str] = None):
                 return await self.selector(q)

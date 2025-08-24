@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-
 from fastapi import Request
 from fastapi.responses import JSONResponse
-
-from .....llm.tool_runtime import list_persona_tools
-from .....models.mcp_server import MCPServer
-from .....models.persona import Persona
-from .....database import AsyncSessionLocal
 from sqlalchemy import select
 
 from ..websocket_protocol import WebSocketMixinProtocol
+from ....database import AsyncSessionLocal
+from ....llm.tool_runtime import list_persona_tools
+from ....models.mcp_server import MCPServer
+from ....models.persona import Persona
 from ....service_router.decorators import expose
 
 
@@ -45,7 +43,7 @@ class ToolExecutionMixin(WebSocketMixinProtocol):
                 stmt = select(Persona).where(Persona.id == persona_id)
                 result = await db_session.execute(stmt)
                 persona = result.scalar_one_or_none()
-                
+
                 if not persona:
                     return JSONResponse({'error': 'Not found'}, 404)
                 return JSONResponse({'data': await list_persona_tools(persona.id)})
@@ -112,7 +110,7 @@ class ToolExecutionMixin(WebSocketMixinProtocol):
                 stmt = select(MCPServer)
                 result = await db_session.execute(stmt)
                 servers = result.scalars().all()
-                
+
                 return JSONResponse({'data': [s.to_dict() for s in servers]})
         except Exception as exc:
             return JSONResponse({'error': str(exc)}, 500)

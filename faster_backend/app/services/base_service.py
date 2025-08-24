@@ -1,6 +1,7 @@
 from abc import ABC
 from dataclasses import dataclass, asdict
 from enum import Enum
+from logging import Logger
 from typing import Type, List, Dict, Any, Optional, Union, Sequence, Callable
 
 from fastapi import APIRouter, params, routing, utils, types
@@ -10,6 +11,8 @@ from starlette.routing import (
     BaseRoute,
 )
 from starlette.types import ASGIApp, Lifespan
+
+from app.websocket import manager
 
 
 @dataclass
@@ -175,6 +178,13 @@ def _get_route_info(cls) -> _RoutedServiceMethodDefinition:
 class BaseService(ABC):
     def __init__(self, router):
         self.router = router
+        self._logger = Logger(self.__class__.__name__)
+
+    async def send_message(self, room: str, message: dict):
+        try:
+            await manager.broadcast_to_room(message, room)
+        except Exception as e:
+            self._logger.error(f"Failed to send message to room {room}: {e}")
 
     @classmethod
     def to_router(cls, *args, **kwargs) -> APIRouter:

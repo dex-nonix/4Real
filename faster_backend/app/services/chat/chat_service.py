@@ -9,7 +9,8 @@ from .mixins.chat_session_mixin import ChatSessionMixin
 from .mixins.persona_chat_mixin import PersonaChatMixin
 from .mixins.tool_execution_mixin import ToolExecutionMixin
 from .task_manager import ChatTaskManager
-from ..base.base_service import BaseService
+from ..base_service import BaseService
+
 from ...service_router.decorators import expose
 
 
@@ -44,7 +45,7 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
         """IMPLEMENT: Emit chat event using BaseService method."""
         room = f'chat/{session_id}/{history_id}'
         self._logger.debug(f"Emitting chat event: room={room}, event={event}, data={data}")
-        await self.send_message(room, {
+        await self.send_ws_message(room, {
             'event': event,
             'data': data,
             'timestamp': datetime.utcnow().isoformat()
@@ -78,13 +79,13 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
             self._logger.error(f"Failed to submit task to task manager: {e}", exc_info=True)
             raise
 
-    async def get_task_manager_health(self):
+    def get_task_manager_health(self):
         """Get task manager health status for monitoring."""
-        return await self._task_manager.get_health_status()
+        return self._task_manager.get_health_status()
 
-    async def get_task_manager_stats(self):
+    def get_task_manager_stats(self):
         """Get task manager statistics for monitoring."""
-        return await self._task_manager.get_stats()
+        return self._task_manager.get_stats()
 
     @expose(
         '/health/task-manager',
@@ -112,7 +113,7 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
     async def task_manager_health(self, req):
         """Get task manager health status for monitoring."""
         try:
-            health_status = await self.get_task_manager_health()
+            health_status = self.get_task_manager_health()
             return health_status
         except Exception as e:
             self._logger.error(f"Failed to get task manager health: {e}", exc_info=True)

@@ -3,11 +3,11 @@ from __future__ import annotations
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
-from ....service_router.decorators import expose
-from .....database import AsyncSessionLocal
-from .....models.chat_history import ChatHistory
-from .....models.chat_message import ChatMessage
-from .....models.chat_session import ChatSession
+from ...service_router.decorators import expose
+from ....database import AsyncSessionLocal
+from ....models.chat_history import ChatHistory
+from ....models.chat_message import ChatMessage
+from ....models.chat_session import ChatSession
 
 
 class ChatHistoryMixin:

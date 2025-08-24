@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any, Dict, List
 
 from fastapi import Request
@@ -294,8 +293,6 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         """Format error response consistently."""
         return JSONResponse({'error': error_message}, status_code)
 
-
-
     @expose(
         '/sessions/{id}/messages',
         methods=['GET'],
@@ -381,7 +378,6 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         self._logger.info(f"Processing send_message request for session {session_id}, history {history_id}")
 
         try:
-            # Convert string parameters to integers (Flask converts URL params to strings)
             session_id = int(session_id)
             if history_id:
                 history_id = int(history_id)

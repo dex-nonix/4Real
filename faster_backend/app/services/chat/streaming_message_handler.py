@@ -1,8 +1,8 @@
 import logging
 from typing import Optional
 
-from ....database import AsyncSessionLocal
-from ....models.chat_message import ChatMessage
+from ...database import AsyncSessionLocal
+from ...models.chat_message import ChatMessage
 
 
 class StreamingMessageHandler:

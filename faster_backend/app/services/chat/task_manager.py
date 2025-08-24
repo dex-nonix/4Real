@@ -189,7 +189,7 @@ class ChatTaskManager:
             last_activity=self._last_activity
         )
 
-    async def get_health_status(self) -> Dict[str, Any]:
+    def get_health_status(self) -> Dict[str, Any]:
         """Get health status for monitoring endpoints."""
         try:
             stats = self.get_stats()
