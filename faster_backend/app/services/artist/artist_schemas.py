@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field
 from typing import Optional
-from datetime import date, datetime
+from datetime import date
+from ..base_schemas import BaseDBMixin
 
 class ArtistBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
@@ -14,8 +15,5 @@ class ArtistCreate(ArtistBase):
 class ArtistUpdate(ArtistBase):
     pass
 
-class ArtistInDB(ArtistBase):
-    id: int
-    created_at: datetime
-    updated_at: datetime
-    model_config = ConfigDict(from_attributes=True)
+class ArtistInDB(ArtistBase, BaseDBMixin):
+    pass

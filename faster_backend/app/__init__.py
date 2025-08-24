@@ -10,6 +10,7 @@ from .api.health import router as health_router
 from .api.upload import router as upload_router
 from .config import settings
 from .database import init_db, close_db
+from .services.album import AlbumService
 from .services.artist.artist_service import ArtistService
 from .websocket.handlers import handle_websocket
 
@@ -102,6 +103,7 @@ def create_app() -> FastAPI:
 
     app.mount("/static", StaticFiles(directory="static"), name="static")
     app.include_router(ArtistService.to_router(), prefix="/api")
+    app.include_router(AlbumService.to_router(), prefix="/api")
 
     # app.include_router(health_router, prefix="/api", tags=["health"])
     # app.include_router(upload_router, prefix="/api", tags=["upload"])

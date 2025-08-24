@@ -1,6 +1,5 @@
 from typing import List
 
-from pydantic_settings import BaseSettings
 from sqlalchemy.pool.impl import NullPool
 
 DEV_MODE = True
@@ -8,7 +7,7 @@ DEV_MODE = True
 class Settings :#(BaseSettings):
     # FastAPI
     APP_NAME: str = "4Real FastAPI Backend"
-    DEBUG: bool = False
+    DEBUG: bool = True
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
