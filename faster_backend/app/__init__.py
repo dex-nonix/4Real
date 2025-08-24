@@ -7,16 +7,16 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .api.health import router as health_router
-from .api.service_router.service_router import ServiceRouter
 from .api.upload import router as upload_router
 from .config import settings
 from .database import init_db, close_db
+from .services.artist.artist_service import ArtistService
 from .websocket.handlers import handle_websocket
 
 
-async def register_all_services(service_router: ServiceRouter, app: FastAPI) -> None:
+async def register_all_services(service_router: "ServiceRouter", app: FastAPI) -> None:
     """Register all available services with the ServiceRouter."""
-    
+
     # Import all service classes
     from .api.services.artist_service import ArtistService
     from .api.services.album_service import AlbumService
@@ -73,12 +73,12 @@ async def lifespan(app: FastAPI):
     service_router_instance = getattr(app.state, 'service_router_instance', None)
     if service_router_instance:
         await register_all_services(service_router_instance, app)
-    
+
     await init_db()
     os.makedirs(settings.UPLOAD_FOLDER, exist_ok=True)
-    
+
     yield
-    
+
     # Shutdown
     await close_db()
 
@@ -101,17 +101,11 @@ def create_app() -> FastAPI:
     )
 
     app.mount("/static", StaticFiles(directory="static"), name="static")
+    app.include_router(ArtistService.to_router(), prefix="/api")
 
-    # Initialize service router
-    service_router_instance = ServiceRouter()
-    
-    # Store service router in app state for lifespan access
-    app.state.service_router_instance = service_router_instance
-    
-    app.include_router(service_router_instance.router, tags=["api"])
-    app.include_router(health_router, prefix="/api", tags=["health"])
-    app.include_router(upload_router, prefix="/api", tags=["upload"])
-    
+    # app.include_router(health_router, prefix="/api", tags=["health"])
+    # app.include_router(upload_router, prefix="/api", tags=["upload"])
+
     @app.websocket(settings.WEBSOCKET_PATH)
     async def websocket_endpoint(websocket):
         await handle_websocket(websocket)

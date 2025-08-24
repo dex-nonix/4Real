@@ -184,5 +184,5 @@ class BaseService(ABC):
             method = getattr(inst, method_name)
             route_definition = _get_route_info(method)
             if route_definition:
-                router.add_api_route(endpoint=method(method), **asdict(route_definition))
+                router.add_api_route(endpoint=method, **asdict(route_definition))
         return router

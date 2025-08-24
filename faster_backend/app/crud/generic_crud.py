@@ -8,6 +8,7 @@ from sqlalchemy import select, or_, func, literal_column
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models_and_schemas import CRUDConfig, PaginatedResponse, SelectorItem, BulkOperationsPayload
+from ..database import get_db
 from ..services.base_service import BaseService
 
 ModelType = TypeVar("ModelType")
@@ -162,7 +163,7 @@ class BaseCRUDService:
 class GenericCRUDService(BaseService):
     config: CRUDConfig
 
-    def __init__(self, router: APIRouter, db_dependency: callable):
+    def __init__(self, router: APIRouter, db_dependency: callable = get_db):
         super().__init__(router)
         self.db_dependency = db_dependency
         self.model = self.config.model
