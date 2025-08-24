@@ -14,7 +14,7 @@ from fastapi_socketio import SocketManager
 from .config import settings
 from .database import init_db, close_db
 from .services.service_registration import ALL_SERVICES
-from .websocket import socket_manager
+# from .websocket import socket_manager
 
 
 @asynccontextmanager
@@ -47,8 +47,8 @@ def create_app() -> FastAPI:
         allow_methods=settings.CORS_ALLOW_METHODS,
         allow_headers=settings.CORS_ALLOW_HEADERS,
     )
-
-    socket_manager.init_app(app, cors_allowed_origins=settings.CORS_ORIGINS)
+    app.socket_manager = SocketManager(app) # dumb CRAP as that is a cheap ugly wrapper
+    # socket_manager.init_app(app, cors_allowed_origins=settings.CORS_ORIGINS)
 
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
