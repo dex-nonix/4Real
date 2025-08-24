@@ -4,10 +4,14 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import func
 
-from ...service_router.decorators import expose
+from ...base_service import route
 from ....database import AsyncSessionLocal
 from ....models.chat_session import ChatSession
 from ....models.persona import Persona
+from .models_and_schemas import (
+    PersonaListResponse,
+    PersonaChatResponse
+)
 
 
 class PersonaChatMixin:
@@ -49,20 +53,10 @@ class PersonaChatMixin:
 
         return query.group_by(Persona.id)
 
-    @expose(
+    @route(
         '/personas',
         methods=['GET'],
-        status_codes={200: 'OK'},
-        response_schema={
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": PERSONA_SCHEMA
-                },
-                "total": {"type": "integer"}
-            }
-        }
+        response_model=PersonaListResponse
     )
     async def list_personas(self, req: Request):
         """List all available personas with active session counts."""
@@ -84,13 +78,12 @@ class PersonaChatMixin:
         except Exception as exc:  # noqa: BLE001
             return JSONResponse({'error': str(exc)}, status_code=500)
 
-    @expose(
+    @route(
         '/personas/{persona_id:int}',
         methods=['GET'],
-        status_codes={200: 'OK', 404: 'Not Found'},
-        response_schema=PERSONA_SCHEMA
+        response_model=PersonaChatResponse
     )
-    async def get_persona_by_id(self, req: Request, persona_id: int):
+    async def get_persona(self, req: Request, persona_id: int):
         """Get a single persona by ID with active session count."""
         try:
             # Query persona with session count using JOIN

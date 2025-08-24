@@ -9,11 +9,11 @@ from .mixins.chat_session_mixin import ChatSessionMixin
 from .mixins.persona_chat_mixin import PersonaChatMixin
 from .mixins.tool_execution_mixin import ToolExecutionMixin
 from .task_manager import ChatTaskManager
-from ..base_service import BaseService
+from ..base_service import BaseService, routed_service, route
+from .mixins.models_and_schemas import TaskManagerHealthResponse
 
-from ...service_router.decorators import expose
 
-
+@routed_service("/chat", tags=["Chat"])
 class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMixin, PersonaChatMixin,
                   ToolExecutionMixin):
     """Complete chat service handling session lifecycle, messaging, and tool execution.
@@ -87,28 +87,10 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
         """Get task manager statistics for monitoring."""
         return self._task_manager.get_stats()
 
-    @expose(
+    @route(
         '/health/task-manager',
         methods=['GET'],
-        status_codes={200: 'OK'},
-        response_schema={
-            "type": "object",
-            "properties": {
-                "status": {"type": "string"},
-                "timestamp": {"type": "string", "format": "date-time"},
-                "stats": {
-                    "type": "object",
-                    "properties": {
-                        "active_tasks": {"type": "integer"},
-                        "max_concurrent_tasks": {"type": "integer"},
-                        "utilization": {"type": "string"},
-                        "failure_rate": {"type": "string"},
-                        "total_submissions": {"type": "integer"},
-                        "last_activity": {"type": "string", "format": "date-time"}
-                    }
-                }
-            }
-        }
+        response_model=TaskManagerHealthResponse
     )
     async def task_manager_health(self, req):
         """Get task manager health status for monitoring."""

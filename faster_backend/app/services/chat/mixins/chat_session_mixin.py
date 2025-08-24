@@ -4,12 +4,17 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 
-from ...service_router.decorators import expose
+from ...base_service import route
 from ....database import AsyncSessionLocal
 from ....models.chat_history import ChatHistory
 from ....models.chat_message import ChatMessage
 from ....models.chat_session import ChatSession
 from ....models.persona import Persona
+from .models_and_schemas import (
+    CreateSessionRequest, UpdateSessionRequest, SessionResponse,
+    SessionListResponse, SessionWithHistoryResponse, DeleteSessionResponse
+)
+from typing import Dict
 
 
 class ChatSessionMixin:
@@ -51,52 +56,25 @@ class ChatSessionMixin:
             result = await db_session.execute(stmt)
             return result
 
-    @expose(
+    @route(
         '/sessions',
         methods=['POST'],
-        status_codes={201: 'Created', 400: 'Bad Request', 404: 'Not Found'},
-        request_schema={
-            "type": "object",
-            "properties": {
-                "persona_id": {"type": "integer", "description": "Persona ID"},
-                "session_name": {"type": "string", "description": "Session name"},
-                "session_icon": {"type": "string", "description": "Session icon"}
-            },
-            "required": ["persona_id"]
-        },
-        response_schema={
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "properties": {
-                        "id": {"type": "integer"},
-                        "persona_id": {"type": "integer"},
-                        "session_name": {"type": "string"},
-                        "session_icon": {"type": "string"},
-                        "is_active": {"type": "boolean"},
-                        "current_history_id": {"type": "integer"},
-                        "created_at": {"type": "string", "format": "date-time"},
-                        "updated_at": {"type": "string", "format": "date-time"}
-                    }
-                }
-            }
-        }
+        request_model=CreateSessionRequest,
+        response_model=SessionResponse
     )
-    async def create_session(self, req: Request, payload: dict = None):
+    async def create_session(self, req: Request, payload: CreateSessionRequest):
         """Create a new chat session."""
         async with AsyncSessionLocal() as db_session:
             try:
-                payload = payload or {}
-                persona_id = int(payload.get('persona_id'))
+                persona_id = payload.persona_id
 
                 # Get persona first to check if exists and get name
                 persona = await self._get_persona_by_id(db_session, persona_id)
                 if not persona:
                     return JSONResponse({'error': 'Persona not found or inactive'}, 404)
 
-                session_name = payload.get('session_name') or f'Chat with {persona.name}'
-                session_icon = payload.get('session_icon')
+                session_name = payload.session_name or f'Chat with {persona.name}'
+                session_icon = payload.session_icon
 
                 session = ChatSession(
                     persona_id=persona_id,
@@ -138,33 +116,10 @@ class ChatSessionMixin:
                 await db_session.rollback()
                 return JSONResponse({'error': str(exc)}, status_code=500)
 
-    @expose(
+    @route(
         '/sessions',
         methods=['GET'],
-        status_codes={200: 'OK'},
-        response_schema={
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "id": {"type": "integer"},
-                            "persona_id": {"type": "integer"},
-                            "session_name": {"type": "string"},
-                            "session_icon": {"type": "string"},
-                            "is_active": {"type": "boolean"},
-                            "current_history_id": {"type": "integer"},
-                            "history_count": {"type": "integer"},
-                            "created_at": {"type": "string", "format": "date-time"},
-                            "updated_at": {"type": "string", "format": "date-time"}
-                        }
-                    }
-                },
-                "total": {"type": "integer"}
-            }
-        }
+        response_model=SessionListResponse
     )
     async def list_sessions(self, req: Request):
         """List all active chat sessions."""
@@ -182,29 +137,10 @@ class ChatSessionMixin:
         except Exception as exc:
             return JSONResponse({'error': str(exc)}, 500)
 
-    @expose(
+    @route(
         '/sessions/{id}',
         methods=['GET'],
-        status_codes={200: 'OK', 404: 'Not Found'},
-        response_schema={
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "properties": {
-                        "id": {"type": "integer"},
-                        "persona_id": {"type": "integer"},
-                        "session_name": {"type": "string"},
-                        "session_icon": {"type": "string"},
-                        "is_active": {"type": "boolean"},
-                        "current_history_id": {"type": "integer"},
-                        "history_count": {"type": "integer"},
-                        "created_at": {"type": "string", "format": "date-time"},
-                        "updated_at": {"type": "string", "format": "date-time"}
-                    }
-                }
-            }
-        }
+        response_model=SessionWithHistoryResponse
     )
     async def get_session(self, req: Request, id: int):
         """Get a specific chat session by ID."""
@@ -224,38 +160,13 @@ class ChatSessionMixin:
         except Exception as exc:
             return JSONResponse({'error': str(exc)}, 500)
 
-    @expose(
+    @route(
         '/sessions/{id}',
         methods=['PUT'],
-        status_codes={200: 'OK', 404: 'Not Found'},
-        request_schema={
-            "type": "object",
-            "properties": {
-                "session_name": {"type": "string", "description": "Session name"},
-                "session_icon": {"type": "string", "description": "Session icon"},
-                "current_history_id": {"type": "integer", "description": "Current history ID"}
-            }
-        },
-        response_schema={
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "properties": {
-                        "id": {"type": "integer"},
-                        "persona_id": {"type": "integer"},
-                        "session_name": {"type": "string"},
-                        "session_icon": {"type": "string"},
-                        "is_active": {"type": "boolean"},
-                        "current_history_id": {"type": "integer"},
-                        "created_at": {"type": "string", "format": "date-time"},
-                        "updated_at": {"type": "string", "format": "date-time"}
-                    }
-                }
-            }
-        }
+        request_model=UpdateSessionRequest,
+        response_model=SessionResponse
     )
-    async def update_session(self, req: Request, payload: dict = None, id: int = None):
+    async def update_session(self, req: Request, payload: UpdateSessionRequest, id: int = None):
         """Update a chat session."""
         async with AsyncSessionLocal() as db_session:
             try:
@@ -263,12 +174,12 @@ class ChatSessionMixin:
                 if not session:
                     return JSONResponse({'error': 'Session not found or inactive'}, 404)
 
-                data = payload or {}
-                allowed_fields = ['session_name', 'session_icon', 'current_history_id']
-
-                for field in allowed_fields:
-                    if field in data:
-                        setattr(session, field, data[field])
+                if payload.session_name is not None:
+                    session.session_name = payload.session_name
+                if payload.session_icon is not None:
+                    session.session_icon = payload.session_icon
+                if payload.is_active is not None:
+                    session.is_active = payload.is_active
 
                 await db_session.commit()
                 return JSONResponse({'data': session.to_dict()})
@@ -276,16 +187,10 @@ class ChatSessionMixin:
                 await db_session.rollback()
                 return JSONResponse({'error': str(exc)}, 500)
 
-    @expose(
+    @route(
         '/sessions/{id}',
         methods=['DELETE'],
-        status_codes={200: 'OK', 404: 'Not Found'},
-        response_schema={
-            "type": "object",
-            "properties": {
-                "message": {"type": "string"}
-            }
-        }
+        response_model=DeleteSessionResponse
     )
     async def delete_session(self, req: Request, id: int):
         """Delete a chat session (soft delete by setting is_active=False)."""
@@ -302,33 +207,10 @@ class ChatSessionMixin:
                 await db_session.rollback()
                 return JSONResponse({'error': str(exc)}, 500)
 
-    @expose(
+    @route(
         '/personas/{persona_id}/sessions',
         methods=['GET'],
-        status_codes={200: 'OK', 404: 'Not Found'},
-        response_schema={
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "id": {"type": "integer"},
-                            "persona_id": {"type": "integer"},
-                            "session_name": {"type": "string"},
-                            "session_icon": {"type": "string"},
-                            "is_active": {"type": "boolean"},
-                            "current_history_id": {"type": "integer"},
-                            "history_count": {"type": "integer"},
-                            "created_at": {"type": "string", "format": "date-time"},
-                            "updated_at": {"type": "string", "format": "date-time"}
-                        }
-                    }
-                },
-                "total": {"type": "integer"}
-            }
-        }
+        response_model=SessionListResponse
     )
     async def get_persona_sessions(self, req: Request, persona_id: int):
         """Get all sessions for a specific persona."""
@@ -352,37 +234,13 @@ class ChatSessionMixin:
             except Exception as exc:
                 return JSONResponse({'error': str(exc)}, 500)
 
-    @expose(
+    @route(
         '/personas/{persona_id}/start-chat',
         methods=['POST'],
-        status_codes={201: 'Created', 404: 'Not Found'},
-        request_schema={
-            "type": "object",
-            "properties": {
-                "session_name": {"type": "string", "description": "Session name"},
-                "session_icon": {"type": "string", "description": "Session icon"}
-            }
-        },
-        response_schema={
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "properties": {
-                        "id": {"type": "integer"},
-                        "persona_id": {"type": "integer"},
-                        "session_name": {"type": "string"},
-                        "session_icon": {"type": "string"},
-                        "is_active": {"type": "boolean"},
-                        "current_history_id": {"type": "integer"},
-                        "created_at": {"type": "string", "format": "date-time"},
-                        "updated_at": {"type": "string", "format": "date-time"}
-                    }
-                }
-            }
-        }
+        request_model=CreateSessionRequest,
+        response_model=SessionResponse
     )
-    async def start_chat_with_persona(self, req: Request, payload: dict = None, persona_id: int = None):
+    async def start_chat_with_persona(self, req: Request, payload: CreateSessionRequest, persona_id: int = None):
         """Start a new chat session with a persona."""
         async with AsyncSessionLocal() as db_session:
             try:
@@ -390,9 +248,8 @@ class ChatSessionMixin:
                 if not persona:
                     return JSONResponse({'error': 'Persona not found or inactive'}, 404)
 
-                payload = payload or {}
-                session_name = payload.get('session_name') or f'Chat with {persona.name}'
-                session_icon = payload.get('session_icon')
+                session_name = payload.session_name or f'Chat with {persona.name}'
+                session_icon = payload.session_icon
 
                 # Create new session
                 session = ChatSession(

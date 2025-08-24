@@ -3,11 +3,20 @@ from __future__ import annotations
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
-from ...service_router.decorators import expose
+from ...base_service import route
 from ....database import AsyncSessionLocal
 from ....models.chat_history import ChatHistory
 from ....models.chat_message import ChatMessage
 from ....models.chat_session import ChatSession
+from .models_and_schemas import (
+    HistoryListResponse,
+    CreateHistoryRequest,
+    HistoryResponse,
+    HistoryWithMessagesResponse,
+    UpdateHistoryRequest,
+    DeleteHistoryResponse,
+    MessageListResponse
+)
 
 
 class ChatHistoryMixin:
@@ -36,30 +45,10 @@ class ChatHistoryMixin:
 
         return session, None, None
 
-    @expose(
+    @route(
         '/sessions/{id}/histories',
         methods=['GET'],
-        status_codes={200: 'OK', 404: 'Not Found'},
-        response_schema={
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "id": {"type": "integer"},
-                            "session_id": {"type": "integer"},
-                            "title": {"type": "string"},
-                            "message_count": {"type": "integer"},
-                            "created_at": {"type": "string", "format": "date-time"},
-                            "updated_at": {"type": "string", "format": "date-time"}
-                        }
-                    }
-                },
-                "total": {"type": "integer"}
-            }
-        }
+        response_model=HistoryListResponse
     )
     async def list_session_histories(self, req: Request, id: int):  # noqa: A002
         """List all histories for a specific session."""
@@ -79,34 +68,13 @@ class ChatHistoryMixin:
             except Exception as exc:  # noqa: BLE001
                 return JSONResponse({'error': str(exc)}, status_code=500)
 
-    @expose(
+    @route(
         '/sessions/{id}/histories',
         methods=['POST'],
-        status_codes={201: 'Created', 404: 'Not Found'},
-        request_schema={
-            "type": "object",
-            "properties": {
-                "title": {"type": "string", "description": "History title"}
-            }
-        },
-        response_schema={
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "properties": {
-                        "id": {"type": "integer"},
-                        "session_id": {"type": "integer"},
-                        "title": {"type": "string"},
-                        "message_count": {"type": "integer"},
-                        "created_at": {"type": "string", "format": "date-time"},
-                        "updated_at": {"type": "string", "format": "date-time"}
-                    }
-                }
-            }
-        }
+        request_model=CreateHistoryRequest,
+        response_model=HistoryResponse
     )
-    async def create_session_history(self, req: Request, payload: dict = None, id: int = None):  # noqa: A002
+    async def create_session_history(self, req: Request, payload: CreateHistoryRequest, id: int = None):  # noqa: A002
         """Create a new history for a specific session."""
         async with AsyncSessionLocal() as db_session:
             try:
@@ -115,8 +83,7 @@ class ChatHistoryMixin:
                 if error_response:
                     return error_response
 
-                payload = payload or {}
-                title = payload.get('title', 'New Conversation')
+                title = payload.title or 'New Conversation'
 
                 history = ChatHistory(
                     session_id=id,
@@ -132,28 +99,12 @@ class ChatHistoryMixin:
                 await db_session.rollback()
                 return JSONResponse({'error': str(exc)}, status_code=500)
 
-    @expose(
+    @route(
         '/sessions/{id}/histories/{history_id}',
         methods=['GET'],
-        status_codes={200: 'OK', 404: 'Not Found'},
-        response_schema={
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "properties": {
-                        "id": {"type": "integer"},
-                        "session_id": {"type": "integer"},
-                        "title": {"type": "string"},
-                        "message_count": {"type": "integer"},
-                        "created_at": {"type": "string", "format": "date-time"},
-                        "updated_at": {"type": "string", "format": "date-time"}
-                    }
-                }
-            }
-        }
+        response_model=HistoryWithMessagesResponse
     )
-    async def get_session_history(self, req: Request, id: int, history_id: int):
+    async def get_session_history(self, req: Request, id: int, history_id: int):  # noqa: A002
         """Get a specific history within a session."""
         async with AsyncSessionLocal() as db_session:
             try:
@@ -166,35 +117,13 @@ class ChatHistoryMixin:
             except Exception as exc:
                 return JSONResponse({'error': str(exc)}, status_code=500)
 
-    @expose(
+    @route(
         '/sessions/{id}/histories/{history_id}',
         methods=['PUT'],
-        status_codes={200: 'OK', 404: 'Not Found'},
-        request_schema={
-            "type": "object",
-            "properties": {
-                "title": {"type": "string", "description": "History title"}
-            }
-        },
-        response_schema={
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "object",
-                    "properties": {
-                        "id": {"type": "integer"},
-                        "session_id": {"type": "integer"},
-                        "title": {"type": "string"},
-                        "message_count": {"type": "integer"},
-                        "created_at": {"type": "string", "format": "date-time"},
-                        "updated_at": {"type": "string", "format": "date-time"}
-                    }
-                }
-            }
-        }
+        request_model=UpdateHistoryRequest,
+        response_model=HistoryResponse
     )
-    async def update_session_history(self, req: Request, payload: dict = None, id: int = None,
-                                     history_id: int = None):  # noqa: A002
+    async def update_session_history(self, req: Request, payload: UpdateHistoryRequest, id: int, history_id: int):  # noqa: A002
         """Update a specific history within a session."""
         async with AsyncSessionLocal() as db_session:
             try:
@@ -203,12 +132,8 @@ class ChatHistoryMixin:
                 if error_response:
                     return error_response
 
-                data = payload or {}
-                allowed_fields = ['title']
-
-                for field in allowed_fields:
-                    if field in data:
-                        setattr(history, field, data[field])
+                if payload.title is not None:
+                    history.title = payload.title
 
                 await db_session.commit()
                 return JSONResponse({'data': history.to_dict()})
@@ -216,16 +141,10 @@ class ChatHistoryMixin:
                 await db_session.rollback()
                 return JSONResponse({'error': str(exc)}, status_code=500)
 
-    @expose(
+    @route(
         '/sessions/{id}/histories/{history_id}',
         methods=['DELETE'],
-        status_codes={200: 'OK', 400: 'Bad Request', 404: 'Not Found'},
-        response_schema={
-            "type": "object",
-            "properties": {
-                "message": {"type": "string"}
-            }
-        }
+        response_model=DeleteHistoryResponse
     )
     async def delete_session_history(self, req: Request, id: int, history_id: int):  # noqa: A002
         """Delete a specific history within a session."""
@@ -247,20 +166,13 @@ class ChatHistoryMixin:
                 await db_session.rollback()
                 return JSONResponse({'error': str(exc)}, status_code=500)
 
-    @expose(
+    @route(
         '/sessions/{id}/histories/{history_id}/messages',
-        methods=['DELETE'],
-        status_codes={200: 'OK', 400: 'Bad Request', 404: 'Not Found'},
-        response_schema={
-            "type": "object",
-            "properties": {
-                "message": {"type": "string"},
-                "deleted_count": {"type": "integer"}
-            }
-        }
+        methods=['GET'],
+        response_model=MessageListResponse
     )
-    async def clear_history_messages(self, req: Request, id: int, history_id: int):
-        """Clear all messages in a specific history."""
+    async def get_history_messages(self, req: Request, id: int, history_id: int):  # noqa: A002
+        """Get all messages for a specific history."""
         async with AsyncSessionLocal() as db_session:
             try:
                 # Validate session and history
@@ -268,30 +180,12 @@ class ChatHistoryMixin:
                 if error_response:
                     return error_response
 
-                # Get count of messages to be deleted
-                message_count_result = await db_session.execute(
+                messages_result = await db_session.execute(
                     db_session.query(ChatMessage).filter_by(history_id=history_id)
                 )
-                message_count = message_count_result.scalar()
+                messages = messages_result.scalars().all()
 
-                if message_count == 0:
-                    return JSONResponse({'message': 'No messages to clear', 'deleted_count': 0})
-
-                # Delete all messages in this history
-                await db_session.execute(
-                    db_session.query(ChatMessage).filter_by(history_id=history_id).delete()
-                )
-
-                # Reset message count in history
-                history.message_count = 0
-
-                await db_session.commit()
-
-                return JSONResponse({
-                    'message': f'Cleared {message_count} messages successfully',
-                    'deleted_count': message_count
-                })
-
+                return JSONResponse({'data': [m.to_dict() for m in messages]})
             except Exception as exc:  # noqa: BLE001
                 await db_session.rollback()
                 return JSONResponse({'error': str(exc)}, status_code=500)

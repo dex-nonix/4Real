@@ -11,18 +11,24 @@ from ..streaming_event_manager import StreamingEventManager
 from ..streaming_interface import StreamingChunk
 from ..streaming_message_handler import StreamingMessageHandler
 from ..websocket_protocol import WebSocketMixinProtocol
-from ....service_router.decorators import expose
-from .....database import AsyncSessionLocal
-from .....llm.llm_client import run_chat_streaming
-from .....llm.tool_runtime import execute_tool
-from .....llm.tool_runtime import list_persona_tools
-from .....models.ai_model_mapping import AIModelMapping
-from .....models.ai_provider import AIProvider
-from .....models.chat_history import ChatHistory
-from .....models.chat_message import ChatMessage
-from .....models.chat_session import ChatSession
-from .....models.persona import Persona
-from .....models.tool_invocation_log import ToolInvocationLog
+from ...base_service import route
+from ....database import AsyncSessionLocal
+from ....llm.llm_client import run_chat_streaming
+from ....llm.tool_runtime import execute_tool
+from ....llm.tool_runtime import list_persona_tools
+from ....models.ai_model_mapping import AIModelMapping
+from ....models.ai_provider import AIProvider
+from ....models.chat_history import ChatHistory
+from ....models.chat_message import ChatMessage
+from ....models.chat_session import ChatSession
+from ....models.persona import Persona
+from ....models.tool_invocation_log import ToolInvocationLog
+from .models_and_schemas import (
+    MessageListResponse, 
+    SendMessageToHistoryRequest, 
+    DeleteMessageResponse,
+    MessageResponse
+)
 
 
 class ChatMessageMixin(WebSocketMixinProtocol):
@@ -293,31 +299,10 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         """Format error response consistently."""
         return JSONResponse({'error': error_message}, status_code)
 
-    @expose(
+    @route(
         '/sessions/{id}/messages',
         methods=['GET'],
-        status_codes={200: 'OK', 404: 'Not Found'},
-        response_schema={
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "id": {"type": "integer"},
-                            "history_id": {"type": "integer"},
-                            "role": {"type": "string"},
-                            "message_type": {"type": "string"},
-                            "content_json": {"type": "object"},
-                            "created_at": {"type": "string", "format": "date-time"},
-                            "updated_at": {"type": "string", "format": "date-time"}
-                        }
-                    }
-                },
-                "total": {"type": "integer"}
-            }
-        }
+        response_model=MessageListResponse
     )
     async def list_messages(self, req: Request, id: int):  # noqa: A002
         """List messages from a chat session's current history."""
@@ -343,37 +328,11 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         except Exception as exc:  # noqa: BLE001
             return JSONResponse({'error': str(exc)}, status_code=500)
 
-    @expose('/sessions/{session_id}/histories/{history_id}/send',
+    @route('/sessions/{session_id}/histories/{history_id}/send',
             methods=['POST'],
-            request_schema={
-                "type": "object",
-                "properties": {
-                    "content": {
-                        "type": "object",
-                        "description": "Message content in JSON format",
-                        "additionalProperties": True
-                    }
-                },
-                "required": ["content"]
-            },
-            response_schema={
-                "type": "object",
-                "properties": {
-                    "data": {
-                        "type": "object",
-                        "properties": {
-                            "id": {"type": "integer"},
-                            "history_id": {"type": "integer"},
-                            "role": {"type": "string"},
-                            "message_type": {"type": "string"},
-                            "content_json": {"type": "object"},
-                            "created_at": {"type": "string", "format": "date-time"},
-                            "updated_at": {"type": "string", "format": "date-time"}
-                        }
-                    }
-                }
-            })
-    async def send_message(self, req: Request, payload: dict = None, session_id: int = None, history_id: int = None):
+            request_model=SendMessageToHistoryRequest,
+            response_model=MessageResponse)
+    async def send_message(self, req: Request, payload: SendMessageToHistoryRequest, session_id: int = None, history_id: int = None):
         """Send message to session."""
         self._logger.info(f"Processing send_message request for session {session_id}, history {history_id}")
 
@@ -412,8 +371,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                     return await self._format_error_response('History not found or invalid', 404)
 
             # Get user content - MUST be object with type
-            payload = payload or {}
-            user_content = payload.get('content')
+            user_content = payload.content
             if not user_content:
                 return await self._format_error_response('content required', 400)
 
@@ -617,31 +575,10 @@ class ChatMessageMixin(WebSocketMixinProtocol):
     #     except Exception as exc:  # noqa: BLE001
     #         return await self._format_error_response(str(exc), 500)
 
-    @expose(
+    @route(
         '/sessions/{session_id}/histories/{history_id}/messages',
         methods=['GET'],
-        status_codes={200: 'OK', 404: 'Not Found'},
-        response_schema={
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "id": {"type": "integer"},
-                            "history_id": {"type": "integer"},
-                            "role": {"type": "string"},
-                            "message_type": {"type": "string"},
-                            "content_json": {"type": "object"},
-                            "created_at": {"type": "string", "format": "date-time"},
-                            "updated_at": {"type": "string", "format": "date-time"}
-                        }
-                    }
-                },
-                "total": {"type": "integer"}
-            }
-        }
+        response_model=MessageListResponse
     )
     async def list_history_messages(self, req: Request, session_id: int, history_id: int):
         """Get messages from a specific history within a session."""
@@ -662,17 +599,10 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         except Exception as exc:  # noqa: BLE001
             return await self._format_error_response(str(exc), 500)
 
-    @expose(
+    @route(
         '/sessions/{session_id}/histories/{history_id}/messages/{message_id}',
         methods=['DELETE'],
-        status_codes={200: 'OK', 400: 'Bad Request', 404: 'Not Found'},
-        response_schema={
-            "type": "object",
-            "properties": {
-                "message": {"type": "string"},
-                "deleted_message_id": {"type": "integer"}
-            }
-        }
+        response_model=DeleteMessageResponse
     )
     async def delete_message(self, req: Request, session_id: int, history_id: int, message_id: int):
         """Delete a specific message from a history."""
