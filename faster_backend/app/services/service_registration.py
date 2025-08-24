@@ -11,7 +11,13 @@ from .file_category import FileCategoryService
 from .file_link import FileLinkService
 from .internal_tool import InternalToolService
 from .mcp_server import MCPServerService
+from .persona.persona_service import PersonaService
 from .persona_mcp_server import PersonaMCPServerService
+from .persona_tool_access import PersonaToolAccessService
+from .rhyme_technique import RhymeTechniqueService
+from .style.style_service import StyleService
+from .tool_invocation_log import ToolInvocationLogService
+from .track import TrackService
 
 ALL_SERVICES = [
     ArtistService,
@@ -27,5 +33,11 @@ ALL_SERVICES = [
     FileService,
     InternalToolService,
     MCPServerService,
-    PersonaMCPServerService
+    PersonaMCPServerService,
+    PersonaService,
+    PersonaToolAccessService,
+    RhymeTechniqueService,
+    StyleService,
+    ToolInvocationLogService,
+    TrackService
 ]

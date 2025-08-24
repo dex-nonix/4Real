@@ -11,8 +11,6 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/_old_to_ignore" />
       <excludeFolder url="file://$MODULE_DIR$/backend" />
-      <excludeFolder url="file://$MODULE_DIR$/faster_backend/app/api/service_router" />
-      <excludeFolder url="file://$MODULE_DIR$/faster_backend/app/api/services" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.11 virtualenv at ~/Desktop/shadewalk/4Real/.venv" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

@@ -5,7 +5,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import or_, select
 
-from .chat_service.crud_swagger_generator import CrudSwaggerGenerator
+from app.api.services.base.crud_swagger_generator import CrudSwaggerGenerator
 from app.api.services.base.base_service import BaseService
 from ...api.service_router.decorators import expose
 from ...database import AsyncSessionLocal
