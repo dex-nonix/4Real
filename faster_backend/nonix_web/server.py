@@ -21,6 +21,7 @@ class NxWebServer(FastAPI):
         await self.plugin_manager.discover_and_load(self.settings.PLUGINS.get("plugins", []))
 
     async def _teardown_server(self):
+        # await self.plugin_manager.unload()
         pass
 
     async def _lifespan(self, _):
