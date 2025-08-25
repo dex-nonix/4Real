@@ -22,13 +22,13 @@ class ChatSessionMixin:
 
     async def _get_persona_by_id(self, db_session, persona_id: int):
         """Get persona by ID with validation."""
-        persona_stmt = select(Persona).filter_by(id=persona_id, is_active=True)
+        persona_stmt = select(Persona).where(Persona.id == persona_id, Persona.is_active == True)
         persona_result = await db_session.execute(persona_stmt)
         return persona_result.scalar_one_or_none()
 
     async def _get_session_by_id(self, db_session, session_id: int):
         """Get session by ID with validation."""
-        session_stmt = select(ChatSession).filter_by(id=session_id, is_active=True)
+        session_stmt = select(ChatSession).where(ChatSession.id == session_id, ChatSession.is_active == True)
         session_result = await db_session.execute(session_stmt)
         return session_result.scalar_one_or_none()
 
@@ -42,14 +42,14 @@ class ChatSessionMixin:
                 func.count(ChatHistory.id).label('history_count')
             ).outerjoin(
                 ChatHistory, ChatSession.id == ChatHistory.session_id
-            ).filter(
+            ).where(
                 ChatSession.is_active == True
             )
 
             if persona_id:
-                stmt = stmt.filter(ChatSession.persona_id == persona_id)
+                stmt = stmt.where(ChatSession.persona_id == persona_id)
             if session_id:
-                stmt = stmt.filter(ChatSession.id == session_id)
+                stmt = stmt.where(ChatSession.id == session_id)
 
             stmt = stmt.group_by(ChatSession.id)
 

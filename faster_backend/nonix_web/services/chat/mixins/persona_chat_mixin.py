@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from sqlalchemy import func
+from sqlalchemy import func, select
 
 from ...base_service import route
 from ....database import AsyncSessionLocal
@@ -36,20 +36,20 @@ class PersonaChatMixin:
         }
     }
 
-    def _build_persona_query(self, db_session, persona_id: int = None):
+    def _build_persona_query(self, persona_id: int = None):
         """Build base query for personas with session counts."""
-        query = db_session.query(
+        query = select(
             Persona,
             func.count(ChatSession.id).label('session_count')
         ).outerjoin(
             ChatSession,
             (Persona.id == ChatSession.persona_id) & (ChatSession.is_active == True)
-        ).filter(
+        ).where(
             Persona.is_active == True
         )
 
         if persona_id is not None:
-            query = query.filter(Persona.id == persona_id)
+            query = query.where(Persona.id == persona_id)
 
         return query.group_by(Persona.id)
 
@@ -63,9 +63,9 @@ class PersonaChatMixin:
         try:
             # Query personas with session counts using JOIN
             async with AsyncSessionLocal() as db_session:
-                query = self._build_persona_query(db_session)
-                personas_with_counts = await db_session.execute(query)
-                personas_with_counts = personas_with_counts.all()
+                query = self._build_persona_query()
+                result_set = await db_session.execute(query)
+                personas_with_counts = result_set.all()
 
             result = []
             for persona, session_count in personas_with_counts:
@@ -88,9 +88,9 @@ class PersonaChatMixin:
         try:
             # Query persona with session count using JOIN
             async with AsyncSessionLocal() as db_session:
-                query = self._build_persona_query(db_session, persona_id)
-                result = await db_session.execute(query)
-                result = result.first()
+                query = self._build_persona_query(persona_id)
+                result_set = await db_session.execute(query)
+                result = result_set.first()
 
             if not result:
                 return JSONResponse({'error': 'Persona not found'}, status_code=404)

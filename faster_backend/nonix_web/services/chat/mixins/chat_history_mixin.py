@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from sqlalchemy import select
 
 from ...base_service import route
 from ....database import AsyncSessionLocal
@@ -26,7 +27,7 @@ class ChatHistoryMixin:
         """Validate session exists and optionally validate history belongs to session."""
         # Validate session
         session = await db_session.execute(
-            db_session.query(ChatSession).filter_by(id=session_id, is_active=True)
+            select(ChatSession).where(ChatSession.id == session_id, ChatSession.is_active == True)
         ).scalar_one_or_none()
 
         if not session:
@@ -35,7 +36,7 @@ class ChatHistoryMixin:
         # If history_id provided, validate history too
         if history_id:
             history = await db_session.execute(
-                db_session.query(ChatHistory).filter_by(id=history_id, session_id=session_id)
+                select(ChatHistory).where(ChatHistory.id == history_id, ChatHistory.session_id == session_id)
             ).scalar_one_or_none()
 
             if not history:
@@ -60,7 +61,7 @@ class ChatHistoryMixin:
                     return error_response
 
                 histories_result = await db_session.execute(
-                    db_session.query(ChatHistory).filter_by(session_id=id)
+                    select(ChatHistory).where(ChatHistory.session_id == id)
                 )
                 histories = histories_result.scalars().all()
 
@@ -179,7 +180,7 @@ class ChatHistoryMixin:
                     return error_response
 
                 messages_result = await db_session.execute(
-                    db_session.query(ChatMessage).filter_by(history_id=history_id)
+                    select(ChatMessage).where(ChatMessage.history_id == history_id)
                 )
                 messages = messages_result.scalars().all()
 

@@ -4,6 +4,7 @@ from typing import Any, Dict, List
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from sqlalchemy import select
 
 from ..message_handlers import ChatMessageHandler, ToolCallMessageHandler
 from ..message_type_registry import message_type_registry
@@ -46,7 +47,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
         async with AsyncSessionLocal() as db_session:
             persona = await db_session.execute(
-                db_session.query(Persona).filter_by(id=persona_id)
+                select(Persona).where(Persona.id == persona_id)
             ).scalar_one_or_none()
 
             if not persona:
@@ -56,7 +57,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             mapping = None
             if persona and getattr(persona, 'ai_model_mapping_id', None):
                 mapping = await db_session.execute(
-                    db_session.query(AIModelMapping).filter_by(id=persona.ai_model_mapping_id, is_active=True)
+                    select(AIModelMapping).where(AIModelMapping.id == persona.ai_model_mapping_id, AIModelMapping.is_active == True)
                 ).scalar_one_or_none()
                 self._logger.debug(f"AI model mapping found: {mapping}")
             else:
@@ -80,7 +81,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
         async with AsyncSessionLocal() as db_session:
             session = await db_session.execute(
-                db_session.query(ChatSession).filter_by(id=session_id, is_active=True)
+                select(ChatSession).where(ChatSession.id == session_id, ChatSession.is_active == True)
             ).scalar_one_or_none()
 
             if not session:
@@ -92,7 +93,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 self._logger.debug(f"Querying history {history_id} for session {session_id}")
 
                 history = await db_session.execute(
-                    db_session.query(ChatHistory).filter_by(id=history_id, session_id=session_id)
+                    select(ChatHistory).where(ChatHistory.id == history_id, ChatHistory.session_id == session_id)
                 ).scalar_one_or_none()
                 self._logger.debug(f"History query result: {history}")
 
@@ -172,7 +173,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
             # Add system messages
             system_msgs = await db_session.execute(
-                db_session.query(ChatMessage).filter_by(history_id=history_id, role='system').order_by(
+                select(ChatMessage).where(ChatMessage.history_id == history_id, ChatMessage.role == 'system').order_by(
                     ChatMessage.created_at.asc())
             ).scalars().all()
             self._logger.debug(f"Found {len(system_msgs)} system messages")
@@ -182,7 +183,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
             # Add user and assistant messages up to current user message
             user_msgs = await db_session.execute(
-                db_session.query(ChatMessage).filter(ChatMessage.history_id == history_id,
+                select(ChatMessage).where(ChatMessage.history_id == history_id,
                                                      ChatMessage.id <= user_msg_id).order_by(
                     ChatMessage.created_at.asc())
             ).scalars().all()
@@ -208,7 +209,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
         async with AsyncSessionLocal() as db_session:
             provider = await db_session.execute(
-                db_session.query(AIProvider).filter_by(id=model_info['provider_id'], is_active=True)
+                select(AIProvider).where(AIProvider.id == model_info['provider_id'], AIProvider.is_active == True)
             ).scalar_one_or_none()
 
             if not provider:
@@ -216,7 +217,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 return None, None, None
 
             mapping_obj = await db_session.execute(
-                db_session.query(AIModelMapping).filter_by(id=persona_id, is_active=True)
+                select(AIModelMapping).where(AIModelMapping.id == persona_id, AIModelMapping.is_active == True)
             ).scalar_one_or_none()
 
             if not mapping_obj:
@@ -309,7 +310,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         try:
             async with AsyncSessionLocal() as db_session:
                 session = await db_session.execute(
-                    db_session.query(ChatSession).filter_by(id=id, is_active=True)
+                    select(ChatSession).where(ChatSession.id == id, ChatSession.is_active == True)
                 ).scalar_one_or_none()
 
                 if not session:
@@ -320,7 +321,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                     return {'data': [], 'total': 0}
 
                 msgs = await db_session.execute(
-                    db_session.query(ChatMessage).filter_by(history_id=session.current_history_id).order_by(
+                    select(ChatMessage).where(ChatMessage.history_id == session.current_history_id).order_by(
                         ChatMessage.created_at.asc())
                 ).scalars().all()
 
@@ -591,7 +592,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
             async with AsyncSessionLocal() as db_session:
                 msgs = await db_session.execute(
-                    db_session.query(ChatMessage).filter_by(history_id=history_id).order_by(
+                    select(ChatMessage).where(ChatMessage.history_id == history_id).order_by(
                         ChatMessage.created_at.asc())
                 ).scalars().all()
                 return JSONResponse({'data': [m.to_dict() for m in msgs], 'total': len(msgs)})
@@ -609,7 +610,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             async with AsyncSessionLocal() as db_session:
                 # Verify session exists and is active
                 session = await db_session.execute(
-                    db_session.query(ChatSession).filter_by(id=session_id, is_active=True)
+                    select(ChatSession).where(ChatSession.id == session_id, ChatSession.is_active == True)
                 ).scalar_one_or_none()
 
                 if not session:
@@ -617,7 +618,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
                 # Verify history exists and belongs to session
                 history = await db_session.execute(
-                    db_session.query(ChatHistory).filter_by(id=history_id, session_id=session_id)
+                    select(ChatHistory).where(ChatHistory.id == history_id, ChatHistory.session_id == session_id)
                 ).scalar_one_or_none()
 
                 if not history:
@@ -625,7 +626,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
                 # Find and delete the specific message
                 message = await db_session.execute(
-                    db_session.query(ChatMessage).filter_by(id=message_id, history_id=history_id)
+                    select(ChatMessage).where(ChatMessage.id == message_id, ChatMessage.history_id == history_id)
                 ).scalar_one_or_none()
 
                 if not message:
