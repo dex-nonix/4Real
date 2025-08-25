@@ -4,7 +4,7 @@ from ...crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, S
 from ...models import PersonaMCPServer
 
 
-@routed_service("/persona_mcp_servers", tags=["Persona MCP Servers"])
+@routed_service("/persona-mcp-servers", tags=["Persona MCP Servers"])
 class PersonaMCPServerService(GenericCRUDService):
     config = CRUDConfig(
         model=PersonaMCPServer,

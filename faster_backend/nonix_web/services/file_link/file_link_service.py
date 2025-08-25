@@ -4,7 +4,7 @@ from ...crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, S
 from ...models import FileLink
 
 
-@routed_service("/file_links", tags=["File Links"])
+@routed_service("/file-links", tags=["File Links"])
 class FileLinkService(GenericCRUDService):
     config = CRUDConfig(
         model=FileLink,

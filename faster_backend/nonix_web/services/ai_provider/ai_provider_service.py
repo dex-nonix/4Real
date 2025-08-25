@@ -4,7 +4,7 @@ from ...crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, S
 from ...models import AIProvider
 
 
-@routed_service("/ai_providers", tags=["AI Providers"])
+@routed_service("/ai-providers", tags=["AI Providers"])
 class AIProviderService(GenericCRUDService):
     config = CRUDConfig(
         model=AIProvider,

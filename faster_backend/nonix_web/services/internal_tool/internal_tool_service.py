@@ -4,7 +4,7 @@ from ...crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, S
 from ...models import InternalTool
 
 
-@routed_service("/internal_tools", tags=["Internal Tools"])
+@routed_service("/internal-tools", tags=["Internal Tools"])
 class InternalToolService(GenericCRUDService):
     config = CRUDConfig(
         model=InternalTool,

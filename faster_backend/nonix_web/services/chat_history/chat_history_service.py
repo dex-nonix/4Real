@@ -4,7 +4,7 @@ from ...crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, S
 from ...models import ChatHistory
 
 
-@routed_service("/chat_histories", tags=["Chat Histories"])
+@routed_service("/chat-histories", tags=["Chat Histories"])
 class ChatHistoryService(GenericCRUDService):
     config = CRUDConfig(
         model=ChatHistory,

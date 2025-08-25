@@ -4,7 +4,7 @@ from ...crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, S
 from ...models import FileCategory
 
 
-@routed_service("/file_categories", tags=["File Categories"])
+@routed_service("/file-categories", tags=["File Categories"])
 class FileCategoryService(GenericCRUDService):
     config = CRUDConfig(
         model=FileCategory,

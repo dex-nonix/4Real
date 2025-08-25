@@ -4,7 +4,7 @@ from ...crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, S
 from ...models import AIModelMapping
 
 
-@routed_service("/ai_model_mappings", tags=["AI Model Mappings"])
+@routed_service("/ai-model-mappings", tags=["AI Model Mappings"])
 class AIModelMappingService(GenericCRUDService):
     config = CRUDConfig(
         model=AIModelMapping,

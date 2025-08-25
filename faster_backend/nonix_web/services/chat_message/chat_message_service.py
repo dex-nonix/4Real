@@ -4,7 +4,7 @@ from ...crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, S
 from ...models import ChatMessage
 
 
-@routed_service("/chat_messages", tags=["Chat Messages"])
+@routed_service("/chat-messages", tags=["Chat Messages"])
 class ChatMessageService(GenericCRUDService):
     config = CRUDConfig(
         model=ChatMessage,

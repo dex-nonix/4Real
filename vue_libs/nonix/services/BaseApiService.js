@@ -5,7 +5,7 @@ import {inject} from "vue";
 export default class BaseApiService {
   constructor(app, options = {}) {
     const { defaultHeaders = {}, onRequest, onResponse, onError} = options
-    this.baseURL = API_BASE_URL.replace(/\/$/, '')
+    this.baseURL = "http://0.0.0.0:5000/api"//API_BASE_URL.replace(/\/$/, '')
     this.defaultHeaders = { 'Content-Type': 'application/json', ...defaultHeaders }
     this.onRequest = onRequest
     this.onResponse = onResponse

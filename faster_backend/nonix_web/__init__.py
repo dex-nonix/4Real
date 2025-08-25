@@ -47,8 +47,8 @@ def create_nx_app() -> FastAPI:
         allow_methods=settings.CORS_ALLOW_METHODS,
         allow_headers=settings.CORS_ALLOW_HEADERS,
     )
-    app.socket_manager = SocketManager(app, cors_allowed_origins=settings.CORS_ORIGINS, mount_location="/ws")
-
+    # app.socket_manager = SocketManager(app, cors_allowed_origins=settings.CORS_ORIGINS, mount_location="/ws")
+    #
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
     for service in ALL_SERVICES:

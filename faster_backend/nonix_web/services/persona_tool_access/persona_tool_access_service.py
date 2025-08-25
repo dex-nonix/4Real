@@ -4,7 +4,7 @@ from ...crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, S
 from ...models import PersonaToolAccess
 
 
-@routed_service("/persona_tool_access", tags=["Persona Tool Access"])
+@routed_service("/persona-tool-access", tags=["Persona Tool Access"])
 class PersonaToolAccessService(GenericCRUDService):
     config = CRUDConfig(
         model=PersonaToolAccess,

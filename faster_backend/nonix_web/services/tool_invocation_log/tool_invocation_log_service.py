@@ -4,7 +4,7 @@ from ...crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, S
 from ...models import ToolInvocationLog
 
 
-@routed_service("/tool_invocation_logs", tags=["Tool Invocation Logs"])
+@routed_service("/tool-invocation-logs", tags=["Tool Invocation Logs"])
 class ToolInvocationLogService(GenericCRUDService):
     config = CRUDConfig(
         model=ToolInvocationLog,

@@ -4,7 +4,7 @@ from ...crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, S
 from ...models import MCPServer
 
 
-@routed_service("/mcp_servers", tags=["MCP Servers"])
+@routed_service("/mcp-servers", tags=["MCP Servers"])
 class MCPServerService(GenericCRUDService):
     config = CRUDConfig(
         model=MCPServer,

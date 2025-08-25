@@ -4,7 +4,7 @@ from ...crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, S
 from ...models import RhymeTechnique
 
 
-@routed_service("/rhyme_techniques", tags=["Rhyme Techniques"])
+@routed_service("/rhyme-techniques", tags=["Rhyme Techniques"])
 class RhymeTechniqueService(GenericCRUDService):
     config = CRUDConfig(
         model=RhymeTechnique,
