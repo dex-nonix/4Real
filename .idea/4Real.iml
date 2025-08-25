@@ -9,6 +9,7 @@
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/faster_backend" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/faster_backend/plugins" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/_old_to_ignore" />
       <excludeFolder url="file://$MODULE_DIR$/backend" />
     </content>

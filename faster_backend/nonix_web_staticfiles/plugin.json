@@ -1,0 +1,14 @@
+{
+  "name": "static-files",
+  "version": "0.5.0",
+  "class": "NxWebStaticFilesPlugin",
+  "config": {
+    "name": "static",
+    "path": "/static",
+    "directory": "/static",
+    "packages": null,
+    "html": false,
+    "check_dir": true,
+    "follow_symlink": false
+  }
+}

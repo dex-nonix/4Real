@@ -1,0 +1,11 @@
+{
+  "name": "db",
+  "version": "0.5.0",
+  "class": "NxWebDbPlugin",
+  "config": {
+    "url": "sqlite+aiosqlite:///./4real.db",
+    "options": {
+      "echo": true
+    }
+  }
+}

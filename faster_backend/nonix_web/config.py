@@ -4,12 +4,21 @@ from sqlalchemy.pool.impl import NullPool
 
 DEV_MODE = True
 
-class Settings :#(BaseSettings):
-    # FastAPI
+
+class Settings:
     APP_NAME: str = "4Real FastAPI Backend"
     DEBUG: bool = True
     HOST: str = "0.0.0.0"
     PORT: int = 5000
+    PLUGIN_SEARCH_PATH = [
+        # "plugins"
+        "./"
+    ]
+    PLUGINS = [
+        "cors",
+        "openapi",
+        "static-files",
+    ]
 
     # CORS
     CORS_ORIGINS: List[str] = ["*"]
@@ -18,8 +27,6 @@ class Settings :#(BaseSettings):
     CORS_ALLOW_HEADERS: List[str] = ["*"]
 
     # Database
-
-
     if DEV_MODE:
         DATABASE_URL: str = "sqlite+aiosqlite:///./4real.db"
         DATABASE_OPTIONS = dict(

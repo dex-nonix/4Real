@@ -1,0 +1,9 @@
+{
+    "name": "open-api",
+    "version": "0.5.0",
+    "class": "NxWebOpenApiPlugin",
+    "config": {
+        "openapi_route": "/openapi.json",
+        "docs_route": "/docs"
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "name": "cors",
+    "version": "0.5.0",
+    "class": "NxWebStaticPlugin",
+    "config": {
+        "origins": ["*"],
+        "allow_credentials": true,
+        "allow_methods":["*"],
+        "allow_headers":["*"]
+    }
+}

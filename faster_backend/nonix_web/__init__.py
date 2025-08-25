@@ -1,31 +1,25 @@
 import os
 from contextlib import asynccontextmanager
-from inspect import isclass
 from typing import Optional, List
 
-from fastapi import FastAPI, Query, Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.openapi.utils import get_openapi
-from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi_socketio import SocketManager
 
 from .config import settings
 from .database import init_db, close_db
 from .services.service_registration import ALL_SERVICES
-# from .websocket import socket_manager
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for FastAPI startup/shutdown events."""
-
     await init_db()
     os.makedirs(settings.UPLOAD_FOLDER, exist_ok=True)
-
     yield
-
     # Shutdown
     await close_db()
 
@@ -59,14 +53,14 @@ def create_nx_app() -> FastAPI:
 
     def custom_openapi(tags: Optional[List[str]] = None):
         print(f"🔍 DEBUG: custom_openapi called with tags: {tags}")
-        
+
         # Don't cache when filtering by tags
         if tags:
             all_routes = app.routes
             print(f"🔍 DEBUG: Total routes: {len(all_routes)}")
-            
+
             filtered_routes = []
-            for route in all_routes:
+            for +route in all_routes:
                 print(f"🔍 DEBUG: Route {route.path} has tags: {getattr(route, 'tags', 'NO_TAGS')}")
                 if hasattr(route, 'tags') and route.tags:
                     route_tags = [str(tag).lower() for tag in route.tags]
@@ -76,7 +70,7 @@ def create_nx_app() -> FastAPI:
                         print(f"🔍 DEBUG: Route {route.path} MATCHED!")
             all_routes = filtered_routes
             print(f"🔍 DEBUG: Filtered routes: {len(all_routes)}")
-            
+
             return get_openapi(
                 title=app.title,
                 version=app.version,
@@ -86,7 +80,7 @@ def create_nx_app() -> FastAPI:
                 tags=app.openapi_tags,
                 servers=app.servers,
             )
-        
+
         # Cache only for unfiltered requests
         if not app.openapi_schema:
             app.openapi_schema = get_openapi(
@@ -105,7 +99,7 @@ def create_nx_app() -> FastAPI:
     def create_swagger_ui_html(tags: str = None):
         openapi_url = f"/openapi.json?tags={tags}" if tags else "/openapi.json"
         title_suffix = f" - {tags}" if tags else ""
-        
+
         return get_swagger_ui_html(
             openapi_url=openapi_url,
             title=f"{app.title} - API Documentation{title_suffix}",
@@ -125,7 +119,6 @@ def create_nx_app() -> FastAPI:
     @app.get("/docs/{tags}")
     async def docs(tags: str = None):
         return create_swagger_ui_html(tags)
-
 
     @app.get("/")
     async def root():
