@@ -15,9 +15,10 @@ class Settings:
         "./"
     ]
     PLUGINS = [
-        "cors",
-        "openapi",
-        "static-files",
+        {"name":"cors"},
+        {"name":"openapi"},
+        {"name":"db"},
+        {"name":"static-files"},
     ]
 
     # CORS
