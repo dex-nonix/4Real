@@ -9,6 +9,7 @@ from nonix_web.server import NxWebServer
 
 Base = declarative_base()
 
+
 ##### TODO:  all has to go into the plugin
 async def get_db():
     async with AsyncSessionLocal() as session:

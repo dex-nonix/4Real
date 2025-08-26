@@ -6,13 +6,23 @@ from sqlalchemy import select, or_
 from starlette import status
 from starlette.requests import Request
 
-from nonix_web_db.crud import CRUDConfig, QueryProcessor
-from nonix_web_db.crud.models_and_schemas import BulkOperationsPayload, PaginatedResponse, SelectorItem
-from nonix_web_db.crud.types import ModelType
-from nonix_web_db.crud.utils import get_list_for_query_params, get_item_by_id, create_paginated_response, \
-    execute_query_all
 from nonix_web.services.base_service import BaseService
-from nonix_web_db import AsyncSessionLocal
+from .models_and_schemas import BulkOperationsPayload, PaginatedResponse, SelectorItem, CRUDConfig
+from .models_and_schemas import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig
+from .query_processor import QueryProcessor
+from .types import ModelType
+from .utils import get_list_for_query_params, get_item_by_id, create_paginated_response, execute_query_all
+
+__all__ = [
+    "CRUDConfig",
+    "FilterConfig",
+    "SortingConfig",
+    "ValidationConfig",
+    "SelectorConfig",
+    "GenericCRUDService",
+]
+
+from ..plugin import AsyncSessionLocal
 
 
 class GenericCRUDService(BaseService):

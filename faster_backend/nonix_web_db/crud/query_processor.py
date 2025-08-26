@@ -3,8 +3,8 @@ from typing import Type, Any
 
 from starlette.requests import Request
 
-from nonix_web_db.crud import CRUDConfig
-from nonix_web_db.crud.types import ModelType
+from .models_and_schemas import CRUDConfig
+from .types import ModelType
 
 
 class QueryProcessor:

@@ -1,5 +1,5 @@
 {
-  "name": "file_manager",
+  "name": "file-manager",
   "version": "0.5.0",
   "class": "NxWebFileManagerPlugin",
   "dependencies": ["db"],

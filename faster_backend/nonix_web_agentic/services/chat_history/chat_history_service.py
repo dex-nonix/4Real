@@ -1,6 +1,6 @@
-from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, GenericCRUDService
-
 from nonix_web.services.base_service import routed_service
+from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
+    GenericCRUDService
 from .chat_history_schemas import ChatHistoryCreate, ChatHistoryUpdate, ChatHistoryInDbModel
 from ...models.chat_history import ChatHistory
 

@@ -4,16 +4,16 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 
-from nonix_web_db import AsyncSessionLocal
-from nonix_web_agentic.models.chat_history import ChatHistory
-from nonix_web_agentic.models.chat_message import ChatMessage
-from nonix_web_agentic.models.chat_session import ChatSession
-from nonix_web_agentic.models.persona import Persona
 from nonix_web.services.base_service import route
+from nonix_web_db import AsyncSessionLocal
 from .models_and_schemas import (
     CreateSessionRequest, UpdateSessionRequest, SessionResponse,
     SessionListResponse, SessionWithHistoryResponse, DeleteSessionResponse
 )
+from ....models.chat_history import ChatHistory
+from ....models.chat_message import ChatMessage
+from ....models.chat_session import ChatSession
+from ....models.persona import Persona
 
 
 class ChatSessionMixin:

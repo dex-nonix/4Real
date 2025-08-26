@@ -1,5 +1,6 @@
-from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, GenericCRUDService
 from nonix_web.services.base_service import routed_service
+from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
+    GenericCRUDService
 from .file_link_schemas import FileLinkCreate, FileLinkUpdate, FileLinkInDbModel
 from ...models.file_link import FileLink
 

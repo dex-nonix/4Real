@@ -1,6 +1,6 @@
-from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, GenericCRUDService
-
 from nonix_web.services.base_service import routed_service
+from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
+    GenericCRUDService
 from .ai_provider_schemas import AIProviderCreate, AIProviderUpdate, AIProviderInDbModel
 from ...models.ai_provider import AIProvider
 

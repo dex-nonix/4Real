@@ -6,18 +6,8 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 
-from nonix_web_db import AsyncSessionLocal
-from nonix_web_agentic.models.ai_model_mapping import AIModelMapping
-from nonix_web_agentic.models.ai_provider import AIProvider
-from nonix_web_agentic.models.chat_history import ChatHistory
-from nonix_web_agentic.models.chat_message import ChatMessage
-from nonix_web_agentic.models.chat_session import ChatSession
-from nonix_web_agentic.models.persona import Persona
-from nonix_web_agentic.models.tool_invocation_log import ToolInvocationLog
 from nonix_web.services.base_service import route
-from nonix_web_agentic.llm.llm_client import run_chat_streaming
-from nonix_web_agentic.llm.tool_runtime import execute_tool
-from nonix_web_agentic.llm.tool_runtime import list_persona_tools
+from nonix_web_db import AsyncSessionLocal
 from .models_and_schemas import (
     MessageListResponse,
     SendMessageToHistoryRequest,
@@ -30,6 +20,16 @@ from ..streaming_event_manager import StreamingEventManager
 from ..streaming_interface import StreamingChunk
 from ..streaming_message_handler import StreamingMessageHandler
 from ..websocket_protocol import WebSocketMixinProtocol
+from ....llm.llm_client import run_chat_streaming
+from ....llm.tool_runtime import execute_tool
+from ....llm.tool_runtime import list_persona_tools
+from ....models.ai_model_mapping import AIModelMapping
+from ....models.ai_provider import AIProvider
+from ....models.chat_history import ChatHistory
+from ....models.chat_message import ChatMessage
+from ....models.chat_session import ChatSession
+from ....models.persona import Persona
+from ....models.tool_invocation_log import ToolInvocationLog
 
 
 class ChatMessageMixin(WebSocketMixinProtocol):

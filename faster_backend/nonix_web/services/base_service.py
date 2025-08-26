@@ -12,8 +12,6 @@ from starlette.routing import (
 )
 from starlette.types import ASGIApp, Lifespan
 
-# from nonix_web.websocket import socket_manager
-
 
 @dataclass
 class _RoutedServiceDefinition:

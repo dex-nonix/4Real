@@ -4,11 +4,8 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 
-from nonix_web_db import AsyncSessionLocal
-from nonix_web_agentic.models.mcp_server import MCPServer
-from nonix_web_agentic.models.persona import Persona
 from nonix_web.services.base_service import route
-from nonix_web_agentic.llm import list_persona_tools
+from nonix_web_db import AsyncSessionLocal
 from .models_and_schemas import (
     PersonaToolsResponse,
     ToolExecutionRequest,
@@ -16,6 +13,9 @@ from .models_and_schemas import (
     MCPServerStatusResponse
 )
 from ..websocket_protocol import WebSocketMixinProtocol
+from ....llm.tool_runtime import list_persona_tools
+from ....models.mcp_server import MCPServer
+from ....models.persona import Persona
 
 
 class ToolExecutionMixin(WebSocketMixinProtocol):

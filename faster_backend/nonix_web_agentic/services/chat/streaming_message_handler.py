@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 
 from nonix_web_db import AsyncSessionLocal
-from nonix_web_agentic.models.chat_message import ChatMessage
+from ...models.chat_message import ChatMessage
 
 
 class StreamingMessageHandler:

@@ -1,5 +1,5 @@
 {
-  "name": "music_artist",
+  "name": "music-artist",
   "version": "0.5.0",
   "class": "NxWebMusicArtistPlugin",
   "dependencies": [

@@ -2,9 +2,9 @@ from datetime import datetime, timezone
 from typing import Any, Dict
 
 from nonix_web_db import AsyncSessionLocal
-from nonix_web_agentic.models.chat_message import ChatMessage
-from nonix_web_agentic.llm import execute_tool
 from .message_type_registry import MessageTypeHandler
+from ...llm.tool_runtime import execute_tool
+from ...models.chat_message import ChatMessage
 
 
 class ChatMessageHandler(MessageTypeHandler):

@@ -4,11 +4,8 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 
+import nonix_web.services.base_service
 from nonix_web_db import AsyncSessionLocal
-from nonix_web_agentic.models.chat_history import ChatHistory
-from nonix_web_agentic.models.chat_message import ChatMessage
-from nonix_web_agentic.models.chat_session import ChatSession
-from nonix_web.services.base_service import route
 from .models_and_schemas import (
     HistoryListResponse,
     CreateHistoryRequest,
@@ -18,6 +15,9 @@ from .models_and_schemas import (
     DeleteHistoryResponse,
     MessageListResponse
 )
+from ....models.chat_history import ChatHistory
+from ....models.chat_message import ChatMessage
+from ....models.chat_session import ChatSession
 
 
 class ChatHistoryMixin:
@@ -46,7 +46,7 @@ class ChatHistoryMixin:
 
         return session, None, None
 
-    @route(
+    @nonix_web.services.base_service.route(
         '/sessions/{id}/histories',
         methods=['GET'],
         response_model=HistoryListResponse
@@ -69,7 +69,7 @@ class ChatHistoryMixin:
             except Exception as exc:  # noqa: BLE001
                 return JSONResponse({'error': str(exc)}, status_code=500)
 
-    @route(
+    @nonix_web.services.base_service.route(
         '/sessions/{id}/histories',
         methods=['POST'],
         response_model=HistoryResponse
@@ -99,7 +99,7 @@ class ChatHistoryMixin:
                 await db_session.rollback()
                 return JSONResponse({'error': str(exc)}, status_code=500)
 
-    @route(
+    @nonix_web.services.base_service.route(
         '/sessions/{id}/histories/{history_id}',
         methods=['GET'],
         response_model=HistoryWithMessagesResponse
@@ -117,7 +117,7 @@ class ChatHistoryMixin:
             except Exception as exc:
                 return JSONResponse({'error': str(exc)}, status_code=500)
 
-    @route(
+    @nonix_web.services.base_service.route(
         '/sessions/{id}/histories/{history_id}',
         methods=['PUT'],
         response_model=HistoryResponse
@@ -141,7 +141,7 @@ class ChatHistoryMixin:
                 await db_session.rollback()
                 return JSONResponse({'error': str(exc)}, status_code=500)
 
-    @route(
+    @nonix_web.services.base_service.route(
         '/sessions/{id}/histories/{history_id}',
         methods=['DELETE'],
         response_model=DeleteHistoryResponse
@@ -166,7 +166,7 @@ class ChatHistoryMixin:
                 await db_session.rollback()
                 return JSONResponse({'error': str(exc)}, status_code=500)
 
-    @route(
+    @nonix_web.services.base_service.route(
         '/sessions/{id}/histories/{history_id}/messages',
         methods=['GET'],
         response_model=MessageListResponse

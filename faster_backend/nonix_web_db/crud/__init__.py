@@ -8,4 +8,5 @@ __all__ = [
     "SortingConfig",
     "ValidationConfig",
     "SelectorConfig",
+    "GenericCRUDService",
 ]

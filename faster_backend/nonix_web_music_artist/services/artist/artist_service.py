@@ -1,5 +1,6 @@
-from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, GenericCRUDService
 from nonix_web.services.base_service import routed_service, route
+from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
+    GenericCRUDService
 from .artist_schemas import ArtistCreate, ArtistUpdate, ArtistInDbModel
 from ...models.artist import Artist
 

@@ -1,7 +1,7 @@
 {
     "name": "cors",
     "version": "0.5.0",
-    "class": "NxWebStaticPlugin",
+    "class": "NxWebCORSPlugin",
     "config": {
         "origins": ["*"],
         "allow_credentials": true,

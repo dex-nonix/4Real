@@ -3,20 +3,22 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Union, List, Dict, Any
+from typing import Union, List, Dict, Any, TYPE_CHECKING
 
-from nonix_web.plugin.base_plugin import BasePlugin
-from nonix_web.server import NxWebServer
+from .base_plugin import BasePlugin
+
+if TYPE_CHECKING:
+    from ..server import NxWebServer
 
 
 class PluginManager:
-    def __init__(self, server: NxWebServer, plugin_paths: Union[str, List[str]]):
+    def __init__(self, server: "NxWebServer", plugin_paths: Union[str, List[str]]):
         self._logger = logging.getLogger(self.__class__.__name__)
         self.server = server
         self.plugin_paths = [Path(p).resolve() for p in
                              ([plugin_paths] if isinstance(plugin_paths, str) else plugin_paths)]
         self.available_plugins: Dict[str, Dict[str, Any]] = {}
-        self.loaded_plugins: Dict[str, BasePlugin] = {}
+        self.loaded_plugins: Dict[str, "BasePlugin"] = {}
 
         self._add_paths_to_sys()
 
@@ -158,5 +160,3 @@ class PluginManager:
     async def discover_and_load(self, plugins_to_load):
         self.discover_plugins()
         await self.load_plugins(plugins_to_load)
-
-

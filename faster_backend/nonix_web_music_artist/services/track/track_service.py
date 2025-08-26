@@ -1,6 +1,7 @@
-from .track_schemas import TrackCreate, TrackUpdate, TrackInDbModel
 from nonix_web.services.base_service import routed_service
-from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, GenericCRUDService
+from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
+    GenericCRUDService
+from .track_schemas import TrackCreate, TrackUpdate, TrackInDbModel
 from ...models.track import Track
 
 
