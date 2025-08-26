@@ -16,6 +16,7 @@ class NxWebServer(FastAPI):
         )
         self.settings = settings
         self.plugin_manager = PluginManager(self, self.settings.PLUGINS.get("search_paths", "plugins"))
+        self.__init__server()
 
     async def _setup_server(self):
         await self.plugin_manager.discover_and_load(self.settings.PLUGINS.get("plugins", []))
@@ -33,3 +34,7 @@ class NxWebServer(FastAPI):
         @self.exception_handler(Exception)
         async def global_exception_handler(request, exc):
             return JSONResponse({"detail": f"Internal server error: {str(exc)}"}, 500)
+
+    def __init__server(self):
+        "keep for simple constructorless overload"
+        ...

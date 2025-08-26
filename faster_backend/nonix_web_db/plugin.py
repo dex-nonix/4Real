@@ -2,13 +2,14 @@ from typing import Dict, Any
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm.decl_api import declarative_base
+from sqlalchemy.pool.impl import NullPool
 
 from nonix_web.plugin.base_plugin import BasePlugin
 from nonix_web.server import NxWebServer
 
 Base = declarative_base()
 
-
+##### TODO:  all has to go into the plugin
 async def get_db():
     async with AsyncSessionLocal() as session:
         try:
@@ -32,9 +33,14 @@ def AsyncSessionLocal() -> async_sessionmaker:
 class NxWebDbPlugin(BasePlugin):
     engine = None
 
-    async def load_plugin(self, server: NxWebServer, config: Dict[str, Any]):
+    async def _load_plugin(self, server: NxWebServer, config: Dict[str, Any]):
         global _async_session_local
-        self.engine = engine = create_async_engine(config["url"], **config.get("options"))
+        options = config.get("options", {})
+
+        if server.settings.DEBUG:
+            options["poolClass"] = NullPool
+
+        self.engine = engine = create_async_engine(config["url"], **options)
         set_async_session_local(async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False))
 
         async with engine.begin() as conn:

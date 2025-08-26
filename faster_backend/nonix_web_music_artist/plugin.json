@@ -1,0 +1,9 @@
+{
+  "name": "music_artist",
+  "version": "0.5.0",
+  "class": "NxWebMusicArtistPlugin",
+  "dependencies": [
+    "db"
+  ],
+  "config": {}
+}
