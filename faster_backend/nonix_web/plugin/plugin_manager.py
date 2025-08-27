@@ -15,8 +15,10 @@ class PluginManager:
     def __init__(self, server: "NxWebServer", plugin_paths: Union[str, List[str]]):
         self._logger = logging.getLogger(self.__class__.__name__)
         self.server = server
-        self.plugin_paths = [Path(p).resolve() for p in
-                             ([plugin_paths] if isinstance(plugin_paths, str) else plugin_paths)]
+        self.plugin_paths = [
+            Path(p).resolve() for p in
+            ([plugin_paths] if isinstance(plugin_paths, str) else plugin_paths)
+        ]
         self.available_plugins: Dict[str, Dict[str, Any]] = {}
         self.loaded_plugins: Dict[str, "BasePlugin"] = {}
 

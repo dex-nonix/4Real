@@ -5,19 +5,7 @@ class Settings:
     HOST: str = "0.0.0.0"
     PORT: int = 5000
     PLUGIN_SEARCH_PATH = [
-        # "plugins"
-        "./"
+        "plugins"
+        # "./"
     ]
-    PLUGINS = [
-        {"name": "cors"},
-        {"name": "open-api"},
-        {"name": "db"},
-        {"name": "static-files"},
-        {"name": "agentic"},
-        {"name": "websocket"},
-        {"name": "file-manager"},
-        {"name": "music-artist"},
-    ]
-
-
-settings = Settings()
+    PLUGINS = []

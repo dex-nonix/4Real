@@ -17,7 +17,6 @@ class BasePlugin(ABC):
 
     @final
     def configure(self, server: "NxWebServer", config: Dict[str, Any]):
-        """Configure app structure: middleware, routes, static files"""
         for routed_service in self.api_services:
             server.include_router(routed_service.to_router(server), prefix="/api")
         return self._configure(server, config)
