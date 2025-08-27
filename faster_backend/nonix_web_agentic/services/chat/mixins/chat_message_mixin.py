@@ -611,6 +611,55 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             return await self._format_error_response(str(exc), 500)
 
     @route(
+        '/sessions/{session_id}/histories/{history_id}/messages',
+        methods=['DELETE'],
+        response_model=DeleteMessageResponse
+    )
+    async def clear_history_messages(self, req: Request, session_id: int, history_id: int):
+        """Clear all messages from a specific history."""
+        try:
+            async with AsyncSessionLocal() as db_session:
+                # Verify session exists and is active
+                session = (await db_session.execute(
+                    select(ChatSession).where(ChatSession.id == session_id, ChatSession.is_active == True)
+                )).scalar_one_or_none()
+
+                if not session:
+                    return await self._format_error_response('Session not found or inactive', 404)
+
+                # Verify history exists and belongs to session
+                history = (await db_session.execute(
+                    select(ChatHistory).where(ChatHistory.id == history_id, ChatHistory.session_id == session_id)
+                )).scalar_one_or_none()
+
+                if not history:
+                    return await self._format_error_response('History not found', 404)
+
+                # Count messages before deletion
+                messages_result = await db_session.execute(
+                    select(ChatMessage).where(ChatMessage.history_id == history_id)
+                )
+                messages = messages_result.scalars().all()
+                deleted_count = len(messages)
+
+                # Delete all messages in the history
+                for message in messages:
+                    await db_session.delete(message)
+
+                # Reset history message count
+                history.message_count = 0
+
+                await db_session.commit()
+
+                return JSONResponse({
+                    'message': f'Successfully cleared {deleted_count} messages from history',
+                    'deleted_count': deleted_count
+                })
+
+        except Exception as exc:  # noqa: BLE001
+            return await self._format_error_response(str(exc), 500)
+
+    @route(
         '/sessions/{session_id}/histories/{history_id}/messages/{message_id}',
         methods=['DELETE'],
         response_model=DeleteMessageResponse
