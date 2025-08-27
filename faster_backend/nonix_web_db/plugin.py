@@ -28,7 +28,7 @@ _async_session_local: async_sessionmaker = None
 
 
 def AsyncSessionLocal() -> async_sessionmaker:
-    return _async_session_local
+    return _async_session_local()
 
 
 class NxWebDbPlugin(BasePlugin):
