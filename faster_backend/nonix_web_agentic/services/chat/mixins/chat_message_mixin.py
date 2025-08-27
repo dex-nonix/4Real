@@ -81,21 +81,27 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         self._logger.debug(f"Validating session {session_id} with history {history_id}")
 
         async with AsyncSessionLocal() as db_session:
-            session = (await db_session.execute(
+            # Load session with persona relationship eagerly
+            session_result = await db_session.execute(
                 select(ChatSession).where(ChatSession.id == session_id, ChatSession.is_active == True)
-            )).scalar_one_or_none()
+            )
+            session = session_result.scalar_one_or_none()
 
             if not session:
                 self._logger.warning(f"Session {session_id} not found or inactive")
                 return None, None
 
+            # Load persona relationship eagerly to avoid detached instance errors
+            await db_session.refresh(session, ['persona'])
+
             if history_id:
                 # Specific history requested
                 self._logger.debug(f"Querying history {history_id} for session {session_id}")
 
-                history = (await db_session.execute(
+                history_result = await db_session.execute(
                     select(ChatHistory).where(ChatHistory.id == history_id, ChatHistory.session_id == session_id)
-                )).scalar_one_or_none()
+                )
+                history = history_result.scalar_one_or_none()
                 self._logger.debug(f"History query result: {history}")
 
                 if not history:
