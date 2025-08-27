@@ -38,8 +38,8 @@ class NxWebDbPlugin(BasePlugin):
         global _async_session_local
         options = config.get("options", {})
 
-        if server.settings.DEBUG:
-            options["poolClass"] = NullPool
+        # if server.settings.DEBUG:
+        #     options["poolClass"] = NullPool
 
         self.engine = engine = create_async_engine(config["url"], **options)
         set_async_session_local(async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False))

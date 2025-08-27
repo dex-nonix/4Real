@@ -7,12 +7,19 @@ from .config import Settings
 from .plugin.plugin_manager import PluginManager
 
 
+@asynccontextmanager
+async def _lifespan(self):
+    await self._setup_server()
+    yield
+    await self._teardown_server()
+
+
 class NxWebServer(FastAPI):
     def __init__(self, settings: Settings):
         super().__init__(
             title=settings.APP_NAME,
             debug=settings.DEBUG,
-            lifespan=asynccontextmanager(self._lifespan)
+            lifespan=_lifespan
         )
         self.settings = settings
         self.plugin_manager = PluginManager(self, self.settings.PLUGIN_SEARCH_PATH)
@@ -24,11 +31,6 @@ class NxWebServer(FastAPI):
     async def _teardown_server(self):
         # await self.plugin_manager.unload()
         pass
-
-    async def _lifespan(self, _):
-        await self._setup_server()
-        yield
-        await self._teardown_server()
 
     def _setup_exception_handler(self):
         @self.exception_handler(Exception)
