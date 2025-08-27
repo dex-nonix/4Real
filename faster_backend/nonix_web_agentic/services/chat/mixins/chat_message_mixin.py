@@ -30,7 +30,7 @@ from ....models.chat_message import ChatMessage
 from ....models.chat_session import ChatSession
 from ....models.persona import Persona
 from ....models.tool_invocation_log import ToolInvocationLog
-
+from ..streaming_interface import StreamingChunk
 
 class ChatMessageMixin(WebSocketMixinProtocol):
     """Mixin for chat message handling and sending operations."""
@@ -475,8 +475,17 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
             # Use streaming LLM client
             try:
-                async for message in run_chat_streaming(provider, mapping_obj, chat_history,
+                async for message_dict in run_chat_streaming(provider, mapping_obj, chat_history,
                                                         available_tools_info, persona_id):
+                    # Convert dictionary to StreamingChunk object
+
+                    message = StreamingChunk(
+                        content=message_dict.get('content', ''),
+                        chunk_type=message_dict.get('chunk_type', 'text'),
+                        metadata=message_dict.get('metadata', {}),
+                        is_final=message_dict.get('chunk_type') == 'complete'
+                    )
+                    
                     # Handle each chunk
                     if message.chunk_type == "text":
                         if await message_handler.update_content_safely(message.content):
@@ -490,11 +499,11 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
                     elif message.chunk_type == "tool_start":
                         await event_manager.emit_tool_event(session_id, history_id,
-                                                            message.metadata["tool_name"], "started")
+                                                            message.metadata.get("tool_name", ""), "started")
 
                     elif message.chunk_type == "tool_end":
                         await event_manager.emit_tool_event(session_id, history_id,
-                                                            message.metadata["tool_name"], "completed")
+                                                            message.metadata.get("tool_name", ""), "completed")
 
                     elif message.chunk_type == "complete":
                         await message_handler.finalize_assistant_message()
