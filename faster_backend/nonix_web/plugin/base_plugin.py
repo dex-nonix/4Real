@@ -1,5 +1,5 @@
 import logging
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Dict, Any, TYPE_CHECKING, final
 
 if TYPE_CHECKING:
@@ -14,6 +14,7 @@ class BasePlugin(ABC):
         self.version: str = "0.0.0"
         self.config = config
         self._logger = logging.getLogger(self.__class__.__name__)
+
     @final
     async def configure(self, server: "NxWebServer", config: Dict[str, Any]):
         """Configure app structure: middleware, routes, static files"""
@@ -31,17 +32,14 @@ class BasePlugin(ABC):
         """Cleanup: close connections, dispose resources"""
         return await self._shutdown(server, config)
 
-    @abstractmethod
     async def _configure(self, server: "NxWebServer", config: Dict[str, Any]):
         """Override this method to configure your plugin"""
         pass
 
-    @abstractmethod
     async def _startup(self, server: "NxWebServer", config: Dict[str, Any]):
         """Override this method to handle startup"""
         pass
 
-    @abstractmethod
     async def _shutdown(self, server: "NxWebServer", config: Dict[str, Any]):
         """Override this method to handle shutdown"""
         pass
