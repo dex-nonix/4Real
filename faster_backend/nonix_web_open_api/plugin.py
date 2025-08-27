@@ -11,7 +11,7 @@ from nonix_web.server import NxWebServer
 class NxWebOpenApiPlugin(BasePlugin):
     openapi_schema = None
 
-    async def configure(self, server: NxWebServer, config: Dict[str, Any]):
+    async def _configure(self, server: NxWebServer, config: Dict[str, Any]):
         openapi_route = config.get("openapi_route", "/openapi.json")
         docs_route = config.get("docs_route", "/docs")
 
@@ -37,7 +37,7 @@ class NxWebOpenApiPlugin(BasePlugin):
             logger.debug(f"🔍 Total routes: {len(all_routes)}")
 
             filtered_routes = []
-            for route in all_routes:  # what the fuck is the plus???
+            for route in all_routes: # what the fuck is the plus???
                 logger.debug(f"🔍 Route {route.path} has tags: {getattr(route, 'tags', 'NO_TAGS')}")
                 if hasattr(route, 'tags') and route.tags:
                     route_tags = [str(tag).lower() for tag in route.tags]

@@ -1,6 +1,6 @@
 import logging
-from abc import ABC
-from typing import Dict, Any, TYPE_CHECKING
+from abc import ABC, abstractmethod
+from typing import Dict, Any, TYPE_CHECKING, final
 
 if TYPE_CHECKING:
     from ..server import NxWebServer
@@ -14,13 +14,34 @@ class BasePlugin(ABC):
         self.version: str = "0.0.0"
         self.config = config
         self._logger = logging.getLogger(self.__class__.__name__)
-
+    @final
     async def configure(self, server: "NxWebServer", config: Dict[str, Any]):
+        """Configure app structure: middleware, routes, static files"""
         for routed_service in self.api_services:
             server.include_router(routed_service.to_router(server), prefix="/api")
+        return await self._configure(server, config)
 
+    @final
     async def startup(self, server: "NxWebServer", config: Dict[str, Any]):
-        ...
+        """Runtime startup: database connections, async initialization"""
+        return await self._startup(server, config)
 
+    @final
     async def shutdown(self, server: "NxWebServer", config: Dict[str, Any]):
-        ...
+        """Cleanup: close connections, dispose resources"""
+        return await self._shutdown(server, config)
+
+    @abstractmethod
+    async def _configure(self, server: "NxWebServer", config: Dict[str, Any]):
+        """Override this method to configure your plugin"""
+        pass
+
+    @abstractmethod
+    async def _startup(self, server: "NxWebServer", config: Dict[str, Any]):
+        """Override this method to handle startup"""
+        pass
+
+    @abstractmethod
+    async def _shutdown(self, server: "NxWebServer", config: Dict[str, Any]):
+        """Override this method to handle shutdown"""
+        pass

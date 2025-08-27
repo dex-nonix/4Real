@@ -9,7 +9,7 @@ _ALLOW_ALL = ["*"]
 
 class NxWebCORSPlugin(BasePlugin):
 
-    async def configure(self, server: NxWebServer, config: Dict[str, Any]):
+    async def _configure(self, server: NxWebServer, config: Dict[str, Any]):
         server.add_middleware(
             CORSMiddleware,
             allow_origins=config.get("origins", _ALLOW_ALL),

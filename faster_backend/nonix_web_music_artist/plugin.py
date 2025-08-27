@@ -17,6 +17,3 @@ class NxWebMusicArtistPlugin(BasePlugin):
         StyleService,
         TrackService,
     ]
-
-    async def configure(self, server: NxWebServer, config: Dict[str, Any]):
-        await super().configure(server, config)

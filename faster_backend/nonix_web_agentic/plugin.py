@@ -33,6 +33,3 @@ class NxWebAgenticPlugin(BasePlugin):
         PersonaToolAccessService,
         ToolInvocationLogService
     ]
-
-    async def configure(self, server: NxWebServer, config: Dict[str, Any]):
-        await super().configure(server, config)

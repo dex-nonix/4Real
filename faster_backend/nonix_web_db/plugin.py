@@ -34,7 +34,7 @@ def AsyncSessionLocal() -> async_sessionmaker:
 class NxWebDbPlugin(BasePlugin):
     engine = None
 
-    async def startup(self, server: NxWebServer, config: Dict[str, Any]):
+    async def _startup(self, server: NxWebServer, config: Dict[str, Any]):
         global _async_session_local
         options = config.get("options", {})
 
@@ -44,6 +44,6 @@ class NxWebDbPlugin(BasePlugin):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
-    async def shutdown(self, server: NxWebServer, config: Dict[str, Any]):
+    async def _shutdown(self, server: NxWebServer, config: Dict[str, Any]):
         if self.engine:
             await self.engine.dispose()
