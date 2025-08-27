@@ -9,7 +9,7 @@ from nonix_web.server import NxWebServer
 
 class NxWebCORSPlugin(BasePlugin):
     def _configure(self, server: NxWebServer, config: Dict[str, Any]):
-        server.add_middleware(
+        server.app.add_middleware(
             CORSMiddleware,
             allow_origins=config["allow_origins"],
             allow_credentials=config["allow_credentials"],

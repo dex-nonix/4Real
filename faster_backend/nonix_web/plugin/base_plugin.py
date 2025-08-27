@@ -18,7 +18,7 @@ class BasePlugin(ABC):
     @final
     def configure(self, server: "NxWebServer", config: Dict[str, Any]):
         for routed_service in self.api_services:
-            server.include_router(routed_service.to_router(server), prefix="/api")
+            server.app.include_router(routed_service.to_router(server), prefix="/api")
         return self._configure(server, config)
 
     @final

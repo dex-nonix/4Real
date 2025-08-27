@@ -9,7 +9,7 @@ from nonix_web.server import NxWebServer
 class NxWebStaticFilesPlugin(BasePlugin):
 
     def _configure(self, server: NxWebServer, config: Dict[str, Any]):
-        server.mount(
+        server.app.mount(
             config["path"],
             StaticFiles(
                 directory=config["directory"],

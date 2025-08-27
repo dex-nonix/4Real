@@ -11,11 +11,13 @@ from .config import Settings
 from .plugin.plugin_manager import PluginManager
 
 
-class NxWebServer(FastAPI):
+class NxWebServer:
     sio: socketio.AsyncServer = None
 
     def __init__(self, settings: Settings):
-        super().__init__(
+        self.settings = settings
+        self._setup_logging()
+        self.app = FastAPI(
             title=settings.APP_NAME,
             debug=settings.DEBUG,
             lifespan=asynccontextmanager(self._lifespan),
@@ -23,11 +25,11 @@ class NxWebServer(FastAPI):
             redoc_url=None,
             openapi_url=None
         )
-        self.settings = settings
-        self._setup_logging()
         self.plugin_manager = PluginManager(self, self.settings.PLUGIN_SEARCH_PATH)
         self.plugin_manager.discover_plugins()
         self.plugin_manager.configure_plugins(self.settings.PLUGINS)
+        if settings.WS_ENABLED:
+            self._enable_websocket()
         self.__init__server()
 
     async def _lifespan(self, _):
@@ -42,7 +44,7 @@ class NxWebServer(FastAPI):
         await self.plugin_manager.shutdown_plugins()
 
     def _setup_exception_handler(self):
-        @self.exception_handler(Exception)
+        @self.app.exception_handler(Exception)
         async def global_exception_handler(request, exc):
             return JSONResponse({"detail": f"Internal server error: {str(exc)}"}, 500)
 
@@ -100,10 +102,17 @@ class NxWebServer(FastAPI):
         if settings is None:
             settings = Settings()
         uvicorn.run(
-            lambda: cls(settings),
+            lambda: cls(settings).get_gunicorn_app(),
             host=settings.HOST,
             port=settings.PORT,
             reload=settings.DEBUG,
             log_level=settings.LOG_LEVEL,
             factory=True
         )
+
+    def get_gunicorn_app(self):
+        if self.sio is None:
+            print("----------------- 1")
+            return self.app
+        print("----------------- 2")
+        return socketio.ASGIApp(self.sio, other_asgi_app=self.app)

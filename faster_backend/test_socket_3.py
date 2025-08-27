@@ -27,7 +27,7 @@ async def disconnect(sid):
 
 @sio.on("join_room")
 async def join_room(sid, room):
-    sio.enter_room(sid, room)
+    await sio.enter_room(sid, room)
     print(f"Client {sid} joined room: {room}")
 
 # -----------------------------------------------------------------------------

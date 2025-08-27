@@ -15,17 +15,17 @@ class NxWebOpenApiPlugin(BasePlugin):
         openapi_route = config.get("openapi_route", "/openapi.json")
         docs_route = config.get("docs_route", "/docs")
 
-        @server.get(openapi_route, include_in_schema=False)
+        @server.app.get(openapi_route, include_in_schema=False)
         async def openapi_spec(request: Request):
             tags = request.query_params.get("tags")
             if tags:
                 tags = [t.strip() for t in tags.split(",")]
-            return self.custom_openapi(server, tags=tags)
+            return self.custom_openapi(server.app, tags=tags)
 
-        @server.get(docs_route, include_in_schema=False)
-        @server.get(docs_route + "/{tags}", include_in_schema=False)
+        @server.app.get(docs_route, include_in_schema=False)
+        @server.app.get(docs_route + "/{tags}", include_in_schema=False)
         async def docs(tags: str = None):
-            return self.create_swagger_ui_html(openapi_route, server.title, tags)
+            return self.create_swagger_ui_html(openapi_route, server.app.title, tags)
 
     def custom_openapi(self, server, tags: Optional[List[str]] = None):
         logger = self._logger
