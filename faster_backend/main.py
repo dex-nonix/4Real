@@ -4,6 +4,7 @@ if __name__ == "__main__":
 
     settings = Settings()
     settings.PLUGIN_SEARCH_PATH = ["./"]
+    settings.LOG_LEVEL = "debug"
     settings.PLUGINS = [
         {"name": "cors"},
         {"name": "open-api"},

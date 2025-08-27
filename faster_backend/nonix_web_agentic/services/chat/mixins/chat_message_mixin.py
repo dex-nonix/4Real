@@ -179,21 +179,23 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             chat_history = []
 
             # Add system messages
-            system_msgs = await db_session.execute(
+            system_result = await db_session.execute(
                 select(ChatMessage).where(ChatMessage.history_id == history_id, ChatMessage.role == 'system').order_by(
                     ChatMessage.created_at.asc())
-            ).scalars().all()
+            )
+            system_msgs = system_result.scalars().all()
             self._logger.debug(f"Found {len(system_msgs)} system messages")
             for sm in system_msgs:
                 content = sm.content_json if isinstance(sm.content_json, dict) else {'text': str(sm.content_json)}
                 chat_history.append({'role': 'system', 'content': content})
 
             # Add user and assistant messages up to current user message
-            user_msgs = await db_session.execute(
+            user_result = await db_session.execute(
                 select(ChatMessage).where(ChatMessage.history_id == history_id,
                                           ChatMessage.id <= user_msg_id).order_by(
                     ChatMessage.created_at.asc())
-            ).scalars().all()
+            )
+            user_msgs = user_result.scalars().all()
             self._logger.debug(f"Found {len(user_msgs)} user/assistant messages")
             for um in user_msgs:
                 role = um.role
@@ -403,7 +405,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 self._logger.error(f"Unknown message type: {message_type}")
                 return await self._format_error_response(f'Unknown message type: {message_type}', 400)
 
-            result = handler.handle(
+            result = await handler.handle(
                 chat_service=self,
                 session=session,
                 persona=persona,
