@@ -1,5 +1,5 @@
 class Settings:
-    APP_NAME: str = "4Real FastAPI Backend"
+    APP_NAME: str = "NxWebServer"
     DEBUG: bool = False
     LOG_LEVEL: str = "debug"
     HOST: str = "0.0.0.0"
@@ -14,6 +14,7 @@ class Settings:
         {"name": "db"},
         {"name": "static-files"},
         {"name": "agentic"},
+        {"name": "websocket"},
         {"name": "file-manager"},
         {"name": "music-artist"},
     ]

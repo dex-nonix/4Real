@@ -27,7 +27,6 @@ app.add_middleware(
         allow_headers = ["*"]
 )
 
-
 # -----------------------------------------------------------------------------
 # THE TRUTH SERUM
 # We are enabling the loggers. This will make the server print exactly
@@ -92,6 +91,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "test_socket:app",
         host="0.0.0.0",
-        port=5001,
+        port=5002,
         reload=True
     )

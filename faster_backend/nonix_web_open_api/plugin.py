@@ -15,15 +15,15 @@ class NxWebOpenApiPlugin(BasePlugin):
         openapi_route = config.get("openapi_route", "/openapi.json")
         docs_route = config.get("docs_route", "/docs")
 
-        @server.get(openapi_route)
+        @server.get(openapi_route, include_in_schema=False)
         async def openapi_spec(request: Request):
             tags = request.query_params.get("tags")
             if tags:
                 tags = [t.strip() for t in tags.split(",")]
             return self.custom_openapi(server, tags=tags)
 
-        @server.get(docs_route)
-        @server.get(docs_route + "/{tags}")
+        @server.get(docs_route, include_in_schema=False)
+        @server.get(docs_route + "/{tags}", include_in_schema=False)
         async def docs(tags: str = None):
             return self.create_swagger_ui_html(openapi_route, server.title, tags)
 
@@ -37,7 +37,7 @@ class NxWebOpenApiPlugin(BasePlugin):
             logger.debug(f"🔍 Total routes: {len(all_routes)}")
 
             filtered_routes = []
-            for route in all_routes: # what the fuck is the plus???
+            for route in all_routes:
                 logger.debug(f"🔍 Route {route.path} has tags: {getattr(route, 'tags', 'NO_TAGS')}")
                 if hasattr(route, 'tags') and route.tags:
                     route_tags = [str(tag).lower() for tag in route.tags]
@@ -59,7 +59,7 @@ class NxWebOpenApiPlugin(BasePlugin):
             )
 
         if not self.openapi_schema:
-            server.openapi_schema = get_openapi(
+            self.openapi_schema = get_openapi(
                 title=server.title,
                 version=server.version,
                 openapi_version=server.openapi_version,
@@ -71,7 +71,7 @@ class NxWebOpenApiPlugin(BasePlugin):
         return self.openapi_schema
 
     def create_swagger_ui_html(self, file_path, title, tags: str = None):
-        openapi_url = f"/{file_path}?tags={tags}" if tags else f"/{file_path}"
+        openapi_url = f"{file_path}?tags={tags}" if tags else f"{file_path}"
         title_suffix = f" - {tags}" if tags else ""
 
         return get_swagger_ui_html(

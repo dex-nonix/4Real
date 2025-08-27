@@ -15,11 +15,14 @@ async def _lifespan(self):
 
 
 class NxWebServer(FastAPI):
-    def __init__(self, settings: Settings = _settings):
+    def __init__(self, settings: Settings):
         super().__init__(
             title=settings.APP_NAME,
             debug=settings.DEBUG,
-            lifespan=_lifespan
+            lifespan=_lifespan,
+            docs_url=None,
+            redoc_url=None,
+            openapi_url=None
         )
         self.settings = settings
         self.plugin_manager = PluginManager(self, self.settings.PLUGIN_SEARCH_PATH)
@@ -43,8 +46,10 @@ class NxWebServer(FastAPI):
         ...
 
     @classmethod
-    def run_gunicorn(cls, settings: Settings = _settings):
+    def run_gunicorn(cls, settings: Settings = None):
         import uvicorn
+        if not settings:
+            settings = Settings()
         uvicorn.run(
             lambda: cls(settings),
             host=settings.HOST,

@@ -1,0 +1,11 @@
+{
+    "name": "websocket",
+    "version": "0.5.0",
+    "class": "NxWebWebsocketPlugin",
+    "config": {
+        "logger": true,
+        "engineio_logger": true,
+        "path": "/",
+        "cors_allowed_origins": "*"
+    }
+}

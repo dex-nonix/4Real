@@ -3,7 +3,7 @@
     "version": "0.5.0",
     "class": "NxWebCORSPlugin",
     "config": {
-        "origins": ["*"],
+        "allow_origins": ["*"],
         "allow_credentials": true,
         "allow_methods":["*"],
         "allow_headers":["*"]
