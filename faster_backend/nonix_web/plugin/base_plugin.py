@@ -16,11 +16,11 @@ class BasePlugin(ABC):
         self._logger = logging.getLogger(self.__class__.__name__)
 
     @final
-    async def configure(self, server: "NxWebServer", config: Dict[str, Any]):
+    def configure(self, server: "NxWebServer", config: Dict[str, Any]):
         """Configure app structure: middleware, routes, static files"""
         for routed_service in self.api_services:
             server.include_router(routed_service.to_router(server), prefix="/api")
-        return await self._configure(server, config)
+        return self._configure(server, config)
 
     @final
     async def startup(self, server: "NxWebServer", config: Dict[str, Any]):
@@ -32,7 +32,7 @@ class BasePlugin(ABC):
         """Cleanup: close connections, dispose resources"""
         return await self._shutdown(server, config)
 
-    async def _configure(self, server: "NxWebServer", config: Dict[str, Any]):
+    def _configure(self, server: "NxWebServer", config: Dict[str, Any]):
         """Override this method to configure your plugin"""
         pass
 

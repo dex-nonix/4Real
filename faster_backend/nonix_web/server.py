@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-from .config import Settings
+from .config import Settings, settings as _settings
 from .plugin.plugin_manager import PluginManager
 
 
@@ -15,7 +15,7 @@ async def _lifespan(self):
 
 
 class NxWebServer(FastAPI):
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings = _settings):
         super().__init__(
             title=settings.APP_NAME,
             debug=settings.DEBUG,
@@ -23,11 +23,11 @@ class NxWebServer(FastAPI):
         )
         self.settings = settings
         self.plugin_manager = PluginManager(self, self.settings.PLUGIN_SEARCH_PATH)
+        self.plugin_manager.discover_plugins()
+        self.plugin_manager.configure_plugins(self.settings.PLUGINS)
         self.__init__server()
 
     async def _setup_server(self):
-        self.plugin_manager.discover_plugins()
-        await self.plugin_manager.configure_plugins(self.settings.PLUGINS)
         await self.plugin_manager.startup_plugins(self.settings.PLUGINS)
 
     async def _teardown_server(self):
@@ -41,3 +41,15 @@ class NxWebServer(FastAPI):
     def __init__server(self):
         "keep for simple constructorless overload"
         ...
+
+    @classmethod
+    def run_gunicorn(cls, settings: Settings = _settings):
+        import uvicorn
+        uvicorn.run(
+            lambda: cls(settings),
+            host=settings.HOST,
+            port=settings.PORT,
+            reload=settings.DEBUG,
+            log_level=settings.LOG_LEVEL,
+            factory=True
+        )

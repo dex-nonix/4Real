@@ -65,7 +65,7 @@ class PluginManager:
                     self._logger.error(f"Failed to read metadata for plugin in '{item.name}': {e}", exc_info=True)
         self._logger.info(f"Discovery complete. Found {len(self.available_plugins)} available plugins.")
 
-    async def configure_plugins(self, plugins_to_load: List[Union[str, Dict[str, Any]]]):
+    def configure_plugins(self, plugins_to_load: List[Union[str, Dict[str, Any]]]):
         """
         Configure plugins before app lifespan starts (middleware, routes, mounts).
         """
@@ -85,7 +85,7 @@ class PluginManager:
                 self._logger.error(f"Cannot configure plugin '{plugin_name}': Not found in available plugins.")
                 continue
 
-            await self._configure_plugin(plugin_name, plugin_data, override_config)
+            self._configure_plugin(plugin_name, plugin_data, override_config)
 
     def _resolve_dependencies(self, plugins_to_load: List[Union[str, Dict[str, Any]]]) -> List[
         Union[str, Dict[str, Any]]]:
@@ -122,7 +122,7 @@ class PluginManager:
         # Return the plugins with their original config overrides
         return [plugin_map.get(name, name) for name in resolved]
 
-    async def _configure_plugin(self, plugin_name: str, plugin_data: Dict[str, Any], override_config: Dict[str, Any]):
+    def _configure_plugin(self, plugin_name: str, plugin_data: Dict[str, Any], override_config: Dict[str, Any]):
         plugin_dir = plugin_data["path"]
         metadata = plugin_data["metadata"]
 
@@ -151,7 +151,7 @@ class PluginManager:
             plugin_instance.version = metadata.get("version", "0.0.0")
 
             self._logger.info(f"Configuring plugin: '{plugin_instance.name}' version {plugin_instance.version}")
-            await plugin_instance.configure(self.server, plugin_instance.config)
+            plugin_instance.configure(self.server, plugin_instance.config)
             self.loaded_plugins[plugin_name] = plugin_instance
 
         except (ImportError, AttributeError, Exception) as e:

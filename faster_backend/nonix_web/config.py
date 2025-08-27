@@ -1,6 +1,7 @@
 class Settings:
     APP_NAME: str = "4Real FastAPI Backend"
-    DEBUG: bool = True
+    DEBUG: bool = False
+    LOG_LEVEL: str = "debug"
     HOST: str = "0.0.0.0"
     PORT: int = 5000
     PLUGIN_SEARCH_PATH = [

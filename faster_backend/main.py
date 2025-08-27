@@ -1,18 +1,14 @@
 import uvicorn
 
-# from nonix_web import create_nx_app
 from nonix_web.config import settings
 from nonix_web.server import NxWebServer
 
-# app = create_nx_app()
-
-app = NxWebServer(settings)
-
 if __name__ == "__main__":
     uvicorn.run(
-        "main:app",
+        lambda: NxWebServer(settings),
         host=settings.HOST,
         port=settings.PORT,
         reload=settings.DEBUG,
-        log_level="info"
+        log_level="info",
+        factory=True
     )

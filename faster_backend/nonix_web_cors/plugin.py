@@ -7,9 +7,10 @@ from nonix_web.server import NxWebServer
 
 _ALLOW_ALL = ["*"]
 
+
 class NxWebCORSPlugin(BasePlugin):
 
-    async def _configure(self, server: NxWebServer, config: Dict[str, Any]):
+    def _configure(self, server: NxWebServer, config: Dict[str, Any]):
         server.add_middleware(
             CORSMiddleware,
             allow_origins=config.get("origins", _ALLOW_ALL),
