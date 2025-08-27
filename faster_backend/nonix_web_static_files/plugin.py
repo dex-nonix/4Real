@@ -8,7 +8,7 @@ from nonix_web.server import NxWebServer
 
 class NxWebStaticFilesPlugin(BasePlugin):
 
-    async def _load_plugin(self, server: NxWebServer, config: Dict[str, Any]):
+    async def configure(self, server: NxWebServer, config: Dict[str, Any]):
         server.mount(
             config["path"],
             StaticFiles(

@@ -34,12 +34,9 @@ def AsyncSessionLocal() -> async_sessionmaker:
 class NxWebDbPlugin(BasePlugin):
     engine = None
 
-    async def _load_plugin(self, server: NxWebServer, config: Dict[str, Any]):
+    async def startup(self, server: NxWebServer, config: Dict[str, Any]):
         global _async_session_local
         options = config.get("options", {})
-
-        # if server.settings.DEBUG:
-        #     options["poolClass"] = NullPool
 
         self.engine = engine = create_async_engine(config["url"], **options)
         set_async_session_local(async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False))
@@ -47,5 +44,6 @@ class NxWebDbPlugin(BasePlugin):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
-    async def unload_plugin(self, server: NxWebServer):
-        await self.engine.dispose()
+    async def shutdown(self, server: NxWebServer, config: Dict[str, Any]):
+        if self.engine:
+            await self.engine.dispose()

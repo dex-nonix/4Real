@@ -14,5 +14,5 @@ class NxWebFileManagerPlugin(BasePlugin):
         FileLinkService
     ]
 
-    async def _load_plugin(self, server: NxWebServer, config: Dict[str, Any]):
-        pass
+    async def configure(self, server: NxWebServer, config: Dict[str, Any]):
+        await super().configure(server, config)

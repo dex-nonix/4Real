@@ -11,7 +11,7 @@ from nonix_web.server import NxWebServer
 class NxWebOpenApiPlugin(BasePlugin):
     openapi_schema = None
 
-    async def _load_plugin(self, server: NxWebServer, config: Dict[str, Any]):
+    async def configure(self, server: NxWebServer, config: Dict[str, Any]):
         openapi_route = config.get("openapi_route", "/openapi.json")
         docs_route = config.get("docs_route", "/docs")
 

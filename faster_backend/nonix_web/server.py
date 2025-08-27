@@ -26,11 +26,12 @@ class NxWebServer(FastAPI):
         self.__init__server()
 
     async def _setup_server(self):
-        await self.plugin_manager.discover_and_load(self.settings.PLUGINS)
+        self.plugin_manager.discover_plugins()
+        await self.plugin_manager.configure_plugins(self.settings.PLUGINS)
+        await self.plugin_manager.startup_plugins(self.settings.PLUGINS)
 
     async def _teardown_server(self):
-        # await self.plugin_manager.unload()
-        pass
+        await self.plugin_manager.shutdown_plugins()
 
     def _setup_exception_handler(self):
         @self.exception_handler(Exception)

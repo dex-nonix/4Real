@@ -65,11 +65,11 @@ class PluginManager:
                     self._logger.error(f"Failed to read metadata for plugin in '{item.name}': {e}", exc_info=True)
         self._logger.info(f"Discovery complete. Found {len(self.available_plugins)} available plugins.")
 
-    async def load_plugins(self, plugins_to_load: List[Union[str, Dict[str, Any]]]):
+    async def configure_plugins(self, plugins_to_load: List[Union[str, Dict[str, Any]]]):
         """
-        Loads a specified list of plugins and their dependencies in the correct order.
+        Configure plugins before app lifespan starts (middleware, routes, mounts).
         """
-        self._logger.info("Starting to load specified plugins and their dependencies.")
+        self._logger.info("Starting to configure specified plugins and their dependencies.")
         load_order = self._resolve_dependencies(plugins_to_load)
 
         for plugin_info in load_order:
@@ -82,10 +82,10 @@ class PluginManager:
 
             plugin_data = self.available_plugins.get(plugin_name)
             if not plugin_data:
-                self._logger.error(f"Cannot load plugin '{plugin_name}': Not found in available plugins.")
+                self._logger.error(f"Cannot configure plugin '{plugin_name}': Not found in available plugins.")
                 continue
 
-            await self._load_plugin(plugin_name, plugin_data, override_config)
+            await self._configure_plugin(plugin_name, plugin_data, override_config)
 
     def _resolve_dependencies(self, plugins_to_load: List[Union[str, Dict[str, Any]]]) -> List[
         Union[str, Dict[str, Any]]]:
@@ -122,7 +122,7 @@ class PluginManager:
         # Return the plugins with their original config overrides
         return [plugin_map.get(name, name) for name in resolved]
 
-    async def _load_plugin(self, plugin_name: str, plugin_data: Dict[str, Any], override_config: Dict[str, Any]):
+    async def _configure_plugin(self, plugin_name: str, plugin_data: Dict[str, Any], override_config: Dict[str, Any]):
         plugin_dir = plugin_data["path"]
         metadata = plugin_data["metadata"]
 
@@ -150,13 +150,28 @@ class PluginManager:
             plugin_instance.name = plugin_name
             plugin_instance.version = metadata.get("version", "0.0.0")
 
-            self._logger.info(f"Loading plugin: '{plugin_instance.name}' version {plugin_instance.version}")
-            await plugin_instance.load_plugin(self.server, plugin_instance.config)
+            self._logger.info(f"Configuring plugin: '{plugin_instance.name}' version {plugin_instance.version}")
+            await plugin_instance.configure(self.server, plugin_instance.config)
             self.loaded_plugins[plugin_name] = plugin_instance
 
         except (ImportError, AttributeError, Exception) as e:
             self._logger.error(f"Failed to load plugin from '{plugin_dir.name}': {e}", exc_info=True)
 
-    async def discover_and_load(self, plugins_to_load):
-        self.discover_plugins()
-        await self.load_plugins(plugins_to_load)
+    async def startup_plugins(self, plugins_to_load: List[Union[str, Dict[str, Any]]]):
+        """Run startup for already configured plugins in dependency order."""
+        self._logger.info("Starting plugin startup phase.")
+        load_order = self._resolve_dependencies(plugins_to_load)
+        for plugin_info in load_order:
+            plugin_name = plugin_info if isinstance(plugin_info, str) else plugin_info.get("name")
+            if not plugin_name:
+                continue
+            plugin_instance = self.loaded_plugins.get(plugin_name)
+            if not plugin_instance:
+                continue
+            await plugin_instance.startup(self.server, plugin_instance.config)
+
+    async def shutdown_plugins(self):
+        """Run shutdown for plugins in reverse order of loading."""
+        self._logger.info("Starting plugin shutdown phase.")
+        for plugin_name, plugin_instance in reversed(list(self.loaded_plugins.items())):
+            await plugin_instance.shutdown(self.server, plugin_instance.config)
