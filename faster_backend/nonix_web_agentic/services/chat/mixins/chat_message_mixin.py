@@ -46,9 +46,9 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         self._logger.debug(f"Selecting AI model for persona {persona_id}")
 
         async with AsyncSessionLocal() as db_session:
-            persona = await db_session.execute(
+            persona = (await db_session.execute(
                 select(Persona).where(Persona.id == persona_id)
-            ).scalar_one_or_none()
+            )).scalar_one_or_none()
 
             if not persona:
                 self._logger.warning(f"Persona {persona_id} not found")
@@ -56,10 +56,10 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
             mapping = None
             if persona and getattr(persona, 'ai_model_mapping_id', None):
-                mapping = await db_session.execute(
+                mapping = (await db_session.execute(
                     select(AIModelMapping).where(AIModelMapping.id == persona.ai_model_mapping_id,
                                                  AIModelMapping.is_active == True)
-                ).scalar_one_or_none()
+                )).scalar_one_or_none()
                 self._logger.debug(f"AI model mapping found: {mapping}")
             else:
                 self._logger.warning(f"Persona {persona_id} has no AI model mapping")
@@ -81,9 +81,9 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         self._logger.debug(f"Validating session {session_id} with history {history_id}")
 
         async with AsyncSessionLocal() as db_session:
-            session = await db_session.execute(
+            session = (await db_session.execute(
                 select(ChatSession).where(ChatSession.id == session_id, ChatSession.is_active == True)
-            ).scalar_one_or_none()
+            )).scalar_one_or_none()
 
             if not session:
                 self._logger.warning(f"Session {session_id} not found or inactive")
@@ -93,9 +93,9 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 # Specific history requested
                 self._logger.debug(f"Querying history {history_id} for session {session_id}")
 
-                history = await db_session.execute(
+                history = (await db_session.execute(
                     select(ChatHistory).where(ChatHistory.id == history_id, ChatHistory.session_id == session_id)
-                ).scalar_one_or_none()
+                )).scalar_one_or_none()
                 self._logger.debug(f"History query result: {history}")
 
                 if not history:
@@ -209,17 +209,17 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             return None, None, None
 
         async with AsyncSessionLocal() as db_session:
-            provider = await db_session.execute(
+            provider = (await db_session.execute(
                 select(AIProvider).where(AIProvider.id == model_info['provider_id'], AIProvider.is_active == True)
-            ).scalar_one_or_none()
+            )).scalar_one_or_none()
 
             if not provider:
                 self._logger.warning(f"AI provider {model_info['provider_id']} not found or inactive")
                 return None, None, None
 
-            mapping_obj = await db_session.execute(
+            mapping_obj = (await db_session.execute(
                 select(AIModelMapping).where(AIModelMapping.id == persona_id, AIModelMapping.is_active == True)
-            ).scalar_one_or_none()
+            )).scalar_one_or_none()
 
             if not mapping_obj:
                 self._logger.warning(f"AI model mapping {persona_id} not found or inactive")
@@ -310,9 +310,9 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         """List messages from a chat session's current history."""
         try:
             async with AsyncSessionLocal() as db_session:
-                session = await db_session.execute(
+                session = (await db_session.execute(
                     select(ChatSession).where(ChatSession.id == id, ChatSession.is_active == True)
-                ).scalar_one_or_none()
+                )).scalar_one_or_none()
 
                 if not session:
                     return JSONResponse({'error': 'Session not found or inactive'}, status_code=404)
@@ -612,25 +612,25 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         try:
             async with AsyncSessionLocal() as db_session:
                 # Verify session exists and is active
-                session = await db_session.execute(
+                session = (await db_session.execute(
                     select(ChatSession).where(ChatSession.id == session_id, ChatSession.is_active == True)
-                ).scalar_one_or_none()
+                )).scalar_one_or_none()
 
                 if not session:
                     return await self._format_error_response('Session not found or inactive', 404)
 
                 # Verify history exists and belongs to session
-                history = await db_session.execute(
+                history = (await db_session.execute(
                     select(ChatHistory).where(ChatHistory.id == history_id, ChatHistory.session_id == session_id)
-                ).scalar_one_or_none()
+                )).scalar_one_or_none()
 
                 if not history:
                     return await self._format_error_response('History not found', 404)
 
                 # Find and delete the specific message
-                message = await db_session.execute(
+                message = (await db_session.execute(
                     select(ChatMessage).where(ChatMessage.id == message_id, ChatMessage.history_id == history_id)
-                ).scalar_one_or_none()
+                )).scalar_one_or_none()
 
                 if not message:
                     return await self._format_error_response('Message not found', 404)

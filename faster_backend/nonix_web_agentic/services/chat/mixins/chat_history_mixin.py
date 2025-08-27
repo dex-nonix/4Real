@@ -26,18 +26,18 @@ class ChatHistoryMixin:
     async def _validate_session_and_history(self, db_session, session_id: int, history_id: int = None):
         """Validate session exists and optionally validate history belongs to session."""
         # Validate session
-        session = await db_session.execute(
+        session = (await db_session.execute(
             select(ChatSession).where(ChatSession.id == session_id, ChatSession.is_active == True)
-        ).scalar_one_or_none()
+        )).scalar_one_or_none()
 
         if not session:
             return None, None, JSONResponse({'error': 'Session not found or inactive'}, status_code=404)
 
         # If history_id provided, validate history too
         if history_id:
-            history = await db_session.execute(
+            history = (await db_session.execute(
                 select(ChatHistory).where(ChatHistory.id == history_id, ChatHistory.session_id == session_id)
-            ).scalar_one_or_none()
+            )).scalar_one_or_none()
 
             if not history:
                 return session, None, JSONResponse({'error': 'History not found'}, status_code=404)
@@ -166,26 +166,4 @@ class ChatHistoryMixin:
                 await db_session.rollback()
                 return JSONResponse({'error': str(exc)}, status_code=500)
 
-    @nonix_web.services.base_service.route(
-        '/sessions/{id}/histories/{history_id}/messages',
-        methods=['GET'],
-        response_model=MessageListResponse
-    )
-    async def get_history_messages(self, req: Request, id: int, history_id: int):  # noqa: A002
-        """Get all messages for a specific history."""
-        async with AsyncSessionLocal() as db_session:
-            try:
-                # Validate session and history
-                session, history, error_response = await self._validate_session_and_history(db_session, id, history_id)
-                if error_response:
-                    return error_response
-
-                messages_result = await db_session.execute(
-                    select(ChatMessage).where(ChatMessage.history_id == history_id)
-                )
-                messages = messages_result.scalars().all()
-
-                return JSONResponse({'data': [m.to_dict() for m in messages]})
-            except Exception as exc:  # noqa: BLE001
-                await db_session.rollback()
-                return JSONResponse({'error': str(exc)}, status_code=500)
+    
