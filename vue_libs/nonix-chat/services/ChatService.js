@@ -114,6 +114,7 @@ export default class ChatService extends BaseApiService {
   async startChatWithPersona(personaId, sessionName, sessionIcon) {
     
     const response = await this.post(`/chat/personas/${personaId}/start-chat`, {
+      persona_id: personaId,
       session_name: sessionName,
       session_icon: sessionIcon
     })

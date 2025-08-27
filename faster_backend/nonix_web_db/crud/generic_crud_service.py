@@ -163,45 +163,24 @@ class GenericCRUDService(BaseService):
                 return await self.create(data)
 
         if ops.list:
-            @self.router.get(
-                "/", response_model=PaginatedResponse[self.config.response_schema]
-            )
+            @self.router.get("/", response_model=PaginatedResponse[self.config.response_schema])
             async def list_all(request: Request):
                 q_params = await self.query_processor(request)
                 return await self.get_all(q_params)
 
-        if ops.read:
-            @self.router.get("/{item_id}", response_model=self.config.response_schema)
-            async def read_one(item_id: int):
-                return await self.get_one(item_id)
-
-        if ops.update:
-            @self.router.put("/{item_id}", response_model=self.config.response_schema)
-            async def update(item_id: int, data: self.config.update_schema):
-                await _validate(data, item_id)
-                return await self.update(item_id, data)
-
-        if ops.delete:
-            @self.router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-            async def delete(item_id: int):
-                await self.delete(item_id)
-
         if ops.search:
-            @self.router.get(
-                "/search/",
-                response_model=PaginatedResponse[self.config.response_schema],
-            )
+            @self.router.get("/search", response_model=PaginatedResponse[self.config.response_schema] )
             async def search(request: Request):
                 q_params = await self.query_processor(request)
                 return await self.search(request, q_params)
 
         if ops.bulk:
-            @self.router.post("/bulk/", response_model=Dict[str, str])
+            @self.router.post("/bulk", response_model=Dict[str, str])
             async def bulk(payload: BulkOperationsPayload):
                 return await self.bulk(payload)
 
         if ops.selector:
-            @self.router.get("/selector/", response_model=List[SelectorItem])
+            @self.router.get("/selector", response_model=List[SelectorItem])
             async def selector(q: Optional[str] = None):
                 return await self.selector(q)
 
@@ -213,3 +192,19 @@ class GenericCRUDService(BaseService):
                     "value": item.id,
                     "label": self._format_selector_label(item),
                 }
+
+        if ops.delete:
+            @self.router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+            async def delete(item_id: int):
+                await self.delete(item_id)
+
+        if ops.read:
+            @self.router.get("/{item_id}", response_model=self.config.response_schema)
+            async def read_one(item_id: int):
+                return await self.get_one(item_id)
+
+        if ops.update:
+            @self.router.put("/{item_id}", response_model=self.config.response_schema)
+            async def update(item_id: int, data: self.config.update_schema):
+                await _validate(data, item_id)
+                return await self.update(item_id, data)

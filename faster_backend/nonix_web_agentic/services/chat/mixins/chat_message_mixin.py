@@ -255,7 +255,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
             # Execute tool
             self._logger.debug(f"Calling execute_tool for '{tool_name}'")
-            exec_result = execute_tool(persona_id, tool_name, tool_args)
+            exec_result = await execute_tool(persona_id, tool_name, tool_args)
             log.status = 'success' if exec_result.get('status') == 'success' else 'error'
             log.output_json = exec_result
             await db_session.commit()
@@ -593,10 +593,11 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 return await self._format_error_response('History not found', 404)
 
             async with AsyncSessionLocal() as db_session:
-                msgs = await db_session.execute(
+                result = await db_session.execute(
                     select(ChatMessage).where(ChatMessage.history_id == history_id).order_by(
                         ChatMessage.created_at.asc())
-                ).scalars().all()
+                )
+                msgs = result.scalars().all()
                 return JSONResponse({'data': [m.to_dict() for m in msgs], 'total': len(msgs)})
         except Exception as exc:  # noqa: BLE001
             return await self._format_error_response(str(exc), 500)
