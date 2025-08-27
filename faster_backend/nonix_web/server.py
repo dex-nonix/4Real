@@ -1,4 +1,7 @@
 from contextlib import asynccontextmanager
+import logging
+import logging.handlers
+import os
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
@@ -18,6 +21,7 @@ class NxWebServer(FastAPI):
             openapi_url=None
         )
         self.settings = settings
+        self._setup_logging()
         self.plugin_manager = PluginManager(self, self.settings.PLUGIN_SEARCH_PATH)
         self.plugin_manager.discover_plugins()
         self.plugin_manager.configure_plugins(self.settings.PLUGINS)
@@ -40,6 +44,34 @@ class NxWebServer(FastAPI):
         @self.exception_handler(Exception)
         async def global_exception_handler(request, exc):
             return JSONResponse({"detail": f"Internal server error: {str(exc)}"}, 500)
+
+    def _setup_logging(self):
+        logging.basicConfig(
+            level=getattr(logging, self.settings.LOG_LEVEL.upper()),
+            format=self.settings.LOG_FORMAT,
+            datefmt=self.settings.LOG_DATE_FORMAT,
+            force=True
+        )
+        
+        logger = logging.getLogger()
+        
+        for handler in logger.handlers[:]:
+            logger.removeHandler(handler)
+        
+        if "console" in self.settings.LOG_OUTPUT:
+            console_handler = logging.StreamHandler()
+            console_handler.setFormatter(logging.Formatter(self.settings.LOG_FORMAT, self.settings.LOG_DATE_FORMAT))
+            logger.addHandler(console_handler)
+        
+        if "file" in self.settings.LOG_OUTPUT:
+            os.makedirs(os.path.dirname(self.settings.LOG_FILE_PATH), exist_ok=True)
+            file_handler = logging.handlers.RotatingFileHandler(
+                self.settings.LOG_FILE_PATH,
+                maxBytes=self.settings.LOG_MAX_SIZE,
+                backupCount=self.settings.LOG_BACKUP_COUNT
+            )
+            file_handler.setFormatter(logging.Formatter(self.settings.LOG_FORMAT, self.settings.LOG_DATE_FORMAT))
+            logger.addHandler(file_handler)
 
     def __init__server(self):
         "keep for simple constructorless overload"

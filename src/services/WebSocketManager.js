@@ -13,8 +13,8 @@ export default class WebSocketManager {
     _initWebSocket() {
         try {
             // Connect directly to backend
-            this.socket = io('ws://0.0.0.0:5000', {
-                transports: ['websocket', 'polling'],
+            this.socket = io({
+                transports: ['websocket'],
                 autoConnect: true,
                 reconnection: true,
                 reconnectionDelay: 1000,

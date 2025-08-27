@@ -16,9 +16,17 @@ export default defineConfig({
     include: ['quill']
   },
   server: {
-    proxy: {
-      '/api': 'http://0.0.0.0:5000'
-    }
+    '/api/': {
+        target: 'http://0.0.0.0:5000', // Your API server (same as Socket.IO in this case)
+        changeOrigin: true,
+        // rewrite: (path) => path.replace(/^\/api/, ''), // Optional: If your backend API doesn't expect the /api prefix
+      },
+    '/socket.io': {
+        target: 'http://0.0.0.0:5000', // The address of your Socket.IO server
+        changeOrigin: true, // Needed for virtual hosted sites
+        ws: true,           // Enable WebSocket proxying
+        rewrite: (path) => path.replace(/^\/socket.io/, '/socket.io'), // This might not be strictly necessary if the paths match
+      }
   }
 })
 

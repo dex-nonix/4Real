@@ -5,7 +5,7 @@
   "config": {
     "url": "sqlite+aiosqlite:///./4real.db",
     "options": {
-      "echo": true
+      "echo": false
     }
   }
 }
