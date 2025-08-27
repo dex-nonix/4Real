@@ -8,6 +8,7 @@ class Settings:
     LOG_FILE_PATH: str = "logs/server.log"
     LOG_MAX_SIZE: int = 10485760
     LOG_BACKUP_COUNT: int = 5
+    WS_ENABLED=True
     HOST: str = "0.0.0.0"
     PORT: int = 5000
     PLUGIN_SEARCH_PATH = [

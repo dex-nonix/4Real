@@ -1,8 +1,9 @@
-from contextlib import asynccontextmanager
 import logging
 import logging.handlers
 import os
+from contextlib import asynccontextmanager
 
+import socketio
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
@@ -11,6 +12,8 @@ from .plugin.plugin_manager import PluginManager
 
 
 class NxWebServer(FastAPI):
+    sio: socketio.AsyncServer = None
+
     def __init__(self, settings: Settings):
         super().__init__(
             title=settings.APP_NAME,
@@ -27,12 +30,10 @@ class NxWebServer(FastAPI):
         self.plugin_manager.configure_plugins(self.settings.PLUGINS)
         self.__init__server()
 
-
-    async def _lifespan(self,_):
+    async def _lifespan(self, _):
         await self._setup_server()
         yield
         await self._teardown_server()
-
 
     async def _setup_server(self):
         await self.plugin_manager.startup_plugins(self.settings.PLUGINS)
@@ -52,17 +53,17 @@ class NxWebServer(FastAPI):
             datefmt=self.settings.LOG_DATE_FORMAT,
             force=True
         )
-        
+
         logger = logging.getLogger()
-        
+
         for handler in logger.handlers[:]:
             logger.removeHandler(handler)
-        
+
         if "console" in self.settings.LOG_OUTPUT:
             console_handler = logging.StreamHandler()
             console_handler.setFormatter(logging.Formatter(self.settings.LOG_FORMAT, self.settings.LOG_DATE_FORMAT))
             logger.addHandler(console_handler)
-        
+
         if "file" in self.settings.LOG_OUTPUT:
             os.makedirs(os.path.dirname(self.settings.LOG_FILE_PATH), exist_ok=True)
             file_handler = logging.handlers.RotatingFileHandler(
@@ -76,6 +77,22 @@ class NxWebServer(FastAPI):
     def __init__server(self):
         "keep for simple constructorless overload"
         ...
+
+    def _enable_websocket(self):
+        self.sio = sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
+
+        @sio.event
+        async def connect(sid, environ):
+            print(f"Socket.IO client connected: {sid}")
+
+        @sio.event
+        async def disconnect(sid):
+            print(f"Socket.IO client disconnected: {sid}")
+
+        @sio.on("join_room")
+        async def join_room(sid, room):
+            await sio.enter_room(sid, room)
+            print(f"Client {sid} joined room: {room}")
 
     @classmethod
     def run_gunicorn(cls, settings: Settings = None):
