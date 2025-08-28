@@ -5,7 +5,9 @@ from typing import Callable
 
 from langchain.tools import StructuredTool
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 
+from nonix_web_db import AsyncSessionLocal
 from ..models.internal_tool import InternalTool
 from ..models.persona import Persona
 from ..models.persona_tool_access import PersonaToolAccess
@@ -63,91 +65,114 @@ class AgenticToolRegistry:
         - If persona.artist_id is set and a tool's first parameter is 'artist_id', expose a wrapper with artist_id pre-bound
         - Keeps global registry immutable; returns a new dict per call
         """
-        persona = Persona.query.filter_by(id=persona_id).first()
-        artist_id = getattr(persona, 'artist_id', None) if persona else None
+        async with AsyncSessionLocal() as db_session:
+            persona_result = await db_session.execute(
+                select(Persona).where(Persona.id == persona_id)
+            )
+            persona = persona_result.scalar_one_or_none()
+            artist_id = getattr(persona, 'artist_id', None) if persona else None
 
-        tools: Dict[str, Callable[..., Any]] = {}
-        active_tools = InternalTool.query.filter_by(is_active=True).all()
-        patterns = PersonaToolAccess.query.filter_by(persona_id=persona_id, allow=True).all()
+            tools: Dict[str, Callable[..., Any]] = {}
+            active_tools_result = await db_session.execute(
+                select(InternalTool).where(InternalTool.is_active == True)
+            )
+            active_tools = active_tools_result.scalars().all()
+            patterns_result = await db_session.execute(
+                select(PersonaToolAccess).where(
+                    PersonaToolAccess.persona_id == persona_id,
+                    PersonaToolAccess.allow == True
+                )
+            )
+            patterns = patterns_result.scalars().all()
 
-        for tool in active_tools:
-            qname = tool.qualified_name
-            if not any(_pattern_matches(p.pattern, qname) for p in patterns):
-                continue
-            func = self.get(qname)
-            if not callable(func):
-                continue
+            for tool in active_tools:
+                qname = tool.qualified_name
+                if not any(_pattern_matches(p.pattern, qname) for p in patterns):
+                    continue
+                func = self.get(qname)
+                if not callable(func):
+                    continue
 
-            # If persona has artist_id and the first parameter is artist_id, bind it via partial
-            if artist_id is not None:
-                try:
+                # If persona has artist_id and the first parameter is artist_id, bind it via partial
+                if artist_id is not None:
                     sig = inspect.signature(func)
                     params = list(sig.parameters.values())
                     if params and params[0].name == 'artist_id':
                         tools[qname] = llm_tool_wrapper(func, artist_id)
                         continue
-                except Exception:  # noqa: BLE001
-                    pass
 
-            tools[qname] = func
+                tools[qname] = func
 
         return tools
 
-    async def list_persona_tools(self, persona_id: int) -> list[dict]:
+    async def list_persona_tools(self, persona_id: int) -> List[dict]:
         """Return tool signatures for a persona with artist_id filtered out if applicable."""
-        persona = Persona.query.filter_by(id=persona_id).first()
-        artist_id = getattr(persona, 'artist_id', None) if persona else None
+        async with AsyncSessionLocal() as db_session:
+            persona_result = await db_session.execute(
+                select(Persona).where(Persona.id == persona_id)
+            )
+            persona = persona_result.scalar_one_or_none()
+            artist_id = getattr(persona, 'artist_id', None) if persona else None
 
-        tools_info = []
-        active_tools = InternalTool.query.filter_by(is_active=True).all()
-        patterns = PersonaToolAccess.query.filter_by(persona_id=persona_id, allow=True).all()
+            tools_info = []
+            active_tools_result = await db_session.execute(
+                select(InternalTool).where(InternalTool.is_active == True)
+            )
+            active_tools = active_tools_result.scalars().all()
+            patterns_result = await db_session.execute(
+                select(PersonaToolAccess).where(
+                    PersonaToolAccess.persona_id == persona_id,
+                    PersonaToolAccess.allow == True
+                )
+            )
+            patterns = patterns_result.scalars().all()
 
-        for tool in active_tools:
-            qname = tool.qualified_name
-            if not any(_pattern_matches(p.pattern, qname) for p in patterns):
-                continue
+            for tool in active_tools:
+                qname = tool.qualified_name
+                if not any(_pattern_matches(p.pattern, qname) for p in patterns):
+                    continue
 
-            func = self.get(qname)
-            if not callable(func):
-                continue
+                func = self.get(qname)
+                if not callable(func):
+                    continue
 
-            # Analyze function signature
-            try:
-                sig = inspect.signature(func)
-                params = []
+                # Analyze function signature
+                try:
+                    sig = inspect.signature(func)
+                    params = []
 
-                for param_name, param in sig.parameters.items():
-                    # Skip artist_id if persona has artist_id (it will be pre-bound)
-                    if artist_id is not None and param_name == 'artist_id':
-                        continue
+                    for param_name, param in sig.parameters.items():
+                        # Skip artist_id if persona has artist_id (it will be pre-bound)
+                        if artist_id is not None and param_name == 'artist_id':
+                            continue
 
-                    param_info = {
-                        'name': param_name,
-                        'type': str(param.annotation) if param.annotation != inspect.Parameter.empty else 'any',
-                        'required': param.default == inspect.Parameter.empty,
-                        'default': param.default if param.default != inspect.Parameter.empty else None
+                        param_info = {
+                            'name': param_name,
+                            'type': str(param.annotation) if param.annotation != inspect.Parameter.empty else 'any',
+                            'required': param.default == inspect.Parameter.empty,
+                            'default': param.default if param.default != inspect.Parameter.empty else None
+                        }
+                        params.append(param_info)
+
+                    tool_info = {
+                        'name': qname,
+                        'description': tool.description or f'Execute {qname}',
+                        'parameters': params,
+                        'has_artist_id_bound': artist_id is not None and any(
+                            p.name == 'artist_id' for p in sig.parameters.values())
                     }
-                    params.append(param_info)
 
-                tool_info = {
-                    'name': qname,
-                    'description': tool.description or f'Execute {qname}',
-                    'parameters': params,
-                    'has_artist_id_bound': artist_id is not None and any(
-                        p.name == 'artist_id' for p in sig.parameters.values())
-                }
+                    tools_info.append(tool_info)
 
-                tools_info.append(tool_info)
-
-            except Exception:  # noqa: BLE001
-                # Fallback to basic info if signature analysis fails
-                tool_info = {
-                    'name': qname,
-                    'description': tool.description or f'Execute {qname}',
-                    'parameters': [],
-                    'has_artist_id_bound': False
-                }
-                tools_info.append(tool_info)
+                except Exception:  # noqa: BLE001
+                    # Fallback to basic info if signature analysis fails
+                    tool_info = {
+                        'name': qname,
+                        'description': tool.description or f'Execute {qname}',
+                        'parameters': [],
+                        'has_artist_id_bound': False
+                    }
+                    tools_info.append(tool_info)
 
         return sorted(tools_info, key=lambda x: x['name'])
 
@@ -167,7 +192,11 @@ class AgenticToolRegistry:
         except Exception as exc:  # noqa: BLE001
             return {'status': 'error', 'error': str(exc)}
 
-    async def create_langchain_tools(self, persona_id: int, available_tools_info: List[Dict[str, Any]]) -> List[StructuredTool]:
+    async def create_langchain_tools(
+            self,
+            persona_id: int,
+            available_tools_info: List[Dict[str, Any]]
+    ) -> List[StructuredTool]:
         """Create LangChain StructuredTool objects from persona tools with proper Pydantic schemas."""
 
         async def _get_field_type(param_type: str) -> type:
