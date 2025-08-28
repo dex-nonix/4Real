@@ -1,6 +1,9 @@
 import inspect
-from typing import Type, Callable, Any, Dict, TypeVar, Generic
+from typing import Type, Callable, Any, Dict, TypeVar, Generic, final
+from abc import ABC, abstractmethod
 
+T = TypeVar('T')
+TTT = TypeVar('TTT')
 InjectDependencyType = Type[T] | Callable[[], T]
 
 
@@ -13,7 +16,7 @@ class Container:
     def register(self, dependency: InjectDependencyType, singleton: bool = True):
         key = dependency
         if not inspect.isclass(dependency) and not callable(dependency):
-            raise TypeError("Die Abhängigkeit muss eine Klasse oder eine aufrufbare Funktion sein.")
+            raise TypeError("The dependency must be a class or a callable function.")
 
         self._providers[key] = {'provider': dependency, 'singleton': singleton}
 
@@ -40,14 +43,11 @@ def di_register(dependency: InjectDependencyType, singleton: bool = True):
     _container.register(dependency, singleton)
 
 
-TDependency = TypeVar('TDependency', bound=InjectDependencyType)
-
-
-class Inject(Generic[TDependency]):
-    def __init__(self, dependency: TDependency, required: bool = True):
+class BaseInject(ABC, Generic[T, TTT]):
+    def __init__(self, dependency: TTT, required: bool = True):
         self.dependency = dependency
         self.required = required
-        self._private_name = f"_{dependency.__name__}_{id(self)}"
+        self._private_name = f"_{self.__class__.__name__}_{id(self)}"
 
     def __get__(self, instance, owner) -> T | None:
         if instance is None:
@@ -58,6 +58,13 @@ class Inject(Generic[TDependency]):
         setattr(instance, self._private_name, resolved_dependency)
         return resolved_dependency
 
+    @abstractmethod
+    def _resolve(self) -> T | None:
+        pass
+
+
+@final
+class Inject(BaseInject[T, InjectDependencyType]):
     def _resolve(self) -> T | None:
         resolved_dependency = _container.resolve(self.dependency)
         if resolved_dependency is None and self.required:
