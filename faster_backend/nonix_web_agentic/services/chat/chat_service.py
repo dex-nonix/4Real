@@ -1,13 +1,15 @@
 import importlib
 from datetime import datetime
-from typing import Any, Dict, List, AsyncGenerator
+from typing import Any, Dict, List, AsyncGenerator, TYPE_CHECKING
 
 from fastapi.responses import JSONResponse
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langgraph.prebuilt import create_react_agent
+from sqlalchemy import select
 
 from nonix_web.plugin.descriptor import InjectPlugin
 from nonix_web.services.base_service import BaseService, routed_service, route
+from nonix_web_db import AsyncSessionLocal
 from .mixins.chat_history_mixin import ChatHistoryMixin
 from .mixins.chat_message_mixin import ChatMessageMixin
 from .mixins.chat_session_mixin import ChatSessionMixin
@@ -18,7 +20,9 @@ from .streaming_interface import StreamingChunk
 from .task_manager import ChatTaskManager
 from ...llm.llm_message_utils import LCAIMessage, LCToolMessage, iter_messages
 from ...models.persona import Persona
-from ...plugin import NxWebAgenticPlugin
+
+if TYPE_CHECKING:
+    from ...plugin import NxWebAgenticPlugin
 
 
 @routed_service("/chat", tags=["Chat"])
@@ -33,10 +37,10 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
     - PersonaChatMixin: Persona-related operations
     - ToolExecutionMixin: Tool execution and MCP operations
     """
-    agentic_plugin: NxWebAgenticPlugin = InjectPlugin("agentic")
+    agentic_plugin: "NxWebAgenticPlugin" = InjectPlugin("agentic")
 
-    def __init__(self, server, router):
-        super().__init__(server, router)
+    def __init__(self, router):
+        super().__init__(router)
         self._task_manager = ChatTaskManager()
         ChatMessageMixin.__init__(self)
         self._logger.info("ChatService initialized with task manager")
@@ -143,14 +147,20 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
             # Create LangChain tools (can be empty list if no tools)
             langchain_tools = []
             if available_tools_info is not None:
-                langchain_tools = self.agentic_plugin.agentic_tool_registry.create_langchain_tools(
+                langchain_tools = await self.agentic_tool_manager.create_langchain_tools(
                     persona_id,
                     available_tools_info
                 )
                 self._logger.info(f"🔧 Created {len(langchain_tools)} LangChain tools for persona {persona_id}")
 
-            persona = Persona.query.filter_by(id=persona_id).first()
-            persona_system_prompt = persona.system_prompt if persona else ""
+            persona_system_prompt = ""
+            async with AsyncSessionLocal() as db_session:
+                persona_result = await db_session.execute(
+                    select(Persona).where(Persona.id == persona_id)
+                )
+                persona = persona_result.scalar_one_or_none()
+                if persona:
+                    persona_system_prompt = persona.system_prompt or ""
 
             template_messages = [
                 MessagesPlaceholder(variable_name="chat_history"),

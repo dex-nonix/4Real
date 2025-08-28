@@ -20,7 +20,8 @@ class PersonaMCPServer(Base):
 
     # Relationships
     persona = relationship('Persona', foreign_keys=[persona_id], backref=backref('persona_mcp_servers', lazy=True))
-    mcp_server = relationship('MCPServer', foreign_keys=[mcp_server_id], backref=backref('persona_mcp_servers', lazy=True))
+    mcp_server = relationship('MCPServer', foreign_keys=[mcp_server_id],
+                              backref=backref('persona_mcp_servers', lazy=True))
 
     def to_dict(self) -> dict:
         return {

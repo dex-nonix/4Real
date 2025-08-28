@@ -3,7 +3,7 @@ from typing import Dict, Any
 from nonix_web.plugin.base_plugin import BasePlugin
 from nonix_web.server import NxWebServer
 from nonix_web.utils.di import di_register
-from .llm.internal_tool_registry import AgenticToolRegistry
+from .llm.agentic_tool_manager import AgenticToolManager
 from .services.ai_analysis_result import AIAnalysisResultService
 from .services.ai_model_mapping import AIModelMappingService
 from .services.ai_provider import AIProviderService
@@ -36,8 +36,8 @@ class NxWebAgenticPlugin(BasePlugin):
         ToolInvocationLogService
     ]
 
-    agentic_tool_registry: AgenticToolRegistry = None
+    agentic_tool_manager: AgenticToolManager = None
 
-    async def _startup(self, server: "NxWebServer", config: Dict[str, Any]):
-        self.agentic_tool_registry = AgenticToolRegistry()
-        di_register(AgenticToolRegistry, instance=self.agentic_tool_registry)
+    def _configure(self, server: "NxWebServer", config: Dict[str, Any]):
+        self.agentic_tool_manager = AgenticToolManager()
+        di_register(AgenticToolManager, instance=self.agentic_tool_manager)

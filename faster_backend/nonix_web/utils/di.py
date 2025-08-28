@@ -35,11 +35,12 @@ class Container:
         self._providers: Dict[Type[T], Dict[str, Any]] = {}
         self._singletons: Dict[Type[T], T] = {}
 
-    def register(self, dependency: InjectDependencyType, singleton: bool = True, intance = None):
+    def register(self, dependency: InjectDependencyType, singleton: bool = True, intance=None):
         key = dependency
         if not inspect.isclass(dependency) and not callable(dependency):
             raise TypeError("The dependency must be a class or a callable function.")
-
+        if intance:
+            self._singletons[dependency] = intance
         self._providers[key] = {'provider': dependency, 'singleton': singleton}
 
     def resolve(self, dependency: InjectDependencyType) -> T | None:
@@ -52,12 +53,15 @@ class Container:
 
         if is_singleton:
             if dependency not in self._singletons:
-                self._singletons[dependency] = provider()
+                if inspect.isclass(provider):
+                    provider = provider()
+                self._singletons[dependency] = provider
             return self._singletons[dependency]
         else:
-            if inspect.isclass( provider ):
+            if inspect.isclass(provider):
                 return provider()
             return provider
+
 
 _container = Container()
 
@@ -65,7 +69,6 @@ _container = Container()
 def di_register(dependency: InjectDependencyType, singleton: bool = True, instance=None):
     _container.register(dependency, singleton, instance)
     return dependency
-
 
 
 @final

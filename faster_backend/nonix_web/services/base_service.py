@@ -194,9 +194,10 @@ class BaseService(ABC):
             self._logger.error(f"Failed to send message to room {room}: {e}")
 
     @classmethod
-    def to_router(cls, server, *args, **kwargs) -> APIRouter:
+    def to_router(cls, *args, **kwargs) -> APIRouter:
+        print(f"-----------------     create routed service: {cls}")
         router = APIRouter(**asdict(_get_routed_service_definition(cls)))
-        inst = cls(server, router, *args, **kwargs)
+        inst = cls(router, *args, **kwargs)
         for method_name in dir(inst):
             method = getattr(inst, method_name)
             route_definition = _get_route_info(method)

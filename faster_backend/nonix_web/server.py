@@ -3,7 +3,7 @@ import logging.handlers
 import os
 from contextlib import asynccontextmanager
 
-import socketio
+from  socketio import AsyncServer, ASGIApp
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
@@ -13,11 +13,12 @@ from .utils.di import di_register
 
 
 class NxWebServer:
-    sio: socketio.AsyncServer = None
+    sio: AsyncServer = None
     plugin_manager: PluginManager
     app: FastAPI
 
     def __init__(self, settings: Settings):
+        di_register(NxWebServer, instance=self)
         self.settings = settings
         self._setup_logging()
         self.app = FastAPI(
@@ -28,17 +29,15 @@ class NxWebServer:
             redoc_url=None,
             openapi_url=None
         )
+        di_register(FastAPI, instance=self.app)
+        if settings.WS_ENABLED:
+            self._enable_websocket()
         self.plugin_manager = PluginManager(self, self.settings.PLUGIN_SEARCH_PATH)
+        di_register(PluginManager, instance=self.plugin_manager)
+        self.__init__server()
         self.plugin_manager.discover_plugins()
         self.plugin_manager.configure_plugins(self.settings.PLUGINS)
 
-        if settings.WS_ENABLED:
-            self._enable_websocket()
-
-        di_register(PluginManager, instance=self.plugin_manager)
-        di_register(FastAPI, instance=self.app)
-
-        self.__init__server()
 
     async def _lifespan(self, _):
         await self._setup_server()
@@ -88,11 +87,11 @@ class NxWebServer:
         ...
 
     def _enable_websocket(self):
-        self.sio = sio = socketio.AsyncServer(
+        self.sio = sio = AsyncServer(
             async_mode="asgi",
             cors_allowed_origins=self.settings.WS_ALLOWED_ORIGINS
         )
-        di_register(socketio.AsyncServer, instance=sio)
+        di_register(AsyncServer, instance=sio)
 
         @sio.event
         async def connect(sid, environ):
@@ -112,6 +111,11 @@ class NxWebServer:
             await sio.leave_room(sid, room)
             print(f"Client {sid} leaves room: {room}")
 
+    def get_gunicorn_app(self):
+        if self.sio is None:
+            return self.app
+        return ASGIApp(self.sio, other_asgi_app=self.app)
+
     @classmethod
     def run_gunicorn(cls, settings: Settings = None):
         import uvicorn
@@ -126,7 +130,4 @@ class NxWebServer:
             factory=True
         )
 
-    def get_gunicorn_app(self):
-        if self.sio is None:
-            return self.app
-        return socketio.ASGIApp(self.sio, other_asgi_app=self.app)
+

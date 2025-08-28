@@ -1,55 +1,57 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
+from sqlalchemy import select
 
-from ...models.album import Album
-from ...models.artist import Artist
-from ...models.track import Track
+from nonix_web_db import AsyncSessionLocal
+from ..models.album import Album
+from ..models.track import Track
+from ..models.artist import Artist
 
 
-def album_list_tracks(album_id: int) -> Dict[str, Any]:
-    """List tracks in an album."""
-    try:
-        # Verify album exists
-        album = Album.query.filter_by(id=album_id).first()
+async def artist_list_albums(artist_id: int) -> Dict[str, Any]:
+    """List all albums for a specific artist."""
+    async with AsyncSessionLocal() as db_session:
+        album_result = await db_session.execute(
+            select(Album).where(Album.id == artist_id)
+        )
+        album = album_result.scalar_one_or_none()
+        
         if not album:
-            return {'status': 'error', 'error': f'Album {album_id} not found'}
-
-        # Get tracks ordered by track number
-        tracks = Track.query.filter_by(album_id=album_id) \
-            .order_by(Track.track_number.asc()) \
-            .all()
-
+            return {"error": "Album not found"}
+        
+        tracks_result = await db_session.execute(
+            select(Track).where(Track.album_id == artist_id)
+        )
+        tracks = tracks_result.scalars().all()
+        
         return {
-            'status': 'success',
-            'result': {
-                'album': album.to_dict(),
-                'tracks': [track.to_dict() for track in tracks],
-                'track_count': len(tracks)
-            }
+            "album": album.to_dict(),
+            "tracks": [track.to_dict() for track in tracks]
         }
-    except Exception as exc:
-        return {'status': 'error', 'error': str(exc)}
 
 
-def album_get_info(album_id: int) -> Dict[str, Any]:
-    """Get album details and metadata."""
-    try:
-        album = Album.query.filter_by(id=album_id).first()
+async def album_get_info(album_id: int) -> Dict[str, Any]:
+    """Get detailed information about an album."""
+    async with AsyncSessionLocal() as db_session:
+        album_result = await db_session.execute(
+            select(Album).where(Album.id == album_id)
+        )
+        album = album_result.scalar_one_or_none()
+        
         if not album:
-            return {'status': 'error', 'error': f'Album {album_id} not found'}
-
-        # Get related data
-        artist = Artist.query.filter_by(id=album.artist_id).first()
-        track_count = Track.query.filter_by(album_id=album_id).count()
-
+            return {"error": "Album not found"}
+        
+        artist_result = await db_session.execute(
+            select(Artist).where(Artist.id == album.artist_id)
+        )
+        artist = artist_result.scalar_one_or_none()
+        
+        track_count_result = await db_session.execute(
+            select(Track).where(Track.album_id == album_id)
+        )
+        track_count = len(track_count_result.scalars().all())
+        
         return {
-            'status': 'success',
-            'result': {
-                'album': album.to_dict(),
-                'artist': artist.to_dict() if artist else None,
-                'stats': {
-                    'track_count': track_count
-                }
-            }
+            "album": album.to_dict(),
+            "artist": artist.to_dict() if artist else None,
+            "track_count": track_count
         }
-    except Exception as exc:
-        return {'status': 'error', 'error': str(exc)}

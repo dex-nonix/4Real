@@ -260,7 +260,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
             # Execute tool
             self._logger.debug(f"Calling execute_tool for '{tool_name}'")
-            exec_result = await self.agentic_tool_registry.execute_tool(persona_id, tool_name, tool_args)
+            exec_result = await self.agentic_tool_manager.execute_tool(persona_id, tool_name, tool_args)
             log.status = 'success' if exec_result.get('status') == 'success' else 'error'
             log.output_json = exec_result
             await db_session.commit()
@@ -478,7 +478,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
             # Get model info and tools
             model_info, provider, mapping_obj = await self._resolve_ai_model(persona_id)
-            available_tools_info = await self.agentic_tool_registry.list_persona_tools(persona_id)
+            available_tools_info = await self.agentic_tool_manager.list_persona_tools(persona_id)
             if not model_info or not provider or not mapping_obj:
                 # No model available - mark as failed
                 error_msg = "AI model, provider, or mapping not available"

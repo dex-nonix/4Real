@@ -152,9 +152,11 @@ class PluginManager:
             plugin_instance.name = plugin_name
             plugin_instance.version = metadata.get("version", "0.0.0")
 
+            self.loaded_plugins[plugin_name] = plugin_instance
+
             self._logger.info(f"Configuring plugin: '{plugin_instance.name}' version {plugin_instance.version}")
             plugin_instance.configure(self.server, plugin_instance.config)
-            self.loaded_plugins[plugin_name] = plugin_instance
+
 
         except (ImportError, AttributeError, Exception) as e:
             self._logger.error(f"Failed to load plugin from '{plugin_dir.name}': {e}", exc_info=True)

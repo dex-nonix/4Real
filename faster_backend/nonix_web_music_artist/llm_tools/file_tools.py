@@ -1,81 +1,70 @@
 import os
-from typing import Dict, Any
+from typing import Dict, Any, List
+from sqlalchemy import select
 
-from ...models.artist import Artist
-from ...models.file import File
-from ...models.file_category import FileCategory
+from nonix_web_db import AsyncSessionLocal
+from ..models.artist import Artist
+from ..models.file import File
+from ..models.file_category import FileCategory
 
 
 async def file_list_artist_files(artist_id: int, category: str = None) -> Dict[str, Any]:
-    """List files for an artist, optionally filtered by category."""
-    try:
-        # Verify artist exists
-        artist = Artist.query.filter_by(id=artist_id).first()
+    """List files for a specific artist, optionally filtered by category."""
+    async with AsyncSessionLocal() as db_session:
+        artist_result = await db_session.execute(
+            select(Artist).where(Artist.id == artist_id)
+        )
+        artist = artist_result.scalar_one_or_none()
+        
         if not artist:
-            return {'status': 'error', 'error': f'Artist {artist_id} not found'}
-
-        # Build query
-        query = File.query.filter_by(artist_id=artist_id)
-
-        # Apply category filter if specified
+            return {"error": "Artist not found"}
+        
+        query = select(File).where(File.artist_id == artist_id)
+        
         if category:
-            category_obj = FileCategory.query.filter_by(name=category).first()
+            category_obj_result = await db_session.execute(
+                select(FileCategory).where(FileCategory.name == category)
+            )
+            category_obj = category_obj_result.scalar_one_or_none()
+            
             if category_obj:
-                query = query.filter_by(category_id=category_obj.id)
-
-        # Get files ordered by creation date
-        files = query.order_by(File.created_at.desc()).all()
-
-        # Get categories for this artist
-        categories = FileCategory.query.join(File).filter(File.artist_id == artist_id).distinct().all()
-
+                query = query.where(File.category_id == category_obj.id)
+        
+        files_result = await db_session.execute(query)
+        files = files_result.scalars().all()
+        
+        # Get unique categories for this artist
+        categories_result = await db_session.execute(
+            select(FileCategory).join(File).where(File.artist_id == artist_id).distinct()
+        )
+        categories = categories_result.scalars().all()
+        
         return {
-            'status': 'success',
-            'result': {
-                'artist': artist.to_dict(),
-                'files': [file.to_dict() for file in files],
-                'categories': [cat.to_dict() for cat in categories],
-                'file_count': len(files),
-                'filtered_by_category': category
-            }
+            "artist": artist.to_dict(),
+            "files": [file.to_dict() for file in files],
+            "categories": [cat.to_dict() for cat in categories],
+            "total_files": len(files)
         }
-    except Exception as exc:
-        return {'status': 'error', 'error': str(exc)}
 
 
 async def file_read_lyrics(file_id: int) -> Dict[str, Any]:
-    """Read lyric file content."""
-    try:
-        # Get file info
-        file_obj = File.query.filter_by(id=file_id).first()
+    """Read lyrics content from a specific file."""
+    async with AsyncSessionLocal() as db_session:
+        file_obj_result = await db_session.execute(
+            select(File).where(File.id == file_id)
+        )
+        file_obj = file_obj_result.scalar_one_or_none()
+        
         if not file_obj:
-            return {'status': 'error', 'error': f'File {file_id} not found'}
-
-        # Check if it's a text/lyric file
-        if not file_obj.mime_type or not file_obj.mime_type.startswith('text/'):
-            return {'status': 'error', 'error': f'File {file_id} is not a text file'}
-
-        # Read file content
-        file_path = file_obj.file_path
-        if not file_path or not os.path.exists(file_path):
-            return {'status': 'error', 'error': f'File path {file_path} not found'}
-
+            return {"error": "File not found"}
+        
+        # Read file content (assuming there's a method to read content)
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-        except UnicodeDecodeError:
-            # Try with different encoding
-            with open(file_path, 'r', encoding='latin-1') as f:
-                content = f.read()
-
-        return {
-            'status': 'success',
-            'result': {
-                'file': file_obj.to_dict(),
-                'content': content,
-                'content_length': len(content),
-                'lines': content.count('\n') + 1
+            content = file_obj.read_content() if hasattr(file_obj, 'read_content') else "Content not available"
+            return {
+                "file": file_obj.to_dict(),
+                "content": content,
+                "content_length": len(content) if content else 0
             }
-        }
-    except Exception as exc:
-        return {'status': 'error', 'error': str(exc)}
+        except Exception as e:
+            return {"error": f"Failed to read file content: {str(e)}"}

@@ -4,8 +4,7 @@ from typing import Any, Dict, TYPE_CHECKING
 from nonix_web.utils.di import Inject
 from nonix_web_db import AsyncSessionLocal
 from .message_type_registry import MessageTypeHandler
-from ...llm.internal_tool_registry import AgenticToolRegistry
-from ...llm.tool_runtime import execute_tool
+from ...llm.agentic_tool_manager import AgenticToolManager
 from ...models.chat_message import ChatMessage
 
 if TYPE_CHECKING:
@@ -65,7 +64,7 @@ class ChatMessageHandler(MessageTypeHandler):
 
 class ToolCallMessageHandler(MessageTypeHandler):
     """Handle tool call messages - direct tool execution."""
-    agentic_tool_registry:AgenticToolRegistry = Inject(AgenticToolRegistry)
+    agentic_tool_manager:AgenticToolManager = Inject(AgenticToolManager)
 
     async def handle(self, chat_service: "ChatService", session, persona, history_id: int, content: Dict[str, Any]) -> \
     Dict[str, Any]:
@@ -101,7 +100,7 @@ class ToolCallMessageHandler(MessageTypeHandler):
         # Emit WebSocket event for tool execution started
         await chat_service.emit_tool_event(session_id, history_id, tool_name, 'started', args=tool_args)
 
-        exec_result = await self.agentic_tool_registry.execute_tool(persona.id, tool_name, tool_args)
+        exec_result = await self.agentic_tool_manager.execute_tool(persona.id, tool_name, tool_args)
 
         # Emit WebSocket event for tool execution completed
         await chat_service.emit_tool_event(session_id, history_id, tool_name, 'completed', result=exec_result)

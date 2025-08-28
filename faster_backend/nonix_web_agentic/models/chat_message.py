@@ -21,7 +21,8 @@ class ChatMessage(Base):
 
     # Relationships
     history = relationship('ChatHistory', foreign_keys=[history_id], backref='messages')
-    parent_message = relationship('ChatMessage', foreign_keys=[parent_message_id], remote_side=[id], backref='child_messages')
+    parent_message = relationship('ChatMessage', foreign_keys=[parent_message_id], remote_side=[id],
+                                  backref='child_messages')
 
     def to_dict(self) -> dict:
         return {

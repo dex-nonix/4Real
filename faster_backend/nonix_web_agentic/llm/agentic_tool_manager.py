@@ -32,7 +32,7 @@ async def _pattern_matches(pattern: str, name: str) -> bool:
     return pattern == name
 
 
-class AgenticToolRegistry:
+class AgenticToolManager:
     """Minimal in-process registry mapping qualified tool names to callables."""
 
     def __init__(self) -> None:
@@ -213,7 +213,7 @@ class AgenticToolRegistry:
                 return str
 
         # Get the persona-scoped tools with partial binding
-        persona_tools = self.build_persona_tool_map(persona_id)
+        persona_tools = await self.build_persona_tool_map(persona_id)
 
         langchain_tools = []
         for tool_name, tool_func in persona_tools.items():
@@ -284,7 +284,7 @@ class AgenticToolRegistry:
         self._logger.info(f"🔧 Created {len(langchain_tools)} LangChain tools for persona {persona_id}")
         return langchain_tools
 
-# registry = AgenticToolRegistry()
+# registry = AgenticToolManager()
 #
 #
 # # Admin tools

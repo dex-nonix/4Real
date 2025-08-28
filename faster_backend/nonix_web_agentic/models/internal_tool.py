@@ -7,7 +7,7 @@ from nonix_web_db import Base
 
 
 class InternalTool(Base):
-    __tablename__ = 'agentic_tool_registry'
+    __tablename__ = 'internal_tools'
 
     id = Column(Integer, primary_key=True)
     namespace = Column(String(100), nullable=False)

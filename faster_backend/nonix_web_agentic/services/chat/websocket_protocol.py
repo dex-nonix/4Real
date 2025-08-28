@@ -1,7 +1,7 @@
 from typing import Protocol, TYPE_CHECKING, Any, List, Dict, AsyncGenerator
 
 from nonix_web.utils.di import Inject
-from ...llm.internal_tool_registry import AgenticToolRegistry
+from ...llm.agentic_tool_manager import AgenticToolManager
 
 if TYPE_CHECKING:
     from .streaming_interface import StreamingChunk
@@ -14,7 +14,7 @@ class WebSocketMixinProtocol(Protocol):
 
     _logger: "Logger"
     server: "NxWebServer"
-    agentic_tool_registry: AgenticToolRegistry = Inject(AgenticToolRegistry)
+    agentic_tool_manager: AgenticToolManager = Inject(AgenticToolManager)
 
     async def submit_async_task(self, func, *args, **kwargs):
         ...
@@ -26,7 +26,7 @@ class WebSocketMixinProtocol(Protocol):
             messages: List[Dict[str, Any]],
             available_tools_info: List[Dict[str, Any]],
             persona_id: int
-    ) -> AsyncGenerator[StreamingChunk, None]:
+    ) -> AsyncGenerator["StreamingChunk", None]:
         ...
 
     async def emit_chat_event(self, session_id: int, history_id: int, event: str, data: dict) -> None:

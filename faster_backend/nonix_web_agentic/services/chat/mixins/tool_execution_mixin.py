@@ -13,7 +13,6 @@ from .models_and_schemas import (
     MCPServerStatusResponse
 )
 from ..websocket_protocol import WebSocketMixinProtocol
-from ....llm.tool_runtime import list_persona_tools
 from ....models.mcp_server import MCPServer
 from ....models.persona import Persona
 
@@ -36,7 +35,7 @@ class ToolExecutionMixin(WebSocketMixinProtocol):
 
                 if not persona:
                     return JSONResponse({'error': 'Not found'}, 404)
-                return JSONResponse({'data': await list_persona_tools(persona.id)})
+                return JSONResponse({'data': await self.agentic_tool_manager.list_persona_tools(persona.id)})
         except Exception as exc:
             return JSONResponse({'error': str(exc)}, 500)
 

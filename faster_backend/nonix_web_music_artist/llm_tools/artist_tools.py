@@ -1,60 +1,57 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
+from sqlalchemy import select
 
-from ...models.album import Album
-from ...models.artist import Artist
-
-
-async def artist_list_albums(artist_id: int, page: int = 1, page_size: int = 20) -> Dict[str, Any]:
-    """List albums for an artist with pagination."""
-    try:
-        # Verify artist exists
-        artist = Artist.query.filter_by(id=artist_id).first()
-        if not artist:
-            return {'status': 'error', 'error': f'Artist {artist_id} not found'}
-
-        # Query albums with pagination
-        offset = (page - 1) * page_size
-        albums = Album.query.filter_by(artist_id=artist_id) \
-            .order_by(Album.release_date.desc()) \
-            .offset(offset).limit(page_size).all()
-
-        total = Album.query.filter_by(artist_id=artist_id).count()
-
-        return {
-            'status': 'success',
-            'result': {
-                'artist': artist.to_dict(),
-                'albums': [album.to_dict() for album in albums],
-                'pagination': {
-                    'page': page,
-                    'page_size': page_size,
-                    'total': total,
-                    'pages': (total + page_size - 1) // page_size
-                }
-            }
-        }
-    except Exception as exc:
-        return {'status': 'error', 'error': str(exc)}
+from nonix_web_db import AsyncSessionLocal
+from ..models.artist import Artist
+from ..models.album import Album
 
 
 async def artist_get_info(artist_id: int) -> Dict[str, Any]:
-    """Get artist details and metadata."""
-    try:
-        artist = Artist.query.filter_by(id=artist_id).first()
+    """Get detailed information about a specific artist."""
+    async with AsyncSessionLocal() as db_session:
+        artist_result = await db_session.execute(
+            select(Artist).where(Artist.id == artist_id)
+        )
+        artist = artist_result.scalar_one_or_none()
+        
         if not artist:
-            return {'status': 'error', 'error': f'Artist {artist_id} not found'}
-
-        # Get related data
-        album_count = Album.query.filter_by(artist_id=artist_id).count()
-
+            return {"error": "Artist not found"}
+        
+        albums_result = await db_session.execute(
+            select(Album).where(Album.artist_id == artist_id)
+        )
+        albums = albums_result.scalars().all()
+        
+        total_result = await db_session.execute(
+            select(Album).where(Album.artist_id == artist_id)
+        )
+        total = len(total_result.scalars().all())
+        
         return {
-            'status': 'success',
-            'result': {
-                'artist': artist.to_dict(),
-                'stats': {
-                    'album_count': album_count
-                }
-            }
+            "artist": artist.to_dict(),
+            "albums": [album.to_dict() for album in albums],
+            "album_count": total
         }
-    except Exception as exc:
-        return {'status': 'error', 'error': str(exc)}
+
+
+async def artist_list_albums(artist_id: int) -> Dict[str, Any]:
+    """List all albums for a specific artist with basic info."""
+    async with AsyncSessionLocal() as db_session:
+        artist_result = await db_session.execute(
+            select(Artist).where(Artist.id == artist_id)
+        )
+        artist = artist_result.scalar_one_or_none()
+        
+        if not artist:
+            return {"error": "Artist not found"}
+        
+        album_count_result = await db_session.execute(
+            select(Album).where(Album.artist_id == artist_id)
+        )
+        album_count = len(album_count_result.scalars().all())
+        
+        return {
+            "artist": artist.to_dict(),
+            "album_count": album_count,
+            "message": f"Found {album_count} albums for {artist.name}"
+        }

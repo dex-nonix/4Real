@@ -55,7 +55,7 @@ class ToolExecutionMixin(WebSocketMixinProtocol):
     #         # Create LangChain tools (can be empty list if no tools)
     #         langchain_tools = []
     #         if available_tools_info is not None:
-    #             langchain_tools = self.agentic_plugin.agentic_tool_registry.create_langchain_tools(
+    #             langchain_tools = self.agentic_plugin.agentic_tool_manager.create_langchain_tools(
     #                 persona_id,
     #                 available_tools_info
     #             )
