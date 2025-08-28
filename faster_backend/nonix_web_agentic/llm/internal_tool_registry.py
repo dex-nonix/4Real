@@ -30,7 +30,7 @@ async def _pattern_matches(pattern: str, name: str) -> bool:
     return pattern == name
 
 
-class InternalToolRegistry:
+class AgenticToolRegistry:
     """Minimal in-process registry mapping qualified tool names to callables."""
 
     def __init__(self) -> None:
@@ -255,7 +255,7 @@ class InternalToolRegistry:
         self._logger.info(f"🔧 Created {len(langchain_tools)} LangChain tools for persona {persona_id}")
         return langchain_tools
 
-# registry = InternalToolRegistry()
+# registry = AgenticToolRegistry()
 #
 #
 # # Admin tools

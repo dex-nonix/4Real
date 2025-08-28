@@ -28,8 +28,8 @@ from ..plugin import AsyncSessionLocal
 class GenericCRUDService(BaseService):
     config: CRUDConfig
 
-    def __init__(self, server, router: APIRouter):
-        super().__init__(server, router)
+    def __init__(self, router: APIRouter):
+        super().__init__(router)
         self.model = self.config.model
         self.query_processor = QueryProcessor(model=self.model, config=self.config)
         self._register_routes()

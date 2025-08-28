@@ -9,6 +9,7 @@ class Settings:
     LOG_MAX_SIZE: int = 10485760
     LOG_BACKUP_COUNT: int = 5
     WS_ENABLED=True
+    WS_ALLOWED_ORIGINS="*"
     HOST: str = "0.0.0.0"
     PORT: int = 5000
     PLUGIN_SEARCH_PATH = [

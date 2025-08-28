@@ -20,9 +20,6 @@ from ..streaming_event_manager import StreamingEventManager
 from ..streaming_interface import StreamingChunk
 from ..streaming_message_handler import StreamingMessageHandler
 from ..websocket_protocol import WebSocketMixinProtocol
-from ....llm.llm_client import run_chat_streaming
-from ....llm.tool_runtime import execute_tool
-from ....llm.tool_runtime import list_persona_tools
 from ....models.ai_model_mapping import AIModelMapping
 from ....models.ai_provider import AIProvider
 from ....models.chat_history import ChatHistory
@@ -263,7 +260,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
             # Execute tool
             self._logger.debug(f"Calling execute_tool for '{tool_name}'")
-            exec_result = await execute_tool(persona_id, tool_name, tool_args)
+            exec_result = await self.agentic_tool_registry.execute_tool(persona_id, tool_name, tool_args)
             log.status = 'success' if exec_result.get('status') == 'success' else 'error'
             log.output_json = exec_result
             await db_session.commit()
@@ -338,11 +335,18 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         except Exception as exc:  # noqa: BLE001
             return JSONResponse({'error': str(exc)}, status_code=500)
 
-    @route('/sessions/{session_id}/histories/{history_id}/send',
-           methods=['POST'],
-           response_model=MessageResponse)
-    async def send_message(self, req: Request, payload: SendMessageToHistoryRequest, session_id: int = None,
-                           history_id: int = None):
+    @route(
+        '/sessions/{session_id}/histories/{history_id}/send',
+        methods=['POST'],
+        response_model=MessageResponse
+    )
+    async def send_message(
+            self,
+            req: Request,
+            payload: SendMessageToHistoryRequest,
+            session_id: int = None,
+            history_id: int = None
+    ):
         """Send message to session."""
         self._logger.info(f"Processing send_message request for session {session_id}, history {history_id}")
 
@@ -420,9 +424,14 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             self._logger.error(f"Error in send_message: {exc}", exc_info=True)
             return await self._format_error_response(str(exc), 500)
 
-    async def submit_message_for_async_processing(self, user_msg_id: int, asst_msg_id: int, session_id: int,
-                                                  history_id: int,
-                                                  persona_id: int):
+    async def submit_message_for_async_processing(
+            self,
+            user_msg_id: int,
+            asst_msg_id: int,
+            session_id: int,
+            history_id: int,
+            persona_id: int
+    ):
         """Submit message processing to task manager for async execution."""
         try:
             # Use the task manager from the parent ChatService
@@ -446,8 +455,14 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             await self.emit_llm_event(session_id, history_id, 'processing_failed', f'Failed to start processing: {e}')
             raise
 
-    async def _process_message_async(self, user_msg_id: int, asst_msg_id: int,
-                                     session_id: int, history_id: int, persona_id: int):
+    async def _process_message_async(
+            self,
+            user_msg_id: int,
+            asst_msg_id: int,
+            session_id: int,
+            history_id: int,
+            persona_id: int
+    ):
         """Process message asynchronously using streaming."""
         message_handler = StreamingMessageHandler(session_id, history_id)
         event_manager = StreamingEventManager(self)
@@ -463,15 +478,17 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
             # Get model info and tools
             model_info, provider, mapping_obj = await self._resolve_ai_model(persona_id)
-            available_tools_info = await list_persona_tools(self.server.internal_tools, persona_id)
-
+            available_tools_info = await self.agentic_tool_registry.list_persona_tools(persona_id)
             if not model_info or not provider or not mapping_obj:
                 # No model available - mark as failed
                 error_msg = "AI model, provider, or mapping not available"
                 await message_handler.mark_as_error(error_msg)
-                await event_manager.emit_chunk_event(session_id, history_id,
-                                                     StreamingChunk(content="", chunk_type="complete", is_final=True),
-                                                     asst_msg_id)
+                await event_manager.emit_chunk_event(
+                    session_id,
+                    history_id,
+                    StreamingChunk(content="", chunk_type="complete", is_final=True),
+                    asst_msg_id
+                )
                 return
 
             # Build chat history using helper method
@@ -479,10 +496,14 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
             # Use streaming LLM client
             try:
-                async for message_dict in run_chat_streaming(provider, mapping_obj, chat_history,
-                                                             available_tools_info, persona_id):
+                async for message_dict in self.run_chat_streaming(
+                        provider,
+                        mapping_obj,
+                        chat_history,
+                        available_tools_info,
+                        persona_id
+                ):
                     # Convert dictionary to StreamingChunk object
-
                     message = StreamingChunk(
                         content=message_dict.get('content', ''),
                         chunk_type=message_dict.get('chunk_type', 'text'),
@@ -518,13 +539,23 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 # Handle streaming errors
                 await message_handler.mark_as_error(f"Streaming error: {str(e)}")
                 await message_handler.cleanup_on_error()  # Clean up on error
-                await event_manager.emit_streaming_error(session_id, history_id, f"Streaming error: {str(e)}",
-                                                         "streaming_error", asst_msg_id)
+                await event_manager.emit_streaming_error(
+                    session_id,
+                    history_id,
+                    f"Streaming error: {str(e)}",
+                    "streaming_error",
+                    asst_msg_id
+                )
                 await self.emit_llm_event(session_id, history_id, 'processing_failed', f"Streaming error: {str(e)}")
 
         except Exception as e:
             await message_handler.cleanup_on_error()
-            await self.emit_llm_event(session_id, history_id, 'processing_failed', f"Async processing error: {str(e)}")
+            await self.emit_llm_event(
+                session_id,
+                history_id,
+                'processing_failed',
+                f"Async processing error: {str(e)}"
+            )
             self._logger.error(f"Error in _process_message_async: {e}", exc_info=True)
 
     # @expose(

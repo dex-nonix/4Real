@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 
 from .config import Settings
 from .plugin.plugin_manager import PluginManager
+from .utils.di import di_register
 
 
 class NxWebServer:
@@ -30,8 +31,13 @@ class NxWebServer:
         self.plugin_manager = PluginManager(self, self.settings.PLUGIN_SEARCH_PATH)
         self.plugin_manager.discover_plugins()
         self.plugin_manager.configure_plugins(self.settings.PLUGINS)
+
         if settings.WS_ENABLED:
             self._enable_websocket()
+
+        di_register(PluginManager, instance=self.plugin_manager)
+        di_register(FastAPI, instance=self.app)
+
         self.__init__server()
 
     async def _lifespan(self, _):
@@ -57,7 +63,6 @@ class NxWebServer:
             datefmt=self.settings.LOG_DATE_FORMAT,
             force=True
         )
-
         logger = logging.getLogger()
 
         for handler in logger.handlers[:]:
@@ -83,7 +88,11 @@ class NxWebServer:
         ...
 
     def _enable_websocket(self):
-        self.sio = sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
+        self.sio = sio = socketio.AsyncServer(
+            async_mode="asgi",
+            cors_allowed_origins=self.settings.WS_ALLOWED_ORIGINS
+        )
+        di_register(socketio.AsyncServer, instance=sio)
 
         @sio.event
         async def connect(sid, environ):
@@ -97,6 +106,11 @@ class NxWebServer:
         async def join_room(sid, room):
             await sio.enter_room(sid, room)
             print(f"Client {sid} joined room: {room}")
+
+        @sio.on("leave_room")
+        async def join_room(sid, room):
+            await sio.leave_room(sid, room)
+            print(f"Client {sid} leaves room: {room}")
 
     @classmethod
     def run_gunicorn(cls, settings: Settings = None):
@@ -114,7 +128,5 @@ class NxWebServer:
 
     def get_gunicorn_app(self):
         if self.sio is None:
-            print("----------------- 1")
             return self.app
-        print("----------------- 2")
         return socketio.ASGIApp(self.sio, other_asgi_app=self.app)
