@@ -30,7 +30,7 @@ from ....models.chat_message import ChatMessage
 from ....models.chat_session import ChatSession
 from ....models.persona import Persona
 from ....models.tool_invocation_log import ToolInvocationLog
-from ..streaming_interface import StreamingChunk
+
 
 class ChatMessageMixin(WebSocketMixinProtocol):
     """Mixin for chat message handling and sending operations."""
@@ -152,7 +152,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             self._logger.info(f"User message {user_msg.id} created successfully for history {history_id}")
             return user_msg
 
-    async def _create_assistant_placeholder(self, history_id: int) -> ChatMessage:
+    async def create_assistant_placeholder(self, history_id: int) -> ChatMessage:
         """Create empty assistant message placeholder."""
         self._logger.debug(f"Creating assistant message placeholder for history {history_id}")
 
@@ -420,15 +420,19 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             self._logger.error(f"Error in send_message: {exc}", exc_info=True)
             return await self._format_error_response(str(exc), 500)
 
-    async def _submit_message_for_async_processing(self, user_msg_id: int, asst_msg_id: int, session_id: int,
-                                                   history_id: int,
-                                                   persona_id: int):
+    async def submit_message_for_async_processing(self, user_msg_id: int, asst_msg_id: int, session_id: int,
+                                                  history_id: int,
+                                                  persona_id: int):
         """Submit message processing to task manager for async execution."""
         try:
             # Use the task manager from the parent ChatService
             future = await self.submit_async_task(
                 self._process_message_async,
-                user_msg_id, asst_msg_id, session_id, history_id, persona_id
+                user_msg_id,
+                asst_msg_id,
+                session_id,
+                history_id,
+                persona_id
             )
 
             # Log successful submission with proper logger
@@ -459,7 +463,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
             # Get model info and tools
             model_info, provider, mapping_obj = await self._resolve_ai_model(persona_id)
-            available_tools_info = await list_persona_tools(persona_id)
+            available_tools_info = await list_persona_tools(self.server.internal_tools, persona_id)
 
             if not model_info or not provider or not mapping_obj:
                 # No model available - mark as failed
@@ -476,7 +480,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             # Use streaming LLM client
             try:
                 async for message_dict in run_chat_streaming(provider, mapping_obj, chat_history,
-                                                        available_tools_info, persona_id):
+                                                             available_tools_info, persona_id):
                     # Convert dictionary to StreamingChunk object
 
                     message = StreamingChunk(
@@ -485,7 +489,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                         metadata=message_dict.get('metadata', {}),
                         is_final=message_dict.get('chunk_type') == 'complete'
                     )
-                    
+
                     # Handle each chunk
                     if message.chunk_type == "text":
                         if await message_handler.update_content_safely(message.content):

@@ -2,7 +2,7 @@ import logging
 from abc import ABC
 from dataclasses import dataclass, asdict
 from enum import Enum
-from typing import Type, List, Dict, Any, Optional, Union, Sequence, Callable
+from typing import Type, List, Dict, Any, Optional, Union, Sequence, Callable, TYPE_CHECKING
 
 from fastapi import APIRouter, params, routing, utils, types
 from fastapi.datastructures import Default
@@ -11,6 +11,8 @@ from starlette.routing import (
     BaseRoute,
 )
 from starlette.types import ASGIApp, Lifespan
+
+from nonix_web.utils.di import Inject
 
 
 @dataclass
@@ -173,22 +175,28 @@ def _get_route_info(cls) -> _RoutedServiceMethodDefinition:
     return getattr(cls, '_route_info', None)
 
 
+# if TYPE_CHECKING:
+from nonix_web.server import NxWebServer
+
+
 class BaseService(ABC):
-    def __init__(self, app, router):
-        self.app = app
+    server: "NxWebServer" = Inject(NxWebServer)
+    router: APIRouter
+
+    def __init__(self, router: APIRouter):
         self.router = router
         self._logger = logging.getLogger(self.__class__.__name__)
 
     async def send_ws_message(self, room: str, message: dict):
         try:
-            await self.app.sio.emit('message', message, room=room)
+            await self.server.sio.emit('message', message, room=room)
         except Exception as e:
             self._logger.error(f"Failed to send message to room {room}: {e}")
 
     @classmethod
-    def to_router(cls, app, *args, **kwargs) -> APIRouter:
+    def to_router(cls, server, *args, **kwargs) -> APIRouter:
         router = APIRouter(**asdict(_get_routed_service_definition(cls)))
-        inst = cls(app, router, *args, **kwargs)
+        inst = cls(server, router, *args, **kwargs)
         for method_name in dir(inst):
             method = getattr(inst, method_name)
             route_definition = _get_route_info(method)

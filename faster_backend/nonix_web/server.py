@@ -13,6 +13,8 @@ from .plugin.plugin_manager import PluginManager
 
 class NxWebServer:
     sio: socketio.AsyncServer = None
+    plugin_manager: PluginManager
+    app: FastAPI
 
     def __init__(self, settings: Settings):
         self.settings = settings

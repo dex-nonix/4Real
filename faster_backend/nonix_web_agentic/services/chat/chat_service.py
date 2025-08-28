@@ -25,8 +25,8 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
     - ToolExecutionMixin: Tool execution and MCP operations
     """
 
-    def __init__(self, app, router):
-        super().__init__(app, router)
+    def __init__(self, server, router):
+        super().__init__(server, router)
         self._task_manager = ChatTaskManager()
         ChatMessageMixin.__init__(self)
         self._logger.info("ChatService initialized with task manager")

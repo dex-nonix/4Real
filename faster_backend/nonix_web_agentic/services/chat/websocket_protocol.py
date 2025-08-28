@@ -1,5 +1,8 @@
 import logging
-from typing import Protocol
+from typing import Protocol, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from nonix_web.server import NxWebServer
 
 
 class WebSocketMixinProtocol(Protocol):
@@ -9,6 +12,7 @@ class WebSocketMixinProtocol(Protocol):
         ...
 
     _logger: logging.Logger
+    server: "NxWebServer"
 
     async def emit_chat_event(self, session_id: int, history_id: int, event: str, data: dict) -> None:
         """Emit chat event - Protocol method."""

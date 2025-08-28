@@ -2,6 +2,7 @@ from typing import Dict, Any
 
 from nonix_web.plugin.base_plugin import BasePlugin
 from nonix_web.server import NxWebServer
+from .llm.internal_tool_registry import InternalToolRegistry
 from .services.ai_analysis_result import AIAnalysisResultService
 from .services.ai_model_mapping import AIModelMappingService
 from .services.ai_provider import AIProviderService
@@ -33,3 +34,9 @@ class NxWebAgenticPlugin(BasePlugin):
         PersonaToolAccessService,
         ToolInvocationLogService
     ]
+
+    internal_tools: InternalToolRegistry = None
+
+    async def _startup(self, server: "NxWebServer", config: Dict[str, Any]):
+        self.internal_tools = InternalToolRegistry()
+

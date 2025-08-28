@@ -1,10 +1,13 @@
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, TYPE_CHECKING
 
 from nonix_web_db import AsyncSessionLocal
 from .message_type_registry import MessageTypeHandler
 from ...llm.tool_runtime import execute_tool
 from ...models.chat_message import ChatMessage
+
+if TYPE_CHECKING:
+    from .chat_service import ChatService
 
 
 class ChatMessageHandler(MessageTypeHandler):
@@ -41,9 +44,14 @@ class ChatMessageHandler(MessageTypeHandler):
         })
 
         # Start AI processing - persona is DIRECT PARAMETER!
-        asst_msg = await chat_service._create_assistant_placeholder(history_id)
-        await chat_service._submit_message_for_async_processing(chat_msg.id, asst_msg.id, session_id, history_id,
-                                                                persona.id)
+        asst_msg = await chat_service.create_assistant_placeholder(history_id)
+        await chat_service.submit_message_for_async_processing(
+            chat_msg.id,
+            asst_msg.id,
+            session_id,
+            history_id,
+            persona.id
+        )
 
         return {
             'chat_message_id': chat_msg.id,
@@ -56,7 +64,8 @@ class ChatMessageHandler(MessageTypeHandler):
 class ToolCallMessageHandler(MessageTypeHandler):
     """Handle tool call messages - direct tool execution."""
 
-    async def handle(self, chat_service, session, persona, history_id: int, content: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle(self, chat_service: "ChatService", session, persona, history_id: int, content: Dict[str, Any]) -> \
+    Dict[str, Any]:
         tool_name = content.get('tool')
         tool_args = content.get('args', {})
 

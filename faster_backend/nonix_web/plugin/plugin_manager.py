@@ -177,3 +177,6 @@ class PluginManager:
         self._logger.info("Starting plugin shutdown phase.")
         for plugin_name, plugin_instance in reversed(list(self.loaded_plugins.items())):
             await plugin_instance.shutdown(self.server, plugin_instance.config)
+
+    def get_plugin(self, name):
+        return self.loaded_plugins.get(name, None)
