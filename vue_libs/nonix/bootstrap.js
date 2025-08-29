@@ -57,7 +57,9 @@ export const mountNxApp = (target, config = {}) => {
     app.use(PrimeVue);
     app.use(ToastService);
     app.directive('tooltip', Tooltip);
-    app.provide('websocket-manager', new WebSocketManager());
+    app.websocketManager = new WebSocketManager();
+    app.provide('websocket-manager', app.websocketManager);
+
     loadConfigObject(app, config);
     iterObject( config.packages, (packageConfig)=> loadConfigObject(app, packageConfig));
     app.mount(target);

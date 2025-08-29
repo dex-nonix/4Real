@@ -79,6 +79,21 @@ const toolsLoading = ref(false);
 const selectedTool = ref(null);
 const toolExecutionDialogRef = ref(null);
 
+// Track active WebSocket unsubscribers to avoid duplicate handlers
+const wsUnsubs = ref([]);
+
+const cleanupWsListeners = () => {
+  try {
+    if (Array.isArray(wsUnsubs.value)) {
+      wsUnsubs.value.forEach(unsub => {
+        try { typeof unsub === 'function' && unsub(); } catch (_) {}
+      });
+    }
+  } finally {
+    wsUnsubs.value = [];
+  }
+};
+
 // Register all message types with the manager
 onMounted(() => {
   chatMessageTypeManager.registerMessageType('text', TextMessage);
@@ -95,6 +110,7 @@ onUnmounted(() => {
     const room = `chat/${props.selectedSession.id}/${props.historyId}`;
     chatService.leaveRoom(room);
   }
+  cleanupWsListeners();
 });
 
 // WebSocket Event Handlers
@@ -202,6 +218,22 @@ const handleAssistantComplete = (data) => {
   }
 };
 
+const handleStreamingError = (data) => {
+  console.log('🎯 Streaming Error event:', data);
+  const { message_id, error_message } = data || {};
+  if (!message_id) return;
+  // Update message status to error
+  const messageIndex = messages.value.findIndex(m => m.id === message_id);
+  if (messageIndex !== -1) {
+    messages.value[messageIndex].status = 'error';
+  }
+  // Update streaming state
+  streamingStatus.value.set(message_id, 'error');
+  const streamingData = streamingMessages.value.get(message_id) || {};
+  streamingData.status = 'error';
+  streamingMessages.value.set(message_id, streamingData);
+};
+
 // State Update Functions
 const updateLLMStatus = (stage, message) => {
   llmStatus.value = { stage, message, timestamp: new Date().toISOString() };
@@ -233,6 +265,7 @@ watch([() => props.selectedSession, () => props.historyId], ([newSession, newHis
     const oldRoom = `chat/${oldSession.id}/${oldHistoryId}`;
     console.log('Leaving old room:', oldRoom);
     chatService.leaveRoom(oldRoom);
+    cleanupWsListeners();
   }
   
   // Join new room if it exists
@@ -243,15 +276,16 @@ watch([() => props.selectedSession, () => props.historyId], ([newSession, newHis
     
     console.log('Setting up WebSocket event listeners...');
     // Re-attach event listeners
-    chatService.onWebSocketEvent('llm_status', handleLLMStatus);
-    chatService.onWebSocketEvent('tool_status', handleToolStatus);
-    chatService.onWebSocketEvent('message_received', handleMessageReceived);
-    chatService.onWebSocketEvent('message_processed', handleMessageProcessed);
+    wsUnsubs.value.push(chatService.onWebSocketEvent('llm_status', handleLLMStatus));
+    wsUnsubs.value.push(chatService.onWebSocketEvent('tool_status', handleToolStatus));
+    wsUnsubs.value.push(chatService.onWebSocketEvent('message_received', handleMessageReceived));
+    wsUnsubs.value.push(chatService.onWebSocketEvent('message_processed', handleMessageProcessed));
     
     // Re-attach streaming event listeners
-    chatService.onWebSocketEvent('assistant_message_started', handleAssistantStarted);
-    chatService.onWebSocketEvent('assistant_message_chunk', handleAssistantChunk);
-    chatService.onWebSocketEvent('assistant_message_complete', handleAssistantComplete);
+    wsUnsubs.value.push(chatService.onWebSocketEvent('assistant_message_started', handleAssistantStarted));
+    wsUnsubs.value.push(chatService.onWebSocketEvent('assistant_message_chunk', handleAssistantChunk));
+    wsUnsubs.value.push(chatService.onWebSocketEvent('assistant_message_complete', handleAssistantComplete));
+    wsUnsubs.value.push(chatService.onWebSocketEvent('streaming_error', handleStreamingError));
     console.log('WebSocket event listeners attached successfully');
   } else {
     console.log('No session or history ID available for WebSocket setup');
