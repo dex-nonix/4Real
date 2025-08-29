@@ -140,6 +140,7 @@ class MessageListResponse(BaseModel):
 
 
 class SendMessageToHistoryRequest(BaseModel):
+    message_type: str = Field(..., description="Meta-type: user|tool_call|system")
     content: Dict[str, Any] = Field(..., description="Message content in JSON format")
 
 

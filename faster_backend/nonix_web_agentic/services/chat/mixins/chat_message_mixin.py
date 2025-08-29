@@ -132,15 +132,15 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             return session, history
 
     async def _create_user_message(self, history_id: int, content: Dict[str, Any]) -> ChatMessage:
-        """Create and save user message."""
         self._logger.debug(f"Creating user message for history {history_id}")
 
         async with AsyncSessionLocal() as db_session:
             user_msg = ChatMessage(
                 history_id=history_id,
                 role='user',
-                message_type='text',
-                content_json=content
+                message_type='user',
+                content_json=content,
+                status='complete'
             )
             db_session.add(user_msg)
             await db_session.commit()
@@ -387,15 +387,13 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                     self._logger.warning(f"History validation failed - history: {history}, session_id: {session_id}")
                     return await self._format_error_response('History not found or invalid', 404)
 
-            # Get user content - MUST be object with type
+            # Get user content (object)
             user_content = payload.content
             if not user_content:
                 return await self._format_error_response('content required', 400)
 
-            # Enforce explicit meta-type from frontend (top-level message_type)
-
-            # Get message type from top-level payload if present
-            message_type = getattr(payload, 'message_type', None) or user_content.get('message_type')
+            # Enforce explicit meta-type from frontend (top-level message_type only)
+            message_type = getattr(payload, 'message_type', None)
             if not message_type:
                 return await self._format_error_response('message_type is required', 400)
 
@@ -443,7 +441,8 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 user_msg_id,
                 asst_msg_id,
                 history_id,
-                persona_id
+                persona_id,
+                session_id
             )
 
             # Log successful submission with proper logger
@@ -459,11 +458,11 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
     async def _process_message_async(
             self,
-            session_id: int,
             user_msg_id: int,
             asst_msg_id: int,
             history_id: int,
-            persona_id: int
+            persona_id: int,
+            session_id: int
     ):
         """Process message asynchronously using streaming."""
         message_handler = StreamingMessageHandler(session_id, history_id)

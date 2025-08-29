@@ -40,7 +40,9 @@ class ChatMessageHandler(MessageTypeHandler):
         await chat_service.emit_chat_event(session_id, history_id, 'message_received', {
             'message_id': chat_msg.id,
             'role': chat_msg.role,
+            'message_type': 'user',
             'content': chat_msg.content_json,
+            'status': chat_msg.status,
             'timestamp': chat_msg.created_at.isoformat()
         })
 
@@ -111,7 +113,7 @@ class ToolCallMessageHandler(MessageTypeHandler):
             tool_result_msg = ChatMessage(
                 history_id=history_id,
                 role='tool',
-                message_type='tool',
+                message_type='tool_result',
                 content_json={
                     'toolName': tool_name,
                     'toolParams': tool_args,
@@ -131,8 +133,9 @@ class ToolCallMessageHandler(MessageTypeHandler):
         await chat_service.emit_chat_event(session_id, history_id, 'message_received', {
             'message_id': tool_result_msg.id,
             'role': tool_result_msg.role,
-            'message_type': 'tool',
+            'message_type': 'tool_result',
             'content': tool_result_msg.content_json,
+            'status': tool_result_msg.status if hasattr(tool_result_msg, 'status') else 'complete',
             'timestamp': tool_result_msg.created_at.isoformat()
         })
 
