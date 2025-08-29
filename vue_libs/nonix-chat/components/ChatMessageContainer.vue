@@ -679,7 +679,14 @@ const onStop = async () => {
   if (!props.selectedSession?.id || !chatService) return;
   
   try {
-    const response = await chatService.cancelStreaming(props.selectedSession.id);
+    const streamingMsg = messages.value.find(m => m.role === 'assistant' && m.status === 'streaming');
+    if (streamingMsg && props.historyId) {
+      const response = await chatService.cancelMessage(props.selectedSession.id, props.historyId, streamingMsg.id);
+      console.log('Cancel message response', response);
+    } else {
+      // Fallback: no streaming message found; nothing to cancel
+      return;
+    }
     
     if (response?.cancelled) {
       // Clear streaming status for all messages

@@ -445,6 +445,12 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 session_id
             )
 
+            # Tag task with assistant message id for per-request cancellation
+            try:
+                setattr(future, '_assistant_message_id', asst_msg_id)
+            except Exception:
+                pass
+
             # Log successful submission with proper logger
             self._logger.info(f"Message {user_msg_id} submitted to task manager for async processing (session: {session_id})")
             return future
@@ -455,6 +461,42 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             # Emit error event
             await self.emit_llm_event(session_id, history_id, 'processing_failed', f'Failed to start processing: {e}')
             raise
+
+    @route(
+        '/sessions/{session_id}/histories/{history_id}/messages/{assistant_message_id}/cancel',
+        methods=['POST'],
+        response_model=Dict[str, Any]
+    )
+    async def cancel_message_streaming(self, req: Request, session_id: int, history_id: int, assistant_message_id: int):
+        """Cancel streaming for a single assistant message (per-request cancel)."""
+        try:
+            # Validate session and history exist and match
+            session, history = await self._validate_session_history(session_id, history_id)
+            if not session or not history:
+                return await self._format_error_response('Session or history not found', 404)
+
+            # Find and cancel the task tagged with this assistant_message_id
+            cancelled = False
+            try:
+                active = getattr(self._task_manager, '_active_tasks', [])
+                for task in list(active):
+                    try:
+                        if getattr(task, '_assistant_message_id', None) == assistant_message_id and not task.done():
+                            task.cancel()
+                            cancelled = True
+                            break
+                    except Exception:
+                        continue
+            except Exception:
+                cancelled = False
+
+            return JSONResponse({
+                'message': 'Cancelled message task' if cancelled else 'No active task for message',
+                'assistant_message_id': assistant_message_id,
+                'cancelled': cancelled
+            })
+        except Exception as exc:  # noqa: BLE001
+            return await self._format_error_response(str(exc), 500)
 
     async def _process_message_async(
             self,
@@ -766,37 +808,6 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         except Exception as exc:  # noqa: BLE001
             return await self._format_error_response(str(exc), 500)
 
-    @route(
-        '/sessions/{session_id}/cancel',
-        methods=['POST'],
-        response_model=Dict[str, Any]
-    )
-    async def cancel_streaming(self, req: Request, session_id: int):
-        """Cancel active streaming for a session."""
-        try:
-            # Validate session exists
-            session, _ = await self._validate_session_history(session_id)
-            if not session:
-                return await self._format_error_response('Session not found or inactive', 404)
-
-            # Cancel active streaming task for this session
-            cancelled = await self._cancel_session_streaming(session_id)
-            
-            if cancelled:
-                return JSONResponse({
-                    'message': 'Streaming cancelled successfully',
-                    'session_id': session_id,
-                    'cancelled': True
-                })
-            else:
-                return JSONResponse({
-                    'message': 'No active streaming to cancel',
-                    'session_id': session_id,
-                    'cancelled': False
-                })
-
-        except Exception as exc:  # noqa: BLE001
-            return await self._format_error_response(str(exc), 500)
 
     @route(
         '/sessions/{session_id}/retry',

@@ -136,8 +136,10 @@ export default class ChatService extends BaseApiService {
   }
 
   // Streaming Control
-  async cancelStreaming(sessionId) {
-    const response = await this.post(`/chat/sessions/${sessionId}/cancel`)
+  // removed session-level cancel
+
+  async cancelMessage(sessionId, historyId, assistantMessageId) {
+    const response = await this.post(`/chat/sessions/${sessionId}/histories/${historyId}/messages/${assistantMessageId}/cancel`)
     return response.data
   }
 
