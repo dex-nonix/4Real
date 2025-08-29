@@ -58,34 +58,24 @@ Required correction (call site):
   - tool_result (result from tool execution)
 - Do NOT use "chat" or "text" as stored types.
 
-Inconsistent writer (should be "text"):
+Example writer (target meta-type):
 ```25:33:faster_backend/nonix_web_agentic/services/chat/message_handlers.py
 chat_msg = ChatMessage(
     history_id=history_id,
     role='user',
-    message_type='chat',  # change to 'text'
+    message_type='user',
     content_json=content,
     status='complete'
 )
 ```
 
 3) Single source of truth for creating user messages
-- Ensure only one path creates the user message for the send flow. Avoid duplicate creators that can conflict.
+- Ensure only one path creates the user message for the send flow. Remove/avoid duplicate creators that can conflict.
 
-Potential conflict site:
-```138:145:faster_backend/nonix_web_agentic/services/chat/mixins/chat_message_mixin.py
-user_msg = ChatMessage(
-    history_id=history_id,
-    role='user',
-    message_type='text',
-    content_json=content
-)
-```
-
-4) Validation checklist (after applying fixes)
+- 4) Validation checklist (after applying fixes)
 - Send a user message:
-  - DB: user row has message_type='text' and the exact user text.
-  - Assistant placeholder row exists (status='processing').
+  - DB: user row has message_type='user' and the exact user text.
+  - Assistant placeholder row exists (status='streaming' or 'processing').
   - Streaming chunks append to the assistant row only; upon completion, assistant.status='complete' with full text.
 - WebSocket events:
   - assistant_message_started → id matches assistant row id.
@@ -123,70 +113,61 @@ Impact scope
 - Tool results (if streaming desired): mirror the assistant lifecycle for `message_type='tool_result'` rows: start → chunk → complete.
 - WebSocket events drive status transitions; UI selects StreamingMessage by (role/meta-type, status).
 
+4) Frontend architecture (containers + base message)
+- OutgoingMessageContainer (send)
+  - Purpose: wraps user-sent messages
+  - State: sending (optimistic), processing, failed, complete
+  - Actions: delete, copy, retry, cancel (while sending)
+  - Child layout: UserMessage (non-streaming)
+- IncomingMessageContainer (receive)
+  - Purpose: wraps backend-originated messages (assistant, tool_result, system)
+  - State: streaming, processing, complete, error
+  - Actions: delete, copy, stop (while streaming)
+  - Child layouts: AssistantMessage / ToolMessage / SystemMessage
+- Base component: BackendMessage (shared features)
+  - Props: id, message_type, role, status, content_json, created_at
+  - Behavior: show streaming state while status ∈ {processing, streaming}; append chunks; switch to final view on complete; show errors; common actions
+  - All backend messages are streamable by default; can be disabled via flag when needed
+
+5) Mapping (meta-type → container + layout)
+- message_type='user' → OutgoingMessageContainer(UserMessage)
+- message_type='assistant' → IncomingMessageContainer(AssistantMessage)
+- message_type='tool_result' → IncomingMessageContainer(ToolMessage)
+- message_type='system' → IncomingMessageContainer(SystemMessage)
+- No 'streaming' type; wrappers switch views by status only
+
+6) Standardized props/events (UI contract)
+- Common props (both containers): id, message_type, role, status, content_json, created_at, canDelete, canCopy, isStreamable
+- Emits (both): delete(id), copy(id), error(id, details)
+- Outgoing extras: retry(id), cancel(id)
+- Incoming extras: stop(id), appendChunk(id, chunk), complete(id, finalContent)
+
+7) Event payload contract (runtime)
+- Always include: message_id, message_type, role, status, content (chunk/final), timestamp
+- Event sequence (incoming): started → chunk* → complete | error
+- UI upserts by message_id; no full list reload after send
+
+8) Frontend legacy removals
+- Do not register or use 'chat' or 'streaming' as message types
+- Map strictly by meta-types; use status to decide streaming vs final view
+
 Minimal implementation steps (updated)
 1. Fix async task call argument order (Section 1 – done).
 2. Switch backend routing to top-level `message_type` and register `'user'` (not `'text'`/`'chat'`).
 3. Writers: store meta-types (`'user'`, `'assistant'`, `'system'`, `'tool_call'`, `'tool_result'`).
 4. Normalize streaming: assistant/tool_result rows stream via status only; no 'streaming' type anywhere.
 5. Frontend: send `message_type:'user'`; optimistic `message_type:'user'`; render by meta-type + status (streaming).
-6. (Optional) Normalize existing data to meta-types.
+6. Frontend: introduce OutgoingMessageContainer (user) and IncomingMessageContainer (assistant/tool_result/system) with BackendMessage base features.
+7. Frontend: remove legacy 'chat'/'streaming' registrations; map strictly by meta-type.
+8. (Optional) Normalize existing data to meta-types.
 
 Post-fix quick test (meta-types + streaming)
 - Send "hi" with `{ message_type:'user', content:{ text:'hi' } }`.
 - DB user row: `message_type='user'`, `content_json.text='hi'`.
 - Assistant placeholder: `message_type='assistant'`, status='streaming'; chunks arrive; final status='complete'.
+ - UI: shows OutgoingMessageContainer for the user row; IncomingMessageContainer for the assistant row; stop button visible while streaming; no duplicate rows; no full reload.
 
 
-2b) Meta-type unification (new demand)
-- Goal: Use meta-types as the only stored and routed message types. Default/user input must be `message_type='user'`. Remove 'text' and 'chat' as stored types.
-- Meta-types to support now: `user`, `assistant`, `system`, `tool_call`, `tool_result`.
-- Attachments and additional data belong in `content` (e.g., `attachments`), not as new `message_type` values.
-
-Backend changes (conceptual; implement where noted):
-- API contract for send_message:
-  - Require top-level `message_type: 'user'|'tool_call'|'system'`.
-  - Keep `content` for the payload (e.g., `{ text?: string, attachments?: [...] }`).
-  - Stop reading `payload.content.type`.
-- Handler registry (ChatMessageMixin.__init__):
-  - Register `'user'` → ChatMessageHandler, `'tool_call'` → ToolCallMessageHandler. Add `'system'` if needed.
-- Writers:
-  - User writer: store `message_type='user'`.
-  - Assistant writer/placeholder: store `message_type='assistant'`.
-  - System writer: store `message_type='system'` when used.
-  - Tool-flow unchanged: `'tool_call'` and `'tool_result'`.
-- Helpers:
-  - `_get_last_user_message_content` default type should be `'user'`.
-- WebSocket events:
-  - Prefer including `message_type` alongside `role`, `content`, `timestamp` so UI doesn’t infer.
-
-Frontend changes (conceptual; implement where noted):
-- Sending:
-  - Send `{ message_type: 'user', content: { text: '...' } }` for user messages.
-- Optimistic:
-  - Use `message_type: 'user'` for new local entries.
-- Rendering:
-  - Map meta-types to components: `'user'` → TextMessage, `'assistant'` → TextMessage (or a distinct assistant view if desired), `'system'` → SystemMessage, `'tool'/'tool_result'` as today.
-  - Remove reliance on `'text'`/`'chat'` in UI mappings.
-- Upsert:
-  - Prefer backend-provided `message_type`; otherwise derive from `role` (`user`/`assistant`/`system`).
-
-Normalization plan (data, optional):
-- Existing rows:
-  - role='user' & message_type in {'text','chat'} → 'user'
-  - role='assistant' & message_type='text' → 'assistant'
-  - role='system' & message_type='text' → 'system'
-  - Tool rows unchanged
-
-Minimal implementation steps (updated)
-1. Fix async task call argument order (Section 1 – done).
-2. Switch backend routing to top-level `message_type` and register `'user'` (not `'text'`/`'chat'`).
-3. Writers: store meta-types (`'user'`, `'assistant'`, `'system'`, `'tool_call'`, `'tool_result'`).
-4. Frontend: send `message_type:'user'`; optimistic `message_type:'user'`; adjust renderer mappings to meta-types.
-5. (Optional) Normalize existing data to meta-types.
-
-Post-fix quick test (meta-type)
-- Send "hi" with `{ message_type:'user', content:{ text:'hi' } }`.
-- DB user row: `message_type='user'`, `content_json.text='hi'`.
-- Assistant placeholder: `message_type='assistant'`; streaming updates that row only; final assistant row has full text.
+<!-- Duplicate older section removed to keep a single, authoritative meta-type policy above. -->
 
 

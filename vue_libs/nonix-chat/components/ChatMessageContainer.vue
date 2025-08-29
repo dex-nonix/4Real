@@ -96,12 +96,10 @@ const cleanupWsListeners = () => {
 
 // Register all message types with the manager
 onMounted(() => {
-  chatMessageTypeManager.registerMessageType('text', TextMessage);
+  chatMessageTypeManager.registerMessageType('user', TextMessage);
+  chatMessageTypeManager.registerMessageType('assistant', TextMessage);
   chatMessageTypeManager.registerMessageType('system', SystemMessage);
   chatMessageTypeManager.registerMessageType('tool', ToolMessage);
-  chatMessageTypeManager.registerMessageType('user', UserMessage);
-  chatMessageTypeManager.registerMessageType('chat', UserMessage); // legacy support if present in old data
-  chatMessageTypeManager.registerMessageType('streaming', StreamingMessage);
 });
 
 // Cleanup WebSocket resources on unmount
@@ -132,15 +130,20 @@ const handleToolStatus = (data) => {
 
 const handleMessageReceived = (data) => {
   console.log('🎯 Message Received event:', data);
-  const { message_id, role, content, timestamp } = data;
+  const { message_id, role, content, timestamp, message_type: incomingType } = data;
   console.log('Message Received:', message_id, role, content);
 
   // Upsert incoming message into messages array to avoid duplicates
   try {
+    const derivedType = incomingType
+      || (role === 'assistant' ? 'assistant'
+          : role === 'user' ? 'user'
+          : role === 'system' ? 'system'
+          : 'tool');
     const incoming = {
       id: message_id,
       role: role,
-      message_type: content?.type || 'text',
+      message_type: derivedType,
       content_json: content,
       status: 'complete',
       created_at: timestamp || new Date().toISOString()
@@ -176,8 +179,8 @@ const handleAssistantStarted = (data) => {
   const assistantMessage = {
     id: message_id,
     role: 'assistant',
-    message_type: 'streaming',
-    content_json: { type: 'text', text: '' },
+    message_type: 'assistant',
+    content_json: { text: '' },
     status: 'streaming',
     created_at: new Date().toISOString()
   };
@@ -226,7 +229,6 @@ const handleAssistantComplete = (data) => {
   const messageIndex = messages.value.findIndex(m => m.id === message_id);
   if (messageIndex !== -1) {
     messages.value[messageIndex].status = 'complete';
-    messages.value[messageIndex].message_type = 'text';
   }
   
   // Update streaming state
@@ -398,8 +400,8 @@ const onSend = async () => {
     // Send proper message payload (type=text per base chat message)
     const messageData = {
       historyId: props.historyId,
+      message_type: 'user',
       content: {
-        type: 'text',
         text: inputText.value.trim()
       }
     };
@@ -420,9 +422,9 @@ const onSend = async () => {
       const tempId = `temp-${Date.now()}`;
       const userMessage = {
         id: tempId,
-        message_type: 'text',
+        message_type: 'user',
         role: 'user',
-        content_json: { type: 'text', text: messageData.content.text },
+        content_json: { text: messageData.content.text },
         status: 'complete',
         created_at: new Date().toISOString()
       };

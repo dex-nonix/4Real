@@ -34,8 +34,8 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
     def __init__(self):
         """Initialize message type handlers."""
-        # Register message type handlers
-        message_type_registry.register('text', ChatMessageHandler())
+        # Register message type handlers (meta-types)
+        message_type_registry.register('user', ChatMessageHandler())
         message_type_registry.register('tool_call', ToolCallMessageHandler())
 
     async def _select_chat_model(self, persona_id: int) -> Dict[str, Any] | None:
@@ -157,8 +157,8 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             asst_msg = ChatMessage(
                 history_id=history_id,
                 role='assistant',
-                message_type='text',
-                content_json={'type': 'text', 'text': ''},
+                message_type='assistant',
+                content_json={'text': ''},
                 status='processing'
             )
             db_session.add(asst_msg)
@@ -294,7 +294,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             asst_msg = ChatMessage(
                 history_id=history_id,
                 role='assistant',
-                message_type='text',
+                message_type='assistant',
                 content_json=content,
                 status=status
             )
@@ -392,13 +392,12 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             if not user_content:
                 return await self._format_error_response('content required', 400)
 
-            if not isinstance(user_content, dict) or 'type' not in user_content:
-                return await self._format_error_response('Content must be object with explicit type', 400)
+            # Enforce explicit meta-type from frontend (top-level message_type)
 
-            # Get message type
-            message_type = user_content.get('type')
+            # Get message type from top-level payload if present
+            message_type = getattr(payload, 'message_type', None) or user_content.get('message_type')
             if not message_type:
-                return await self._format_error_response('Message type is required', 400)
+                return await self._format_error_response('message_type is required', 400)
 
             self._logger.info(f"Processing message type: {message_type}")
             self._logger.debug(f"Available message types: {message_type_registry.list_types()}")

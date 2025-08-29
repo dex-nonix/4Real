@@ -281,7 +281,7 @@ const handleSendMessage = async (messageData) => {
     const response = await chatService.sendMessage(
       currentSessionId.value,
       messageData.historyId,
-      messageData.content  // ✅ OBJECT WITH MESSAGE TYPE
+      { message_type: messageData.message_type || 'user', content: messageData.content }
     );
     console.log('Message sent successfully:', response);
     addSuccess('Message sent successfully');

@@ -103,8 +103,8 @@ class ChatSessionMixin:
                     sys_msg = ChatMessage(
                         history_id=history.id,
                         role='system',
-                        message_type='text',
-                        content_json={'type': 'system', 'text': persona.system_prompt}
+                        message_type='system',
+                        content_json={'text': persona.system_prompt}
                     )
                     db_session.add(sys_msg)
                     await db_session.commit()
@@ -278,8 +278,8 @@ class ChatSessionMixin:
                     sys_msg = ChatMessage(
                         history_id=history.id,
                         role='system',
-                        message_type='text',
-                        content_json={'type': 'system', 'text': persona.system_prompt}
+                        message_type='system',
+                        content_json={'text': persona.system_prompt}
                     )
                     db_session.add(sys_msg)
                     await db_session.commit()
