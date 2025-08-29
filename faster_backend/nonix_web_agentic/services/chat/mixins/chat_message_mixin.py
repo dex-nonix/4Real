@@ -222,12 +222,15 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 self._logger.warning(f"AI provider {model_info['provider_id']} not found or inactive")
                 return None, None, None
 
+            # FIX: use persona.ai_model_mapping_id rather than persona_id
             mapping_obj = (await db_session.execute(
-                select(AIModelMapping).where(AIModelMapping.id == persona_id, AIModelMapping.is_active == True)
+                select(AIModelMapping).where(AIModelMapping.id == (await db_session.execute(
+                    select(Persona.ai_model_mapping_id).where(Persona.id == persona_id)
+                )).scalar_one_or_none(), AIModelMapping.is_active == True)
             )).scalar_one_or_none()
 
             if not mapping_obj:
-                self._logger.warning(f"AI model mapping {persona_id} not found or inactive")
+                self._logger.warning(f"AI model mapping not found or inactive for persona {persona_id}")
                 return None, None, None
 
             self._logger.info(
@@ -496,20 +499,14 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
             # Use streaming LLM client
             try:
-                async for message_dict in self.run_chat_streaming(
+                async for message in self.run_chat_streaming(
                         provider,
                         mapping_obj,
                         chat_history,
                         available_tools_info,
                         persona_id
                 ):
-                    # Convert dictionary to StreamingChunk object
-                    message = StreamingChunk(
-                        content=message_dict.get('content', ''),
-                        chunk_type=message_dict.get('chunk_type', 'text'),
-                        metadata=message_dict.get('metadata', {}),
-                        is_final=message_dict.get('chunk_type') == 'complete'
-                    )
+                    # message is already a StreamingChunk
 
                     # Handle each chunk
                     if message.chunk_type == "text":

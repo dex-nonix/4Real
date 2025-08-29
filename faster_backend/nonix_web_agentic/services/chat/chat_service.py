@@ -185,7 +185,7 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
                 if isinstance(user_content, dict):
                     user_content = user_content.get('text', str(user_content))
 
-                # Convert messages to string for agent
+                # Build conversation history as tuples aligned with ChatPromptTemplate
                 conversation_history = []
                 for m in messages:
                     role = m.get('role')
@@ -193,11 +193,11 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
                     if isinstance(content, dict):
                         content = content.get('text', str(content))
                     if role == 'user':
-                        conversation_history.append(f"Human: {content}")
+                        conversation_history.append(("human", content))
                     elif role == 'assistant':
-                        conversation_history.append(f"Assistant: {content}")
+                        conversation_history.append(("ai", content))
                     elif role == 'system':
-                        conversation_history.append(f"System: {content}")
+                        conversation_history.append(("system", content))
 
                 # Use streaming with astream_events
 
