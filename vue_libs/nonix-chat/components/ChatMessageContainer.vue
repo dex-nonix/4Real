@@ -149,6 +149,17 @@ const handleMessageReceived = (data) => {
       created_at: timestamp || new Date().toISOString()
     };
 
+    // If this is the user's own message, replace the latest optimistic 'sending' entry
+    if (role === 'user') {
+      for (let i = messages.value.length - 1; i >= 0; i--) {
+        const m = messages.value[i];
+        if (m && m.role === 'user' && m.status === 'sending') {
+          messages.value[i] = Object.assign({}, m, incoming);
+          return;
+        }
+      }
+    }
+
     const idx = messages.value.findIndex(m => String(m.id) === String(message_id));
     if (idx !== -1) {
       // Update existing message (replace temporary optimistic message)
@@ -176,15 +187,20 @@ const handleAssistantStarted = (data) => {
   const { message_id, status, metadata } = data;
   console.log('Creating streaming message with ID:', message_id);
   
-  const assistantMessage = {
-    id: message_id,
-    role: 'assistant',
-    message_type: 'assistant',
-    content_json: { text: '' },
-    status: 'streaming',
-    created_at: new Date().toISOString()
-  };
-  messages.value.push(assistantMessage);
+  const existingIndex = messages.value.findIndex(m => m.id === message_id);
+  if (existingIndex !== -1) {
+    messages.value[existingIndex].status = 'streaming';
+  } else {
+    const assistantMessage = {
+      id: message_id,
+      role: 'assistant',
+      message_type: 'assistant',
+      content_json: { text: '' },
+      status: 'streaming',
+      created_at: new Date().toISOString()
+    };
+    messages.value.push(assistantMessage);
+  }
   console.log('Added streaming message to UI. Total messages:', messages.value.length);
   
   // Track streaming state
@@ -215,7 +231,18 @@ const handleAssistantChunk = (data) => {
       streamingMessages.value.set(message_id, streamingData);
     }
   } else {
-    console.error('Message not found for chunk update. Available message IDs:', messages.value.map(m => m.id));
+    // If start was missed, create the assistant message now
+    const assistantMessage = {
+      id: message_id,
+      role: 'assistant',
+      message_type: 'assistant',
+      content_json: { text: chunk || '' },
+      status: 'streaming',
+      created_at: new Date().toISOString()
+    };
+    messages.value.push(assistantMessage);
+    streamingMessages.value.set(message_id, { content: chunk || '', status: 'streaming', metadata });
+    streamingStatus.value.set(message_id, 'streaming');
   }
 };
 
@@ -225,6 +252,18 @@ const handleAssistantComplete = (data) => {
   const messageIndex = messages.value.findIndex(m => m.id === message_id);
   if (messageIndex !== -1) {
     messages.value[messageIndex].status = 'complete';
+  } else {
+    // If no prior start/chunk, create a complete assistant message now
+    const finalContent = (streamingMessages.value.get(message_id)?.content) || '';
+    const assistantMessage = {
+      id: message_id,
+      role: 'assistant',
+      message_type: 'assistant',
+      content_json: { text: finalContent },
+      status: 'complete',
+      created_at: new Date().toISOString()
+    };
+    messages.value.push(assistantMessage);
   }
   
   // Update streaming state
@@ -421,7 +460,7 @@ const onSend = async () => {
         message_type: 'user',
         role: 'user',
         content_json: { text: messageData.content.text },
-        status: 'complete',
+        status: 'sending',
         created_at: new Date().toISOString()
       };
       messages.value.push(userMessage);
@@ -680,15 +719,15 @@ const onStop = async () => {
   
   try {
     const streamingMsg = messages.value.find(m => m.role === 'assistant' && m.status === 'streaming');
+    let response;
     if (streamingMsg && props.historyId) {
-      const response = await chatService.cancelMessage(props.selectedSession.id, props.historyId, streamingMsg.id);
+      response = await chatService.cancelMessage(props.selectedSession.id, props.historyId, streamingMsg.id);
       console.log('Cancel message response', response);
     } else {
-      // Fallback: no streaming message found; nothing to cancel
       return;
     }
-    
-    if (response?.cancelled) {
+
+    if (response && response.cancelled) {
       // Clear streaming status for all messages
       streamingStatus.value.forEach((status, messageId) => {
         if (status === 'streaming') {
