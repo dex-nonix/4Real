@@ -1,6 +1,7 @@
+import asyncio
 import importlib
 from datetime import datetime
-from typing import Any, Dict, List, AsyncGenerator, TYPE_CHECKING
+from typing import Any, Dict, List, AsyncGenerator, TYPE_CHECKING, Optional
 
 from fastapi.responses import JSONResponse
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -138,7 +139,8 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
             client_cls = getattr(module, class_name)
         except Exception as exc:  # noqa: BLE001
             self._logger.error(f"Provider import error: {exc}", exc_info=True)
-            yield StreamingChunk(content=f'Provider import error: {exc}', chunk_type="complete", is_final=True)
+            error_message = self._format_user_friendly_error(exc, "provider_config_error")
+            yield StreamingChunk(content=error_message, chunk_type="error", is_final=True)
             return
 
         try:
@@ -230,8 +232,67 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
                             )
 
             else:
-                yield StreamingChunk(content="No user message found", chunk_type="complete", is_final=True)
+                error_message = "No user message found. Please try sending a message again."
+                yield StreamingChunk(content=error_message, chunk_type="error", is_final=True)
 
         except Exception as exc:  # noqa: BLE001
             self._logger.error(f"Provider error: {exc}", exc_info=True)
-            yield StreamingChunk(content=f'Provider error: {exc}', chunk_type="complete", is_final=True)
+            error_message = self._format_user_friendly_error(exc, "connection_error")
+            yield StreamingChunk(content=error_message, chunk_type="error", is_final=True)
+
+    async def run_chat_streaming_with_retry(self, provider, mapping, messages, available_tools_info, persona_id, max_retries: int = 2):
+        """Run chat streaming with automatic retry for connection errors."""
+        last_exception = None
+        
+        for attempt in range(max_retries + 1):
+            try:
+                async for chunk in self.run_chat_streaming(provider, mapping, messages, available_tools_info, persona_id):
+                    yield chunk
+                return  # Success, exit retry loop
+                
+            except Exception as exc:
+                last_exception = exc
+                
+                # Check if this is a retryable error
+                if not self._is_retryable_error(exc):
+                    break
+                
+                # Don't retry on last attempt
+                if attempt >= max_retries:
+                    break
+                
+                # Calculate delay with exponential backoff
+                delay = min(1.0 * (2 ** attempt), 10.0)
+                
+                # Log retry attempt
+                self._logger.warning(f"Retry attempt {attempt + 1}/{max_retries} after {delay}s for error: {exc}")
+                
+                # Wait before retry
+                await asyncio.sleep(delay)
+        
+        # All retries exhausted, yield error chunk
+        error_message = f"Service unavailable after {max_retries} attempts. Please try again later."
+        yield StreamingChunk(content=error_message, chunk_type="error", is_final=True)
+
+    def _is_retryable_error(self, exc: Exception) -> bool:
+        """Determine if an error is retryable."""
+        retryable_errors = [
+            "Connection error",
+            "All connection attempts failed",
+            "APIConnectionError",
+            "ConnectError",
+            "TimeoutError"
+        ]
+        
+        error_str = str(exc)
+        return any(retryable in error_str for retryable in retryable_errors)
+
+    def _format_user_friendly_error(self, exc: Exception, error_type: str) -> str:
+        """Format error messages for end users."""
+        error_messages = {
+            "connection_error": "Unable to connect to AI service. Please check your internet connection and try again.",
+            "provider_config_error": "AI service configuration error. Please contact support.",
+            "api_connection_error": "AI service is currently unavailable. Please try again later.",
+            "general_error": "An error occurred while processing your request. Please try again."
+        }
+        return error_messages.get(error_type, "An unexpected error occurred. Please try again.")

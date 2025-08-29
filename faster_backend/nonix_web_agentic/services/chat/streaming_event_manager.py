@@ -31,6 +31,14 @@ class StreamingEventManager:
                 'status': 'complete',
                 'metadata': chunk.metadata
             })
+        elif chunk.chunk_type == "error":
+            await self.emit_streaming_error(
+                session_id, 
+                history_id, 
+                chunk.content, 
+                "provider_error", 
+                message_id
+            )
         elif chunk.chunk_type == "tool_start":
             await self.emit_tool_event(session_id, history_id,
                                        chunk.metadata.get("tool_name", "unknown"), "started",

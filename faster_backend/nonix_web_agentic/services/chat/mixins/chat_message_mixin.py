@@ -498,14 +498,15 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             # Build chat history using helper method
             chat_history = await self._build_chat_history(history_id, user_msg_id)
 
-            # Use streaming LLM client
+            # Use streaming LLM client with retry
             try:
-                async for message in self.run_chat_streaming(
+                async for message in self.run_chat_streaming_with_retry(
                         provider,
                         mapping_obj,
                         chat_history,
                         available_tools_info,
-                        persona_id
+                        persona_id,
+                        max_retries=2
                 ):
                     # message is already a StreamingChunk
 
@@ -533,6 +534,18 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                     elif message.chunk_type == "complete":
                         await message_handler.finalize_assistant_message(accumulated_text if accumulated_text else None)
                         await event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
+                        break
+
+                    elif message.chunk_type == "error":
+                        # Handle error chunks - mark message as error and emit error event
+                        await message_handler.mark_as_error(message.content)
+                        await event_manager.emit_streaming_error(
+                            session_id,
+                            history_id,
+                            message.content,
+                            "provider_error",
+                            asst_msg_id
+                        )
                         break
 
             except Exception as e:
