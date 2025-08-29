@@ -189,7 +189,12 @@ class BaseService(ABC):
 
     async def send_ws_message(self, room: str, message: dict):
         try:
-            await self.server.sio.emit('message', message, room=room)
+            event = message.get('event') if isinstance(message, dict) else None
+            data = message.get('data') if isinstance(message, dict) else None
+            if not event or data is None:
+                self._logger.error(f"Invalid WS payload for room {room}: missing 'event' or 'data'")
+                return
+            await self.server.sio.emit(event, data, room=room)
         except Exception as e:
             self._logger.error(f"Failed to send message to room {room}: {e}")
 

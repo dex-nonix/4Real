@@ -53,7 +53,7 @@ export default class WebSocketManager {
             return false
         }
 
-        this.socket.emit('join', room)
+        this.socket.emit('join_room', room)
         console.log('🔌 Joined room:', room)
         return true
     }
@@ -61,7 +61,7 @@ export default class WebSocketManager {
     leaveRoom(room) {
         if (!this.socket?.connected) return false
 
-        this.socket.emit('leave', room)
+        this.socket.emit('leave_room', room)
         console.log('🔌 Left room:', room)
         return true
     }
