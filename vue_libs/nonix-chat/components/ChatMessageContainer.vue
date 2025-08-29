@@ -648,19 +648,27 @@ const hasErrors = computed(() => {
 const canRetry = computed(() => hasErrors.value && !isStreaming.value);
 
 const buttonIcon = computed(() => {
-  return isStreaming.value ? 'pi pi-stop' : 'pi pi-send';
+  if (isStreaming.value) return 'pi pi-stop';
+  if (canRetry.value) return 'pi pi-refresh';
+  return 'pi pi-send';
 });
 
 const buttonAction = computed(() => {
-  return isStreaming.value ? onStop : onSend;
+  if (isStreaming.value) return onStop;
+  if (canRetry.value) return onRetry;
+  return onSend;
 });
 
 const buttonLabel = computed(() => {
-  return isStreaming.value ? 'Stop' : 'Send';
+  if (isStreaming.value) return 'Stop';
+  if (canRetry.value) return 'Retry';
+  return 'Send';
 });
 
 const buttonSeverity = computed(() => {
-  return isStreaming.value ? 'danger' : 'primary';
+  if (isStreaming.value) return 'danger';
+  if (canRetry.value) return 'warning';
+  return 'primary';
 });
 
 // Computed property for streaming status display
@@ -838,18 +846,6 @@ defineExpose({
         :disabled="!hasHistory"
       />
 
-      <!-- Retry Button (left side of send button) -->
-      <Button 
-        v-if="canRetry"
-        icon="pi pi-refresh" 
-        text 
-        rounded 
-        severity="warning"
-        @click="onRetry"
-        v-tooltip.bottom="'Retry Message'"
-        class="mr-2"
-      />
-
       <!-- Input Field -->
       <span class="p-input-icon-right flex-grow-1 mx-2">
         <IconField>
@@ -864,7 +860,7 @@ defineExpose({
         </IconField>
       </span>
 
-      <!-- Send/Stop Button -->
+      <!-- Single Button: Send/Stop/Retry -->
       <Button 
         :icon="buttonIcon"
         :label="buttonLabel"
