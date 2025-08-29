@@ -134,8 +134,28 @@ const handleMessageReceived = (data) => {
   console.log('🎯 Message Received event:', data);
   const { message_id, role, content, timestamp } = data;
   console.log('Message Received:', message_id, role, content);
-  // Add message to chat
-  addMessageToChat(data);
+
+  // Upsert incoming message into messages array to avoid duplicates
+  try {
+    const incoming = {
+      id: message_id,
+      role: role,
+      message_type: content?.type || 'text',
+      content_json: content,
+      status: 'complete',
+      created_at: timestamp || new Date().toISOString()
+    };
+
+    const idx = messages.value.findIndex(m => String(m.id) === String(message_id));
+    if (idx !== -1) {
+      // Update existing message (replace temporary optimistic message)
+      messages.value[idx] = Object.assign({}, messages.value[idx], incoming);
+    } else {
+      messages.value.push(incoming);
+    }
+  } catch (e) {
+    console.error('Failed to upsert incoming message:', e);
+  }
 };
 
 const handleMessageProcessed = (data) => {
@@ -385,8 +405,21 @@ const onSend = async () => {
     // Clear input after sending
     inputText.value = '';
 
-    // Reload messages to get the new message
-    await loadMessages(props.historyId);
+    // Optimistic UI: append the user message locally instead of reloading full list
+    try {
+      const tempId = `temp-${Date.now()}`;
+      const userMessage = {
+        id: tempId,
+        message_type: 'chat',
+        role: 'user',
+        content_json: { type: 'chat', text: messageData.content.text },
+        status: 'complete',
+        created_at: new Date().toISOString()
+      };
+      messages.value.push(userMessage);
+    } catch (e) {
+      console.error('Failed to append optimistic user message:', e);
+    }
   } catch (error) {
     console.error('Failed to send message:', error);
   }
@@ -512,8 +545,7 @@ const executeToolWithForm = async (formData) => {
     showToolsDialog.value = false;
     selectedTool.value = null;
     
-    // Refresh messages to get the official backend message (optional)
-    await loadMessages(props.historyId);
+    // Do not reload full list; rely on WebSocket upsert to receive official backend message
     
   } catch (error) {
     console.error('Tool execution failed:', error);
