@@ -44,6 +44,7 @@ class ChatTaskManager:
 
         self._semaphore = asyncio.Semaphore(max_concurrent_tasks)
         self._active_tasks: List[asyncio.Task] = []
+        self._session_tasks: Dict[int, List[asyncio.Task]] = {}  # session_id -> [tasks]
         self._completed_tasks = 0
         self._failed_tasks = 0
         self._total_submissions = 0
@@ -54,12 +55,13 @@ class ChatTaskManager:
         self._monitor_task = None
         self._logger.debug(f"ChatTaskManager initialized with {max_concurrent_tasks} max concurrent tasks")
 
-    async def submit_task(self, func: Callable, *args, **kwargs) -> asyncio.Task:
+    async def submit_task(self, func: Callable, session_id: int = None, *args, **kwargs) -> asyncio.Task:
         """
         Submit a task for async execution.
         
         Args:
             func: Async function to execute
+            session_id: Session ID to associate with this task (optional)
             *args: Function arguments
             **kwargs: Function keyword arguments
             
@@ -86,12 +88,18 @@ class ChatTaskManager:
             self._total_submissions += 1
             self._last_activity = datetime.utcnow()
 
+            # Track session-specific task if session_id provided
+            if session_id is not None:
+                if session_id not in self._session_tasks:
+                    self._session_tasks[session_id] = []
+                self._session_tasks[session_id].append(task)
+
             # Add completion callback
-            task.add_done_callback(self._task_completed_callback)
+            task.add_done_callback(lambda t: self._task_completed_callback(t, session_id))
 
             # Log successful submission
             func_name = getattr(func, '__name__', str(func))
-            self._logger.info(f"Task submitted successfully: {func_name} (args: {len(args)}, kwargs: {len(kwargs)})")
+            self._logger.info(f"Task submitted successfully: {func_name} (session: {session_id}, args: {len(args)}, kwargs: {len(kwargs)})")
             return task
 
         except Exception as e:
@@ -114,12 +122,20 @@ class ChatTaskManager:
                 self._logger.error(f"Task execution failed: {e}", exc_info=True)
                 raise
 
-    def _task_completed_callback(self, task: asyncio.Task):
+    def _task_completed_callback(self, task: asyncio.Task, session_id: int):
         """Callback executed when a task completes."""
         try:
             # Remove from active tasks
             if task in self._active_tasks:
                 self._active_tasks.remove(task)
+
+            # Remove from session-specific tasks if applicable
+            if session_id is not None:
+                if session_id in self._session_tasks:
+                    if task in self._session_tasks[session_id]:
+                        self._session_tasks[session_id].remove(task)
+                        if not self._session_tasks[session_id]:
+                            del self._session_tasks[session_id]
 
             self._completed_tasks += 1
             self._last_activity = datetime.utcnow()
@@ -224,6 +240,41 @@ class ChatTaskManager:
                 "error": f"{type(e).__name__}: {e}",
                 "timestamp": datetime.utcnow().isoformat()
             }
+
+    async def cancel_session_tasks(self, session_id: int) -> int:
+        """Cancel all active tasks for a specific session.
+        
+        Args:
+            session_id: Session ID to cancel tasks for
+            
+        Returns:
+            Number of tasks cancelled
+        """
+        if session_id not in self._session_tasks:
+            return 0
+            
+        cancelled_count = 0
+        tasks_to_cancel = self._session_tasks[session_id].copy()
+        
+        for task in tasks_to_cancel:
+            if not task.done():
+                task.cancel()
+                cancelled_count += 1
+                self._logger.info(f"Cancelled task for session {session_id}")
+        
+        # Clean up session tasks
+        if session_id in self._session_tasks:
+            del self._session_tasks[session_id]
+            
+        return cancelled_count
+
+    def get_session_task_count(self, session_id: int) -> int:
+        """Get the number of active tasks for a specific session."""
+        return len(self._session_tasks.get(session_id, []))
+
+    def get_all_session_tasks(self) -> Dict[int, int]:
+        """Get task counts for all sessions."""
+        return {session_id: len(tasks) for session_id, tasks in self._session_tasks.items()}
 
     async def shutdown(self, wait: bool = True, timeout: Optional[float] = None):
         """Graceful shutdown of task manager."""

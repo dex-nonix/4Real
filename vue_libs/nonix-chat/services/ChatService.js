@@ -135,6 +135,22 @@ export default class ChatService extends BaseApiService {
     return response.data
   }
 
+  // Streaming Control
+  async cancelStreaming(sessionId) {
+    const response = await this.post(`/chat/sessions/${sessionId}/cancel`)
+    return response.data
+  }
+
+  async retryLastMessage(sessionId) {
+    const response = await this.post(`/chat/sessions/${sessionId}/retry`)
+    return response.data
+  }
+
+  async getLastUserMessage(sessionId) {
+    const response = await this.get(`/chat/sessions/${sessionId}/last-message`)
+    return response.data
+  }
+
 }
 
 

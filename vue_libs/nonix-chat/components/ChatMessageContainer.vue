@@ -385,6 +385,16 @@ const onSend = async () => {
   if (!inputText.value?.trim() || !props.historyId || !chatService) return;
   
   try {
+    // Clear error states when sending new message
+    streamingStatus.value.forEach((status, messageId) => {
+      if (status === 'error') {
+        streamingStatus.value.set(messageId, 'complete');
+      }
+    });
+    
+    // Clear streaming messages
+    streamingMessages.value.clear();
+    
     // ✅ FIXED: Send proper message type object
     const messageData = {
       historyId: props.historyId,
@@ -610,6 +620,126 @@ const getStreamingContent = (messageId) => {
 const hasHistory = computed(() => !!props.historyId);
 const canSendMessage = computed(() => hasHistory.value && inputText.value?.trim());
 
+// Button state management
+const isStreaming = computed(() => {
+  try {
+    if (!streamingStatus.value || !(streamingStatus.value instanceof Map)) {
+      return false;
+    }
+    return Array.from(streamingStatus.value.values()).some(status => status === 'streaming');
+  } catch (error) {
+    console.warn('Error computing isStreaming:', error);
+    return false;
+  }
+});
+
+const hasErrors = computed(() => {
+  try {
+    if (!streamingStatus.value || !(streamingStatus.value instanceof Map)) {
+      return false;
+    }
+    return Array.from(streamingStatus.value.values()).some(status => status === 'error');
+  } catch (error) {
+    console.warn('Error computing hasErrors:', error);
+    return false;
+  }
+});
+
+const canRetry = computed(() => hasErrors.value && !isStreaming.value);
+
+const buttonIcon = computed(() => {
+  return isStreaming.value ? 'pi pi-stop' : 'pi pi-send';
+});
+
+const buttonAction = computed(() => {
+  return isStreaming.value ? onStop : onSend;
+});
+
+const buttonLabel = computed(() => {
+  return isStreaming.value ? 'Stop' : 'Send';
+});
+
+const buttonSeverity = computed(() => {
+  return isStreaming.value ? 'danger' : 'primary';
+});
+
+// Computed property for streaming status display
+const showStreamingStatus = computed(() => {
+  try {
+    if (!streamingStatus.value || !(streamingStatus.value instanceof Map)) {
+      return false;
+    }
+    return Array.from(streamingStatus.value.values()).some(status => status === 'streaming');
+  } catch (error) {
+    console.warn('Error computing showStreamingStatus:', error);
+    return false;
+  }
+});
+
+// Stop streaming functionality
+const onStop = async () => {
+  if (!props.selectedSession?.id || !chatService) return;
+  
+  try {
+    const response = await chatService.cancelStreaming(props.selectedSession.id);
+    
+    if (response?.cancelled) {
+      // Clear streaming status for all messages
+      streamingStatus.value.forEach((status, messageId) => {
+        if (status === 'streaming') {
+          streamingStatus.value.set(messageId, 'complete');
+        }
+      });
+      
+      // Clear streaming messages
+      streamingMessages.value.clear();
+      
+      // Update any streaming messages in the messages array to complete
+      messages.value.forEach(msg => {
+        if (msg.status === 'streaming') {
+          msg.status = 'complete';
+        }
+      });
+      
+      console.log('Streaming cancelled successfully');
+    }
+  } catch (error) {
+    console.error('Failed to cancel streaming:', error);
+  }
+};
+
+// Retry functionality
+const onRetry = async () => {
+  if (!props.selectedSession?.id || !chatService) return;
+  
+  try {
+    const response = await chatService.retryLastMessage(props.selectedSession.id);
+    
+    if (response?.status === 'processing') {
+      // Clear error states for all messages
+      streamingStatus.value.forEach((status, messageId) => {
+        if (status === 'error') {
+          streamingStatus.value.set(messageId, 'complete');
+        }
+      });
+      
+      // Clear streaming messages
+      streamingMessages.value.clear();
+      
+      // Clear any error messages from the messages array
+      messages.value.forEach(msg => {
+        if (msg.status === 'error') {
+          msg.status = 'complete';
+        }
+      });
+      
+      console.log('Retry initiated successfully');
+    }
+  } catch (error) {
+    console.error('Failed to retry message:', error);
+  }
+};
+
 // Expose methods for parent component
 defineExpose({
   loadMessages,
@@ -652,7 +782,7 @@ defineExpose({
       </div>
       
       <!-- Streaming Status -->
-      <div v-if="Array.from(streamingStatus.values()).some(status => status === 'streaming')" class="streaming-status mt-2">
+      <div v-if="showStreamingStatus" class="streaming-status mt-2">
         <div class="flex align-items-center gap-2">
           <i class="pi pi-spin pi-spinner text-warning"></i>
           <span class="font-medium text-warning">AI is typing...</span>
@@ -708,6 +838,18 @@ defineExpose({
         :disabled="!hasHistory"
       />
 
+      <!-- Retry Button (left side of send button) -->
+      <Button 
+        v-if="canRetry"
+        icon="pi pi-refresh" 
+        text 
+        rounded 
+        severity="warning"
+        @click="onRetry"
+        v-tooltip.bottom="'Retry Message'"
+        class="mr-2"
+      />
+
       <!-- Input Field -->
       <span class="p-input-icon-right flex-grow-1 mx-2">
         <IconField>
@@ -715,12 +857,24 @@ defineExpose({
             v-model="inputText"
             placeholder="Type a message..."
             class="w-full"
-            @keyup.enter="onSend"
-            :disabled="!hasHistory"
+            @keyup.enter="buttonAction"
+            :disabled="!hasHistory || isStreaming"
           />
-          <InputIcon class="pi pi-send" @click="onSend" />
+          <InputIcon :class="buttonIcon" @click="buttonAction" />
         </IconField>
       </span>
+
+      <!-- Send/Stop Button -->
+      <Button 
+        :icon="buttonIcon"
+        :label="buttonLabel"
+        text 
+        rounded 
+        :severity="buttonSeverity"
+        @click="buttonAction"
+        :disabled="!hasHistory"
+        class="mr-2"
+      />
 
       <!-- Options Button -->
       <div class="relative">
@@ -797,6 +951,33 @@ defineExpose({
   padding: 0.75rem;
   border-top: 1px solid var(--surface-border);
   background: var(--surface-section);
+}
+
+/* Button layout and spacing */
+.input-area .p-button {
+  flex-shrink: 0;
+}
+
+.input-area .p-button.mr-2 {
+  margin-right: 0.5rem;
+}
+
+/* Retry button styling */
+.input-area .p-button[severity="warning"] {
+  border-color: var(--warning-color);
+  color: var(--warning-color);
+}
+
+/* Stop button styling */
+.input-area .p-button[severity="danger"] {
+  border-color: var(--danger-color);
+  color: var(--danger-color);
+}
+
+/* Send button styling */
+.input-area .p-button[severity="primary"] {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 /* Real-time status display */

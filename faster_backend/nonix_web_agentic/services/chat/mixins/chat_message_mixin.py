@@ -437,9 +437,10 @@ class ChatMessageMixin(WebSocketMixinProtocol):
     ):
         """Submit message processing to task manager for async execution."""
         try:
-            # Use the task manager from the parent ChatService
+            # Use the task manager from the parent ChatService with session tracking
             future = await self.submit_async_task(
                 self._process_message_async,
+                session_id,  # Pass session_id as first argument for task tracking
                 user_msg_id,
                 asst_msg_id,
                 session_id,
@@ -448,7 +449,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             )
 
             # Log successful submission with proper logger
-            self._logger.info(f"Message {user_msg_id} submitted to task manager for async processing")
+            self._logger.info(f"Message {user_msg_id} submitted to task manager for async processing (session: {session_id})")
             return future
 
         except Exception as e:
@@ -460,9 +461,9 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
     async def _process_message_async(
             self,
+            session_id: int,
             user_msg_id: int,
             asst_msg_id: int,
-            session_id: int,
             history_id: int,
             persona_id: int
     ):
@@ -764,6 +765,168 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                     'message': 'Message deleted successfully',
                     'deleted_message_id': deleted_message_id
                 })
+
+        except Exception as exc:  # noqa: BLE001
+            return await self._format_error_response(str(exc), 500)
+
+    @route(
+        '/sessions/{session_id}/cancel',
+        methods=['POST'],
+        response_model=Dict[str, Any]
+    )
+    async def cancel_streaming(self, req: Request, session_id: int):
+        """Cancel active streaming for a session."""
+        try:
+            # Validate session exists
+            session, _ = await self._validate_session_history(session_id)
+            if not session:
+                return await self._format_error_response('Session not found or inactive', 404)
+
+            # Cancel active streaming task for this session
+            cancelled = await self._cancel_session_streaming(session_id)
+            
+            if cancelled:
+                return JSONResponse({
+                    'message': 'Streaming cancelled successfully',
+                    'session_id': session_id,
+                    'cancelled': True
+                })
+            else:
+                return JSONResponse({
+                    'message': 'No active streaming to cancel',
+                    'session_id': session_id,
+                    'cancelled': False
+                })
+
+        except Exception as exc:  # noqa: BLE001
+            return await self._format_error_response(str(exc), 500)
+
+    @route(
+        '/sessions/{session_id}/retry',
+        methods=['POST'],
+        response_model=Dict[str, Any]
+    )
+    async def retry_last_message(self, req: Request, session_id: int):
+        """Retry the last user message in a session."""
+        try:
+            # Validate session exists
+            session, history = await self._validate_session_history(session_id)
+            if not session:
+                return await self._format_error_response('Session not found or inactive', 404)
+
+            # Get the last user message
+            last_user_msg = await self._get_last_user_message(session_id)
+            if not last_user_msg:
+                return await self._format_error_response('No user messages to retry', 400)
+
+            # Create new assistant message placeholder
+            asst_msg = await self.create_assistant_placeholder(history.id if history else session.current_history_id)
+            
+            # Submit for retry processing
+            future = await self.submit_message_for_async_processing(
+                last_user_msg.id,
+                asst_msg.id,
+                session_id,
+                history.id if history else session.current_history_id,
+                session.persona_id
+            )
+
+            return JSONResponse({
+                'message': 'Message retry initiated',
+                'session_id': session_id,
+                'user_message_id': last_user_msg.id,
+                'assistant_message_id': asst_msg.id,
+                'status': 'processing'
+            })
+
+        except Exception as exc:  # noqa: BLE001
+            return await self._format_error_response(str(exc), 500)
+
+    async def _cancel_session_streaming(self, session_id: int) -> bool:
+        """Cancel active streaming for a specific session."""
+        try:
+            # Get the task manager from the main service
+            task_manager = getattr(self, '_task_manager', None)
+            if not task_manager:
+                self._logger.warning("Task manager not available for cancellation")
+                return False
+
+            # Use the enhanced session-specific cancellation
+            cancelled_count = await task_manager.cancel_session_tasks(session_id)
+            
+            self._logger.info(f"Cancelled {cancelled_count} active tasks for session {session_id}")
+            return cancelled_count > 0
+
+        except Exception as e:
+            self._logger.error(f"Failed to cancel streaming for session {session_id}: {e}", exc_info=True)
+            return False
+
+    async def _get_last_user_message(self, session_id: int) -> ChatMessage | None:
+        """Get the last user message from a session."""
+        try:
+            async with AsyncSessionLocal() as db_session:
+                # Get the last user message from any history in this session
+                result = await db_session.execute(
+                    select(ChatMessage)
+                    .join(ChatHistory, ChatMessage.history_id == ChatHistory.id)
+                    .where(ChatHistory.session_id == session_id, ChatMessage.role == 'user')
+                    .order_by(ChatMessage.created_at.desc())
+                    .limit(1)
+                )
+                return result.scalar_one_or_none()
+        except Exception as e:
+            self._logger.error(f"Failed to get last user message for session {session_id}: {e}", exc_info=True)
+            return None
+
+    async def _get_last_user_message_content(self, session_id: int) -> Dict[str, Any] | None:
+        """Get the last user message content for retry functionality."""
+        try:
+            last_msg = await self._get_last_user_message(session_id)
+            if not last_msg:
+                return None
+                
+            # Extract the message content in the format expected by the frontend
+            content = last_msg.content_json or {}
+            if isinstance(content, dict):
+                # If it's already a dict, return as is
+                return {
+                    'type': content.get('type', 'chat'),
+                    'text': content.get('text', str(content))
+                }
+            else:
+                # If it's a string or other format, wrap it
+                return {
+                    'type': 'chat',
+                    'text': str(content)
+                }
+                
+        except Exception as e:
+            self._logger.error(f"Failed to get last user message content for session {session_id}: {e}", exc_info=True)
+            return None
+
+    @route(
+        '/sessions/{session_id}/last-message',
+        methods=['GET'],
+        response_model=Dict[str, Any]
+    )
+    async def get_last_user_message(self, req: Request, session_id: int):
+        """Get the last user message content for retry functionality."""
+        try:
+            # Validate session exists
+            session, _ = await self._validate_session_history(session_id)
+            if not session:
+                return await self._format_error_response('Session not found or inactive', 404)
+
+            # Get the last user message content
+            last_message_content = await self._get_last_user_message_content(session_id)
+            if not last_message_content:
+                return await self._format_error_response('No user messages found', 404)
+
+            return JSONResponse({
+                'session_id': session_id,
+                'last_message': last_message_content,
+                'can_retry': True
+            })
 
         except Exception as exc:  # noqa: BLE001
             return await self._format_error_response(str(exc), 500)
