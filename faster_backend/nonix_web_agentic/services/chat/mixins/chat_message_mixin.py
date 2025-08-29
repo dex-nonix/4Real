@@ -469,6 +469,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         """Process message asynchronously using streaming."""
         message_handler = StreamingMessageHandler(session_id, history_id)
         event_manager = StreamingEventManager(self)
+        accumulated_text = ""
         try:
             # Set the existing assistant message ID
             message_handler.assistant_message_id = asst_msg_id
@@ -510,6 +511,8 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
                     # Handle each chunk
                     if message.chunk_type == "text":
+                        # accumulate full text for final persistence
+                        accumulated_text += message.content or ""
                         if await message_handler.update_content_safely(message.content):
                             await event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
                         else:
@@ -528,7 +531,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                                                             message.metadata.get("tool_name", ""), "completed")
 
                     elif message.chunk_type == "complete":
-                        await message_handler.finalize_assistant_message()
+                        await message_handler.finalize_assistant_message(accumulated_text if accumulated_text else None)
                         await event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
                         break
 
