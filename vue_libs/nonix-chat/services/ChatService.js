@@ -78,7 +78,7 @@ export default class ChatService extends BaseApiService {
     return response.data  
   }
 
-  async sendMessage(sessionId, historyId, content) {
+  async sendMessage(sessionId, historyId, payload) {
     // historyId is MANDATORY parameter
     let url;
     if (historyId) {
@@ -89,7 +89,7 @@ export default class ChatService extends BaseApiService {
         url = `/chat/sessions/${sessionId}/send`;
     }
 
-    const response = await this.post(url, { content: content });
+    const response = await this.post(url, payload);
     return response.data;
   }
 

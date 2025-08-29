@@ -277,7 +277,7 @@ const handleSendMessage = async (messageData) => {
     isLoading.value = true;
     addInfo('Sending message...');
 
-    // ✅ FIXED: Use correct API method with proper object payload
+    // Send payload with explicit meta-type at top-level as per contract
     const response = await chatService.sendMessage(
       currentSessionId.value,
       messageData.historyId,
@@ -286,8 +286,7 @@ const handleSendMessage = async (messageData) => {
     console.log('Message sent successfully:', response);
     addSuccess('Message sent successfully');
 
-    // Simple refresh after sending
-    await refreshMessages();
+    // Do not refresh the full list; upsert will occur via WebSocket events
 
   } catch (error) {
     console.error('Failed to send message:', error);

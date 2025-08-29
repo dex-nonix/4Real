@@ -8,12 +8,11 @@ import Menu from 'primevue/menu';
 import Badge from 'primevue/badge';
 import ErrorDialog from './ErrorDialog.vue';
 import chatMessageTypeManager from './ChatMessageTypeManager.js';
-import MessageContainer from './message-types/MessageContainer.vue';
 import TextMessage from './message-types/TextMessage.vue';
 import SystemMessage from './message-types/SystemMessage.vue';
 import ToolMessage from './message-types/ToolMessage.vue';
 import UserMessage from './message-types/UserMessage.vue';
-import StreamingMessage from './message-types/StreamingMessage.vue';
+import { IncomingMessageContainer, OutgoingMessageContainer } from './message-types/index.js';
 import AvailableToolsDialog from './AvailableToolsDialog.vue';
 import ToolExecutionDialog from './ToolExecutionDialog.vue';
 
@@ -96,10 +95,11 @@ const cleanupWsListeners = () => {
 
 // Register all message types with the manager
 onMounted(() => {
-  chatMessageTypeManager.registerMessageType('user', TextMessage);
+  chatMessageTypeManager.clearMessageTypes();
+  chatMessageTypeManager.registerMessageType('user', UserMessage);
   chatMessageTypeManager.registerMessageType('assistant', TextMessage);
   chatMessageTypeManager.registerMessageType('system', SystemMessage);
-  chatMessageTypeManager.registerMessageType('tool', ToolMessage);
+  chatMessageTypeManager.registerMessageType('tool_result', ToolMessage);
 });
 
 // Cleanup WebSocket resources on unmount
@@ -130,7 +130,7 @@ const handleToolStatus = (data) => {
 
 const handleMessageReceived = (data) => {
   console.log('🎯 Message Received event:', data);
-  const { message_id, role, content, timestamp, message_type: incomingType } = data;
+  const { message_id, role, content, timestamp, message_type: incomingType, status } = data;
   console.log('Message Received:', message_id, role, content);
 
   // Upsert incoming message into messages array to avoid duplicates
@@ -139,13 +139,13 @@ const handleMessageReceived = (data) => {
       || (role === 'assistant' ? 'assistant'
           : role === 'user' ? 'user'
           : role === 'system' ? 'system'
-          : 'tool');
+          : 'tool_result');
     const incoming = {
       id: message_id,
       role: role,
       message_type: derivedType,
       content_json: content,
-      status: 'complete',
+      status: status || 'complete',
       created_at: timestamp || new Date().toISOString()
     };
 
@@ -206,10 +206,7 @@ const handleAssistantChunk = (data) => {
     const newText = currentText + chunk;
     console.log('Updating message text from:', currentText, 'to:', newText);
     
-    messages.value[messageIndex].content_json = { 
-      type: 'text', 
-      text: newText 
-    };
+    messages.value[messageIndex].content_json = { text: newText };
     
     // Update streaming state
     const streamingData = streamingMessages.value.get(message_id);
@@ -224,7 +221,6 @@ const handleAssistantChunk = (data) => {
 
 const handleAssistantComplete = (data) => {
   console.log('🎯 Assistant Message Complete event:', data);
-  // Mark message as complete and change type to text
   const { message_id, status, metadata } = data;
   const messageIndex = messages.value.findIndex(m => m.id === message_id);
   if (messageIndex !== -1) {
@@ -589,22 +585,14 @@ const clearLocalMessages = () => {
 
 // Get the appropriate component for each message
 const getMessageComponent = (message) => {
-  let messageType = message.message_type || 'text';
-  
-  // Detect streaming messages automatically
-  if (message.role === 'assistant' && message.status === 'streaming') {
-    messageType = 'streaming';
-  }
-  
-  const component = chatMessageTypeManager.getMessageType(messageType);
-  return component;
+  const messageType = message.message_type || (message.role === 'assistant' ? 'assistant' : 'user');
+  return chatMessageTypeManager.getMessageType(messageType);
 };
 
 // Check if message has a valid type
 const hasValidMessageType = (message) => {
-  const messageType = message.message_type || 'text';
-  const hasType = chatMessageTypeManager.hasMessageType(messageType);
-  return hasType;
+  const messageType = message.message_type || (message.role === 'assistant' ? 'assistant' : 'user');
+  return chatMessageTypeManager.hasMessageType(messageType);
 };
 
 // Check if message is currently streaming
@@ -814,23 +802,14 @@ defineExpose({
       </div>
       
       <div v-else v-for="message in messages" :key="message.id">
-        <!-- Use MessageContainer wrapper for consistent styling -->
-        <MessageContainer
+        <component
           v-if="hasValidMessageType(message)"
+          :is="message.role === 'user' ? OutgoingMessageContainer : IncomingMessageContainer"
           :message="message"
-          :currentUserId="currentUserId"
-        >
-          <template #content>
-            <component
-              :is="getMessageComponent(message)"
-              :message="message"
-              :currentUserId="currentUserId"
-              @delete-message="handleDeleteMessage"
-            />
-          </template>
-        </MessageContainer>
-        
-        <!-- StreamingMessage component handles its own streaming indicators -->
+          :component="getMessageComponent(message)"
+          :current-user-id="currentUserId"
+          @delete-message="handleDeleteMessage"
+        />
       </div>
     </div>
 

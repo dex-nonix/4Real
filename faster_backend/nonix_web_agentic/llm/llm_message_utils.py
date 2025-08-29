@@ -73,7 +73,9 @@ async def iter_messages(events):
         return seen_messages[msg_id]
 
     async for event in events:
+        print("::::::", event)
         event_type = event.get("event")
+
 
         run_id = event.get("run_id", None)
 
