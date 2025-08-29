@@ -100,7 +100,7 @@ onMounted(() => {
   chatMessageTypeManager.registerMessageType('system', SystemMessage);
   chatMessageTypeManager.registerMessageType('tool', ToolMessage);
   chatMessageTypeManager.registerMessageType('user', UserMessage);
-  chatMessageTypeManager.registerMessageType('chat', UserMessage); // Handle 'chat' messages as user messages
+  chatMessageTypeManager.registerMessageType('chat', UserMessage); // legacy support if present in old data
   chatMessageTypeManager.registerMessageType('streaming', StreamingMessage);
 });
 
@@ -395,12 +395,12 @@ const onSend = async () => {
     // Clear streaming messages
     streamingMessages.value.clear();
     
-    // ✅ FIXED: Send proper message type object
+    // Send proper message payload (type=text per base chat message)
     const messageData = {
       historyId: props.historyId,
       content: {
-        type: 'chat',                    // ✅ EXPLICIT MESSAGE TYPE
-        text: inputText.value.trim()     // ✅ MESSAGE CONTENT
+        type: 'text',
+        text: inputText.value.trim()
       }
     };
 
@@ -420,9 +420,9 @@ const onSend = async () => {
       const tempId = `temp-${Date.now()}`;
       const userMessage = {
         id: tempId,
-        message_type: 'chat',
+        message_type: 'text',
         role: 'user',
-        content_json: { type: 'chat', text: messageData.content.text },
+        content_json: { type: 'text', text: messageData.content.text },
         status: 'complete',
         created_at: new Date().toISOString()
       };

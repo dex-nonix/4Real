@@ -25,7 +25,7 @@ class ChatMessageHandler(MessageTypeHandler):
             chat_msg = ChatMessage(
                 history_id=history_id,
                 role='user',
-                message_type='chat',
+                message_type='text',
                 content_json=content,
                 status='complete'
             )

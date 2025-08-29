@@ -35,7 +35,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
     def __init__(self):
         """Initialize message type handlers."""
         # Register message type handlers
-        message_type_registry.register('chat', ChatMessageHandler())
+        message_type_registry.register('text', ChatMessageHandler())
         message_type_registry.register('tool_call', ToolCallMessageHandler())
 
     async def _select_chat_model(self, persona_id: int) -> Dict[str, Any] | None:
@@ -440,10 +440,9 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             # Use the task manager from the parent ChatService with session tracking
             future = await self.submit_async_task(
                 self._process_message_async,
-                session_id,  # Pass session_id as first argument for task tracking
+                session_id,
                 user_msg_id,
                 asst_msg_id,
-                session_id,
                 history_id,
                 persona_id
             )
@@ -890,13 +889,13 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             if isinstance(content, dict):
                 # If it's already a dict, return as is
                 return {
-                    'type': content.get('type', 'chat'),
+                    'type': content.get('type', 'text'),
                     'text': content.get('text', str(content))
                 }
             else:
                 # If it's a string or other format, wrap it
                 return {
-                    'type': 'chat',
+                    'type': 'text',
                     'text': str(content)
                 }
                 
