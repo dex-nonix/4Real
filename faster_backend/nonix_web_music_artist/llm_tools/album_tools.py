@@ -7,25 +7,39 @@ from ..models.track import Track
 from ..models.artist import Artist
 
 
-async def artist_list_albums(artist_id: int) -> Dict[str, Any]:
-    """List all albums for a specific artist."""
+async def album_list_by_artist(artist_id: int) -> Dict[str, Any]:
+    """List all albums for a specific artist with their tracks."""
     async with AsyncSessionLocal() as db_session:
-        album_result = await db_session.execute(
-            select(Album).where(Album.id == artist_id)
+        artist_result = await db_session.execute(
+            select(Artist).where(Artist.id == artist_id)
         )
-        album = album_result.scalar_one_or_none()
+        artist = artist_result.scalar_one_or_none()
         
-        if not album:
-            return {"error": "Album not found"}
+        if not artist:
+            return {"error": "Artist not found"}
         
-        tracks_result = await db_session.execute(
-            select(Track).where(Track.album_id == artist_id)
+        albums_result = await db_session.execute(
+            select(Album).where(Album.artist_id == artist_id)
         )
-        tracks = tracks_result.scalars().all()
+        albums = albums_result.scalars().all()
+        
+        albums_with_tracks = []
+        for album in albums:
+            tracks_result = await db_session.execute(
+                select(Track).where(Track.album_id == album.id)
+            )
+            tracks = tracks_result.scalars().all()
+            
+            albums_with_tracks.append({
+                "album": album.to_dict(),
+                "tracks": [track.to_dict() for track in tracks],
+                "track_count": len(tracks)
+            })
         
         return {
-            "album": album.to_dict(),
-            "tracks": [track.to_dict() for track in tracks]
+            "artist": artist.to_dict(),
+            "albums": albums_with_tracks,
+            "total_albums": len(albums)
         }
 
 

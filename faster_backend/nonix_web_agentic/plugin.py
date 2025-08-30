@@ -4,6 +4,7 @@ from nonix_web.plugin.base_plugin import BasePlugin
 from nonix_web.server import NxWebServer
 from nonix_web.utils.di import di_register
 from .llm.agentic_tool_manager import AgenticToolManager
+from .llm.llm_tool_mixin import LLMToolMixin
 from .services.ai_analysis_result import AIAnalysisResultService
 from .services.ai_model_mapping import AIModelMappingService
 from .services.ai_provider import AIProviderService
@@ -19,7 +20,7 @@ from .services.persona_tool_access import PersonaToolAccessService
 from .services.tool_invocation_log import ToolInvocationLogService
 
 
-class NxWebAgenticPlugin(BasePlugin):
+class NxWebAgenticPlugin(BasePlugin, LLMToolMixin):
     api_services = [
         AIAnalysisResultService,
         AIModelMappingService,
@@ -34,6 +35,11 @@ class NxWebAgenticPlugin(BasePlugin):
         PersonaMCPServerService,
         PersonaToolAccessService,
         ToolInvocationLogService
+    ]
+
+    llm_tools = [
+        # Built-in agentic tools can be added here
+        # ("admin:system_info", _admin_system_info, "Get system information"),
     ]
 
     agentic_tool_manager: AgenticToolManager = None
