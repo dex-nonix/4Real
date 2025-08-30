@@ -1,6 +1,6 @@
 <!-- StreamingMessage.vue -->
 <script setup>
-import { ref, onMounted, onUnmounted, inject, computed } from 'vue';
+import { ref, onMounted, onUnmounted, inject, computed, watch } from 'vue';
 import { useStreamingMessage } from './useStreamingMessage.js';
 import Button from 'primevue/button';
 import Menu from 'primevue/menu';
@@ -147,18 +147,46 @@ const displayContent = computed(() => {
 
 const isStreaming = computed(() => streamingStatus.value === 'streaming');
 const hasError = computed(() => streamingStatus.value === 'error');
+
+// Markdown rendering
+const renderedHtml = ref('');
+let markedRenderer = null;
+
+const renderMarkdown = async (text) => {
+  const src = text || '';
+  try {
+    if (!markedRenderer) {
+      try {
+        const mod = await import('marked');
+        markedRenderer = mod.marked || mod.default || null;
+      } catch (_) {
+        markedRenderer = null;
+      }
+    }
+    if (markedRenderer) {
+      renderedHtml.value = markedRenderer.parse ? markedRenderer.parse(src) : markedRenderer(src);
+    } else {
+      renderedHtml.value = src.replace(/\n/g, '<br/>');
+    }
+  } catch (_) {
+    renderedHtml.value = src.replace(/\n/g, '<br/>');
+  }
+};
+
+watch(displayContent, (val) => {
+  renderMarkdown(val);
+}, { immediate: true });
 </script>
 
 <template>
   <div class="flex align-items-start">
     <div class="flex-grow-1">
-      <p class="m-0 text-normal" style="hyphens: auto; word-break: break-word;">
-        {{ displayContent }}
-        
+      <div class="m-0 text-normal" style="hyphens: auto; word-break: break-word;">
+        <div v-html="renderedHtml"></div>
         <span v-if="isStreaming && isTyping" class="typing-indicator">
           <span class="typing-dots">{{ typingDots }}</span>
         </span>
-      </p>
+      </div>
       
       <div v-if="isStreaming" class="streaming-status mt-2">
         <div class="flex align-items-center gap-2">
