@@ -15,8 +15,12 @@ const props = defineProps({
 
 const emit = defineEmits(['deleteMessage']);
 
-// Handle different field names from API
-const messageContent = computed(() => props.message.content || props.message.content_json || props.message.text || 'No content');
+// Handle different field names from API and prefer text field when object
+const messageContent = computed(() => {
+  const raw = props.message?.content_json ?? props.message?.content ?? props.message?.text ?? ''
+  if (raw && typeof raw === 'object') return raw.text ?? ''
+  return raw
+});
 const userName = computed(() => props.message.metadata?.userName || '');
 const userAvatar = computed(() => props.message.metadata?.userAvatar || null);
 const isValid = computed(() => props.message.metadata?.isValid !== false);
