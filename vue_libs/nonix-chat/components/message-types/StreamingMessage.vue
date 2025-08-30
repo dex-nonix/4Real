@@ -91,6 +91,18 @@ onUnmounted(() => {
   unsubscribe();
 });
 
+// React to parent status changes (e.g., manual Stop)
+watch(() => props.message.status, (val) => {
+  const next = val || 'streaming'
+  streamingStatus.value = next
+  if (next !== 'streaming') {
+    isTyping.value = false
+    unsubscribe()
+    const finalText = (props.message?.content_json && props.message.content_json.text) || streamingContent.value || ''
+    renderMarkdown(finalText)
+  }
+})
+
 const toggleMenu = (event, message) => {
     selectedMessage.value = message;
     menu.value.toggle(event);
