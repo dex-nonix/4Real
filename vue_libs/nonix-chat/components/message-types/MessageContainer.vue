@@ -17,7 +17,8 @@ const props = defineProps({
 // Handle different field names from API
 const messageSenderId = computed(() => props.message.senderId || props.message.role || '');
 const messageTimestamp = computed(() => props.message.timestamp || props.message.created_at || '');
-const isOwnMessage = computed(() => messageSenderId.value === props.currentUserId);
+// Treat any role === 'user' as own message for alignment purposes
+const isOwnMessage = computed(() => props.message?.role === 'user' || messageSenderId.value === props.currentUserId);
 
 // Message type styling
 const getMessageTypeIcon = (messageType) => {
