@@ -17,8 +17,6 @@ const emit = defineEmits(['deleteMessage']);
 
 // Single canonical source: message.content_json.text
 const messageContent = computed(() => props.message?.content_json?.text || '');
-const userName = computed(() => props.message.metadata?.userName || '');
-const userAvatar = computed(() => props.message.metadata?.userAvatar || null);
 const isValid = computed(() => props.message.metadata?.isValid !== false);
 </script>
 
