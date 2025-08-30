@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from sqlalchemy import Column, Integer, DateTime
 from sqlalchemy.sql import func
 from sqlalchemy.orm import DeclarativeBase
@@ -13,8 +14,19 @@ class BaseModel(Base):
     __abstract__ = True
     
     id = Column(Integer, primary_key=True)
-    created_at = Column(DateTime, nullable=False, server_default=func.now())
-    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+        default=datetime.utcnow,
+    )
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+        onupdate=datetime.utcnow,
+        default=datetime.utcnow,
+    )
     
     def to_dict(self) -> dict:
         base_dict = {
@@ -26,7 +38,7 @@ class BaseModel(Base):
         for column in self.__table__.columns:
             if column.name not in ['id', 'created_at', 'updated_at']:
                 value = getattr(self, column.name)
-                if hasattr(value, 'isoformat'):  # Handle datetime fields
+                if hasattr(value, 'isoformat'):
                     base_dict[column.name] = value.isoformat() if value else None
                 else:
                     base_dict[column.name] = value

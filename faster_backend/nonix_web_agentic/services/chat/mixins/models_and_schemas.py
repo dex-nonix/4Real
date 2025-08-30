@@ -55,7 +55,6 @@ class SendMessageRequest(BaseModel):
     role: str = Field(..., description="Message role: system|user|assistant|tool")
     message_type: str = Field(..., description="Message type: text|tool_call|tool_result|image|file")
     content_json: Optional[Dict[str, Any]] = Field(None, description="Structured content")
-    parent_message_id: Optional[int] = Field(None, gt=0, description="Parent message ID")
 
 
 class ToolCallRequest(BaseModel):
@@ -69,7 +68,6 @@ class MessageBase(BaseModel):
     message_type: str = Field(..., max_length=50)
     content_json: Optional[Dict[str, Any]] = None
     status: str = Field(..., max_length=50)
-    parent_message_id: Optional[int] = Field(None, gt=0)
 
 
 class MessageResponse(MessageBase, BaseDbModelMixin):
