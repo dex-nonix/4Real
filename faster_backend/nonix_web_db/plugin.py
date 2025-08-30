@@ -1,16 +1,14 @@
 from typing import Dict, Any
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm.decl_api import declarative_base
 from sqlalchemy.pool.impl import NullPool
 
 from nonix_web.plugin.base_plugin import BasePlugin
 from nonix_web.server import NxWebServer
+from .models import Base
 
-Base = declarative_base()
+_async_session_local = None
 
-
-##### TODO:  all has to go into the plugin
 async def get_db():
     async with AsyncSessionLocal() as session:
         try:
@@ -22,9 +20,6 @@ async def get_db():
 def set_async_session_local(value):
     global _async_session_local
     _async_session_local = value
-
-
-_async_session_local: async_sessionmaker = None
 
 
 def AsyncSessionLocal() -> async_sessionmaker:

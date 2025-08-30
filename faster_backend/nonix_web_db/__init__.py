@@ -1,7 +1,4 @@
-from nonix_web_db.plugin import AsyncSessionLocal, Base, get_db
+from .models import Base, BaseModel
+from .plugin import AsyncSessionLocal, get_db
 
-__all__ = [
-    "AsyncSessionLocal",
-    "Base",
-    "get_db",
-]
+__all__ = ['Base', 'BaseModel', 'AsyncSessionLocal', 'get_db']
