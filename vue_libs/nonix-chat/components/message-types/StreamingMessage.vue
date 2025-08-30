@@ -1,6 +1,7 @@
 <!-- StreamingMessage.vue -->
 <script setup>
 import { ref, onMounted, onUnmounted, inject, computed } from 'vue';
+import { useStreamingMessage } from './useStreamingMessage.js';
 import Button from 'primevue/button';
 import Menu from 'primevue/menu';
 import ProgressSpinner from 'primevue/progressspinner';
@@ -18,16 +19,14 @@ const props = defineProps({
 
 const emit = defineEmits(['deleteMessage']);
 
-const streamingContent = ref('');
-const streamingStatus = ref('streaming');
-const isTyping = ref(true);
+const chatService = inject('chat-service');
+const { streamingContent, streamingStatus, isTyping, subscribe, unsubscribe, initFromProps } = useStreamingMessage(chatService, props.message, true);
 const typingDots = ref('...');
 const menu = ref();
 const selectedMessage = ref(null);
 const showDeleteConfirm = ref(false);
 const isDeleting = ref(false);
 
-const chatService = inject('chat-service');
 
 const menuItems = ref([
     { label: 'Copy', icon: 'pi pi-copy', command: () => handleCopy() },
@@ -80,26 +79,16 @@ const handleStreamingError = (data) => {
 };
 
 onMounted(() => {
-  if (chatService) {
-    const unsubscribeChunk = chatService.onWebSocketEvent('assistant_message_chunk', handleAssistantChunk);
-    const unsubscribeComplete = chatService.onWebSocketEvent('assistant_message_complete', handleAssistantComplete);
-    const unsubscribeError = chatService.onWebSocketEvent('streaming_error', handleStreamingError);
-    
+  initFromProps();
+  if (streamingStatus.value === 'streaming') {
+    subscribe();
     startTypingAnimation();
-    
-    props.message._unsubscribe = () => {
-      unsubscribeChunk();
-      unsubscribeComplete();
-      unsubscribeError();
-    };
   }
 });
 
 onUnmounted(() => {
   stopTypingAnimation();
-  if (props.message._unsubscribe) {
-    props.message._unsubscribe();
-  }
+  unsubscribe();
 });
 
 const toggleMenu = (event, message) => {
