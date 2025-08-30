@@ -210,6 +210,9 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
                     if mode == "start":
                         if isinstance(message, LCAIMessage):
                             yield StreamingChunk(content="", chunk_type="ai_start")
+                            initial_content = message.status.get("content", "")
+                            if initial_content:
+                                yield StreamingChunk(content=initial_content, chunk_type="text")
                         elif isinstance(message, LCToolMessage):
                             yield StreamingChunk(
                                 content="",
