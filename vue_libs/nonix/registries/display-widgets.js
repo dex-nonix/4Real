@@ -4,6 +4,7 @@ import Avatar from 'primevue/avatar'
 import { ref, inject, h } from 'vue'
 import CrudService from '@/services/CrudService.js'
 import FilePreview from '@nonix/file-manager/FilePreview.vue'
+import LlmTool from '@nonix/dynamic-form/widgets/LlmTool.vue'
 
 export const DISPLAY_WIDGETS = {
   'text': { component: 'span', defaultProps: { class: 'text-sm' } },
@@ -74,6 +75,8 @@ export const DISPLAY_WIDGETS = {
     },
     render() { return h('span', this.label) }
   }, defaultProps: {} }
+  ,
+  'llm_tool': { component: LlmTool, defaultProps: { mode: 'display' } }
 }
 
 

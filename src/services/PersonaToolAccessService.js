@@ -14,7 +14,7 @@ export default class PersonaToolAccessService extends CrudService {
       form: {
         fields: [
           { key: 'persona_id', type: 'fk_select', label: 'Persona', required: true, props: { entity: 'personas', search: true } },
-          { key: 'pattern', type: 'text', label: 'Pattern', required: true },
+          { key: 'pattern', type: 'llm_tool', label: 'Tool', required: true, props: { allowWildcards: true } },
           { key: 'allow', type: 'boolean', label: 'Allow' }
         ]
       }

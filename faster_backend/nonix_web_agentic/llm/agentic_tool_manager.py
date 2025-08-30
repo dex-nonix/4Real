@@ -59,12 +59,6 @@ class AgenticToolManager:
             return {'status': 'error', 'error': str(exc)}
 
     async def build_persona_tool_map(self, persona_id: int) -> Dict[str, Callable[..., Any]]:
-        """Return a persona-scoped tool map of qualified_name -> callable.
-
-        - Applies allowlist via PersonaToolAccess patterns over active InternalTools
-        - If persona.artist_id is set and a tool's first parameter is 'artist_id', expose a wrapper with artist_id pre-bound
-        - Keeps global registry immutable; returns a new dict per call
-        """
         async with AsyncSessionLocal() as db_session:
             persona_result = await db_session.execute(
                 select(Persona).where(Persona.id == persona_id)
@@ -73,27 +67,23 @@ class AgenticToolManager:
             artist_id = getattr(persona, 'artist_id', None) if persona else None
 
             tools: Dict[str, Callable[..., Any]] = {}
-            active_tools_result = await db_session.execute(
-                select(InternalTool).where(InternalTool.is_active == True)
-            )
-            active_tools = active_tools_result.scalars().all()
             patterns_result = await db_session.execute(
                 select(PersonaToolAccess).where(
-                    PersonaToolAccess.persona_id == persona_id,
-                    PersonaToolAccess.allow == True
+                    PersonaToolAccess.persona_id == persona_id
                 )
             )
-            patterns = patterns_result.scalars().all()
+            all_patterns = patterns_result.scalars().all()
+            allow_patterns = [p for p in all_patterns if getattr(p, 'allow', False)]
+            deny_patterns = [p for p in all_patterns if not getattr(p, 'allow', False)]
 
-            for tool in active_tools:
-                qname = tool.qualified_name
-                if not any(_pattern_matches(p.pattern, qname) for p in patterns):
+            for qname, func in self.list().items():
+                if any(await _pattern_matches(p.pattern, qname) for p in deny_patterns):
                     continue
-                func = self.get(qname)
+                if not any(await _pattern_matches(p.pattern, qname) for p in allow_patterns):
+                    continue
                 if not callable(func):
                     continue
 
-                # If persona has artist_id and the first parameter is artist_id, bind it via partial
                 if artist_id is not None:
                     sig = inspect.signature(func)
                     params = list(sig.parameters.values())
@@ -106,7 +96,6 @@ class AgenticToolManager:
         return tools
 
     async def list_persona_tools(self, persona_id: int) -> List[dict]:
-        """Return tool signatures for a persona with artist_id filtered out if applicable."""
         async with AsyncSessionLocal() as db_session:
             persona_result = await db_session.execute(
                 select(Persona).where(Persona.id == persona_id)
@@ -115,34 +104,28 @@ class AgenticToolManager:
             artist_id = getattr(persona, 'artist_id', None) if persona else None
 
             tools_info = []
-            active_tools_result = await db_session.execute(
-                select(InternalTool).where(InternalTool.is_active == True)
-            )
-            active_tools = active_tools_result.scalars().all()
             patterns_result = await db_session.execute(
                 select(PersonaToolAccess).where(
-                    PersonaToolAccess.persona_id == persona_id,
-                    PersonaToolAccess.allow == True
+                    PersonaToolAccess.persona_id == persona_id
                 )
             )
-            patterns = patterns_result.scalars().all()
+            all_patterns = patterns_result.scalars().all()
+            allow_patterns = [p for p in all_patterns if getattr(p, 'allow', False)]
+            deny_patterns = [p for p in all_patterns if not getattr(p, 'allow', False)]
 
-            for tool in active_tools:
-                qname = tool.qualified_name
-                if not any(_pattern_matches(p.pattern, qname) for p in patterns):
+            for qname, func in self.list().items():
+                if any(await _pattern_matches(p.pattern, qname) for p in deny_patterns):
                     continue
-
-                func = self.get(qname)
+                if not any(await _pattern_matches(p.pattern, qname) for p in allow_patterns):
+                    continue
                 if not callable(func):
                     continue
 
-                # Analyze function signature
                 try:
                     sig = inspect.signature(func)
                     params = []
 
                     for param_name, param in sig.parameters.items():
-                        # Skip artist_id if persona has artist_id (it will be pre-bound)
                         if artist_id is not None and param_name == 'artist_id':
                             continue
 
@@ -156,7 +139,7 @@ class AgenticToolManager:
 
                     tool_info = {
                         'name': qname,
-                        'description': tool.description or f'Execute {qname}',
+                        'description': (func.__doc__ or '').strip() or f'Execute {qname}',
                         'parameters': params,
                         'has_artist_id_bound': artist_id is not None and any(
                             p.name == 'artist_id' for p in sig.parameters.values())
@@ -164,11 +147,10 @@ class AgenticToolManager:
 
                     tools_info.append(tool_info)
 
-                except Exception:  # noqa: BLE001
-                    # Fallback to basic info if signature analysis fails
+                except Exception:
                     tool_info = {
                         'name': qname,
-                        'description': tool.description or f'Execute {qname}',
+                        'description': f'Execute {qname}',
                         'parameters': [],
                         'has_artist_id_bound': False
                     }

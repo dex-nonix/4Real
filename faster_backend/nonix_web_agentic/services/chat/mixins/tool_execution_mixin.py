@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import select
 
 from nonix_web.services.base_service import route
+from nonix_web.utils.di import Inject
 from nonix_web_db import AsyncSessionLocal
 from .models_and_schemas import (
     PersonaToolsResponse,
@@ -15,10 +16,13 @@ from .models_and_schemas import (
 from ..websocket_protocol import WebSocketMixinProtocol
 from ....models.mcp_server import MCPServer
 from ....models.persona import Persona
+from ....llm.agentic_tool_manager import AgenticToolManager
 
 
 class ToolExecutionMixin(WebSocketMixinProtocol):
     """Mixin for tool execution and MCP operations."""
+
+    agentic_tool_manager: AgenticToolManager = Inject(AgenticToolManager)
 
     @route(
         '/personas/{persona_id}/tools',
@@ -36,6 +40,25 @@ class ToolExecutionMixin(WebSocketMixinProtocol):
                 if not persona:
                     return JSONResponse({'error': 'Not found'}, 404)
                 return JSONResponse({'data': await self.agentic_tool_manager.list_persona_tools(persona.id)})
+        except Exception as exc:
+            return JSONResponse({'error': str(exc)}, 500)
+
+    @route(
+        '/tools/registry',
+        methods=['GET']
+    )
+    async def registry_tools(self, req: Request):
+        """List all registered LLM tools from the in-memory registry (plugin-first)."""
+        try:
+            registry = self.agentic_tool_manager.list()
+            items = []
+            for name, func in registry.items():
+                try:
+                    desc = (getattr(func, '__doc__', None) or '').strip() or f'Execute {name}'
+                except Exception:
+                    desc = f'Execute {name}'
+                items.append({'name': name, 'description': desc})
+            return JSONResponse({'data': items})
         except Exception as exc:
             return JSONResponse({'error': str(exc)}, 500)
 
