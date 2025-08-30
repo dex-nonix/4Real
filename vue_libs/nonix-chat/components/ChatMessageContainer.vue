@@ -13,6 +13,7 @@ import SystemMessage from './message-types/SystemMessage.vue';
 import ToolMessage from './message-types/ToolMessage.vue';
 import UserMessage from './message-types/UserMessage.vue';
 import { IncomingMessageContainer, OutgoingMessageContainer } from './message-types/index.js';
+import StreamingMessage from './message-types/StreamingMessage.vue';
 import AvailableToolsDialog from './AvailableToolsDialog.vue';
 import ToolExecutionDialog from './ToolExecutionDialog.vue';
 
@@ -97,7 +98,7 @@ const cleanupWsListeners = () => {
 onMounted(() => {
   chatMessageTypeManager.clearMessageTypes();
   chatMessageTypeManager.registerMessageType('user', UserMessage);
-  chatMessageTypeManager.registerMessageType('assistant', TextMessage);
+  chatMessageTypeManager.registerMessageType('assistant', StreamingMessage);
   chatMessageTypeManager.registerMessageType('system', SystemMessage);
   chatMessageTypeManager.registerMessageType('tool_result', ToolMessage);
 });
