@@ -70,11 +70,18 @@ def di_register(dependency: InjectDependencyType, singleton: bool = True, instan
     _container.register(dependency, singleton, instance)
     return dependency
 
+def di_resolve( dependency, required = True ):
+    resolved_dependency = _container.resolve(dependency)
+    if resolved_dependency is None and required:
+        raise TypeError(f"Dependency '{dependency.__name__}' is not registered.")
+    return resolved_dependency
 
 @final
 class Inject(BaseInject[T, InjectDependencyType]):
     def _resolve(self) -> T | None:
-        resolved_dependency = _container.resolve(self.dependency)
-        if resolved_dependency is None and self.required:
-            raise TypeError(f"Dependency {self.dependency.__name__} is not registered.")
-        return resolved_dependency
+        return di_resolve(self.dependency)
+
+        # resolved_dependency = _container.resolve(self.dependency)
+        # if resolved_dependency is None and self.required:
+        #     raise TypeError(f"Dependency {self.dependency.__name__} is not registered.")
+        # return resolved_dependency
