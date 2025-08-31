@@ -549,13 +549,13 @@ const executeToolWithForm = async (formData) => {
     return;
   }
   
+  // Extract the actual form data from DynamicForm's submit event
+  const args = formData.__full || formData.args || {};
+  console.log('🔧 Extracted args:', args);
+
   try {
     console.log('🔧 Executing tool with form data:', formData);
-    
-    // Extract the actual form data from DynamicForm's submit event
-    const args = formData.__full || formData.args || {};
-    console.log('🔧 Extracted args:', args);
-    
+
     // ✅ REPLACE WITH: UNIFIED message-based tool calls
     const response = await chatService.sendMessage(
       props.selectedSession.id,           // sessionId
@@ -567,9 +567,9 @@ const executeToolWithForm = async (formData) => {
         // ✅ NO history_id in payload!
       }
     );
-    
+
     console.log('Tool executed successfully:', response);
-    
+
     // Create a tool message locally to show in chat immediately
     const toolMessage = {
       id: Date.now(), // Temporary ID
@@ -585,19 +585,19 @@ const executeToolWithForm = async (formData) => {
       },
       created_at: new Date().toISOString()
     };
-    
+
     // Add the tool message to the local messages array
     messages.value.push(toolMessage);
-    
+
     // Close tool form
     showToolsDialog.value = false;
     selectedTool.value = null;
-    
+
     // Do not reload full list; rely on WebSocket upsert to receive official backend message
-    
+
   } catch (error) {
     console.error('Tool execution failed:', error);
-    
+
     // Create an error tool message
     const errorToolMessage = {
       id: Date.now(),
