@@ -173,7 +173,7 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
                 template_messages.insert(0, ("system", persona_system_prompt), )
             chat_prompt = ChatPromptTemplate.from_messages(template_messages)
 
-            agent = create_react_agent(client, langchain_tools)
+            agent = create_react_agent(client, tools=langchain_tools)
 
             self._logger.info(f"🔧 Created ReAct agent with {len(langchain_tools)} tools")
 
