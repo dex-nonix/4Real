@@ -22,7 +22,11 @@ class AgenticTools:
                 continue
             attr = getattr(self, attr_name)
             if callable(attr) and hasattr(attr, "_tool_name"):
-                tools.append((getattr(attr, "_tool_name"), attr))
+                tool_name = getattr(attr, "_tool_name")
+                # Auto-prefix if prefix is set and name doesn't already contain ':'
+                if hasattr(self, 'prefix') and self.prefix and ':' not in tool_name:
+                    tool_name = f"{self.prefix}:{tool_name}"
+                tools.append((tool_name, attr))
         return tools
 
 

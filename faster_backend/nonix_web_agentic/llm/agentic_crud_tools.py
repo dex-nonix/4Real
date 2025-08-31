@@ -1,56 +1,59 @@
-from typing import Optional, Dict, Any, Type
-
-from pydantic import BaseModel
+from typing import Dict, Any
 
 from nonix_web_db import AsyncSessionLocal
 from nonix_web_db.crud import CRUDConfig
 from nonix_web_db.crud.crud_operations import CRUDOperations
 
-from .agentic_tools import AgenticTools, tool
+from .agentic_tools import AgenticTools
 
 
 class AgenticCrudTools(AgenticTools):
     """Generic CRUD-enabled tool base.
 
-    Subclasses set:
-      - self.model
-      - self.crud_config
-    and inherit generic CRUD tool methods which can be overridden.
+    Subclasses define as class attributes:
+      - prefix: str (e.g., "album", "track")
+      - config: CRUDConfig (contains model, create_schema, update_schema, etc.)
     """
 
-    def __init__(self, model: Type, crud_config: CRUDConfig):
+    prefix: str = None
+    config: CRUDConfig = None
+
+    def __init__(self):
         super().__init__()
-        self.model = model
-        self.crud_config = crud_config
-        self._crud = CRUDOperations(self.model, self.crud_config)
+        if self.config is None:
+            raise ValueError("AgenticCrudTools subclass must define 'config' as class attribute")
+        self._crud = CRUDOperations(self.config.model, self.config)
 
-    def _get_owner_filter(self, owner_id: int, owner_field: str = 'artist_id') -> Dict[str, Any]:
-        return {f"filter_{owner_field}": str(owner_id)}
-
-    @tool("crud:create")
-    async def create(self, data: BaseModel) -> Any:
+    async def create(self, **kwargs) -> Dict[str, Any]:
+        """Create a new item"""
         async with AsyncSessionLocal() as session:
-            return await self._crud.create(data, session)
+            create_data = self.config.create_schema(**kwargs)
+            result = await self._crud.create(create_data, session)
+            return {"success": True, "data": result.to_dict()}
 
-    @tool("crud:update")
-    async def update(self, item_id: int, data: BaseModel) -> Any:
+    async def update(self, item_id: int, **kwargs) -> Dict[str, Any]:
+        """Update an existing item"""
         async with AsyncSessionLocal() as session:
-            return await self._crud.update(item_id, data, session)
+            update_data = self.config.update_schema(**kwargs)
+            result = await self._crud.update(item_id, update_data, session)
+            return {"success": True, "data": result.to_dict()}
 
-    @tool("crud:delete")
     async def delete(self, item_id: int) -> Dict[str, Any]:
+        """Delete an item"""
         async with AsyncSessionLocal() as session:
             await self._crud.delete(item_id, session)
             return {"success": True}
 
-    @tool("crud:get")
-    async def get(self, item_id: int) -> Any:
+    async def get(self, item_id: int) -> Dict[str, Any]:
+        """Get details of a single item"""
         async with AsyncSessionLocal() as session:
-            return await self._crud.get_one(item_id, session)
+            item = await self._crud.get_one(item_id, session)
+            return {"success": True, "data": item.to_dict()}
 
-    @tool("crud:list")
-    async def list(self, query_params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def list(self, **query_params) -> Dict[str, Any]:
+        """List items"""
         async with AsyncSessionLocal() as session:
-            return await self._crud.get_all(query_params or {}, session)
+            result = await self._crud.get_all(query_params or {}, session)
+            return {"success": True, "data": result.get("data", []), "pagination": result.get("pagination")}
 
 
