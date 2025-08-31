@@ -4,6 +4,7 @@ from nonix_web_agentic.llm.llm_tools_decorator import llm_tools
 from .llm_tools.album_tools import album_list_by_artist, album_get_info
 from .llm_tools.artist_tools import artist_get_info, artist_list_albums as artist_list_albums_func
 from .llm_tools.music_tools import track_list_by_album, style_list_all, track_get_info
+from .llm_tools.artist_crud_tools import album_tool_service
 from .services.album import AlbumService
 from .services.artist import ArtistService
 from .services.rhyme_technique import RhymeTechniqueService
@@ -26,6 +27,8 @@ from .services.track import TrackService
     ("track:list_by_album", track_list_by_album),
     ("track:get_info", track_get_info),
     ("style:list_all", style_list_all),
+    # Album CRUD Tools (class-based)
+    album_tool_service,  # Will be instantiated and to_agentic_tools() called
 ])
 class NxWebMusicArtistPlugin(BasePlugin):
     pass
