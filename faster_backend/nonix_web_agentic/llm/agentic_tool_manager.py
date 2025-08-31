@@ -8,12 +8,11 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from nonix_web_db import AsyncSessionLocal
-from ..models.internal_tool import InternalTool
 from ..models.persona import Persona
 from ..models.persona_tool_access import PersonaToolAccess
 
 
-async def llm_tool_wrapper(original_func, *args, **kwargs):
+def llm_tool_wrapper(original_func, *args, **kwargs):
     """Create a LangChain-compatible wrapper that preserves partial binding."""
 
     async def wrapper(*w_args, **w_kwargs):
@@ -26,7 +25,7 @@ async def llm_tool_wrapper(original_func, *args, **kwargs):
     return wrapper
 
 
-async def _pattern_matches(pattern: str, name: str) -> bool:
+def _pattern_matches(pattern: str, name: str) -> bool:
     if pattern.endswith(':*'):
         return name.startswith(pattern[:-2] + ':')
     return pattern == name
@@ -40,6 +39,8 @@ class AgenticToolManager:
         self._registry: Dict[str, Callable[..., Any]] = {}
 
     def register(self, qualified_name: str, func: Callable[..., Any]) -> None:
+
+        self._logger.info(f"Registering agentic tool: {qualified_name}")
         self._registry[qualified_name] = func
 
     def get(self, qualified_name: str) -> Callable[..., Any] | None:
@@ -77,9 +78,9 @@ class AgenticToolManager:
             deny_patterns = [p for p in all_patterns if not getattr(p, 'allow', False)]
 
             for qname, func in self.list().items():
-                if any(await _pattern_matches(p.pattern, qname) for p in deny_patterns):
+                if any(_pattern_matches(p.pattern, qname) for p in deny_patterns):
                     continue
-                if not any(await _pattern_matches(p.pattern, qname) for p in allow_patterns):
+                if not any(_pattern_matches(p.pattern, qname) for p in allow_patterns):
                     continue
                 if not callable(func):
                     continue
@@ -114,9 +115,9 @@ class AgenticToolManager:
             deny_patterns = [p for p in all_patterns if not getattr(p, 'allow', False)]
 
             for qname, func in self.list().items():
-                if any(await _pattern_matches(p.pattern, qname) for p in deny_patterns):
+                if any(_pattern_matches(p.pattern, qname) for p in deny_patterns):
                     continue
-                if not any(await _pattern_matches(p.pattern, qname) for p in allow_patterns):
+                if not any(_pattern_matches(p.pattern, qname) for p in allow_patterns):
                     continue
                 if not callable(func):
                     continue
@@ -265,36 +266,3 @@ class AgenticToolManager:
 
         self._logger.info(f"🔧 Created {len(langchain_tools)} LangChain tools for persona {persona_id}")
         return langchain_tools
-
-# registry = AgenticToolManager()
-#
-#
-# # Admin tools
-# async def _admin_system_info() -> dict:
-#     import platform, os
-#     return {
-#         'python_version': platform.python_version(),
-#         'platform': platform.platform(),
-#         'cwd': os.getcwd(),
-#     }
-#
-#
-# # Register admin tools
-# registry.register('admin:system_info', _admin_system_info)
-#
-# # Register artist tools
-# registry.register('artist:list_albums', artist_list_albums)
-# registry.register('artist:get_info', artist_get_info)
-#
-# # Register album tools
-# registry.register('album:list_tracks', album_list_tracks)
-# registry.register('album:get_info', album_get_info)
-#
-# # Register file tools
-# registry.register('file:list_artist_files', file_list_artist_files)
-# registry.register('file:read_lyrics', file_read_lyrics)
-#
-# # Register music tools
-# registry.register('track:list_by_album', track_list_by_album)
-# registry.register('track:get_info', track_get_info)
-# registry.register('style:list_all', style_list_all)

@@ -200,7 +200,6 @@ class BaseService(ABC):
 
     @classmethod
     def to_router(cls, *args, **kwargs) -> APIRouter:
-        print(f"-----------------     create routed service: {cls}")
         router = APIRouter(**asdict(_get_routed_service_definition(cls)))
         inst = cls(router, *args, **kwargs)
         for method_name in dir(inst):

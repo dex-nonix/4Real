@@ -20,6 +20,6 @@ def llm_tools(tools):
             func = tool[1]
             if isinstance(func, str):
                 func = getattr(plugin, func)
-            tool_manager.register_tool(name,func)
+            tool_manager.register(name,func)
 
     return lambda cls: add_configure_callback(cls, _add_tools)

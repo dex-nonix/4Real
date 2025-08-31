@@ -32,21 +32,33 @@ class BasePlugin(ABC):
     def configure(self, server: "NxWebServer", config: Dict[str, Any]):
         self._configure(server, config)
 
-        for callback in self._configure_callbacks:
-            callback(self, server, config)
+        if not (configure_callbacks := self._configure_callbacks):
+            return
 
-        for routed_service in self.api_services:
-            server.app.include_router(routed_service.to_router(), prefix="/api")
+        for callback in configure_callbacks:
+            callback(self, server, config)
 
     @final
     async def startup(self, server: "NxWebServer", config: Dict[str, Any]):
         """Runtime startup: database connections, async initialization"""
-        return await self._startup(server, config)
+        await self._startup(server, config)
+
+        if not (startup_callbacks := self._startup_callbacks):
+            return
+
+        for callback in startup_callbacks:
+            await callback(self, server, config)
 
     @final
     async def shutdown(self, server: "NxWebServer", config: Dict[str, Any]):
         """Cleanup: close connections, dispose resources"""
-        return await self._shutdown(server, config)
+        await self._shutdown(server, config)
+
+        if not (shutdown_callbacks := self._shutdown_callbacks):
+            return
+
+        for callback in shutdown_callbacks:
+            await callback(self, server, config)
 
     def _configure(self, server: "NxWebServer", config: Dict[str, Any]):
         """Override this method to configure your plugin"""
