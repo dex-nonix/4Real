@@ -15,12 +15,16 @@ from ..models.persona_tool_access import PersonaToolAccess
 def llm_tool_wrapper(original_func, *args, **kwargs):
     """Create a LangChain-compatible wrapper that preserves partial binding."""
 
-    async def wrapper(*w_args, **w_kwargs):
-        return await original_func(*args, *w_args, **kwargs, **w_kwargs)
+    if inspect.iscoroutinefunction(original_func):
+        async def wrapper(*w_args, **w_kwargs):
+            return await original_func(*args, *w_args, **kwargs, **w_kwargs)
+    else:
+        def wrapper(*w_args, **w_kwargs):
+            return original_func(*args, *w_args, **kwargs, **w_kwargs)
 
     wrapper.__name__ = original_func.__name__
     wrapper.__doc__ = original_func.__doc__
-    wrapper.__annotations__ = original_func.__annotations__
+    wrapper.__annotations__ = getattr(original_func, "__annotations__", {})
 
     return wrapper
 
@@ -54,7 +58,10 @@ class AgenticToolManager:
         if not func:
             return {'status': 'error', 'error': f'tool {qualified_name} not found'}
         try:
-            result = func(**(args or {})) if args else func()
+            if inspect.iscoroutinefunction(func):
+                result = await func(**(args or {})) if args else await func()
+            else:
+                result = func(**(args or {})) if args else func()
             return {'status': 'success', 'result': result}
         except Exception as exc:  # noqa: BLE001
             return {'status': 'error', 'error': str(exc)}
@@ -170,7 +177,10 @@ class AgenticToolManager:
             return {'status': 'error', 'error': 'Tool not allowed or not found'}
 
         try:
-            result = await func(**(args or {})) if args else await func()
+            if inspect.iscoroutinefunction(func):
+                result = await func(**(args or {})) if args else await func()
+            else:
+                result = func(**(args or {})) if args else func()
             return {'status': 'success', 'result': result}
         except Exception as exc:  # noqa: BLE001
             return {'status': 'error', 'error': str(exc)}
@@ -236,12 +246,22 @@ class AgenticToolManager:
                     })
 
                     # Create StructuredTool with proper Pydantic schema
-                    langchain_tool = StructuredTool.from_function(
-                        func=tool_func,  # Use the partial directly
-                        name=tool_name,
-                        description=description,
-                        args_schema=ToolSchema
-                    )
+                    is_async = inspect.iscoroutinefunction(tool_func)
+                    if is_async:
+                        langchain_tool = StructuredTool.from_function(
+                            func=(lambda **_: None),
+                            coroutine=tool_func,
+                            name=tool_name,
+                            description=description,
+                            args_schema=ToolSchema
+                        )
+                    else:
+                        langchain_tool = StructuredTool.from_function(
+                            func=tool_func,
+                            name=tool_name,
+                            description=description,
+                            args_schema=ToolSchema
+                        )
 
                     self._logger.debug(f"🔧 Created tool '{tool_name}' with Pydantic schema")
 
@@ -249,18 +269,36 @@ class AgenticToolManager:
                     self._logger.warning(f"🔧 Failed to create Pydantic schema for tool '{tool_name}': {e}",
                                          exc_info=True)
                     # Fallback: create tool without schema
+                    is_async = inspect.iscoroutinefunction(tool_func)
+                    if is_async:
+                        langchain_tool = StructuredTool.from_function(
+                            func=(lambda **_: None),
+                            coroutine=tool_func,
+                            name=tool_name,
+                            description=description
+                        )
+                    else:
+                        langchain_tool = StructuredTool.from_function(
+                            func=tool_func,
+                            name=tool_name,
+                            description=description
+                        )
+            else:
+                # Fallback: no schema, just basic tool
+                is_async = inspect.iscoroutinefunction(tool_func)
+                if is_async:
+                    langchain_tool = StructuredTool.from_function(
+                        func=(lambda **_: None),
+                        coroutine=tool_func,
+                        name=tool_name,
+                        description=description
+                    )
+                else:
                     langchain_tool = StructuredTool.from_function(
                         func=tool_func,
                         name=tool_name,
                         description=description
                     )
-            else:
-                # Fallback: no schema, just basic tool
-                langchain_tool = StructuredTool.from_function(
-                    func=tool_func,
-                    name=tool_name,
-                    description=description
-                )
 
             langchain_tools.append(langchain_tool)
 
