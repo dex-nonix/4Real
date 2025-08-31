@@ -50,8 +50,9 @@ class CRUDOperations(Generic[ModelType]):
             for filter_condition in query_params["filters"]:
                 query = query.where(filter_condition)
         
-        if "sort_clause" in query_params and query_params["sort_clause"]:
-            query = query.order_by(query_params["sort_clause"])
+        sort_clause = query_params.get("sort_clause")
+        if sort_clause is not None:
+            query = query.order_by(sort_clause)
         
         total_count = await self._get_count(session, query_params)
         

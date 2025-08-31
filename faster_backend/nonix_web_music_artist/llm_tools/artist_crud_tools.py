@@ -16,6 +16,7 @@ class AlbumToolService(AgenticCrudTools):
         model=Album,
         create_schema=AlbumCreate,
         update_schema=AlbumUpdate,
+        response_schema=AlbumCreate,  # Use AlbumCreate as response schema
         filters=FilterConfig(allowed_fields=['title', 'release_date', 'artist_id']),
         sorting=SortingConfig(default_sort='release_date', allowed_fields=['title', 'release_date', 'created_at']),
         validation=ValidationConfig(unique_fields=[])
