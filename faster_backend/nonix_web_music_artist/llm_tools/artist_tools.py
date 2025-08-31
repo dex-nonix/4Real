@@ -1,57 +1,87 @@
-from typing import Dict, Any, List
-from sqlalchemy import select
+from typing import Dict, Any, Optional
 
-from nonix_web_db import AsyncSessionLocal
+from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig
+from nonix_web_agentic.llm.agentic_crud_tools import AgenticCrudTools
+from nonix_web_agentic.llm.agentic_tools import tool
 from ..models.artist import Artist
-from ..models.album import Album
+from ..services.artist.artist_schemas import ArtistCreate, ArtistUpdate
 
 
-async def artist_get_info(artist_id: int) -> Dict[str, Any]:
-    """Get detailed information about a specific artist."""
-    async with AsyncSessionLocal() as db_session:
-        artist_result = await db_session.execute(
-            select(Artist).where(Artist.id == artist_id)
+class ArtistToolService(AgenticCrudTools):
+    """Artist self-management operations."""
+
+    prefix = "artist"
+    config = CRUDConfig(
+        model=Artist,
+        create_schema=ArtistCreate,
+        update_schema=ArtistUpdate,
+        response_schema=ArtistCreate,  # Use ArtistCreate as response schema
+        filters=FilterConfig(allowed_fields=['name', 'bio', 'genre', 'country']),
+        sorting=SortingConfig(default_sort='name', allowed_fields=['name', 'created_at']),
+        validation=ValidationConfig(unique_fields=['name'])
+    )
+
+    @tool("get_my_info")
+    async def get_my_info(self, artist_id: int) -> Dict[str, Any]:
+        """Get my own artist information."""
+        return await self.get(item_id=artist_id)
+
+    @tool("update_my_info")
+    async def update_my_info(self, artist_id: int, name: Optional[str] = None, bio: Optional[str] = None, genre: Optional[str] = None, country: Optional[str] = None) -> Dict[str, Any]:
+        """Update my own artist details."""
+        return await self.update(
+            item_id=artist_id,
+            name=name,
+            bio=bio,
+            genre=genre,
+            country=country
         )
-        artist = artist_result.scalar_one_or_none()
+
+    @tool("get_my_discography")
+    async def get_my_discography(self, artist_id: int) -> Dict[str, Any]:
+        """Get my own discography with albums and tracks."""
+        # Get my artist details
+        artist_result = await self.get(item_id=artist_id)
+        if not artist_result.get("success"):
+            return artist_result
         
-        if not artist:
-            return {"error": "Artist not found"}
-        
-        albums_result = await db_session.execute(
-            select(Album).where(Album.artist_id == artist_id)
-        )
-        albums = albums_result.scalars().all()
-        
-        total_result = await db_session.execute(
-            select(Album).where(Album.artist_id == artist_id)
-        )
-        total = len(total_result.scalars().all())
+        # Get my albums
+        from .album_tools import album_tool_service
+        albums_result = await album_tool_service.list_albums(artist_id)
         
         return {
-            "artist": artist.to_dict(),
-            "albums": [album.to_dict() for album in albums],
-            "album_count": total
+            "success": True,
+            "artist": artist_result.get("data"),
+            "albums": albums_result.get("data", []),
+            "album_count": len(albums_result.get("data", []))
+        }
+
+    @tool("get_my_stats")
+    async def get_my_stats(self, artist_id: int) -> Dict[str, Any]:
+        """Get my own artist statistics."""
+        # Get my artist details
+        artist_result = await self.get(item_id=artist_id)
+        if not artist_result.get("success"):
+            return artist_result
+        
+        # Get my albums count
+        from .album_tools import album_tool_service
+        albums_result = await album_tool_service.list_albums(artist_id)
+        
+        # Get my tracks count
+        from .track_tools import track_tool_service
+        tracks_result = await track_tool_service.list_tracks(artist_id)
+        
+        return {
+            "success": True,
+            "artist": artist_result.get("data"),
+            "stats": {
+                "album_count": len(albums_result.get("data", [])),
+                "track_count": len(tracks_result.get("data", [])),
+                "total_duration": sum(track.get("duration", 0) for track in tracks_result.get("data", []))
+            }
         }
 
 
-async def artist_list_albums(artist_id: int) -> Dict[str, Any]:
-    """List all albums for a specific artist with basic info."""
-    async with AsyncSessionLocal() as db_session:
-        artist_result = await db_session.execute(
-            select(Artist).where(Artist.id == artist_id)
-        )
-        artist = artist_result.scalar_one_or_none()
-        
-        if not artist:
-            return {"error": "Artist not found"}
-        
-        album_count_result = await db_session.execute(
-            select(Album).where(Album.artist_id == artist_id)
-        )
-        album_count = len(album_count_result.scalars().all())
-        
-        return {
-            "artist": artist.to_dict(),
-            "album_count": album_count,
-            "message": f"Found {album_count} albums for {artist.name}"
-        }
+# Create an instance for the plugin to use
+artist_tool_service = ArtistToolService()
