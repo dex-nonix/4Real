@@ -1,6 +1,7 @@
 import asyncio
 import importlib
 from datetime import datetime
+import json
 from typing import Any, Dict, List, AsyncGenerator, TYPE_CHECKING, Optional
 
 from fastapi.responses import JSONResponse
@@ -230,12 +231,27 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
                         if isinstance(message, LCAIMessage):
                             yield StreamingChunk(content="", chunk_type="complete", is_final=True)
                         elif isinstance(message, LCToolMessage):
+                            raw_output = message.get_status("output")
+                            parsed = None
+                            # Normalize LangChain ToolMessage output to JSON-serializable exec_result
+                            if hasattr(raw_output, 'content'):
+                                content_text = raw_output.content
+                                try:
+                                    parsed = json.loads(content_text)
+                                except Exception:
+                                    parsed = {"success": False, "error": "Non-JSON tool output", "content": content_text}
+                            else:
+                                parsed = raw_output if isinstance(raw_output, (dict, list, str, int, float, bool, type(None))) else {"value": str(raw_output)}
+
+                            status_val = 'success' if isinstance(parsed, dict) and parsed.get('success') is True else 'error'
+                            exec_result = {"status": status_val, "result": parsed}
+
                             yield StreamingChunk(
                                 content="",
                                 chunk_type="tool_end",
                                 metadata={
                                     "tool_name": message.status.get("tool_name", "unknown"),
-                                    "result": message.get_status("output")
+                                    "result": exec_result
                                 }
                             )
 
