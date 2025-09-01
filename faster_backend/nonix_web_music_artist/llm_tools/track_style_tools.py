@@ -1,10 +1,10 @@
-from typing import Dict, Any, List
+from typing import Dict, Any
 
-from nonix_web_db import AsyncSessionLocal
 from nonix_web_agentic.llm.agentic_tools import AgenticTools, tool
-from ..models.track import Track
-from ..models.style import Style
+from nonix_web_db import AsyncSessionLocal
 from ..models.associations import TrackStyle
+from ..models.style import Style
+from ..models.track import Track
 
 
 class TrackStyleToolService(AgenticTools):
@@ -35,7 +35,7 @@ class TrackStyleToolService(AgenticTools):
             # Check if relationship already exists
             existing_result = await session.execute(
                 TrackStyle.__table__.select().where(
-                    TrackStyle.track_id == track_id, 
+                    TrackStyle.track_id == track_id,
                     TrackStyle.style_id == style_id
                 )
             )
@@ -68,7 +68,7 @@ class TrackStyleToolService(AgenticTools):
             # Remove relationship
             delete_result = await session.execute(
                 TrackStyle.__table__.delete().where(
-                    TrackStyle.track_id == track_id, 
+                    TrackStyle.track_id == track_id,
                     TrackStyle.style_id == style_id
                 )
             )

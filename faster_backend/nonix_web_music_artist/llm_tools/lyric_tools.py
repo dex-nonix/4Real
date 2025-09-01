@@ -1,9 +1,8 @@
 from typing import Dict, Any, Optional
 
-from nonix_web_db import AsyncSessionLocal
 from nonix_web_agentic.llm.agentic_tools import AgenticTools, tool
+from nonix_web_db import AsyncSessionLocal
 from ..models.track import Track
-
 
 
 class LyricToolService(AgenticTools):
@@ -12,7 +11,8 @@ class LyricToolService(AgenticTools):
     prefix = "lyric"
 
     @tool("create_lyrics")
-    async def create_lyrics(self, artist_id: int, track_id: int, content: str, language: Optional[str] = "en") -> Dict[str, Any]:
+    async def create_lyrics(self, artist_id: int, track_id: int, content: str, language: Optional[str] = "en") -> Dict[
+        str, Any]:
         """Create lyrics for a track."""
         async with AsyncSessionLocal() as session:
             # Verify track belongs to artist
@@ -46,7 +46,8 @@ class LyricToolService(AgenticTools):
             }
 
     @tool("update_lyrics")
-    async def update_lyrics(self, artist_id: int, track_id: int, content: str, language: Optional[str] = None) -> Dict[str, Any]:
+    async def update_lyrics(self, artist_id: int, track_id: int, content: str, language: Optional[str] = None) -> Dict[
+        str, Any]:
         """Update lyrics for a track."""
         async with AsyncSessionLocal() as session:
             # Verify track belongs to artist

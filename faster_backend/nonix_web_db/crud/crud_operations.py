@@ -72,6 +72,45 @@ class CRUDOperations(Generic[ModelType]):
             for filter_condition in query_params["filters"]:
                 query = query.where(filter_condition)
         
+        # Apply field-based filters (e.g., filter_title=value, filter_artist_id=123)
+        for key, value in query_params.items():
+            if key.startswith("filter_") and value is not None:
+                field_name = key[7:]  # Remove "filter_" prefix
+                
+                # Check if field filtering is allowed
+                if (self.config.filters.strict_filtering and 
+                    self.config.filters.allowed_fields and 
+                    field_name not in self.config.filters.allowed_fields):
+                    continue  # Skip this filter if strict filtering is enabled
+                
+                # Apply the filter
+                if hasattr(self.model, field_name):
+                    field = getattr(self.model, field_name)
+                    if isinstance(value, str) and ":" in value:
+                        # Handle special filter operations like "like", "in", "gt", etc.
+                        operation, filter_value = value.split(":", 1)
+                        if operation == "like":
+                            query = query.where(field.ilike(f"%{filter_value}%"))
+                        elif operation == "in":
+                            filter_values = filter_value.split(",")
+                            query = query.where(field.in_(filter_values))
+                        elif operation == "gt":
+                            query = query.where(field > filter_value)
+                        elif operation == "lt":
+                            query = query.where(field < filter_value)
+                        elif operation == "gte":
+                            query = query.where(field >= filter_value)
+                        elif operation == "lte":
+                            query = query.where(field <= filter_value)
+                        elif operation == "ne":
+                            query = query.where(field != filter_value)
+                        else:
+                            # Default to equality
+                            query = query.where(field == filter_value)
+                    else:
+                        # Simple equality filter
+                        query = query.where(field == value)
+        
         sort_clause = query_params.get("sort_clause")
         if sort_clause is not None:
             query = query.order_by(sort_clause)
@@ -141,6 +180,46 @@ class CRUDOperations(Generic[ModelType]):
         if "filters" in query_params:
             for filter_condition in query_params["filters"]:
                 query = query.where(filter_condition)
+        
+        # Apply field-based filters (same logic as get_all)
+        for key, value in query_params.items():
+            if key.startswith("filter_") and value is not None:
+                field_name = key[7:]  # Remove "filter_" prefix
+                
+                # Check if field filtering is allowed
+                if (self.config.filters.strict_filtering and 
+                    self.config.filters.allowed_fields and 
+                    field_name not in self.config.filters.allowed_fields):
+                    continue  # Skip this filter if strict filtering is enabled
+                
+                # Apply the filter
+                if hasattr(self.model, field_name):
+                    field = getattr(self.model, field_name)
+                    if isinstance(value, str) and ":" in value:
+                        # Handle special filter operations like "like", "in", "gt", etc.
+                        operation, filter_value = value.split(":", 1)
+                        if operation == "like":
+                            query = query.where(field.ilike(f"%{filter_value}%"))
+                        elif operation == "in":
+                            filter_values = filter_value.split(",")
+                            query = query.where(field.in_(filter_values))
+                        elif operation == "gt":
+                            query = query.where(field > filter_value)
+                        elif operation == "lt":
+                            query = query.where(field < filter_value)
+                        elif operation == "gte":
+                            query = query.where(field >= filter_value)
+                        elif operation == "lte":
+                            query = query.where(field <= filter_value)
+                        elif operation == "ne":
+                            query = query.where(field != filter_value)
+                        else:
+                            # Default to equality
+                            query = query.where(field == filter_value)
+                    else:
+                        # Simple equality filter
+                        query = query.where(field == value)
+        
         stmt = select(func.count()).select_from(query.subquery())
         result = await session.execute(stmt)
         return result.scalar()
