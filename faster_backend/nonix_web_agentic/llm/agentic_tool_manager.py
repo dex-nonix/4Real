@@ -29,6 +29,19 @@ def llm_tool_wrapper(original_func, *args, **kwargs):
     return wrapper
 
 
+def _get_field_type(param_type: str) -> type:
+    """Extract the base Python type from a type annotation string."""
+    if 'int' in param_type:
+        return int
+    elif 'str' in param_type:
+        return str
+    elif 'bool' in param_type:
+        return bool
+    elif 'float' in param_type:
+        return float
+    else:
+        return str
+
 def _pattern_matches(pattern: str, name: str) -> bool:
     if pattern.endswith(':*'):
         return name.startswith(pattern[:-2] + ':')
@@ -208,20 +221,6 @@ class AgenticToolManager:
             available_tools_info: List[Dict[str, Any]]
     ) -> List[StructuredTool]:
         """Create LangChain StructuredTool objects from persona tools with proper Pydantic schemas."""
-
-        async def _get_field_type(param_type: str) -> type:
-            """Extract the base Python type from a type annotation string."""
-            if 'int' in param_type:
-                return int
-            elif 'str' in param_type:
-                return str
-            elif 'bool' in param_type:
-                return bool
-            elif 'float' in param_type:
-                return float
-            else:
-                return str
-
         # Get the persona-scoped tools with partial binding
         persona_tools = await self.build_persona_tool_map(persona_id)
 
@@ -245,7 +244,7 @@ class AgenticToolManager:
                         param_default = param['default']
 
                         # Get the base field type
-                        field_type = await _get_field_type(param_type)
+                        field_type = _get_field_type(param_type)
 
                         # Create the field - the logic is the same regardless of Optional/Union
                         if param_required:
@@ -262,60 +261,50 @@ class AgenticToolManager:
                         **schema_fields
                     })
 
-                    # Create StructuredTool with proper Pydantic schema
-                    is_async = inspect.iscoroutinefunction(tool_func)
-                    if is_async:
-                        langchain_tool = StructuredTool.from_function(
-                            func=(lambda **_: None),
-                            coroutine=tool_func,
-                            name=tool_name,
-                            description=description,
-                            args_schema=ToolSchema
-                        )
-                    else:
-                        langchain_tool = StructuredTool.from_function(
-                            func=tool_func,
-                            name=tool_name,
-                            description=description,
-                            args_schema=ToolSchema
-                        )
+                    # Route through manager execute path to preserve auto-injection
+                    async def wrapped_tool(**kwargs):
+                        exec_result = await self.execute_tool(persona_id, tool_name, kwargs or {})
+                        if exec_result.get('status') == 'success':
+                            return exec_result.get('result')
+                        return {'success': False, 'error': exec_result.get('error')}
+                    langchain_tool = StructuredTool.from_function(
+                        # func=(lambda **_: None),
+                        coroutine=wrapped_tool,
+                        name=tool_name,
+                        description=description,
+                        args_schema=ToolSchema
+                    )
 
                     self._logger.debug(f"🔧 Created tool '{tool_name}' with Pydantic schema")
 
                 except Exception as e:
                     self._logger.warning(f"🔧 Failed to create Pydantic schema for tool '{tool_name}': {e}",
                                          exc_info=True)
-                    # Fallback: create tool without schema
-                    is_async = inspect.iscoroutinefunction(tool_func)
-                    if is_async:
-                        langchain_tool = StructuredTool.from_function(
-                            func=(lambda **_: None),
-                            coroutine=tool_func,
-                            name=tool_name,
-                            description=description
-                        )
-                    else:
-                        langchain_tool = StructuredTool.from_function(
-                            func=tool_func,
-                            name=tool_name,
-                            description=description
-                        )
+                    # Fallback: create tool without schema, still route through execute path
+                    async def wrapped_tool(**kwargs):
+                        exec_result = await self.execute_tool(persona_id, tool_name, kwargs or {})
+                        if exec_result.get('status') == 'success':
+                            return exec_result.get('result')
+                        return {'success': False, 'error': exec_result.get('error')}
+                    langchain_tool = StructuredTool.from_function(
+                        # func=(lambda **_: None),
+                        coroutine=wrapped_tool,
+                        name=tool_name,
+                        description=description
+                    )
             else:
-                # Fallback: no schema, just basic tool
-                is_async = inspect.iscoroutinefunction(tool_func)
-                if is_async:
-                    langchain_tool = StructuredTool.from_function(
-                        func=(lambda **_: None),
-                        coroutine=tool_func,
-                        name=tool_name,
-                        description=description
-                    )
-                else:
-                    langchain_tool = StructuredTool.from_function(
-                        func=tool_func,
-                        name=tool_name,
-                        description=description
-                    )
+                # Fallback: no schema; still route through execute path
+                async def wrapped_tool(**kwargs):
+                    exec_result = await self.execute_tool(persona_id, tool_name, kwargs or {})
+                    if exec_result.get('status') == 'success':
+                        return exec_result.get('result')
+                    return {'success': False, 'error': exec_result.get('error')}
+                langchain_tool = StructuredTool.from_function(
+                    # func=(lambda **_: None),
+                    coroutine=wrapped_tool,
+                    name=tool_name,
+                    description=description
+                )
 
             langchain_tools.append(langchain_tool)
 

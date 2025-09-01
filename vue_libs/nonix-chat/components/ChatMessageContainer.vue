@@ -556,21 +556,21 @@ const executeToolWithForm = async (formData) => {
   try {
     console.log('🔧 Executing tool with form data:', formData);
 
-    // ✅ REPLACE WITH: UNIFIED message-based tool calls
     const response = await chatService.sendMessage(
       props.selectedSession.id,           // sessionId
       props.historyId,                    // ✅ historyId as separate parameter
       {
-        type: 'tool_call',              // MESSAGE TYPE
-        tool: selectedTool.value.name,  // Use the tool name from the selectedTool object
-        args: args // Use the extracted form data
-        // ✅ NO history_id in payload!
+        message_type: 'tool_call',        // CORRECT: message_type field
+        content: {                        // CORRECT: content wrapper
+          tool: selectedTool.value.name,  // Use the tool name from the selectedTool object
+          args: args                      // Use the extracted form data
+        }
       }
     );
 
     console.log('Tool executed successfully:', response);
 
-    // Create a tool message locally to show in chat immediately
+    
     const toolMessage = {
       id: Date.now(), // Temporary ID
       message_type: 'tool',
@@ -586,7 +586,7 @@ const executeToolWithForm = async (formData) => {
       created_at: new Date().toISOString()
     };
 
-    // Add the tool message to the local messages array
+    
     messages.value.push(toolMessage);
 
     // Close tool form
