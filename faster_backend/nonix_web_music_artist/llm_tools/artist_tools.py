@@ -1,10 +1,11 @@
 from typing import Dict, Any, Optional
+from datetime import date
 
 from nonix_web_agentic.llm.agentic_crud_tools import AgenticCrudTools
 from nonix_web_agentic.llm.agentic_tools import tool
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, PaginationConfig
 from ..models.artist import Artist
-from ..services.artist.artist_schemas import ArtistCreate, ArtistUpdate
+from ..services.artist.artist_schemas import ArtistCreate, ArtistUpdate, ArtistInDbModel
 
 
 class ArtistToolService(AgenticCrudTools):
@@ -15,12 +16,12 @@ class ArtistToolService(AgenticCrudTools):
         model=Artist,
         create_schema=ArtistCreate,
         update_schema=ArtistUpdate,
-        response_schema=ArtistCreate,  # Use ArtistCreate as response schema
+        response_schema=ArtistInDbModel,
         filters=FilterConfig(
-            allowed_fields=[],  # Empty = all fields can be filtered
-            search_fields=['name', 'bio', 'genre'],  # Fields to search by default
+            allowed_fields=[],
+            search_fields=['name', 'abbreviation', 'persona'],
             context_aware=True,
-            strict_filtering=False  # Allow filtering on any field
+            strict_filtering=False
         ),
         sorting=SortingConfig(
             default_sort='name',
@@ -37,38 +38,20 @@ class ArtistToolService(AgenticCrudTools):
         return await self.get(item_id=artist_id)
 
     @tool("update")
-    async def update_artist(self, artist_id: int, name: Optional[str] = None, bio: Optional[str] = None,
-                            genre: Optional[str] = None, country: Optional[str] = None) -> Dict[str, Any]:
-        """Update artist details."""
-        return await self.update(
-            item_id=artist_id,
-            name=name,
-            bio=bio,
-            genre=genre,
-            country=country
-        )
+    async def update_artist(self, artist_id: int, name: Optional[str] = None, abbreviation: Optional[str] = None,
+                            persona: Optional[str] = None, birth_date: Optional[date] = None) -> Dict[str, Any]:
+        update_data: Dict[str, Any] = {}
+        if name is not None:
+            update_data['name'] = name
+        if abbreviation is not None:
+            update_data['abbreviation'] = abbreviation
+        if persona is not None:
+            update_data['persona'] = persona
+        if birth_date is not None:
+            update_data['birth_date'] = birth_date
+        return await self.update(item_id=artist_id, **update_data)
 
-    @tool("list")
-    async def list_artists(self, filter_value: Optional[str] = None, order_by: Optional[str] = None,
-                           page: Optional[int] = None, per_page: Optional[int] = None) -> Dict[str, Any]:
-        """List all artists with optional filtering, sorting, and pagination."""
-        return await self.list(filter_value=filter_value, order_by=order_by, page=page, per_page=per_page)
-
-    @tool("create")
-    async def create_artist(self, name: str, bio: Optional[str] = None, genre: Optional[str] = None,
-                            country: Optional[str] = None) -> Dict[str, Any]:
-        """Create a new artist."""
-        return await self.create(
-            name=name,
-            bio=bio,
-            genre=genre,
-            country=country
-        )
-
-    @tool("delete")
-    async def delete_artist(self, artist_id: int) -> Dict[str, Any]:
-        """Delete an artist and all associated content."""
-        return await self.delete(item_id=artist_id)
+    
 
     @tool("catalog")
     async def get_artist_catalog(self, artist_id: int) -> Dict[str, Any]:
