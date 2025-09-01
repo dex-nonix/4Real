@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 from fastapi import Request
@@ -261,6 +262,41 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             await db_session.refresh(log)
             self._logger.debug(f"Tool invocation logged with ID {log.id}")
 
+            # ✅ FIXED: Create tool_call message before execution (like ToolCallMessageHandler)
+            tool_call_msg = ChatMessage(
+                history_id=history_id,
+                role='user',
+                message_type='tool_call',
+                content_json={
+                    'tool_name': tool_name,
+                    'tool_args': tool_args,
+                    'executed_by': 'llm',
+                    'execution_time': datetime.now(timezone.utc).isoformat(),
+                    'execution_path': 'streaming'
+                },
+                status='complete'
+            )
+            db_session.add(tool_call_msg)
+            await db_session.commit()
+            await db_session.refresh(tool_call_msg)
+            self._logger.debug(f"Tool call message {tool_call_msg.id} created")
+
+            # Emit WebSocket event for tool call (like ToolCallMessageHandler)
+            # Get session_id from the history
+            history_obj = await db_session.get(ChatHistory, history_id)
+            if history_obj:
+                session_id = history_obj.session_id
+                await self.emit_chat_event(session_id, history_id, 'message_received', {
+                    'message_id': tool_call_msg.id,
+                    'role': tool_call_msg.role,
+                    'message_type': 'tool_call',
+                    'content': tool_call_msg.content_json,
+                    'timestamp': tool_call_msg.created_at.isoformat()
+                })
+
+                # Emit WebSocket event for tool execution started
+                await self.emit_tool_event(session_id, history_id, tool_name, 'started', args=tool_args)
+
             # Execute tool
             self._logger.debug(f"Calling execute_tool for '{tool_name}'")
             exec_result = await self.agentic_tool_manager.execute_tool(persona_id, tool_name, tool_args)
@@ -271,12 +307,24 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             status = 'success' if exec_result.get('status') == 'success' else 'error'
             self._logger.info(f"Tool '{tool_name}' execution completed with status: {status}")
 
+            # Emit WebSocket event for tool execution completed
+            if 'session_id' in locals():
+                await self.emit_tool_event(session_id, history_id, tool_name, 'completed', result=exec_result)
+
             # Create tool result message
             tool_msg = ChatMessage(
                 history_id=history_id,
                 role='tool',
                 message_type='tool_result',
-                content_json={'type': 'tool_result', 'tool': tool_name, 'input': tool_args, 'output': exec_result}
+                content_json={
+                    'tool_name': tool_name,        # ✅ Standardized: snake_case
+                    'tool_args': tool_args,        # ✅ Standardized: snake_case
+                    'execution_status': status,    # ✅ Standardized: consistent field
+                    'result': exec_result,         # ✅ Standardized: consistent field
+                    'executed_by': 'llm',          # ✅ Standardized: execution context
+                    'execution_time': datetime.now(timezone.utc).isoformat(),  # ✅ Standardized: timestamp
+                    'execution_path': 'streaming'  # ✅ Standardized: execution path identifier
+                }
             )
             db_session.add(tool_msg)
             await db_session.commit()
@@ -564,12 +612,101 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                         await event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
 
                     elif message.chunk_type == "tool_start":
-                        await event_manager.emit_tool_event(session_id, history_id,
-                                                            message.metadata.get("tool_name", ""), "started")
+                        tool_name = message.metadata.get("tool_name", "")
+                        tool_args = message.metadata.get("args", {})
+
+                        # ✅ FIXED: Create tool_call message for LangChain tool execution
+                        async with AsyncSessionLocal() as db_session:
+                            # Create ToolInvocationLog for LangChain tool execution
+                            log = ToolInvocationLog(
+                                history_id=history_id,
+                                message_id=user_msg_id,  # Use the current user message ID
+                                tool_name=tool_name,
+                                input_json=tool_args,
+                                status='started'
+                            )
+                            db_session.add(log)
+                            await db_session.commit()
+                            await db_session.refresh(log)
+
+                            tool_call_msg = ChatMessage(
+                                history_id=history_id,
+                                role='user',
+                                message_type='tool_call',
+                                content_json={
+                                    'tool_name': tool_name,
+                                    'tool_args': tool_args,
+                                    'executed_by': 'llm',
+                                    'execution_time': datetime.now(timezone.utc).isoformat(),
+                                    'execution_path': 'langchain'
+                                },
+                                status='complete'
+                            )
+                            db_session.add(tool_call_msg)
+                            await db_session.commit()
+                            await db_session.refresh(tool_call_msg)
+
+                            # Emit WebSocket event for tool call message
+                            await self.emit_chat_event(session_id, history_id, 'message_received', {
+                                'message_id': tool_call_msg.id,
+                                'role': tool_call_msg.role,
+                                'message_type': 'tool_call',
+                                'content': tool_call_msg.content_json,
+                                'timestamp': tool_call_msg.created_at.isoformat()
+                            })
+
+                        await event_manager.emit_tool_event(session_id, history_id, tool_name, "started", args=tool_args)
 
                     elif message.chunk_type == "tool_end":
-                        await event_manager.emit_tool_event(session_id, history_id,
-                                                            message.metadata.get("tool_name", ""), "completed")
+                        tool_name = message.metadata.get("tool_name", "")
+                        tool_args = message.metadata.get("args", {})
+
+                        # ✅ FIXED: Create tool_result message for LangChain tool execution
+                        # Note: LangChain may not provide detailed result in metadata, so we create a basic message
+                        async with AsyncSessionLocal() as db_session:
+                            # Update ToolInvocationLog with completion status
+                            # Find the log entry created during tool_start
+                            log_result = await db_session.execute(
+                                select(ToolInvocationLog).where(
+                                    ToolInvocationLog.history_id == history_id,
+                                    ToolInvocationLog.tool_name == tool_name,
+                                    ToolInvocationLog.status == 'started'
+                                ).order_by(ToolInvocationLog.created_at.desc())
+                            )
+                            existing_log = log_result.scalar_one_or_none()
+                            if existing_log:
+                                existing_log.status = 'success'  # Assume success for LangChain tools
+                                existing_log.output_json = message.metadata.get("result", {"status": "completed"})
+                                await db_session.commit()
+
+                            tool_result_msg = ChatMessage(
+                                history_id=history_id,
+                                role='tool',
+                                message_type='tool_result',
+                                content_json={
+                                    'tool_name': tool_name,
+                                    'tool_args': tool_args,
+                                    'execution_status': 'completed',  # LangChain handled the execution
+                                    'result': message.metadata.get("result", {"status": "completed"}),
+                                    'executed_by': 'llm',
+                                    'execution_time': datetime.now(timezone.utc).isoformat(),
+                                    'execution_path': 'langchain'
+                                }
+                            )
+                            db_session.add(tool_result_msg)
+                            await db_session.commit()
+                            await db_session.refresh(tool_result_msg)
+
+                            # Emit WebSocket event for tool result message
+                            await self.emit_chat_event(session_id, history_id, 'message_received', {
+                                'message_id': tool_result_msg.id,
+                                'role': tool_result_msg.role,
+                                'message_type': 'tool_result',
+                                'content': tool_result_msg.content_json,
+                                'timestamp': tool_result_msg.created_at.isoformat()
+                            })
+
+                        await event_manager.emit_tool_event(session_id, history_id, tool_name, "completed", **message.metadata)
 
                     elif message.chunk_type == "complete":
                         await message_handler.finalize_assistant_message(accumulated_text if accumulated_text else None)
@@ -610,77 +747,6 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 f"Async processing error: {str(e)}"
             )
             self._logger.error(f"Error in _process_message_async: {e}", exc_info=True)
-
-    # @expose(
-    #     '/sessions/{session_id}/retry',
-    #     methods=['POST'],
-    #     status_codes={200: 'OK', 400: 'Bad Request'},
-    #     response_schema={
-    #         "type": "object",
-    #         "properties": {
-    #             "data": {
-    #                 "type": "object",
-    #                 "properties": {
-    #                     "id": {"type": "integer"},
-    #                     "history_id": {"type": "integer"},
-    #                     "role": {"type": "string"},
-    #                     "message_type": {"type": "string"},
-    #                     "content_json": {"type": "object"},
-    #                     "created_at": {"type": "string", "format": "date-time"},
-    #                     "updated_at": {"type": "string", "format": "date-time"}
-    #                 }
-    #             }
-    #         }
-    #     }
-    # )
-    # @expose(
-    #     '/sessions/{session_id}/histories/{history_id}/retry',
-    #     methods=['POST'],
-    #     status_codes={200: 'OK', 400: 'Bad Request'},
-    #     response_schema={
-    #         "type": "object",
-    #         "properties": {
-    #             "data": {
-    #                 "type": "object",
-    #                 "properties": {
-    #                     "id": {"type": "integer"},
-    #                     "history_id": {"type": "integer"},
-    #                     "role": {"type": "string"},
-    #                     "message_type": {"type": "string"},
-    #                     "content_json": {"type": "object"},
-    #                     "created_at": {"type": "string", "format": "date-time"},
-    #                     "updated_at": {"type": "string", "format": "date-time"}
-    #                 }
-    #             }
-    #         }
-    #     }
-    # )
-    # def retry_last(self, req: Request, session_id: int, history_id: int = None):
-    #     """Retry the last user message in a session - history_id is OPTIONAL in URL."""
-    #     try:
-    #         session, history = self._validate_session_history(session_id, history_id)
-    #         if not session:
-    #             return await self._format_error_response('Session not found', 404)
-    #
-    #         # OPTIONAL EXTRACTION: If no history_id provided, extract from session
-    #         if not history_id:
-    #             history_id = session.current_history_id
-    #             if not history_id:
-    #                 return await self._format_error_response('No current history', 400)
-    #         else:
-    #             # Validate provided history_id belongs to session
-    #             if not history or history.session_id != session_id:
-    #                 return await self._format_error_response('History not found or invalid', 404)
-    #
-    #         last_user = ChatMessage.query.filter_by(session_id=session_id, role='user').order_by(
-    #             ChatMessage.created_at.desc()).first()
-    #         if not last_user:
-    #             return await self._format_error_response('No user messages', 400)
-    #         # Reuse send logic by re-sending the last user content
-    #         mock_req = type('obj', (), {'get_json': lambda self, silent=True: {'content': last_user.content_json}})()
-    #         return self.send_message(mock_req, session_id, history_id)
-    #     except Exception as exc:  # noqa: BLE001
-    #         return await self._format_error_response(str(exc), 500)
 
     @route(
         '/sessions/{session_id}/histories/{history_id}/messages',

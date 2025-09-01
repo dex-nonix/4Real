@@ -165,10 +165,52 @@ Remove dummy message creation and rely on WebSocket events for real-time updates
 #### **Fix #5: Add ToolInvocationLog for LangChain Tools**
 All tool executions should be logged consistently.
 
-### **CURRENT STATUS**
-- **Manual tool calls**: Partially working but with frontend dummy ID issues
-- **LLM streaming tool calls**: Working but with inconsistent message structure  
-- **LLM LangChain tool calls**: Broken - invisible to frontend and not logged
+### **CURRENT STATUS** ✅ **ALL FIXED**
+- **Manual tool calls**: ✅ Fixed - removed dummy IDs, standardized structure, proper WebSocket events
+- **LLM streaming tool calls**: ✅ Fixed - now creates both tool_call and tool_result messages with consistent structure
+- **LLM LangChain tool calls**: ✅ Fixed - now visible with message creation, WebSocket events, and logging
+
+### **IMPLEMENTED FIXES**
+
+#### **Fix #1: Frontend Architecture** ✅
+- Removed dummy message creation with `Date.now()` IDs
+- Let WebSocket events handle real-time message updates
+- Fixed response structure access issues
+
+#### **Fix #2: Content Structure Standardization** ✅
+- All paths now use snake_case field names
+- Consistent structure: `tool_name`, `tool_args`, `execution_status`, `result`, `executed_by`, `execution_time`, `execution_path`
+- Added `execution_path` identifier to distinguish sources
+
+#### **Fix #3: LLM Streaming Path** ✅
+- Added tool_call message creation before execution
+- Added tool_result message creation after execution
+- Added WebSocket events for both start and completion
+- Added ToolInvocationLog creation and updates
+
+#### **Fix #4: LangChain Visibility** ✅
+- Added tool_call and tool_result message creation in streaming event handlers
+- Added WebSocket events for message visibility
+- Added ToolInvocationLog creation and completion updates
+- Tools now appear in chat UI and are properly logged
+
+#### **Fix #5: Consistent Logging** ✅
+- All execution paths now create ToolInvocationLog entries
+- Proper status tracking from 'started' to 'success'/'error'
+- Input and output JSON logging for audit trails
+
+### **TESTING REQUIRED**
+Test all three execution paths:
+1. Manual tool calls via ToolExecutionDialog
+2. LLM streaming tool calls via direct LLM requests
+3. LLM LangChain tool calls via agent execution
+
+Verify:
+- Messages appear in chat UI
+- WebSocket events are emitted
+- ToolInvocationLog entries are created
+- Consistent content structure across all paths
+- No dummy ID conflicts or duplicate messages
 
 ### **URGENCY**
-**HIGH** - Multiple execution paths create inconsistent state, missing audit trails, and broken user experience.
+**RESOLVED** - All critical issues have been addressed. Ready for testing.

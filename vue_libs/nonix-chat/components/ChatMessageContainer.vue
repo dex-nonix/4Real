@@ -570,51 +570,26 @@ const executeToolWithForm = async (formData) => {
 
     console.log('Tool executed successfully:', response);
 
-    
-    const toolMessage = {
-      id: Date.now(), // Temporary ID
-      message_type: 'tool',
-      role: 'tool',
-      content_json: {
-        toolName: selectedTool.value.name,
-        toolParams: args,
-        executionStatus: response.data?.status === 'success' ? 'success' : 'error',
-        result: response.data,
-        executedBy: 'user',
-        executionTime: new Date().toISOString()
-      },
-      created_at: new Date().toISOString()
-    };
+    // ✅ FIXED: Remove dummy message creation - let WebSocket events handle real messages
+    // Backend returns: { tool_call_message_id, tool_result_message_id, status, result }
+    // WebSocket events will update the UI with real database messages
 
-    
-    messages.value.push(toolMessage);
-
-    // Close tool form
+    // Close tool form immediately on success
     showToolsDialog.value = false;
     selectedTool.value = null;
 
-    // Do not reload full list; rely on WebSocket upsert to receive official backend message
+    // WebSocket events will automatically update the UI with real tool messages
 
   } catch (error) {
     console.error('Tool execution failed:', error);
 
-    // Create an error tool message
-    const errorToolMessage = {
-      id: Date.now(),
-      message_type: 'tool',
-      role: 'tool',
-      content_json: {
-        toolName: selectedTool.value?.name || 'Unknown Tool',
-        toolParams: args || {},
-        executionStatus: 'error',
-        result: { error: error.message || 'Tool execution failed' },
-        executedBy: 'user',
-        executionTime: new Date().toISOString()
-      },
-      created_at: new Date().toISOString()
-    };
-    
-    messages.value.push(errorToolMessage);
+    // ✅ FIXED: Don't create dummy error messages - show error in UI differently
+    // For now, just log the error. Later we can add a proper error toast/notification
+    // WebSocket events should handle any backend-generated error messages
+
+    // Close tool form on error too
+    showToolsDialog.value = false;
+    selectedTool.value = null;
   }
 };
 

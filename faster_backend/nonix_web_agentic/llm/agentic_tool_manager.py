@@ -172,7 +172,8 @@ class AgenticToolManager:
 
         return sorted(tools_info, key=lambda x: x['name'])
 
-    async def execute_tool(self, persona_id: int, tool_name: str, args: Dict[str, Any] | None = None) -> Dict[str, Any]:
+    async def execute_tool(self, persona_id: int, tool_name: str, args: Dict[str, Any] | None = None,
+                           chat_context: Dict[str, Any] | None = None) -> Dict[str, Any]:
         """Execute a persona-scoped tool by name with provided args.
 
         The callable may be a partial; args are passed through without mutation.

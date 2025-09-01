@@ -115,12 +115,13 @@ class ToolCallMessageHandler(MessageTypeHandler):
                 role='tool',
                 message_type='tool_result',
                 content_json={
-                    'toolName': tool_name,
-                    'toolParams': tool_args,
-                    'executionStatus': 'success' if exec_result.get('status') == 'success' else 'error',
-                    'result': exec_result,
-                    'executedBy': 'user',
-                    'executionTime': datetime.now(timezone.utc).isoformat()
+                    'tool_name': tool_name,        # ✅ Standardized: snake_case
+                    'tool_args': tool_args,        # ✅ Standardized: snake_case
+                    'execution_status': 'success' if exec_result.get('status') == 'success' else 'error',  # ✅ Standardized: snake_case
+                    'result': exec_result,         # ✅ Consistent field
+                    'executed_by': 'user',         # ✅ Standardized: snake_case
+                    'execution_time': datetime.now(timezone.utc).isoformat(),  # ✅ Standardized: snake_case
+                    'execution_path': 'manual'    # ✅ Standardized: execution path identifier
                 }
             )
 
