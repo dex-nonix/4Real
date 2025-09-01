@@ -45,6 +45,10 @@ class OperationsConfig(BaseModel):
 
 class FilterConfig(BaseModel):
     allowed_fields: List[str] = []
+    auto_filters: Dict[str, str] = Field(default_factory=dict)  # field_name: context_key
+    default_filters: Dict[str, Any] = Field(default_factory=dict)  # field_name: default_value
+    search_fields: List[str] = Field(default_factory=list)  # fields to search by default
+    context_aware: bool = True  # enable auto-filtering by context
 
 
 class SortingConfig(BaseModel):

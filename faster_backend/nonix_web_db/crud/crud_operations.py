@@ -46,6 +46,28 @@ class CRUDOperations(Generic[ModelType]):
     async def get_all(self, query_params: dict, session: AsyncSession) -> Dict:
         query = select(self.model)
         
+        # Apply auto-filters from context
+        if self.config.filters.context_aware and "context" in query_params:
+            context = query_params["context"]
+            for field_name, context_key in self.config.filters.auto_filters.items():
+                if context_key in context:
+                    field = getattr(self.model, field_name)
+                    query = query.where(field == context[context_key])
+        
+        # Apply default filters
+        for field_name, default_value in self.config.filters.default_filters.items():
+            if default_value == "required" and "context" in query_params:
+                # For required fields, get from context
+                context = query_params["context"]
+                if field_name in context:
+                    field = getattr(self.model, field_name)
+                    query = query.where(field == context[field_name])
+            elif default_value != "required":
+                # For static default values
+                field = getattr(self.model, field_name)
+                query = query.where(field == default_value)
+        
+        # Apply manual filters
         if "filters" in query_params:
             for filter_condition in query_params["filters"]:
                 query = query.where(filter_condition)
@@ -95,6 +117,27 @@ class CRUDOperations(Generic[ModelType]):
 
     async def _get_count(self, session: AsyncSession, query_params: dict) -> int:
         query = select(self.model)
+        
+        # Apply auto-filters from context (same logic as get_all)
+        if self.config.filters.context_aware and "context" in query_params:
+            context = query_params["context"]
+            for field_name, context_key in self.config.filters.auto_filters.items():
+                if context_key in context:
+                    field = getattr(self.model, field_name)
+                    query = query.where(field == context[context_key])
+        
+        # Apply default filters
+        for field_name, default_value in self.config.filters.default_filters.items():
+            if default_value == "required" and "context" in query_params:
+                context = query_params["context"]
+                if field_name in context:
+                    field = getattr(self.model, field_name)
+                    query = query.where(field == context[field_name])
+            elif default_value != "required":
+                field = getattr(self.model, field_name)
+                query = query.where(field == context[field_name])
+        
+        # Apply manual filters
         if "filters" in query_params:
             for filter_condition in query_params["filters"]:
                 query = query.where(filter_condition)

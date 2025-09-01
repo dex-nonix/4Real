@@ -17,7 +17,13 @@ class AlbumToolService(AgenticCrudTools):
         create_schema=AlbumCreate,
         update_schema=AlbumUpdate,
         response_schema=AlbumCreate,  # Use AlbumCreate as response schema
-        filters=FilterConfig(allowed_fields=['title', 'release_date', 'artist_id']),
+        filters=FilterConfig(
+            allowed_fields=['title', 'release_date', 'artist_id'],
+            auto_filters={'artist_id': 'artist_id'},  # Auto-apply artist_id from context
+            default_filters={'artist_id': 'required'},  # artist_id is always required
+            search_fields=['title', 'description'],  # Fields to search by default
+            context_aware=True
+        ),
         sorting=SortingConfig(default_sort='release_date', allowed_fields=['title', 'release_date', 'created_at']),
         validation=ValidationConfig(unique_fields=[])
     )
@@ -52,9 +58,128 @@ class AlbumToolService(AgenticCrudTools):
         return await self.get(item_id=album_id)
 
     @tool("list")
-    async def list_albums(self, artist_id: int) -> Dict[str, Any]:
-        """List all albums in the artist's catalog."""
-        return await self.list(filters=[self.config.model.artist_id == artist_id])
+    async def list_albums(self, artist_id: int, **filters) -> Dict[str, Any]:
+        """List all albums in the artist's catalog with optional filtering."""
+        return await self.list(context={'artist_id': artist_id}, **filters)
+
+    @tool("add_track")
+    async def add_track_to_album(self, artist_id: int, album_id: int, track_id: int) -> Dict[str, Any]:
+        """Add a track to an album."""
+        from ..models.track import Track
+        from nonix_web_db import AsyncSessionLocal
+        
+        async with AsyncSessionLocal() as session:
+            # Verify track belongs to artist
+            track_result = await session.execute(
+                Track.__table__.select().where(Track.id == track_id, Track.artist_id == artist_id)
+            )
+            track = track_result.fetchone()
+            if not track:
+                return {"success": False, "error": "Track not found or doesn't belong to this artist"}
+            
+            # Update track's album_id
+            await session.execute(
+                Track.__table__.update()
+                .where(Track.id == track_id)
+                .values(album_id=album_id)
+            )
+            await session.commit()
+            
+            return {"success": True, "message": f"Track added to album"}
+
+    @tool("remove_track")
+    async def remove_track_from_album(self, artist_id: int, album_id: int, track_id: int) -> Dict[str, Any]:
+        """Remove a track from an album."""
+        from ..models.track import Track
+        from nonix_web_db import AsyncSessionLocal
+        
+        async with AsyncSessionLocal() as session:
+            # Verify track belongs to artist and album
+            track_result = await session.execute(
+                Track.__table__.select().where(
+                    Track.id == track_id, 
+                    Track.artist_id == artist_id,
+                    Track.album_id == album_id
+                )
+            )
+            track = track_result.fetchone()
+            if not track:
+                return {"success": False, "error": "Track not found or doesn't belong to this album"}
+            
+            # Remove track from album by setting album_id to None
+            await session.execute(
+                Track.__table__.update()
+                .where(Track.id == track_id)
+                .values(album_id=None)
+            )
+            await session.commit()
+            
+            return {"success": True, "message": f"Track removed from album"}
+
+    @tool("reorder")
+    async def reorder_album_tracks(self, artist_id: int, album_id: int, track_order: list) -> Dict[str, Any]:
+        """Reorder tracks in an album."""
+        from ..models.track import Track
+        from nonix_web_db import AsyncSessionLocal
+        
+        async with AsyncSessionLocal() as session:
+            # Verify album belongs to artist
+            album_result = await session.execute(
+                Album.__table__.select().where(Album.id == album_id, Album.artist_id == artist_id)
+            )
+            album = album_result.fetchone()
+            if not album:
+                return {"success": False, "error": "Album not found or doesn't belong to this artist"}
+            
+            # Update track numbers
+            for position, track_id in enumerate(track_order, 1):
+                await session.execute(
+                    Track.__table__.update()
+                    .where(Track.id == track_id, Track.album_id == album_id)
+                    .values(track_number=position)
+                )
+            
+            await session.commit()
+            return {"success": True, "message": f"Album track order updated"}
+
+    @tool("bulk_reorder")
+    async def bulk_reorder_album_tracks(self, artist_id: int, album_id: int, track_orders: list) -> Dict[str, Any]:
+        """Bulk reorder tracks in an album with position updates."""
+        from ..models.track import Track
+        from nonix_web_db import AsyncSessionLocal
+        
+        async with AsyncSessionLocal() as session:
+            # Verify album belongs to artist
+            album_result = await session.execute(
+                Album.__table__.select().where(Album.id == album_id, Album.artist_id == artist_id)
+            )
+            album = album_result.fetchone()
+            if not album:
+                return {"success": False, "error": "Album not found or doesn't belong to this artist"}
+            
+            # Verify all tracks belong to artist and album
+            track_ids = [order["track_id"] for order in track_orders]
+            tracks_result = await session.execute(
+                Track.__table__.select().where(
+                    Track.id.in_(track_ids),
+                    Track.artist_id == artist_id,
+                    Track.album_id == album_id
+                )
+            )
+            tracks = tracks_result.fetchall()
+            if len(tracks) != len(track_ids):
+                return {"success": False, "error": "Some tracks not found or don't belong to this album"}
+            
+            # Update track positions
+            for order in track_orders:
+                await session.execute(
+                    Track.__table__.update()
+                    .where(Track.id == order["track_id"])
+                    .values(track_number=order["position"])
+                )
+            
+            await session.commit()
+            return {"success": True, "message": f"Updated positions for {len(track_orders)} tracks"}
 
 
 # Create an instance for the plugin to use

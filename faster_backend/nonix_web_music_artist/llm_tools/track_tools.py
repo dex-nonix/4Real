@@ -16,7 +16,13 @@ class TrackToolService(AgenticCrudTools):
         create_schema=TrackCreate,
         update_schema=TrackUpdate,
         response_schema=TrackCreate,  # Use TrackCreate as response schema
-        filters=FilterConfig(allowed_fields=['title', 'duration', 'album_id', 'artist_id']),
+        filters=FilterConfig(
+            allowed_fields=['title', 'duration', 'album_id', 'artist_id', 'lyrics'],
+            auto_filters={'artist_id': 'artist_id'},  # Auto-apply artist_id from context
+            default_filters={'artist_id': 'required'},  # artist_id is always required
+            search_fields=['title', 'lyrics'],  # Fields to search by default
+            context_aware=True
+        ),
         sorting=SortingConfig(default_sort='title', allowed_fields=['title', 'duration', 'created_at']),
         validation=ValidationConfig(unique_fields=[])
     )
@@ -53,17 +59,115 @@ class TrackToolService(AgenticCrudTools):
         return await self.get(item_id=track_id)
 
     @tool("list")
-    async def list_tracks(self, artist_id: int) -> Dict[str, Any]:
-        """List all tracks for the artist."""
-        return await self.list(filters=[self.config.model.artist_id == artist_id])
+    async def list_tracks(self, artist_id: int, **filters) -> Dict[str, Any]:
+        """List all tracks for the artist with optional filtering."""
+        return await self.list(context={'artist_id': artist_id}, **filters)
 
     @tool("list_by_album")
     async def list_tracks_by_album(self, artist_id: int, album_id: int) -> Dict[str, Any]:
         """List all tracks for a specific album."""
-        return await self.list(filters=[
-            self.config.model.album_id == album_id,
-            self.config.model.artist_id == artist_id
+        return await self.list(context={'artist_id': artist_id}, filters=[
+            self.config.model.album_id == album_id
         ])
+
+    @tool("move")
+    async def move_track(self, artist_id: int, track_id: int, new_album_id: int) -> Dict[str, Any]:
+        """Move a track to a different album."""
+        from ..models.album import Album
+        from nonix_web_db import AsyncSessionLocal
+        
+        async with AsyncSessionLocal() as session:
+            # Verify track belongs to artist
+            track_result = await session.execute(
+                self.config.model.__table__.select().where(
+                    self.config.model.id == track_id, 
+                    self.config.model.artist_id == artist_id
+                )
+            )
+            track = track_result.fetchone()
+            if not track:
+                return {"success": False, "error": "Track not found or doesn't belong to this artist"}
+            
+            # Verify new album belongs to artist
+            album_result = await session.execute(
+                Album.__table__.select().where(Album.id == new_album_id, Album.artist_id == artist_id)
+            )
+            album = album_result.fetchone()
+            if not album:
+                return {"success": False, "error": "Album not found or doesn't belong to this artist"}
+            
+            # Move track to new album
+            await session.execute(
+                self.config.model.__table__.update()
+                .where(self.config.model.id == track_id)
+                .values(album_id=new_album_id)
+            )
+            await session.commit()
+            
+            return {"success": True, "message": f"Track moved to new album"}
+
+    @tool("position")
+    async def set_track_position(self, artist_id: int, track_id: int, position: int) -> Dict[str, Any]:
+        """Set track position in album."""
+        from nonix_web_db import AsyncSessionLocal
+        
+        async with AsyncSessionLocal() as session:
+            # Verify track belongs to artist
+            track_result = await session.execute(
+                self.config.model.__table__.select().where(
+                    self.config.model.id == track_id, 
+                    self.config.model.artist_id == artist_id
+                )
+            )
+            track = track_result.fetchone()
+            if not track:
+                return {"success": False, "error": "Track not found or doesn't belong to this artist"}
+            
+            # Set track position
+            await session.execute(
+                self.config.model.__table__.update()
+                .where(self.config.model.id == track_id)
+                .values(track_number=position)
+            )
+            await session.commit()
+            
+            return {"success": True, "message": f"Track position set to {position}"}
+
+    @tool("bulk_move")
+    async def bulk_move_tracks(self, artist_id: int, track_ids: list, new_album_id: int) -> Dict[str, Any]:
+        """Move multiple tracks to a different album at once."""
+        from ..models.album import Album
+        from nonix_web_db import AsyncSessionLocal
+        
+        async with AsyncSessionLocal() as session:
+            # Verify new album belongs to artist
+            album_result = await session.execute(
+                Album.__table__.select().where(Album.id == new_album_id, Album.artist_id == artist_id)
+            )
+            album = album_result.fetchone()
+            if not album:
+                return {"success": False, "error": "Album not found or doesn't belong to this artist"}
+            
+            # Verify all tracks belong to artist
+            tracks_result = await session.execute(
+                self.config.model.__table__.select().where(
+                    self.config.model.id.in_(track_ids),
+                    self.config.model.artist_id == artist_id
+                )
+            )
+            tracks = tracks_result.fetchall()
+            if len(tracks) != len(track_ids):
+                return {"success": False, "error": "Some tracks not found or don't belong to this artist"}
+            
+            # Move all tracks to new album
+            await session.execute(
+                self.config.model.__table__.update()
+                .where(self.config.model.id.in_(track_ids))
+                .values(album_id=new_album_id)
+            )
+            await session.commit()
+            
+            return {"success": True, "message": f"Moved {len(track_ids)} tracks to new album"}
 
 
 # Create an instance for the plugin to use
