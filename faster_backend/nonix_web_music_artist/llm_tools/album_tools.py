@@ -28,7 +28,7 @@ class AlbumToolService(AgenticCrudTools):
             strict_filtering=False  # Allow filtering on any field
         ),
         sorting=SortingConfig(
-            default_sort='release_date', 
+            default_sort='release_date',
             allowed_fields=['title', 'release_date', 'created_at', 'artist_id'],
             strict_sorting=False
         ),
@@ -68,9 +68,11 @@ class AlbumToolService(AgenticCrudTools):
         return await self.get(item_id=album_id)
 
     @tool("list")
-    async def list_albums(self, artist_id: int, filter_value: Optional[str] = None, order_by: Optional[str] = None, page: Optional[int] = None, per_page: Optional[int] = None) -> Dict[str, Any]:
+    async def list_albums(self, artist_id: int, filter_value: Optional[str] = None, order_by: Optional[str] = None,
+                          page: Optional[int] = None, per_page: Optional[int] = None) -> Dict[str, Any]:
         """List all albums in the artist's catalog with optional filtering, sorting, and pagination."""
-        return await self.list(context={"artist_id": artist_id}, filter_value=filter_value, order_by=order_by, page=page, per_page=per_page)
+        return await self.list(context={"artist_id": artist_id}, filter_value=filter_value, order_by=order_by,
+                               page=page, per_page=per_page)
 
     @tool("add_track")
     async def add_track_to_album(self, artist_id: int, album_id: int, track_id: int) -> Dict[str, Any]:

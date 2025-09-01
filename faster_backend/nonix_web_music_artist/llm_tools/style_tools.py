@@ -26,7 +26,7 @@ class StyleToolService(AgenticCrudTools):
             strict_filtering=False  # Allow filtering on any field
         ),
         sorting=SortingConfig(
-            default_sort='name', 
+            default_sort='name',
             allowed_fields=['name', 'category', 'created_at'],
             strict_sorting=False
         ),
@@ -66,7 +66,8 @@ class StyleToolService(AgenticCrudTools):
         return await self.get(item_id=style_id)
 
     @tool("list")
-    async def list_styles(self, filter_value: Optional[str] = None, order_by: Optional[str] = None, page: Optional[int] = None, per_page: Optional[int] = None) -> Dict[str, Any]:
+    async def list_styles(self, filter_value: Optional[str] = None, order_by: Optional[str] = None,
+                          page: Optional[int] = None, per_page: Optional[int] = None) -> Dict[str, Any]:
         """List all available styles with optional filtering, sorting, and pagination."""
         return await self.list(filter_value=filter_value, order_by=order_by, page=page, per_page=per_page)
 

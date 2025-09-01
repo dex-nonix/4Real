@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import Column, Date, Integer, String, Text
+from sqlalchemy import Column, Date, String, Text
 
 from nonix_web_db import BaseModel
 

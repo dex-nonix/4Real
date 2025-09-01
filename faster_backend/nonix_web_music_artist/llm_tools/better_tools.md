@@ -290,16 +290,16 @@ async def list_albums(self, artist_id: int, **filters):
 
 ```python
 # Basic listing (NO FILTERS REQUIRED):
-await album_tool_service.list_albums(artist_id)      # Works without any filters
-await track_tool_service.list_tracks(artist_id)      # Works without any filters
-await style_tool_service.list_styles()               # Works without any filters
+await album_tool_service.list_albums(artist_id)  # Works without any filters
+await track_tool_service.list_tracks(artist_id)  # Works without any filters
+await style_tool_service.list_styles()  # Works without any filters
 
 # Optional filtering (when you want it):
 # These are NOT mandatory - basic listing works fine without them
-filter_title="Album Name"                    # Exact match
-filter_release_date:gt="2023-01-01"        # Greater than
-filter_title:like="Rock"                    # Contains text
-filter_duration:in="180,240,300"           # In list of values
+filter_title = "Album Name"  # Exact match
+filter_release_date: gt = "2023-01-01"  # Greater than
+filter_title: like = "Rock"  # Contains text
+filter_duration: in ="180,240,300"  # In list of values
 
 # All fields automatically available for filtering
 # No need to pre-configure allowed_fields

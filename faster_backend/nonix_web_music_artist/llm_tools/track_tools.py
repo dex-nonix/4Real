@@ -27,7 +27,7 @@ class TrackToolService(AgenticCrudTools):
             strict_filtering=False  # Allow filtering on any field
         ),
         sorting=SortingConfig(
-            default_sort='title', 
+            default_sort='title',
             allowed_fields=['title', 'duration', 'created_at', 'artist_id', 'album_id'],
             strict_sorting=False
         ),
@@ -69,14 +69,19 @@ class TrackToolService(AgenticCrudTools):
         return await self.get(item_id=track_id)
 
     @tool("list")
-    async def list_tracks(self, artist_id: int, filter_value: Optional[str] = None, order_by: Optional[str] = None, page: Optional[int] = None, per_page: Optional[int] = None) -> Dict[str, Any]:
+    async def list_tracks(self, artist_id: int, filter_value: Optional[str] = None, order_by: Optional[str] = None,
+                          page: Optional[int] = None, per_page: Optional[int] = None) -> Dict[str, Any]:
         """List all tracks for the artist with optional filtering, sorting, and pagination."""
-        return await self.list(context={"artist_id": artist_id}, filter_value=filter_value, order_by=order_by, page=page, per_page=per_page)
+        return await self.list(context={"artist_id": artist_id}, filter_value=filter_value, order_by=order_by,
+                               page=page, per_page=per_page)
 
     @tool("list_by_album")
-    async def list_tracks_by_album(self, artist_id: int, album_id: int, filter_value: Optional[str] = None, order_by: Optional[str] = None, page: Optional[int] = None, per_page: Optional[int] = None) -> Dict[str, Any]:
+    async def list_tracks_by_album(self, artist_id: int, album_id: int, filter_value: Optional[str] = None,
+                                   order_by: Optional[str] = None, page: Optional[int] = None,
+                                   per_page: Optional[int] = None) -> Dict[str, Any]:
         """List all tracks for a specific album with optional filtering, sorting, and pagination."""
-        return await self.list(context={'artist_id': artist_id}, filter_album_id=album_id, filter_value=filter_value, order_by=order_by, page=page, per_page=per_page)
+        return await self.list(context={'artist_id': artist_id}, filter_album_id=album_id, filter_value=filter_value,
+                               order_by=order_by, page=page, per_page=per_page)
 
     @tool("move")
     async def move_track(self, artist_id: int, track_id: int, new_album_id: int) -> Dict[str, Any]:
