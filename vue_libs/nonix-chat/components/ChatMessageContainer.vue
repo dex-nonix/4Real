@@ -122,19 +122,26 @@ const handleLLMStatus = (data) => {
 };
 
 const handleToolStatus = (data) => {
-  console.log('🎯 Tool Status event received:', data);
   const { tool_name, status, result, error, timestamp } = data;
-  console.log('Tool Status:', tool_name, status, result, error);
-  console.log('🎯 UPDATING TOOL STATUS IN UI');
   // Update UI state based on LLM stage
   updateToolStatus(tool_name, status, result, error);
 };
 
 const handleMessageReceived = (data) => {
-  console.log('🎯 Message Received event:', data);
-  const { message_id, role, content, timestamp, message_type: incomingType, status } = data;
-  console.log('Message Received:', message_id, role, content);
-  console.log('🎯 ADDING MESSAGE TO UI:', { message_id, role, incomingType });
+  // Our strict structure: message_received events ALWAYS have these exact fields
+  // Some fields may be null for tool_call messages (execution_status, result)
+  const message_id = data.message_id;
+  const role = data.role;
+  const timestamp = data.timestamp;
+  const incomingType = data.message_type;
+  const status = data.status;
+  const tool_name = data.tool_name;
+  const tool_args = data.tool_args;
+  const execution_status = data.execution_status;
+  const result = data.result;
+  const executed_by = data.executed_by;
+  const execution_time = data.execution_time;
+  const execution_path = data.execution_path;
 
   // Upsert incoming message into messages array to avoid duplicates
   try {
@@ -143,13 +150,33 @@ const handleMessageReceived = (data) => {
           : role === 'user' ? 'user'
           : role === 'system' ? 'system'
           : 'tool_result');
+
+    // Reconstruct content_json from individual fields to maintain consistency
+    const content_json = (derivedType === 'tool_call' || derivedType === 'tool_result') ? {
+      tool_name,
+      tool_args,
+      execution_status,
+      result,
+      executed_by,
+      execution_time,
+      execution_path
+    } : null;
+
     const incoming = {
       id: message_id,
       role: role,
       message_type: derivedType,
-      content_json: content,
+      content_json: content_json,
       status: status || 'complete',
-      created_at: timestamp || new Date().toISOString()
+      created_at: timestamp || new Date().toISOString(),
+      // Add tool fields directly to message object for strict access
+      tool_name,
+      tool_args,
+      execution_status,
+      result,
+      executed_by,
+      execution_time,
+      execution_path
     };
 
     // If this is the user's own message, replace the latest optimistic 'sending' entry
@@ -553,31 +580,23 @@ const executeToolWithForm = async (formData) => {
   
   // Extract the actual form data from DynamicForm's submit event
   const args = formData.__full || formData.args || {};
-  console.log('🔧 Extracted args:', args);
-  console.log('🔧 Full formData:', formData);
 
   try {
-    console.log('🔧 Executing tool with form data:', formData);
-    console.log('🔧 Sending content:', {
-      tool: selectedTool.value.name,
-      args: args
-    });
 
     const response = await chatService.sendMessage(
       props.selectedSession.id,           // sessionId
-      props.historyId,                    // ✅ historyId as separate parameter
+      props.historyId,                    // historyId as separate parameter
       {
-        message_type: 'tool_call',        // CORRECT: message_type field
-        content: {                        // CORRECT: content wrapper
+        message_type: 'tool_call',        // message_type field
+        content: {                        // content wrapper
           tool: selectedTool.value.name,  // Use the tool name from the selectedTool object
           args: args                      // Use the extracted form data
         }
       }
     );
 
-    console.log('Tool executed successfully:', response);
 
-    // ✅ FIXED: Remove dummy message creation - let WebSocket events handle real messages
+
     // Backend returns: { tool_call_message_id, tool_result_message_id, status, result }
     // WebSocket events will update the UI with real database messages
 

@@ -97,7 +97,14 @@ class ToolCallMessageHandler(MessageTypeHandler):
             'message_id': tool_call_msg.id,
             'role': tool_call_msg.role,
             'message_type': 'tool_call',
-            'content': tool_call_msg.content_json,
+            'status': 'complete',  # Tool call message status
+            'tool_name': tool_call_msg.content_json.get('tool_name'),
+            'tool_args': tool_call_msg.content_json.get('tool_args'),
+            'execution_status': None,  # Not applicable for tool_call
+            'result': None,  # Not applicable for tool_call
+            'executed_by': tool_call_msg.content_json.get('executed_by'),
+            'execution_time': tool_call_msg.content_json.get('execution_time'),
+            'execution_path': tool_call_msg.content_json.get('execution_path'),
             'timestamp': tool_call_msg.created_at.isoformat()
         })
 
@@ -138,7 +145,13 @@ class ToolCallMessageHandler(MessageTypeHandler):
             'message_id': tool_result_msg.id,
             'role': tool_result_msg.role,
             'message_type': 'tool_result',
-            'content': tool_result_msg.content_json,
+            'tool_name': tool_result_msg.content_json.get('tool_name'),
+            'tool_args': tool_result_msg.content_json.get('tool_args'),
+            'execution_status': tool_result_msg.content_json.get('execution_status'),
+            'result': tool_result_msg.content_json.get('result'),
+            'executed_by': tool_result_msg.content_json.get('executed_by'),
+            'execution_time': tool_result_msg.content_json.get('execution_time'),
+            'execution_path': tool_result_msg.content_json.get('execution_path'),
             'status': tool_result_msg.status if hasattr(tool_result_msg, 'status') else 'complete',
             'timestamp': tool_result_msg.created_at.isoformat()
         })
