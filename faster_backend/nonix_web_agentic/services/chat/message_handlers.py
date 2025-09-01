@@ -114,6 +114,7 @@ class ToolCallMessageHandler(MessageTypeHandler):
                 history_id=history_id,
                 role='tool',
                 message_type='tool_result',
+                status='complete',  # ✅ FIXED: Add required status field
                 content_json={
                     'tool_name': tool_name,        # ✅ Standardized: snake_case
                     'tool_args': tool_args,        # ✅ Standardized: snake_case

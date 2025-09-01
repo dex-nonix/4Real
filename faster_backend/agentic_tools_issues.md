@@ -165,52 +165,60 @@ Remove dummy message creation and rely on WebSocket events for real-time updates
 #### **Fix #5: Add ToolInvocationLog for LangChain Tools**
 All tool executions should be logged consistently.
 
-### **CURRENT STATUS** ✅ **ALL FIXED**
-- **Manual tool calls**: ✅ Fixed - removed dummy IDs, standardized structure, proper WebSocket events
-- **LLM streaming tool calls**: ✅ Fixed - now creates both tool_call and tool_result messages with consistent structure
-- **LLM LangChain tool calls**: ✅ Fixed - now visible with message creation, WebSocket events, and logging
+### **CRITICAL ISSUE #7: Missing Status Field in ChatMessage Creations** 🆕 **BLOCKING**
 
-### **IMPLEMENTED FIXES**
+**Problem**: Multiple `ChatMessage` objects are created without the required `status` field, causing database constraint violations.
 
-#### **Fix #1: Frontend Architecture** ✅
-- Removed dummy message creation with `Date.now()` IDs
-- Let WebSocket events handle real-time message updates
-- Fixed response structure access issues
+**Error**: `sqlite3.IntegrityError: NOT NULL constraint failed: chat_messages.status`
 
-#### **Fix #2: Content Structure Standardization** ✅
-- All paths now use snake_case field names
-- Consistent structure: `tool_name`, `tool_args`, `execution_status`, `result`, `executed_by`, `execution_time`, `execution_path`
-- Added `execution_path` identifier to distinguish sources
+**Root Cause**: The `ChatMessage.status` field is defined as `nullable=False` in the model, but several code paths create messages without specifying this field.
 
-#### **Fix #3: LLM Streaming Path** ✅
-- Added tool_call message creation before execution
-- Added tool_result message creation after execution
-- Added WebSocket events for both start and completion
-- Added ToolInvocationLog creation and updates
+**Affected Locations**:
+1. `ToolCallMessageHandler` - tool_result message creation
+2. `chat_message_mixin.py` - tool_result message in `_execute_tool_call`
+3. `chat_message_mixin.py` - tool_result message in LangChain streaming handler
+4. `chat_session_mixin.py` - system message creation (2 locations)
 
-#### **Fix #4: LangChain Visibility** ✅
-- Added tool_call and tool_result message creation in streaming event handlers
-- Added WebSocket events for message visibility
-- Added ToolInvocationLog creation and completion updates
-- Tools now appear in chat UI and are properly logged
+**Impact**: Tool executions fail with database errors, preventing any tool functionality from working.
 
-#### **Fix #5: Consistent Logging** ✅
-- All execution paths now create ToolInvocationLog entries
-- Proper status tracking from 'started' to 'success'/'error'
-- Input and output JSON logging for audit trails
+### **CRITICAL ISSUE #8: Content Structure Inconsistency** 🆕 **PERSISTING**
 
-### **TESTING REQUIRED**
-Test all three execution paths:
-1. Manual tool calls via ToolExecutionDialog
-2. LLM streaming tool calls via direct LLM requests
-3. LLM LangChain tool calls via agent execution
+**Problem**: Despite code updates, error logs still show old CamelCase format instead of new snake_case format.
 
-Verify:
-- Messages appear in chat UI
-- WebSocket events are emitted
-- ToolInvocationLog entries are created
-- Consistent content structure across all paths
-- No dummy ID conflicts or duplicate messages
+**Evidence**: Error shows:
+```json
+{"toolName": "album:get", "toolParams": {"album_id": "1"}, ...}
+```
+
+**Expected**: New snake_case format:
+```json
+{"tool_name": "album:get", "tool_args": {"album_id": "1"}, ...}
+```
+
+**Possible Causes**:
+1. Python process running old cached code
+2. Import/module reloading issues
+3. Code changes not properly applied in running instance
+
+### **CURRENT STATUS** ⚠️ **PARTIALLY BROKEN**
+- **Manual tool calls**: ❌ Broken - database constraint violation
+- **LLM streaming tool calls**: ❌ Broken - database constraint violation
+- **LLM LangChain tool calls**: ❌ Broken - database constraint violation
+
+### **REQUIRED FIXES** 🛠️
+
+#### **Fix #7: Add Missing Status Fields** ✅ **COMPLETED**
+Added `status='complete'` to all ChatMessage creations:
+- ToolCallMessageHandler tool_result message
+- _execute_tool_call tool_result message
+- LangChain streaming tool_result message
+- System message creations (2 locations)
+
+#### **Fix #8: Verify Content Structure Updates** 🔄 **IN PROGRESS**
+Need to:
+1. Restart Python process to clear any cached code
+2. Verify snake_case format is actually being used
+3. Test that tool executions work without database errors
 
 ### **URGENCY**
-**RESOLVED** - All critical issues have been addressed. Ready for testing.
+**CRITICAL** - Tool execution completely broken due to database constraint violations. Must restart Python process and verify fixes are active.

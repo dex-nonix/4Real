@@ -104,6 +104,7 @@ class ChatSessionMixin:
                         history_id=history.id,
                         role='system',
                         message_type='system',
+                        status='complete',  # ✅ FIXED: Add required status field
                         content_json={'text': persona.system_prompt}
                     )
                     db_session.add(sys_msg)
@@ -279,6 +280,7 @@ class ChatSessionMixin:
                         history_id=history.id,
                         role='system',
                         message_type='system',
+                        status='complete',  # ✅ FIXED: Add required status field
                         content_json={'text': persona.system_prompt}
                     )
                     db_session.add(sys_msg)
