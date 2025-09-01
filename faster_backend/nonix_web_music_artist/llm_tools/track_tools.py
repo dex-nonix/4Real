@@ -3,7 +3,7 @@ from typing import Dict, Any, Optional
 from nonix_web_agentic.llm.agentic_crud_tools import AgenticCrudTools
 from nonix_web_agentic.llm.agentic_tools import tool
 from nonix_web_db import AsyncSessionLocal
-from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig
+from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, PaginationConfig
 from ..models.album import Album
 from ..models.track import Track
 from ..services.track.track_schemas import TrackCreate, TrackUpdate
@@ -26,7 +26,12 @@ class TrackToolService(AgenticCrudTools):
             context_aware=True,
             strict_filtering=False  # Allow filtering on any field
         ),
-        sorting=SortingConfig(default_sort='title', allowed_fields=['title', 'duration', 'created_at']),
+        sorting=SortingConfig(
+            default_sort='title', 
+            allowed_fields=['title', 'duration', 'created_at', 'artist_id', 'album_id'],
+            strict_sorting=False
+        ),
+        pagination=PaginationConfig(default_page_size=20, max_page_size=100, min_page_size=5),
         validation=ValidationConfig(unique_fields=[])
     )
 
@@ -64,16 +69,14 @@ class TrackToolService(AgenticCrudTools):
         return await self.get(item_id=track_id)
 
     @tool("list")
-    async def list_tracks(self, artist_id: int, **filters) -> Dict[str, Any]:
-        """List all tracks for the artist with optional filtering."""
-        return await self.list(context={'artist_id': artist_id}, **filters)
+    async def list_tracks(self, artist_id: int, filter_value: Optional[str] = None, order_by: Optional[str] = None, page: Optional[int] = None, per_page: Optional[int] = None) -> Dict[str, Any]:
+        """List all tracks for the artist with optional filtering, sorting, and pagination."""
+        return await self.list(context={"artist_id": artist_id}, filter_value=filter_value, order_by=order_by, page=page, per_page=per_page)
 
     @tool("list_by_album")
-    async def list_tracks_by_album(self, artist_id: int, album_id: int) -> Dict[str, Any]:
-        """List all tracks for a specific album."""
-        return await self.list(context={'artist_id': artist_id}, filters=[
-            self.config.model.album_id == album_id
-        ])
+    async def list_tracks_by_album(self, artist_id: int, album_id: int, filter_value: Optional[str] = None, order_by: Optional[str] = None, page: Optional[int] = None, per_page: Optional[int] = None) -> Dict[str, Any]:
+        """List all tracks for a specific album with optional filtering, sorting, and pagination."""
+        return await self.list(context={'artist_id': artist_id}, filter_album_id=album_id, filter_value=filter_value, order_by=order_by, page=page, per_page=per_page)
 
     @tool("move")
     async def move_track(self, artist_id: int, track_id: int, new_album_id: int) -> Dict[str, Any]:

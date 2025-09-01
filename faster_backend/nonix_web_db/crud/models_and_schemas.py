@@ -54,7 +54,8 @@ class FilterConfig(BaseModel):
 
 class SortingConfig(BaseModel):
     default_sort: str = 'id'
-    allowed_fields: List[str] = []
+    allowed_fields: List[str] = Field(default_factory=list, description="Fields that can be sorted on (empty = all fields allowed)")
+    strict_sorting: bool = False  # if True, only allowed_fields can be sorted; if False, all fields allowed
 
 
 class ValidationConfig(BaseModel):
@@ -62,8 +63,9 @@ class ValidationConfig(BaseModel):
 
 
 class PaginationConfig(BaseModel):
-    default_page_size: int = 20
-    max_page_size: int = 100
+    default_page_size: int = Field(default=20, ge=1, le=1000, description="Default number of items per page")
+    max_page_size: int = Field(default=100, ge=1, le=1000, description="Maximum number of items per page")
+    min_page_size: int = Field(default=1, ge=1, le=100, description="Minimum number of items per page")
 
 
 class SelectorConfig(BaseModel):

@@ -59,9 +59,11 @@ class CRUDOperations(Generic[ModelType]):
             if default_value == "required" and "context" in query_params:
                 # For required fields, get from context
                 context = query_params["context"]
-                if field_name in context:
+                # Check if the field exists in context (either directly or via auto_filters mapping)
+                context_key = self.config.filters.auto_filters.get(field_name, field_name)
+                if context_key in context:
                     field = getattr(self.model, field_name)
-                    query = query.where(field == context[field_name])
+                    query = query.where(field == context[context_key])
             elif default_value != "required":
                 # For static default values
                 field = getattr(self.model, field_name)
@@ -111,14 +113,55 @@ class CRUDOperations(Generic[ModelType]):
                         # Simple equality filter
                         query = query.where(field == value)
         
-        sort_clause = query_params.get("sort_clause")
-        if sort_clause is not None:
-            query = query.order_by(sort_clause)
+        # Handle sorting
+        order_by = query_params.get("order_by", self.config.sorting.default_sort)
+        if order_by:
+            # Parse order_by parameter (e.g., "field:direction" or just "field")
+            if ":" in order_by:
+                field_name, direction = order_by.split(":", 1)
+                direction = direction.lower()
+            else:
+                field_name = order_by
+                direction = "asc"
+            
+            # Validate field exists and is allowed for sorting
+            if hasattr(self.model, field_name):
+                if not self.config.sorting.allowed_fields or field_name in self.config.sorting.allowed_fields:
+                    field = getattr(self.model, field_name)
+                    if direction == "desc":
+                        query = query.order_by(field.desc())
+                    else:
+                        query = query.order_by(field.asc())
+                else:
+                    # Use default sorting if field not allowed
+                    default_field = getattr(self.model, self.config.sorting.default_sort)
+                    query = query.order_by(default_field.asc())
+            else:
+                # Use default sorting if field doesn't exist
+                default_field = getattr(self.model, self.config.sorting.default_sort)
+                query = query.order_by(default_field.asc())
+        else:
+            # Apply default sorting
+            default_field = getattr(self.model, self.config.sorting.default_sort)
+            query = query.order_by(default_field.asc())
         
         total_count = await self._get_count(session, query_params)
         
-        if "offset" in query_params and "limit" in query_params:
-            query = query.offset(query_params["offset"]).limit(query_params["limit"])
+        # Handle pagination
+        page = query_params.get("page", 1)
+        per_page = query_params.get("per_page", self.config.pagination.default_page_size)
+        
+        # Validate pagination parameters
+        if page < 1:
+            page = 1
+        if per_page < self.config.pagination.min_page_size:
+            per_page = self.config.pagination.min_page_size
+        if per_page > self.config.pagination.max_page_size:
+            per_page = self.config.pagination.max_page_size
+        
+        # Convert to offset/limit
+        offset = (page - 1) * per_page
+        query = query.offset(offset).limit(per_page)
         
         items = await execute_query_all(session, query)
         return create_paginated_response(
@@ -169,12 +212,14 @@ class CRUDOperations(Generic[ModelType]):
         for field_name, default_value in self.config.filters.default_filters.items():
             if default_value == "required" and "context" in query_params:
                 context = query_params["context"]
-                if field_name in context:
+                # Check if the field exists in context (either directly or via auto_filters mapping)
+                context_key = self.config.filters.auto_filters.get(field_name, field_name)
+                if context_key in context:
                     field = getattr(self.model, field_name)
-                    query = query.where(field == context[field_name])
+                    query = query.where(field == context[context_key])
             elif default_value != "required":
                 field = getattr(self.model, field_name)
-                query = query.where(field == context[field_name])
+                query = query.where(field == default_value)
         
         # Apply manual filters
         if "filters" in query_params:
@@ -219,6 +264,24 @@ class CRUDOperations(Generic[ModelType]):
                     else:
                         # Simple equality filter
                         query = query.where(field == value)
+        
+        # Don't apply pagination to count query, but apply sorting for consistency
+        order_by = query_params.get("order_by", self.config.sorting.default_sort)
+        if order_by:
+            if ":" in order_by:
+                field_name, direction = order_by.split(":", 1)
+                direction = direction.lower()
+            else:
+                field_name = order_by
+                direction = "asc"
+            
+            if hasattr(self.model, field_name):
+                if not self.config.sorting.allowed_fields or field_name in self.config.sorting.allowed_fields:
+                    field = getattr(self.model, field_name)
+                    if direction == "desc":
+                        query = query.order_by(field.desc())
+                    else:
+                        query = query.order_by(field.asc())
         
         stmt = select(func.count()).select_from(query.subquery())
         result = await session.execute(stmt)

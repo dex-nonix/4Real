@@ -3,7 +3,7 @@ from typing import Dict, Any, Optional
 from nonix_web_agentic.llm.agentic_crud_tools import AgenticCrudTools
 from nonix_web_agentic.llm.agentic_tools import tool
 from nonix_web_db import AsyncSessionLocal
-from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig
+from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, PaginationConfig
 from ..models.associations import TrackStyle
 from ..models.style import Style
 from ..models.track import Track
@@ -25,7 +25,12 @@ class StyleToolService(AgenticCrudTools):
             context_aware=True,
             strict_filtering=False  # Allow filtering on any field
         ),
-        sorting=SortingConfig(default_sort='name', allowed_fields=['name', 'category', 'created_at']),
+        sorting=SortingConfig(
+            default_sort='name', 
+            allowed_fields=['name', 'category', 'created_at'],
+            strict_sorting=False
+        ),
+        pagination=PaginationConfig(default_page_size=20, max_page_size=100, min_page_size=5),
         validation=ValidationConfig(unique_fields=['name'])
     )
 
@@ -61,9 +66,9 @@ class StyleToolService(AgenticCrudTools):
         return await self.get(item_id=style_id)
 
     @tool("list")
-    async def list_styles(self, **filters) -> Dict[str, Any]:
-        """List all available styles with optional filtering."""
-        return await self.list(**filters)
+    async def list_styles(self, filter_value: Optional[str] = None, order_by: Optional[str] = None, page: Optional[int] = None, per_page: Optional[int] = None) -> Dict[str, Any]:
+        """List all available styles with optional filtering, sorting, and pagination."""
+        return await self.list(filter_value=filter_value, order_by=order_by, page=page, per_page=per_page)
 
     @tool("assign")
     async def assign_style_to_track(self, artist_id: int, track_id: int, style_id: int) -> Dict[str, Any]:

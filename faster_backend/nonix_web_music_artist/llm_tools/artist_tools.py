@@ -2,7 +2,7 @@ from typing import Dict, Any, Optional
 
 from nonix_web_agentic.llm.agentic_crud_tools import AgenticCrudTools
 from nonix_web_agentic.llm.agentic_tools import tool
-from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig
+from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, PaginationConfig
 from ..models.artist import Artist
 from ..services.artist.artist_schemas import ArtistCreate, ArtistUpdate
 
@@ -22,7 +22,12 @@ class ArtistToolService(AgenticCrudTools):
             context_aware=True,
             strict_filtering=False  # Allow filtering on any field
         ),
-        sorting=SortingConfig(default_sort='name', allowed_fields=['name', 'created_at']),
+        sorting=SortingConfig(
+            default_sort='name', 
+            allowed_fields=['name', 'created_at'],
+            strict_sorting=False
+        ),
+        pagination=PaginationConfig(default_page_size=20, max_page_size=100, min_page_size=5),
         validation=ValidationConfig(unique_fields=['name'])
     )
 
@@ -44,9 +49,9 @@ class ArtistToolService(AgenticCrudTools):
         )
 
     @tool("list")
-    async def list_artists(self, **filters) -> Dict[str, Any]:
-        """List all artists with optional filtering."""
-        return await self.list(**filters)
+    async def list_artists(self, filter_value: Optional[str] = None, order_by: Optional[str] = None, page: Optional[int] = None, per_page: Optional[int] = None) -> Dict[str, Any]:
+        """List all artists with optional filtering, sorting, and pagination."""
+        return await self.list(filter_value=filter_value, order_by=order_by, page=page, per_page=per_page)
 
     @tool("create")
     async def create_artist(self, name: str, bio: Optional[str] = None, genre: Optional[str] = None,

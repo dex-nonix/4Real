@@ -50,10 +50,32 @@ class AgenticCrudTools(AgenticTools):
             item = await self._crud.get_one(item_id, session)
             return {"success": True, "data": item.to_dict()}
 
-    async def list(self, **query_params) -> Dict[str, Any]:
-        """List items"""
+    async def list(self, context: Dict[str, Any] = None, filter_value: str = None, order_by: str = None, page: int = None, per_page: int = None, **query_params) -> Dict[str, Any]:
+        """List items with standard filtering, sorting, and pagination options."""
+        # Build query parameters
+        params = query_params or {}
+        
+        # Add context if provided
+        if context:
+            params["context"] = context
+        
+        # Add filter if provided (search in title/name fields)
+        if filter_value:
+            if hasattr(self.config.model, 'title'):
+                params["filter_title"] = filter_value
+            elif hasattr(self.config.model, 'name'):
+                params["filter_name"] = filter_value
+        
+        # Add sorting and pagination
+        if order_by:
+            params["order_by"] = order_by
+        if page:
+            params["page"] = page
+        if per_page:
+            params["per_page"] = per_page
+        
         async with AsyncSessionLocal() as session:
-            result = await self._crud.get_all(query_params or {}, session)
+            result = await self._crud.get_all(params, session)
             return {"success": True, "data": result.get("data", []), "pagination": result.get("pagination")}
 
 
