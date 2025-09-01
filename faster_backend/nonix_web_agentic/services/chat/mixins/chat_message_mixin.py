@@ -708,7 +708,9 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                                 'timestamp': tool_result_msg.created_at.isoformat()
                             })
 
-                        await event_manager.emit_tool_event(session_id, history_id, tool_name, "completed", **message.metadata)
+                        # Remove tool_name from metadata to avoid duplicate keyword argument
+                        metadata = {k: v for k, v in message.metadata.items() if k != "tool_name"}
+                        await event_manager.emit_tool_event(session_id, history_id, tool_name, "completed", **metadata)
 
                     elif message.chunk_type == "complete":
                         await message_handler.finalize_assistant_message(accumulated_text if accumulated_text else None)

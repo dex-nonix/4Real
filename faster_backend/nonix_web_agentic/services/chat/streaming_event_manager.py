@@ -40,13 +40,15 @@ class StreamingEventManager:
                 message_id
             )
         elif chunk.chunk_type == "tool_start":
-            await self.emit_tool_event(session_id, history_id,
-                                       chunk.metadata.get("tool_name", "unknown"), "started",
-                                       chunk.metadata)
+            tool_name = chunk.metadata.get("tool_name", "unknown")
+            # Remove tool_name from metadata to avoid duplicate keyword argument
+            metadata = {k: v for k, v in chunk.metadata.items() if k != "tool_name"}
+            await self.emit_tool_event(session_id, history_id, tool_name, "started", **metadata)
         elif chunk.chunk_type == "tool_end":
-            await self.emit_tool_event(session_id, history_id,
-                                       chunk.metadata.get("tool_name", "unknown"), "completed",
-                                       chunk.metadata)
+            tool_name = chunk.metadata.get("tool_name", "unknown")
+            # Remove tool_name from metadata to avoid duplicate keyword argument
+            metadata = {k: v for k, v in chunk.metadata.items() if k != "tool_name"}
+            await self.emit_tool_event(session_id, history_id, tool_name, "completed", **metadata)
 
     async def emit_tool_event(self, session_id: int, history_id: int, tool_name: str, status: str, **extra):
         await self.chat_service.emit_tool_event(session_id, history_id, tool_name, status, **extra)

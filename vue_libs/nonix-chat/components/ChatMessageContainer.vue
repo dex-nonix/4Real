@@ -81,9 +81,41 @@ const toolExecutionDialogRef = ref(null);
 
 // Track active WebSocket unsubscribers to avoid duplicate handlers
 const wsUnsubs = ref([]);
+const wsEventHandlers = ref(new Map()); // Track registered handlers to prevent duplicates
+
+// Helper function to register WebSocket event handlers without duplicates
+const registerWsHandler = (event, handler) => {
+  // Remove existing handler for this event if it exists
+  if (wsEventHandlers.value.has(event)) {
+    const existingUnsub = wsEventHandlers.value.get(event);
+    try { typeof existingUnsub === 'function' && existingUnsub(); } catch (_) {}
+  }
+
+  // Register new handler
+  const unsub = chatService.onWebSocketEvent(event, handler);
+  wsEventHandlers.value.set(event, unsub);
+  wsUnsubs.value.push(unsub);
+
+  console.log(`🔌 Registered handler for event: ${event}`);
+  return unsub;
+};
 
 const cleanupWsListeners = () => {
   try {
+    // Clean up all registered handlers
+    if (wsEventHandlers.value.size > 0) {
+      wsEventHandlers.value.forEach((unsub, event) => {
+        try {
+          typeof unsub === 'function' && unsub();
+          console.log(`🔌 Cleaned up handler for event: ${event}`);
+        } catch (e) {
+          console.warn(`Failed to cleanup handler for ${event}:`, e);
+        }
+      });
+      wsEventHandlers.value.clear();
+    }
+
+    // Clean up unsubscribe functions
     if (Array.isArray(wsUnsubs.value)) {
       wsUnsubs.value.forEach(unsub => {
         try { typeof unsub === 'function' && unsub(); } catch (_) {}
@@ -151,7 +183,7 @@ const handleMessageReceived = (data) => {
           : role === 'system' ? 'system'
           : 'tool_result');
 
-    // Reconstruct content_json from individual fields to maintain consistency
+    // Our strict structure: content_json contains tool data, individual fields available directly
     const content_json = (derivedType === 'tool_call' || derivedType === 'tool_result') ? {
       tool_name,
       tool_args,
@@ -168,16 +200,19 @@ const handleMessageReceived = (data) => {
       message_type: derivedType,
       content_json: content_json,
       status: status || 'complete',
-      created_at: timestamp || new Date().toISOString(),
-      // Add tool fields directly to message object for strict access
-      tool_name,
-      tool_args,
-      execution_status,
-      result,
-      executed_by,
-      execution_time,
-      execution_path
+      created_at: timestamp || new Date().toISOString()
     };
+
+    // Add tool fields directly to message object for strict access (no conflicts)
+    if (derivedType === 'tool_call' || derivedType === 'tool_result') {
+      incoming.tool_name = tool_name;
+      incoming.tool_args = tool_args;
+      incoming.execution_status = execution_status;
+      incoming.result = result;
+      incoming.executed_by = executed_by;
+      incoming.execution_time = execution_time;
+      incoming.execution_path = execution_path;
+    }
 
     // If this is the user's own message, replace the latest optimistic 'sending' entry
     if (role === 'user') {
@@ -362,17 +397,17 @@ watch([() => props.selectedSession, () => props.historyId], ([newSession, newHis
     chatService.joinRoom(newRoom);
     
     console.log('Setting up WebSocket event listeners...');
-    // Re-attach event listeners
-    wsUnsubs.value.push(chatService.onWebSocketEvent('llm_status', handleLLMStatus));
-    wsUnsubs.value.push(chatService.onWebSocketEvent('tool_status', handleToolStatus));
-    wsUnsubs.value.push(chatService.onWebSocketEvent('message_received', handleMessageReceived));
-    wsUnsubs.value.push(chatService.onWebSocketEvent('message_processed', handleMessageProcessed));
-    
-    // Re-attach streaming event listeners
-    wsUnsubs.value.push(chatService.onWebSocketEvent('assistant_message_started', handleAssistantStarted));
-    wsUnsubs.value.push(chatService.onWebSocketEvent('assistant_message_chunk', handleAssistantChunk));
-    wsUnsubs.value.push(chatService.onWebSocketEvent('assistant_message_complete', handleAssistantComplete));
-    wsUnsubs.value.push(chatService.onWebSocketEvent('streaming_error', handleStreamingError));
+    // Register event listeners with duplicate prevention
+    registerWsHandler('llm_status', handleLLMStatus);
+    registerWsHandler('tool_status', handleToolStatus);
+    registerWsHandler('message_received', handleMessageReceived);
+    registerWsHandler('message_processed', handleMessageProcessed);
+
+    // Register streaming event listeners
+    registerWsHandler('assistant_message_started', handleAssistantStarted);
+    registerWsHandler('assistant_message_chunk', handleAssistantChunk);
+    registerWsHandler('assistant_message_complete', handleAssistantComplete);
+    registerWsHandler('streaming_error', handleStreamingError);
     console.log('WebSocket event listeners attached successfully');
   } else {
     console.log('No session or history ID available for WebSocket setup');
