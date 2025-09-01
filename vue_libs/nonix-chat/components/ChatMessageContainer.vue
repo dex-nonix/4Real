@@ -125,6 +125,7 @@ const handleToolStatus = (data) => {
   console.log('🎯 Tool Status event received:', data);
   const { tool_name, status, result, error, timestamp } = data;
   console.log('Tool Status:', tool_name, status, result, error);
+  console.log('🎯 UPDATING TOOL STATUS IN UI');
   // Update UI state based on LLM stage
   updateToolStatus(tool_name, status, result, error);
 };
@@ -133,6 +134,7 @@ const handleMessageReceived = (data) => {
   console.log('🎯 Message Received event:', data);
   const { message_id, role, content, timestamp, message_type: incomingType, status } = data;
   console.log('Message Received:', message_id, role, content);
+  console.log('🎯 ADDING MESSAGE TO UI:', { message_id, role, incomingType });
 
   // Upsert incoming message into messages array to avoid duplicates
   try {
@@ -552,9 +554,14 @@ const executeToolWithForm = async (formData) => {
   // Extract the actual form data from DynamicForm's submit event
   const args = formData.__full || formData.args || {};
   console.log('🔧 Extracted args:', args);
+  console.log('🔧 Full formData:', formData);
 
   try {
     console.log('🔧 Executing tool with form data:', formData);
+    console.log('🔧 Sending content:', {
+      tool: selectedTool.value.name,
+      args: args
+    });
 
     const response = await chatService.sendMessage(
       props.selectedSession.id,           // sessionId

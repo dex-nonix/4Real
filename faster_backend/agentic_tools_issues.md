@@ -181,29 +181,44 @@ All tool executions should be logged consistently.
 
 **Impact**: Tool executions fail with database errors, preventing any tool functionality from working.
 
-### **CRITICAL ISSUE #8: Content Structure Inconsistency** 🆕 **PERSISTING**
+### **CRITICAL ISSUE #8: Content Structure Inconsistency** ✅ **RESOLVED**
+**Status**: Fixed - restarted Python process, snake_case format now active
 
-**Problem**: Despite code updates, error logs still show old CamelCase format instead of new snake_case format.
+### **CRITICAL ISSUE #9: Empty Tool Arguments** 🔍 **DEBUGGING IN PROGRESS**
 
-**Evidence**: Error shows:
-```json
-{"toolName": "album:get", "toolParams": {"album_id": "1"}, ...}
-```
+**Problem**: Tool arguments are empty despite being sent correctly from frontend.
 
-**Expected**: New snake_case format:
-```json
-{"tool_name": "album:get", "tool_args": {"album_id": "1"}, ...}
-```
+**Debugging Added**:
+- Frontend: Logs `formData`, extracted `args`, and content being sent
+- Backend ToolCallMessageHandler: Logs received `content`, extracted `tool_name` and `tool_args`
+- Backend execute_tool: Logs received args, final effective_args, and tool execution details
 
-**Possible Causes**:
-1. Python process running old cached code
-2. Import/module reloading issues
-3. Code changes not properly applied in running instance
+**Next Steps**:
+1. Run tool execution and check logs to see where arguments are lost
+2. Verify frontend is sending correct structure
+3. Check if auto-args are overriding user args
 
-### **CURRENT STATUS** ⚠️ **PARTIALLY BROKEN**
-- **Manual tool calls**: ❌ Broken - database constraint violation
-- **LLM streaming tool calls**: ❌ Broken - database constraint violation
-- **LLM LangChain tool calls**: ❌ Broken - database constraint violation
+### **CRITICAL ISSUE #10: WebSocket Live Updates Not Working** 🔍 **DEBUGGING IN PROGRESS**
+
+**Problem**: UI doesn't update live - requires page reload to see tool messages.
+
+**Debugging Added**:
+- Backend: Logs WebSocket event emission with room and event details
+- Frontend: Logs WebSocket event reception and UI updates
+- Frontend: Logs message addition to UI
+
+**Next Steps**:
+1. Check browser console for WebSocket event logs
+2. Verify WebSocket connection is established
+3. Check if events are being received but not processed
+4. Verify room joining is working correctly
+
+### **CURRENT STATUS** ⚠️ **PARTIALLY WORKING**
+- **Manual tool calls**: ✅ Working - database fixed, messages created
+- **LLM streaming tool calls**: ✅ Working - database fixed, messages created
+- **LLM LangChain tool calls**: ✅ Working - database fixed, messages created
+- **Argument passing**: ❌ Broken - tools receive empty args despite frontend sending them
+- **Live UI updates**: ❌ Broken - WebSocket events not triggering UI updates
 
 ### **REQUIRED FIXES** 🛠️
 

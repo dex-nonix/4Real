@@ -178,9 +178,11 @@ class AgenticToolManager:
 
         The callable may be a partial; args are passed through without mutation.
         """
+        self._logger.info(f"🔧 execute_tool called with tool_name: {tool_name}, args: {args}, persona_id: {persona_id}")
         tool_map = await self.build_persona_tool_map(persona_id)
         func = tool_map.get(tool_name)
         if not callable(func):
+            self._logger.error(f"🔧 Tool not found or not callable: {tool_name}")
             return {'status': 'error', 'error': 'Tool not allowed or not found'}
 
         # Build auto-args map (dynamic, by name) for this persona
@@ -206,12 +208,16 @@ class AgenticToolManager:
         # System-provided values take precedence over user-provided ones
         effective_args = dict(args or {})
         effective_args.update(filtered_auto_args)
+        self._logger.info(f"🔧 Final effective_args for tool {tool_name}: {effective_args}")
 
         try:
             if inspect.iscoroutinefunction(func):
+                self._logger.info(f"🔧 Calling async tool {tool_name} with args: {effective_args}")
                 result = await func(**effective_args) if effective_args else await func()
             else:
+                self._logger.info(f"🔧 Calling sync tool {tool_name} with args: {effective_args}")
                 result = func(**effective_args) if effective_args else func()
+            self._logger.info(f"🔧 Tool {tool_name} returned: {result}")
             return {'status': 'success', 'result': result}
         except Exception as exc:  # noqa: BLE001
             return {'status': 'error', 'error': str(exc)}

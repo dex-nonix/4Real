@@ -48,12 +48,13 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
 
     async def emit_chat_event(self, session_id: int, history_id: int, event: str, data: dict) -> None:
         room = f'chat/{session_id}/{history_id}'
-        self._logger.debug(f"Emitting chat event: room={room}, event={event}, data={data}")
+        self._logger.info(f"🎯 Emitting chat event: room={room}, event={event}, data_keys={list(data.keys())}")
         await self.send_ws_message(room, {
             'event': event,
             'data': data,
             'timestamp': datetime.utcnow().isoformat()
         })
+        self._logger.info(f"✅ WebSocket message sent to room {room}")
 
     async def emit_llm_event(self, session_id: int, history_id: int, stage: str, message: str) -> None:
         await self.emit_chat_event(session_id, history_id, 'llm_status', {

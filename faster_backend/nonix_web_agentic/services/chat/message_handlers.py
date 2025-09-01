@@ -70,8 +70,10 @@ class ToolCallMessageHandler(MessageTypeHandler):
 
     async def handle(self, chat_service: "ChatService", session, persona, history_id: int, content: Dict[str, Any]) -> \
     Dict[str, Any]:
+        chat_service._logger.info(f"🔧 ToolCallMessageHandler received content: {content}")
         tool_name = content.get('tool')
         tool_args = content.get('args', {})
+        chat_service._logger.info(f"🔧 Extracted tool_name: {tool_name}, tool_args: {tool_args}")
 
         # Create async database session
         async with AsyncSessionLocal() as db_session:
