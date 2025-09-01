@@ -76,6 +76,10 @@ class AgenticCrudTools(AgenticTools):
         
         async with AsyncSessionLocal() as session:
             result = await self._crud.get_all(params, session)
-            return {"success": True, "data": result.get("data", []), "pagination": result.get("pagination")}
+            # Convert SQLAlchemy objects to dictionaries for JSON serialization
+            data = result.get("data", [])
+            if data:
+                data = [item.to_dict() for item in data]
+            return {"success": True, "data": data, "pagination": result.get("pagination")}
 
 
