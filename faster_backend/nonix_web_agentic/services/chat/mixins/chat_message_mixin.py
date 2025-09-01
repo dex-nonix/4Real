@@ -281,7 +281,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             await db_session.refresh(tool_call_msg)
             self._logger.debug(f"Tool call message {tool_call_msg.id} created")
 
-            # Emit WebSocket event for tool call (like ToolCallMessageHandler)
+            # Emit WebSocket event for tool call with top-level fields
             # Get session_id from the history
             history_obj = await db_session.get(ChatHistory, history_id)
             if history_obj:
@@ -290,7 +290,12 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                     'message_id': tool_call_msg.id,
                     'role': tool_call_msg.role,
                     'message_type': 'tool_call',
-                    'content': tool_call_msg.content_json,
+                    'status': 'complete',
+                    'tool_name': tool_name,
+                    'tool_args': tool_args,
+                    'executed_by': 'llm',
+                    'execution_time': tool_call_msg.content_json.get('execution_time'),
+                    'execution_path': 'streaming',
                     'timestamp': tool_call_msg.created_at.isoformat()
                 })
 
@@ -308,7 +313,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             self._logger.info(f"Tool '{tool_name}' execution completed with status: {status}")
 
             # Emit WebSocket event for tool execution completed
-            if 'session_id' in locals():
+            if history_obj:
                 await self.emit_tool_event(session_id, history_id, tool_name, 'completed', result=exec_result)
 
             # Create tool result message
@@ -331,6 +336,23 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             await db_session.commit()
             await db_session.refresh(tool_msg)
             self._logger.debug(f"Tool result message {tool_msg.id} created")
+
+            # Emit WebSocket event for tool result message with top-level fields
+            if history_obj:
+                await self.emit_chat_event(session_id, history_id, 'message_received', {
+                    'message_id': tool_msg.id,
+                    'role': tool_msg.role,
+                    'message_type': 'tool_result',
+                    'status': 'complete',
+                    'tool_name': tool_name,
+                    'tool_args': tool_args,
+                    'execution_status': status,
+                    'result': exec_result,
+                    'executed_by': 'llm',
+                    'execution_time': tool_msg.content_json.get('execution_time'),
+                    'execution_path': 'streaming',
+                    'timestamp': tool_msg.created_at.isoformat()
+                })
 
             return exec_result, None
 
@@ -647,12 +669,17 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                             await db_session.commit()
                             await db_session.refresh(tool_call_msg)
 
-                            # Emit WebSocket event for tool call message
+                            # Emit WebSocket event for tool call message (top-level fields only)
                             await self.emit_chat_event(session_id, history_id, 'message_received', {
                                 'message_id': tool_call_msg.id,
                                 'role': tool_call_msg.role,
                                 'message_type': 'tool_call',
-                                'content': tool_call_msg.content_json,
+                                'status': 'complete',
+                                'tool_name': tool_name,
+                                'tool_args': tool_args,
+                                'executed_by': 'llm',
+                                'execution_time': tool_call_msg.content_json.get('execution_time'),
+                                'execution_path': 'langchain',
                                 'timestamp': tool_call_msg.created_at.isoformat()
                             })
 
@@ -699,12 +726,19 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                             await db_session.commit()
                             await db_session.refresh(tool_result_msg)
 
-                            # Emit WebSocket event for tool result message
+                            # Emit WebSocket event for tool result message (top-level fields only)
                             await self.emit_chat_event(session_id, history_id, 'message_received', {
                                 'message_id': tool_result_msg.id,
                                 'role': tool_result_msg.role,
                                 'message_type': 'tool_result',
-                                'content': tool_result_msg.content_json,
+                                'status': 'complete',
+                                'tool_name': tool_name,
+                                'tool_args': tool_args,
+                                'execution_status': 'completed',
+                                'result': tool_result_msg.content_json.get('result'),
+                                'executed_by': 'llm',
+                                'execution_time': tool_result_msg.content_json.get('execution_time'),
+                                'execution_path': 'langchain',
                                 'timestamp': tool_result_msg.created_at.isoformat()
                             })
 
@@ -809,6 +843,13 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 messages = messages_result.scalars().all()
                 deleted_count = len(messages)
 
+                logs_result = await db_session.execute(
+                    select(ToolInvocationLog).where(ToolInvocationLog.history_id == history_id)
+                )
+                logs = logs_result.scalars().all()
+                for log in logs:
+                    await db_session.delete(log)
+
                 # Delete all messages in the history
                 for message in messages:
                     await db_session.delete(message)
@@ -861,6 +902,13 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
                 # Store message ID before deletion for response
                 deleted_message_id = message.id
+
+                logs_result = await db_session.execute(
+                    select(ToolInvocationLog).where(ToolInvocationLog.message_id == message.id)
+                )
+                logs = logs_result.scalars().all()
+                for log in logs:
+                    await db_session.delete(log)
 
                 # Delete the message
                 await db_session.delete(message)

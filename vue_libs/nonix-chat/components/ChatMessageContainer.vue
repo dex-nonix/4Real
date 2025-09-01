@@ -183,16 +183,8 @@ const handleMessageReceived = (data) => {
           : role === 'system' ? 'system'
           : 'tool_result');
 
-    // Our strict structure: content_json contains tool data, individual fields available directly
-    const content_json = (derivedType === 'tool_call' || derivedType === 'tool_result') ? {
-      tool_name,
-      tool_args,
-      execution_status,
-      result,
-      executed_by,
-      execution_time,
-      execution_path
-    } : null;
+    // For WebSocket message_received, we use top-level fields only for tools
+    const content_json = (derivedType === 'assistant' || derivedType === 'user' || derivedType === 'system') ? (data.content_json || null) : null;
 
     const incoming = {
       id: message_id,
@@ -203,7 +195,7 @@ const handleMessageReceived = (data) => {
       created_at: timestamp || new Date().toISOString()
     };
 
-    // Add tool fields directly to message object for strict access (no conflicts)
+    // Tools: store only top-level fields, do not duplicate into content_json
     if (derivedType === 'tool_call' || derivedType === 'tool_result') {
       incoming.tool_name = tool_name;
       incoming.tool_args = tool_args;
