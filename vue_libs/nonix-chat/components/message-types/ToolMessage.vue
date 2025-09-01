@@ -16,12 +16,12 @@ const props = defineProps({
 // Declare emits for Vue 3 event handling
 const emit = defineEmits(['deleteMessage']);
 
-const toolName = computed(() => props.message.metadata?.toolName || props.message.content_json?.toolName || 'Unknown Tool');
-const toolParams = computed(() => props.message.metadata?.toolParams || props.message.content_json?.toolParams || {});
-const executionStatus = computed(() => props.message.metadata?.executionStatus || props.message.content_json?.executionStatus || 'pending');
+const toolName = computed(() => props.message.metadata?.tool_name || props.message.content_json?.tool_name || 'Unknown Tool');
+const toolParams = computed(() => props.message.metadata?.tool_args || props.message.content_json?.tool_args || {});
+const executionStatus = computed(() => props.message.metadata?.execution_status || props.message.content_json?.execution_status || 'pending');
 const result = computed(() => props.message.metadata?.result || props.message.content_json?.result || null);
-const executedBy = computed(() => props.message.metadata?.executedBy || props.message.content_json?.executedBy || 'unknown');
-const executionTime = computed(() => props.message.metadata?.executionTime || props.message.content_json?.executionTime || null);
+const executedBy = computed(() => props.message.metadata?.executed_by || props.message.content_json?.executed_by || 'unknown');
+const executionTime = computed(() => props.message.metadata?.execution_time || props.message.content_json?.execution_time || null);
 
 const getStatusIcon = (status) => {
   switch (status) {

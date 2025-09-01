@@ -17,9 +17,11 @@ class QueryProcessor:
             column = getattr(self.model, field).property.columns[0]
             py_type = column.type.python_type
             if py_type is datetime:
-                return datetime.fromisoformat(raw_value)
+                from nonix_web_db.date_utils import parse_datetime_strict
+                return parse_datetime_strict(raw_value)
             if py_type is date:
-                return date.fromisoformat(raw_value)
+                from nonix_web_db.date_utils import parse_date_strict
+                return parse_date_strict(raw_value)
             return py_type(raw_value)
         except Exception:
             return raw_value

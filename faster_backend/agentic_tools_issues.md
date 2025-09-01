@@ -1,239 +1,97 @@
-## Comprehensive Tool Execution Analysis Report
+## Agentic Tools: Open Issues and Planned Fixes (No Fallbacks — Strict Alignment)
 
-### **CRITICAL ISSUE #1: Frontend Message Handling Architecture (BLOCKING)**
+### Canonical Conventions (must be applied everywhere)
+- Keys: snake_case across DB, backend payloads, WebSocket events, and UI.
+- Dates: canonical ISO 8601 only.
+  - date: `YYYY-MM-DD`
+  - datetime: `YYYY-MM-DDTHH:MM:SS[.fff][Z|±HH:MM]`
+- WebSocket events: exact contracts (see below) with snake_case fields only.
 
-#### **Dummy ID Conflict Problem**
-```javascript
-// Frontend creates dummy message with Date.now() ID
-const toolMessage = {
-  id: Date.now(), // ❌ PROBLEMATIC: This won't match backend IDs
-  // ...
-};
-```
+---
 
-**Backend Reality:**
-- Backend creates **two separate database entries**:
-  - `tool_call_message` with real database ID
-  - `tool_result_message` with real database ID
-- Returns: `{ tool_call_message_id: X, tool_result_message_id: Y, ... }`
+### 1) Date/Datetime normalization — BLOCKING
 
-#### **WebSocket Event Processing Failure**
-The `handleMessageReceived` function will fail because:
-```javascript
-// This lookup will always fail
-const idx = messages.value.findIndex(m => String(m.id) === String(message_id));
-```
+Symptom
+- Errors like: `Invalid isoformat string: 'YYYY-MM-DD 00:00:00.000'` when tools or CRUD paths hit non-canonical strings.
 
-- Frontend dummy ID: `Date.now()` (e.g., `1703123456789`)  
-- Backend real ID: Database auto-increment (e.g., `123`)
-- **Result:** WebSocket messages get duplicated instead of updated
+Root cause
+- Inputs or stored strings use space-separated timestamps; strict parsers reject them.
 
-#### **Response Structure Mismatch**
-```javascript
-// Frontend incorrectly accesses:
-response.data?.status === 'success'  // ❌ Wrong path
+Strict solution (no fallbacks)
+1) Introduce boundary normalizers (single source of truth):
+   - File: `nonix_web_db/date_utils.py`
+   - `parse_datetime_strict(s: str) -> datetime` (accepts common input variants but always returns a datetime object in canonical form)
+   - `parse_date_strict(s: str) -> date` (accepts common input variants, returns `date`)
+   - These are used only at boundaries; inside the system all values are proper `date`/`datetime` objects.
+2) Apply strictly at:
+   - `nonix_web_db/crud/query_processor.py::_coerce_value` to replace `fromisoformat` with strict boundary parsing returning proper types
+   - Pydantic schemas with validators for any `date`/`datetime` field (e.g., `nonix_web_music_artist/services/album/album_schemas.py`) to coerce inbound payloads to proper types
+3) Serialization: `nonix_web_db/models.py::BaseModel.to_dict` remains `.isoformat()` for real `date`/`datetime` objects; if any value is a string, this is a bug upstream — fix upstream; do not stringify here.
 
-// Backend actually returns:
-{
-  tool_call_message_id: 123,
-  tool_result_message_id: 124, 
-  status: 'completed',           // ✅ Correct path
-  result: { status: 'success' }  // ✅ Nested here
-}
-```
+Tests
+- Seed data with `release_date` as `YYYY-MM-DD`, `YYYY-MM-DD HH:MM:SS`, and `YYYY-MM-DDTHH:MM:SS.mmmZ`; all internal values must become proper types and serialize canonically.
 
-### **CRITICAL ISSUE #2: Inconsistent Tool Execution Paths**
+---
 
-#### **Path A: Manual Tool Calls (Frontend → ToolExecutionDialog)**
-1. **Request Structure**: `{"message_type": "tool_call", "content": {"tool": "name", "args": {...}}}`
-2. **Execution**: `ToolCallMessageHandler.handle()` 
-3. **Result Messages**: Creates both `tool_call` and `tool_result` messages
-4. **Content Structure**: 
-   ```python
-   tool_result_msg.content_json = {
-       'toolName': tool_name,           # CamelCase
-       'toolParams': tool_args,
-       'executionStatus': 'success',
-       'result': exec_result,
-       'executedBy': 'user',
-       'executionTime': timestamp
-   }
-   ```
-5. **Logging**: Creates `ToolInvocationLog` entry
-6. **WebSocket Events**: Emits `tool_status` events + `message_received` events
+### 2) Tool message rendering (UI) — HIGH
 
-#### **Path B: LLM Tool Calls (LLM Streaming)**
-1. **Request Structure**: LangChain tool execution via `agentic_tool_manager.execute_tool()`
-2. **Execution**: `_execute_tool_call()` in streaming context
-3. **Result Messages**: Creates only `tool_result` message (no `tool_call` message)
-4. **Content Structure**:
-   ```python
-   tool_msg.content_json = {
-       'type': 'tool_result',          # Different structure
-       'tool': tool_name,              # snake_case vs CamelCase
-       'input': tool_args,
-       'output': exec_result
-   }
-   ```
-5. **Logging**: Creates `ToolInvocationLog` entry
-6. **WebSocket Events**: Emits `tool_status` events only (no `message_received` for tool_call)
+Symptom
+- UI shows “Unknown Tool” and empty parameters while backend content has `tool_name`, `tool_args`.
 
-#### **Path C: LLM LangChain Tool Calls**
-1. **Request Structure**: LangChain `StructuredTool` wrapper
-2. **Execution**: `agentic_tool_manager.execute_tool()` → returns result/error dict
-3. **Result Messages**: **NO DATABASE MESSAGES CREATED** - only returned to LLM
-4. **Content Structure**: Direct result dict (not stored in database)
-5. **Logging**: **NO ToolInvocationLog CREATED**
-6. **WebSocket Events**: **NO EVENTS EMITTED** - invisible to frontend
+Strict solution (no fallbacks)
+- `vue_libs/nonix-chat/components/message-types/ToolMessage.vue` must read only snake_case keys:
+  - `tool_name`, `tool_args`, `execution_status`, `executed_by`, `execution_time`
+- Remove CamelCase lookups entirely.
+- If historical data exists with CamelCase in DB, perform a one-time migration server-side to write snake_case values; do not branch UI.
 
-### **CRITICAL ISSUE #3: Missing Tool Call Messages in LLM Context**
+---
 
-**Problem**: LLM-initiated tool calls don't create `tool_call` messages in the database, only `tool_result` messages.
+### 3) Argument propagation (manual, streaming, LangChain) — MEDIUM
 
-**Impact**:
-- Inconsistent message history
-- Missing audit trail for tool calls
-- Frontend can't distinguish between manual and LLM tool executions
-- Tool call arguments not preserved in chat history
+Requirement
+- All paths must persist and emit identical content shapes.
 
-### **CRITICAL ISSUE #4: Invisible LangChain Tool Executions**
+Contract
+- Persisted `tool_call`/`tool_result` content_json must include:
+  - `tool_name: string`
+  - `tool_args: object`
+  - `execution_status: 'success'|'error'|'processing'|'completed'`
+  - `executed_by: 'user'|'llm'`
+  - `execution_time: ISO-8601 datetime`
+  - `execution_path: 'manual'|'streaming'|'langchain'`
 
-**Problem**: When LLM uses LangChain tools directly:
-- No database records created
-- No WebSocket events emitted  
-- No logging of tool invocations
-- Completely invisible to frontend and audit logs
+Code to verify
+- `faster_backend/nonix_web_agentic/services/chat/message_handlers.py`
+- `faster_backend/nonix_web_agentic/services/chat/mixins/chat_message_mixin.py`
 
-**Impact**:
-- Tool executions not visible in chat UI
-- No audit trail for LLM tool usage
-- Inconsistent state between frontend and backend
-- Missing tool execution history
+---
 
-### **CRITICAL ISSUE #5: Inconsistent Content Structures**
+### 4) WebSocket contracts — MEDIUM
 
-| Path | Content Structure | Field Names |
-|------|------------------|-------------|
-| Manual | `{'toolName': '...', 'toolParams': {...}}` | CamelCase |
-| LLM Streaming | `{'type': 'tool_result', 'tool': '...', 'input': {...}}` | Mixed |
-| LangChain | Direct result dict | N/A |
+Rooms
+- `chat/{session_id}/{history_id}`
 
-### **CRITICAL ISSUE #6: Missing WebSocket Events in LangChain Path**
+Events (must be identical across paths)
+- `message_received`:
+  - `{ message_id, role, message_type, content, status, timestamp }` (snake_case fields; `content` conforms to contract above for tool messages)
+- `tool_status`:
+  - `{ tool_name, status, args?, result?, timestamp }` (args/result snake_case; include `args` on started)
 
-**Problem**: LangChain tool executions don't emit any WebSocket events, making them invisible to the frontend.
+UI
+- `ChatMessageContainer.vue` handlers consume these shapes and upsert/messages without any key translation.
 
-**Current Flow**:
-```python
-# LangChain tool wrapper
-async def wrapped_tool(**kwargs):
-    exec_result = await self.execute_tool(persona_id, tool_name, kwargs)
-    return exec_result.get('result')  # Direct return, no events
-```
+---
 
-**Should Emit**:
-```python
-await chat_service.emit_tool_event(session_id, history_id, tool_name, 'started', args=kwargs)
-# ... execute ...
-await chat_service.emit_tool_event(session_id, history_id, tool_name, 'completed', result=exec_result)
-```
+### Next Actions (ordered)
+1) Implement strict date utils and integrate into `QueryProcessor` and schema validators.
+2) Update `ToolMessage.vue` to snake_case only; remove all CamelCase reads.
+3) Re-verify argument propagation and WebSocket event payloads match the contracts everywhere.
+4) End-to-end test (manual + LLM paths): dates normalized; UI shows correct tool name/params live without reload.
 
-### **REQUIRED FIXES**
+### References
+- `nonix_web_db/crud/query_processor.py` (date coercion)
+- `nonix_web_db/models.py` (serialization)
+- `nonix_web_music_artist/models/album.py`, `services/album/album_schemas.py` (date fields)
+- `vue_libs/nonix-chat/components/message-types/ToolMessage.vue` (UI renderer)
 
-#### **Fix #1: Unify Message Creation Across All Paths**
-All tool executions should create both `tool_call` and `tool_result` messages with consistent structure.
 
-#### **Fix #2: Standardize Content Structure**
-Use consistent field naming and structure across all paths:
-```python
-{
-    'tool_name': tool_name,        # snake_case
-    'tool_args': tool_args,
-    'execution_status': 'success',
-    'result': exec_result,
-    'executed_by': 'user'|'llm',
-    'execution_time': timestamp,
-    'execution_path': 'manual'|'streaming'|'langchain'
-}
-```
-
-#### **Fix #3: Ensure All Paths Emit WebSocket Events**
-All tool executions should emit consistent WebSocket events visible to frontend.
-
-#### **Fix #4: Fix Frontend Dummy ID Issue**
-Remove dummy message creation and rely on WebSocket events for real-time updates.
-
-#### **Fix #5: Add ToolInvocationLog for LangChain Tools**
-All tool executions should be logged consistently.
-
-### **CRITICAL ISSUE #7: Missing Status Field in ChatMessage Creations** 🆕 **BLOCKING**
-
-**Problem**: Multiple `ChatMessage` objects are created without the required `status` field, causing database constraint violations.
-
-**Error**: `sqlite3.IntegrityError: NOT NULL constraint failed: chat_messages.status`
-
-**Root Cause**: The `ChatMessage.status` field is defined as `nullable=False` in the model, but several code paths create messages without specifying this field.
-
-**Affected Locations**:
-1. `ToolCallMessageHandler` - tool_result message creation
-2. `chat_message_mixin.py` - tool_result message in `_execute_tool_call`
-3. `chat_message_mixin.py` - tool_result message in LangChain streaming handler
-4. `chat_session_mixin.py` - system message creation (2 locations)
-
-**Impact**: Tool executions fail with database errors, preventing any tool functionality from working.
-
-### **CRITICAL ISSUE #8: Content Structure Inconsistency** ✅ **RESOLVED**
-**Status**: Fixed - restarted Python process, snake_case format now active
-
-### **CRITICAL ISSUE #9: Empty Tool Arguments** 🔍 **DEBUGGING IN PROGRESS**
-
-**Problem**: Tool arguments are empty despite being sent correctly from frontend.
-
-**Debugging Added**:
-- Frontend: Logs `formData`, extracted `args`, and content being sent
-- Backend ToolCallMessageHandler: Logs received `content`, extracted `tool_name` and `tool_args`
-- Backend execute_tool: Logs received args, final effective_args, and tool execution details
-
-**Next Steps**:
-1. Run tool execution and check logs to see where arguments are lost
-2. Verify frontend is sending correct structure
-3. Check if auto-args are overriding user args
-
-### **CRITICAL ISSUE #10: WebSocket Live Updates Not Working** 🔍 **DEBUGGING IN PROGRESS**
-
-**Problem**: UI doesn't update live - requires page reload to see tool messages.
-
-**Debugging Added**:
-- Backend: Logs WebSocket event emission with room and event details
-- Frontend: Logs WebSocket event reception and UI updates
-- Frontend: Logs message addition to UI
-
-**Next Steps**:
-1. Check browser console for WebSocket event logs
-2. Verify WebSocket connection is established
-3. Check if events are being received but not processed
-4. Verify room joining is working correctly
-
-### **CURRENT STATUS** ⚠️ **PARTIALLY WORKING**
-- **Manual tool calls**: ✅ Working - database fixed, messages created
-- **LLM streaming tool calls**: ✅ Working - database fixed, messages created
-- **LLM LangChain tool calls**: ✅ Working - database fixed, messages created
-- **Argument passing**: ❌ Broken - tools receive empty args despite frontend sending them
-- **Live UI updates**: ❌ Broken - WebSocket events not triggering UI updates
-
-### **REQUIRED FIXES** 🛠️
-
-#### **Fix #7: Add Missing Status Fields** ✅ **COMPLETED**
-Added `status='complete'` to all ChatMessage creations:
-- ToolCallMessageHandler tool_result message
-- _execute_tool_call tool_result message
-- LangChain streaming tool_result message
-- System message creations (2 locations)
-
-#### **Fix #8: Verify Content Structure Updates** 🔄 **IN PROGRESS**
-Need to:
-1. Restart Python process to clear any cached code
-2. Verify snake_case format is actually being used
-3. Test that tool executions work without database errors
-
-### **URGENCY**
-**CRITICAL** - Tool execution completely broken due to database constraint violations. Must restart Python process and verify fixes are active.
