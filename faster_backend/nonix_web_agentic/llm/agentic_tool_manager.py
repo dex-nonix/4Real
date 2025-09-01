@@ -68,12 +68,6 @@ class AgenticToolManager:
 
     async def build_persona_tool_map(self, persona_id: int) -> Dict[str, Callable[..., Any]]:
         async with AsyncSessionLocal() as db_session:
-            persona_result = await db_session.execute(
-                select(Persona).where(Persona.id == persona_id)
-            )
-            persona = persona_result.scalar_one_or_none()
-            artist_id = getattr(persona, 'artist_id', None) if persona else None
-
             tools: Dict[str, Callable[..., Any]] = {}
             patterns_result = await db_session.execute(
                 select(PersonaToolAccess).where(
@@ -91,13 +85,6 @@ class AgenticToolManager:
                     continue
                 if not callable(func):
                     continue
-
-                if artist_id is not None:
-                    sig = inspect.signature(func)
-                    params = list(sig.parameters.values())
-                    if params and params[0].name == 'artist_id':
-                        tools[qname] = llm_tool_wrapper(func, artist_id)
-                        continue
 
                 tools[qname] = func
 
@@ -133,8 +120,14 @@ class AgenticToolManager:
                     sig = inspect.signature(func)
                     params = []
 
+                    # Build auto-args map (dynamic, by name)
+                    auto_args: Dict[str, Any] = {}
+                    if artist_id is not None:
+                        auto_args['artist_id'] = artist_id
+
                     for param_name, param in sig.parameters.items():
-                        if artist_id is not None and param_name == 'artist_id':
+                        # Hide any parameter that will be auto-injected
+                        if param_name in auto_args:
                             continue
 
                         param_info = {
@@ -176,11 +169,35 @@ class AgenticToolManager:
         if not callable(func):
             return {'status': 'error', 'error': 'Tool not allowed or not found'}
 
+        # Build auto-args map (dynamic, by name) for this persona
+        auto_args: Dict[str, Any] = {}
+        async with AsyncSessionLocal() as db_session:
+            persona_result = await db_session.execute(
+                select(Persona).where(Persona.id == persona_id)
+            )
+            persona = persona_result.scalar_one_or_none()
+            artist_id = getattr(persona, 'artist_id', None) if persona else None
+            if artist_id is not None:
+                auto_args['artist_id'] = artist_id
+
+        # Only inject auto-args that the function actually accepts
+        try:
+            sig = inspect.signature(func)
+            accepted_param_names = set(sig.parameters.keys())
+        except Exception:
+            accepted_param_names = set()
+
+        filtered_auto_args = {k: v for k, v in auto_args.items() if k in accepted_param_names}
+
+        # System-provided values take precedence over user-provided ones
+        effective_args = dict(args or {})
+        effective_args.update(filtered_auto_args)
+
         try:
             if inspect.iscoroutinefunction(func):
-                result = await func(**(args or {})) if args else await func()
+                result = await func(**effective_args) if effective_args else await func()
             else:
-                result = func(**(args or {})) if args else func()
+                result = func(**effective_args) if effective_args else func()
             return {'status': 'success', 'result': result}
         except Exception as exc:  # noqa: BLE001
             return {'status': 'error', 'error': str(exc)}
