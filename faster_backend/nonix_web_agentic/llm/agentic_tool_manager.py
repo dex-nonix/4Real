@@ -269,8 +269,10 @@ class AgenticToolManager:
                     })
 
                     # Route through manager execute path to preserve auto-injection
+                    current_tool_name = tool_name
+                    current_persona_id = persona_id
                     async def wrapped_tool(**kwargs):
-                        exec_result = await self.execute_tool(persona_id, tool_name, kwargs or {})
+                        exec_result = await self.execute_tool(current_persona_id, current_tool_name, kwargs or {})
                         if exec_result.get('status') == 'success':
                             return exec_result.get('result')
                         return {'success': False, 'error': exec_result.get('error')}
@@ -288,8 +290,10 @@ class AgenticToolManager:
                     self._logger.warning(f"🔧 Failed to create Pydantic schema for tool '{tool_name}': {e}",
                                          exc_info=True)
                     # Fallback: create tool without schema, still route through execute path
+                    current_tool_name = tool_name
+                    current_persona_id = persona_id
                     async def wrapped_tool(**kwargs):
-                        exec_result = await self.execute_tool(persona_id, tool_name, kwargs or {})
+                        exec_result = await self.execute_tool(current_persona_id, current_tool_name, kwargs or {})
                         if exec_result.get('status') == 'success':
                             return exec_result.get('result')
                         return {'success': False, 'error': exec_result.get('error')}
@@ -301,8 +305,10 @@ class AgenticToolManager:
                     )
             else:
                 # Fallback: no schema; still route through execute path
+                current_tool_name = tool_name
+                current_persona_id = persona_id
                 async def wrapped_tool(**kwargs):
-                    exec_result = await self.execute_tool(persona_id, tool_name, kwargs or {})
+                    exec_result = await self.execute_tool(current_persona_id, current_tool_name, kwargs or {})
                     if exec_result.get('status') == 'success':
                         return exec_result.get('result')
                     return {'success': False, 'error': exec_result.get('error')}

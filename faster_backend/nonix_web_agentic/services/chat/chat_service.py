@@ -216,7 +216,10 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
                             yield StreamingChunk(
                                 content="",
                                 chunk_type="tool_start",
-                                metadata={"tool_name": message.status.get("tool_name", "unknown")}
+                                metadata={
+                                    "tool_name": message.status.get("tool_name", "unknown"),
+                                    "args": message.status.get("input", {})
+                                }
                             )
 
                     elif mode == "update":
@@ -230,7 +233,10 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
                             yield StreamingChunk(
                                 content="",
                                 chunk_type="tool_end",
-                                metadata={"tool_name": message.status.get("tool_name", "unknown")}
+                                metadata={
+                                    "tool_name": message.status.get("tool_name", "unknown"),
+                                    "result": message.get_status("output")
+                                }
                             )
 
             else:
