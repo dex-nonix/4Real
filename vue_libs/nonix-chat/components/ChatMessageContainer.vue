@@ -8,7 +8,6 @@ import Menu from 'primevue/menu';
 import Badge from 'primevue/badge';
 import ErrorDialog from './ErrorDialog.vue';
 import chatMessageTypeManager from './ChatMessageTypeManager.js';
-import TextMessage from './message-types/TextMessage.vue';
 import SystemMessage from './message-types/SystemMessage.vue';
 import ToolMessage from './message-types/ToolMessage.vue';
 import UserMessage from './message-types/UserMessage.vue';
@@ -16,6 +15,8 @@ import { IncomingMessageContainer, OutgoingMessageContainer } from './message-ty
 import StreamingMessage from './message-types/StreamingMessage.vue';
 import AvailableToolsDialog from './AvailableToolsDialog.vue';
 import ToolExecutionDialog from './ToolExecutionDialog.vue';
+import TurnHeader from './turns/TurnHeader.vue';
+import TurnTimeline from './turns/TurnTimeline.vue';
 
 const props = defineProps({
   sessionId: { type: [String, Number, null], required: true },
@@ -60,6 +61,19 @@ const messages = ref([]);
 const inputText = ref('');
 const loading = ref(false);
 
+// NEW: Turns state
+const turnsById = ref(new Map()); // turn_id -> { items: Map(seq->item), tools: Map(tool_run_id->{tool_name,status}) }
+const orderedTurns = computed(() => {
+  const arr = [];
+  for (const [turnId, obj] of turnsById.value.entries()) {
+    const seqs = Array.from(obj.items.keys()).sort((a, b) => a - b);
+    const firstSeq = seqs[0] || 0;
+    const lastSeq = seqs[seqs.length - 1] || firstSeq;
+    arr.push({ turnId, firstSeq, lastSeq, obj });
+  }
+  return arr.sort((a, b) => a.firstSeq - b.firstSeq);
+});
+
 // WebSocket Real-time State
 const llmStatus = ref(null);
 const toolStatus = ref(null);
@@ -85,41 +99,26 @@ const wsEventHandlers = ref(new Map()); // Track registered handlers to prevent 
 
 // Helper function to register WebSocket event handlers without duplicates
 const registerWsHandler = (event, handler) => {
-  // Remove existing handler for this event if it exists
   if (wsEventHandlers.value.has(event)) {
     const existingUnsub = wsEventHandlers.value.get(event);
     try { typeof existingUnsub === 'function' && existingUnsub(); } catch (_) {}
   }
-
-  // Register new handler
   const unsub = chatService.onWebSocketEvent(event, handler);
   wsEventHandlers.value.set(event, unsub);
   wsUnsubs.value.push(unsub);
-
-  console.log(`🔌 Registered handler for event: ${event}`);
   return unsub;
 };
 
 const cleanupWsListeners = () => {
   try {
-    // Clean up all registered handlers
     if (wsEventHandlers.value.size > 0) {
-      wsEventHandlers.value.forEach((unsub, event) => {
-        try {
-          typeof unsub === 'function' && unsub();
-          console.log(`🔌 Cleaned up handler for event: ${event}`);
-        } catch (e) {
-          console.warn(`Failed to cleanup handler for ${event}:`, e);
-        }
+      wsEventHandlers.value.forEach((unsub) => {
+        try { typeof unsub === 'function' && unsub(); } catch (e) { }
       });
       wsEventHandlers.value.clear();
     }
-
-    // Clean up unsubscribe functions
     if (Array.isArray(wsUnsubs.value)) {
-      wsUnsubs.value.forEach(unsub => {
-        try { typeof unsub === 'function' && unsub(); } catch (_) {}
-      });
+      wsUnsubs.value.forEach(unsub => { try { typeof unsub === 'function' && unsub(); } catch (_) {} });
     }
   } finally {
     wsUnsubs.value = [];
@@ -144,88 +143,100 @@ onUnmounted(() => {
   cleanupWsListeners();
 });
 
+// Helpers to upsert into turns
+const ensureTurn = (turnId) => {
+  if (!turnId) return null;
+  if (!turnsById.value.has(turnId)) {
+    turnsById.value.set(turnId, { items: new Map(), tools: new Map() });
+  }
+  return turnsById.value.get(turnId);
+};
+
+const upsertTurnItem = (payload) => {
+  const { turn_id, seq } = payload;
+  if (!turn_id || !seq) return;
+  const turn = ensureTurn(turn_id);
+  if (!turn) return;
+  const item = Object.assign({}, payload);
+  turn.items.set(Number(seq), item);
+};
+
+const upsertToolRun = (payload) => {
+  const { turn_id, tool_run_id, tool_name, status } = payload;
+  if (!turn_id || !tool_run_id) return;
+  const turn = ensureTurn(turn_id);
+  if (!turn) return;
+  const existing = turn.tools.get(tool_run_id) || {};
+  turn.tools.set(tool_run_id, Object.assign({}, existing, { tool_name, status }));
+};
+
 // WebSocket Event Handlers
 const handleLLMStatus = (data) => {
-  console.log('🎯 LLM Status event received:', data);
-  const { stage, message, timestamp } = data;
-  console.log('LLM Status:', stage, message, timestamp);
-  // Update UI state based on LLM stage
-  updateLLMStatus(stage, message);
+  llmStatus.value = { stage: data.stage, message: data.message, timestamp: data.timestamp };
 };
 
 const handleToolStatus = (data) => {
-  const { tool_name, status, result, error, timestamp } = data;
-  // Update UI state based on LLM stage
-  updateToolStatus(tool_name, status, result, error);
+  toolStatus.value = { toolName: data.tool_name, status: data.status, result: data.result, error: data.error, timestamp: data.timestamp };
+  if (data.turn_id && data.tool_run_id) {
+    upsertToolRun({ turn_id: data.turn_id, tool_run_id: data.tool_run_id, tool_name: data.tool_name, status: data.status });
+  }
 };
 
 const handleMessageReceived = (data) => {
-  // Our strict structure: message_received events ALWAYS have these exact fields
-  // Some fields may be null for tool_call messages (execution_status, result)
-  const message_id = data.message_id;
-  const role = data.role;
-  const timestamp = data.timestamp;
-  const incomingType = data.message_type;
-  const status = data.status;
-  const tool_name = data.tool_name;
-  const tool_args = data.tool_args;
-  const execution_status = data.execution_status;
-  const result = data.result;
-  const executed_by = data.executed_by;
-  const execution_time = data.execution_time;
-  const execution_path = data.execution_path;
+  const incoming = Object.assign({}, data);
+  const derivedType = incoming.message_type
+    || (incoming.role === 'assistant' ? 'assistant'
+        : incoming.role === 'user' ? 'user'
+        : incoming.role === 'system' ? 'system'
+        : 'tool_result');
+  incoming.message_type = derivedType;
 
-  // Upsert incoming message into messages array to avoid duplicates
   try {
-    const derivedType = incomingType
-      || (role === 'assistant' ? 'assistant'
-          : role === 'user' ? 'user'
-          : role === 'system' ? 'system'
-          : 'tool_result');
-
-    // For WebSocket message_received, we use top-level fields only for tools
-    const content_json = (derivedType === 'assistant' || derivedType === 'user' || derivedType === 'system') ? (data.content_json || null) : null;
-
-    const incoming = {
-      id: message_id,
-      role: role,
+    const idx = messages.value.findIndex(m => String(m.id) === String(incoming.message_id));
+    const msgObj = {
+      id: incoming.message_id,
+      role: incoming.role,
       message_type: derivedType,
-      content_json: content_json,
-      status: status || 'complete',
-      created_at: timestamp || new Date().toISOString()
+      content_json: incoming.content_json || null,
+      status: incoming.status || 'complete',
+      created_at: incoming.timestamp || new Date().toISOString(),
+      tool_name: incoming.tool_name,
+      tool_args: incoming.tool_args,
+      execution_status: incoming.execution_status,
+      result: incoming.result,
+      executed_by: incoming.executed_by,
+      execution_time: incoming.execution_time,
+      execution_path: incoming.execution_path,
+      seq: incoming.seq,
+      turn_id: incoming.turn_id,
+      tool_run_id: incoming.tool_run_id,
+      run_id: incoming.run_id
     };
+    if (idx !== -1) messages.value[idx] = Object.assign({}, messages.value[idx], msgObj);
+    else messages.value.push(msgObj);
+  } catch (_) {}
 
-    // Tools: store only top-level fields, do not duplicate into content_json
-    if (derivedType === 'tool_call' || derivedType === 'tool_result') {
-      incoming.tool_name = tool_name;
-      incoming.tool_args = tool_args;
-      incoming.execution_status = execution_status;
-      incoming.result = result;
-      incoming.executed_by = executed_by;
-      incoming.execution_time = execution_time;
-      incoming.execution_path = execution_path;
-    }
+  if (incoming.turn_id && incoming.seq) {
+    upsertTurnItem({
+      id: incoming.message_id,
+      role: incoming.role,
+      message_type: incoming.message_type,
+      seq: incoming.seq,
+      turn_id: incoming.turn_id,
+      tool_run_id: incoming.tool_run_id,
+      tool_name: incoming.tool_name,
+      tool_args: incoming.tool_args,
+      execution_status: incoming.execution_status,
+      result: incoming.result,
+      executed_by: incoming.executed_by,
+      execution_time: incoming.execution_time,
+      execution_path: incoming.execution_path,
+      created_at: incoming.timestamp
+    });
+  }
 
-    // If this is the user's own message, replace the latest optimistic 'sending' entry
-    if (role === 'user') {
-      for (let i = messages.value.length - 1; i >= 0; i--) {
-        const m = messages.value[i];
-        if (m && m.role === 'user' && m.status === 'sending') {
-          messages.value[i] = Object.assign({}, m, incoming);
-          return;
-        }
-      }
-    }
-
-    const idx = messages.value.findIndex(m => String(m.id) === String(message_id));
-    if (idx !== -1) {
-      // Update existing message (replace temporary optimistic message)
-      messages.value[idx] = Object.assign({}, messages.value[idx], incoming);
-    } else {
-      messages.value.push(incoming);
-    }
-  } catch (e) {
-    console.error('Failed to upsert incoming message:', e);
+  if (incoming.tool_run_id && incoming.turn_id) {
+    upsertToolRun({ turn_id: incoming.turn_id, tool_run_id: incoming.tool_run_id, tool_name: incoming.tool_name, status: incoming.execution_status || incoming.status });
   }
 };
 
@@ -263,12 +274,15 @@ const handleAssistantStarted = (data) => {
   // Track streaming state
   streamingMessages.value.set(message_id, { content: '', status: 'streaming', metadata });
   streamingStatus.value.set(message_id, 'streaming');
+  if (metadata && metadata.turn_id && metadata.seq) {
+    upsertTurnItem({ id: message_id, role: 'assistant', message_type: 'assistant', seq: metadata.seq, turn_id: metadata.turn_id, created_at: new Date().toISOString(), status: 'streaming' });
+  }
 };
 
 const handleAssistantChunk = (data) => {
   console.log('🎯 Assistant Message Chunk event:', data);
   // Find existing assistant message and append chunk
-  const { message_id, chunk, metadata, is_final } = data;
+  const { message_id, chunk, metadata } = data;
   console.log('Looking for message with ID:', message_id, 'in', messages.value.length, 'messages');
   
   const messageIndex = messages.value.findIndex(m => m.id === message_id);
@@ -301,11 +315,14 @@ const handleAssistantChunk = (data) => {
     streamingMessages.value.set(message_id, { content: chunk || '', status: 'streaming', metadata });
     streamingStatus.value.set(message_id, 'streaming');
   }
+  if (metadata && metadata.turn_id && metadata.seq) {
+    upsertTurnItem({ id: message_id, role: 'assistant', message_type: 'assistant', seq: metadata.seq, turn_id: metadata.turn_id, content_json: { text: streamingData.content }, status: 'streaming', created_at: new Date().toISOString() });
+  }
 };
 
 const handleAssistantComplete = (data) => {
   console.log('🎯 Assistant Message Complete event:', data);
-  const { message_id, status, metadata } = data;
+  const { message_id, metadata } = data;
   const messageIndex = messages.value.findIndex(m => m.id === message_id);
   if (messageIndex !== -1) {
     messages.value[messageIndex].status = 'complete';
@@ -330,6 +347,9 @@ const handleAssistantComplete = (data) => {
     streamingData.status = 'complete';
     streamingMessages.value.set(message_id, streamingData);
   }
+  if (metadata && metadata.turn_id && metadata.seq) {
+    upsertTurnItem({ id: message_id, role: 'assistant', message_type: 'assistant', seq: metadata.seq, turn_id: metadata.turn_id, content_json: { text: finalContent }, status: 'complete', created_at: new Date().toISOString() });
+  }
 };
 
 const handleStreamingError = (data) => {
@@ -348,69 +368,33 @@ const handleStreamingError = (data) => {
   streamingMessages.value.set(message_id, streamingData);
 };
 
-// State Update Functions
-const updateLLMStatus = (stage, message) => {
-  llmStatus.value = { stage, message, timestamp: new Date().toISOString() };
-};
-
-const updateToolStatus = (toolName, status, result, error) => {
-  toolStatus.value = { toolName, status, result, error, timestamp: new Date().toISOString() };
-};
-
-const addMessageToChat = (messageData) => {
-  // Add real-time message to chat
-  realTimeMessages.value.push(messageData);
-};
-
-const updateMessageStatus = (messageId, status) => {
-  // Update message status in real-time
-  const messageIndex = realTimeMessages.value.findIndex(m => m.message_id === messageId);
-  if (messageIndex !== -1) {
-    realTimeMessages.value[messageIndex].status = status;
-  }
-};
+// State Update Functions (inline in handlers, helpers not needed) — removed
+const updateMessageStatus = (messageId, status) => { const messageIndex = realTimeMessages.value.findIndex(m => m.message_id === messageId); if (messageIndex !== -1) { realTimeMessages.value[messageIndex].status = status; } };
 
 // Watch for session/history changes and rejoin WebSocket rooms
 watch([() => props.selectedSession, () => props.historyId], ([newSession, newHistoryId], [oldSession, oldHistoryId]) => {
-  console.log('Session/History watch triggered:', { newSession, newHistoryId, oldSession, oldHistoryId });
-  
-  // Leave old room if it exists
   if (oldSession && oldHistoryId) {
     const oldRoom = `chat/${oldSession.id}/${oldHistoryId}`;
-    console.log('Leaving old room:', oldRoom);
     chatService.leaveRoom(oldRoom);
     cleanupWsListeners();
   }
-  
-  // Join new room if it exists
   if (newSession && newHistoryId) {
     const newRoom = `chat/${newSession.id}/${newHistoryId}`;
-    console.log('Joining new room:', newRoom);
     chatService.joinRoom(newRoom);
-    
-    console.log('Setting up WebSocket event listeners...');
-    // Register event listeners with duplicate prevention
     registerWsHandler('llm_status', handleLLMStatus);
     registerWsHandler('tool_status', handleToolStatus);
     registerWsHandler('message_received', handleMessageReceived);
     registerWsHandler('message_processed', handleMessageProcessed);
-
-    // Register streaming event listeners
     registerWsHandler('assistant_message_started', handleAssistantStarted);
     registerWsHandler('assistant_message_chunk', handleAssistantChunk);
     registerWsHandler('assistant_message_complete', handleAssistantComplete);
     registerWsHandler('streaming_error', handleStreamingError);
-    console.log('WebSocket event listeners attached successfully');
-  } else {
-    console.log('No session or history ID available for WebSocket setup');
   }
 }, { immediate: true });
 
 // Load messages for specific history
 const loadMessages = async (historyId) => {
-  if (!historyId || !chatService) {
-    return;
-  }
+  if (!historyId || !chatService) return;
   
   try {
     loading.value = true;
@@ -432,6 +416,14 @@ const loadMessages = async (historyId) => {
     
     console.log('Messages loaded successfully:', messages.value.length);
     
+    // Rebuild turnsById from loaded messages
+    turnsById.value.clear();
+    for (const m of messages.value) {
+      if (m.turn_id && m.seq) {
+        upsertTurnItem({ id: m.id, role: m.role, message_type: m.message_type || (m.role === 'assistant' ? 'assistant' : m.role), seq: m.seq, turn_id: m.turn_id, tool_run_id: m.tool_run_id, tool_name: m.tool_name, tool_args: m.tool_args, execution_status: m.execution_status, result: m.result, executed_by: m.executed_by, execution_time: m.execution_time, execution_path: m.execution_path, created_at: m.created_at });
+      }
+    }
+
   } catch (error) {
     console.error('Failed to load messages:', error);
     messages.value = [];
@@ -446,13 +438,7 @@ const loadMessages = async (historyId) => {
 };
 
 // Load messages when historyId changes
-watch(() => props.historyId, async (newHistoryId) => {
-  if (newHistoryId) {
-    await loadMessages(newHistoryId);
-  } else {
-    messages.value = [];
-  }
-}, { immediate: true });
+watch(() => props.historyId, async (newHistoryId) => { if (newHistoryId) await loadMessages(newHistoryId); else messages.value = []; }, { immediate: true });
 
 // React to selectedSession changes
 watch(() => props.selectedSession, (newSession, oldSession) => {
@@ -610,14 +596,14 @@ const executeToolWithForm = async (formData) => {
 
   try {
 
-    const response = await chatService.sendMessage(
-      props.selectedSession.id,           // sessionId
-      props.historyId,                    // historyId as separate parameter
+    await chatService.sendMessage(
+      props.selectedSession.id,
+      props.historyId,
       {
-        message_type: 'tool_call',        // message_type field
-        content: {                        // content wrapper
-          tool: selectedTool.value.name,  // Use the tool name from the selectedTool object
-          args: args                      // Use the extracted form data
+        message_type: 'tool_call',
+        content: {
+          tool: selectedTool.value.name,
+          args: args
         }
       }
     );
@@ -657,11 +643,7 @@ const getMessageComponent = (message) => {
   return chatMessageTypeManager.getMessageType(messageType);
 };
 
-// Check if message has a valid type
-const hasValidMessageType = (message) => {
-  const messageType = message.message_type || (message.role === 'assistant' ? 'assistant' : 'user');
-  return chatMessageTypeManager.hasMessageType(messageType);
-};
+//
 
 // Check if message is currently streaming
 const isMessageStreaming = (messageId) => {
@@ -676,142 +658,25 @@ const getStreamingContent = (messageId) => {
 
 // Computed values
 const hasHistory = computed(() => !!props.historyId);
-const canSendMessage = computed(() => hasHistory.value && inputText.value?.trim());
 
 // Button state management
-const isStreaming = computed(() => {
-  try {
-    if (!streamingStatus.value || !(streamingStatus.value instanceof Map)) {
-      return false;
-    }
-    return Array.from(streamingStatus.value.values()).some(status => status === 'streaming');
-  } catch (error) {
-    console.warn('Error computing isStreaming:', error);
-    return false;
-  }
-});
-
-const hasErrors = computed(() => {
-  try {
-    if (!streamingStatus.value || !(streamingStatus.value instanceof Map)) {
-      return false;
-    }
-    return Array.from(streamingStatus.value.values()).some(status => status === 'error');
-  } catch (error) {
-    console.warn('Error computing hasErrors:', error);
-    return false;
-  }
-});
-
+const isStreaming = computed(() => { try { if (!(streamingStatus.value instanceof Map)) return false; return Array.from(streamingStatus.value.values()).some(status => status === 'streaming'); } catch { return false; } });
+const hasErrors = computed(() => { try { if (!(streamingStatus.value instanceof Map)) return false; return Array.from(streamingStatus.value.values()).some(status => status === 'error'); } catch { return false; } });
 const canRetry = computed(() => hasErrors.value && !isStreaming.value);
 
-const buttonIcon = computed(() => {
-  if (isStreaming.value) return 'pi pi-stop';
-  if (canRetry.value) return 'pi pi-refresh';
-  return 'pi pi-send';
-});
-
-const buttonAction = computed(() => {
-  if (isStreaming.value) return onStop;
-  if (canRetry.value) return onRetry;
-  return onSend;
-});
-
-const buttonLabel = computed(() => {
-  if (isStreaming.value) return 'Stop';
-  if (canRetry.value) return 'Retry';
-  return 'Send';
-});
-
-const buttonSeverity = computed(() => {
-  if (isStreaming.value) return 'danger';
-  if (canRetry.value) return 'warning';
-  return 'primary';
-});
+const buttonIcon = computed(() => { if (isStreaming.value) return 'pi pi-stop'; if (canRetry.value) return 'pi pi-refresh'; return 'pi pi-send'; });
+const buttonAction = computed(() => { if (isStreaming.value) return onStop; if (canRetry.value) return onRetry; return onSend; });
+const buttonLabel = computed(() => { if (isStreaming.value) return 'Stop'; if (canRetry.value) return 'Retry'; return 'Send'; });
+const buttonSeverity = computed(() => { if (isStreaming.value) return 'danger'; if (canRetry.value) return 'warning'; return 'primary'; });
 
 // Computed property for streaming status display
-const showStreamingStatus = computed(() => {
-  try {
-    if (!streamingStatus.value || !(streamingStatus.value instanceof Map)) {
-      return false;
-    }
-    return Array.from(streamingStatus.value.values()).some(status => status === 'streaming');
-  } catch (error) {
-    console.warn('Error computing showStreamingStatus:', error);
-    return false;
-  }
-});
+const showStreamingStatus = computed(() => { try { if (!(streamingStatus.value instanceof Map)) return false; return Array.from(streamingStatus.value.values()).some(status => status === 'streaming'); } catch { return false; } });
 
 // Stop streaming functionality
-const onStop = async () => {
-  if (!props.selectedSession?.id || !chatService) return;
-  
-  try {
-    const streamingMsg = messages.value.find(m => m.role === 'assistant' && m.status === 'streaming');
-    let response;
-    if (streamingMsg && props.historyId) {
-      response = await chatService.cancelMessage(props.selectedSession.id, props.historyId, streamingMsg.id);
-      console.log('Cancel message response', response);
-    } else {
-      return;
-    }
-
-    if (response && response.cancelled) {
-      // Clear streaming status for all messages
-      streamingStatus.value.forEach((status, messageId) => {
-        if (status === 'streaming') {
-          streamingStatus.value.set(messageId, 'complete');
-        }
-      });
-      
-      // Clear streaming messages
-      streamingMessages.value.clear();
-      
-      // Update any streaming messages in the messages array to complete
-      messages.value.forEach(msg => {
-        if (msg.status === 'streaming') {
-          msg.status = 'complete';
-        }
-      });
-      
-      console.log('Streaming cancelled successfully');
-    }
-  } catch (error) {
-    console.error('Failed to cancel streaming:', error);
-  }
-};
+const onStop = async () => { if (!props.selectedSession?.id || !chatService) return; try { const streamingMsg = messages.value.find(m => m.role === 'assistant' && m.status === 'streaming'); let response; if (streamingMsg && props.historyId) response = await chatService.cancelMessage(props.selectedSession.id, props.historyId, streamingMsg.id); else return; if (response && response.cancelled) { streamingStatus.value.forEach((status, messageId) => { if (status === 'streaming') streamingStatus.value.set(messageId, 'complete'); }); streamingMessages.value.clear(); messages.value.forEach(msg => { if (msg.status === 'streaming') { msg.status = 'complete'; } }); } } catch { } };
 
 // Retry functionality
-const onRetry = async () => {
-  if (!props.selectedSession?.id || !chatService) return;
-  
-  try {
-    const response = await chatService.retryLastMessage(props.selectedSession.id);
-    
-    if (response?.status === 'processing') {
-      // Clear error states for all messages
-      streamingStatus.value.forEach((status, messageId) => {
-        if (status === 'error') {
-          streamingStatus.value.set(messageId, 'complete');
-        }
-      });
-      
-      // Clear streaming messages
-      streamingMessages.value.clear();
-      
-      // Clear any error messages from the messages array
-      messages.value.forEach(msg => {
-        if (msg.status === 'error') {
-          msg.status = 'complete';
-        }
-      });
-      
-      console.log('Retry initiated successfully');
-    }
-  } catch (error) {
-    console.error('Failed to retry message:', error);
-  }
-};
+const onRetry = async () => { if (!props.selectedSession?.id || !chatService) return; try { const response = await chatService.retryLastMessage(props.selectedSession.id); if (response?.status === 'processing') { streamingStatus.value.forEach((status, messageId) => { if (status === 'error') streamingStatus.value.set(messageId, 'complete'); }); streamingMessages.value.clear(); messages.value.forEach(msg => { if (msg.status === 'error') { msg.status = 'complete'; } }); } } catch { } };
 
 // Expose methods for parent component
 defineExpose({
@@ -866,7 +731,7 @@ defineExpose({
     
     <!-- Messages Area - Takes remaining space and scrolls -->
     <div class="messages-area">
-      <div v-if="messages.length === 0 && !loading" class="text-center text-color-secondary p-4">
+      <div v-if="orderedTurns.length === 0 && !loading" class="text-center text-color-secondary p-4">
         <i class="pi pi-comments text-4xl mb-2"></i>
         <p>No messages yet. Start a conversation!</p>
       </div>
@@ -876,15 +741,21 @@ defineExpose({
         <p class="mt-2">Loading messages...</p>
       </div>
       
-      <div v-else v-for="message in messages" :key="message.id">
-        <component
-          v-if="hasValidMessageType(message)"
-          :is="message.role === 'user' ? OutgoingMessageContainer : IncomingMessageContainer"
-          :message="message"
-          :component="getMessageComponent(message)"
-          :current-user-id="currentUserId"
-          @delete-message="handleDeleteMessage"
-        />
+      <div v-else>
+        <div v-for="turn in orderedTurns" :key="turn.turnId" class="mb-3">
+          <TurnHeader :turn-id="turn.turnId" :first-seq="turn.firstSeq" :last-seq="turn.lastSeq" :tools-count="turn.obj.tools.size" :status="'in_progress'" />
+          <TurnTimeline :items="Array.from(turn.obj.items.values())" :tools-by-run-id="Object.fromEntries(turn.obj.tools)" >
+            <template #item="{ item }">
+              <component
+                :is="item.role === 'user' ? OutgoingMessageContainer : IncomingMessageContainer"
+                :message="item"
+                :component="getMessageComponent(item)"
+                :current-user-id="currentUserId"
+                @delete-message="handleDeleteMessage"
+              />
+            </template>
+          </TurnTimeline>
+        </div>
       </div>
     </div>
 

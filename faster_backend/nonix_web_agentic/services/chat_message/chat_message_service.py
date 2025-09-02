@@ -16,8 +16,8 @@ class ChatMessageService(GenericCRUDService):
             allowed_fields=['history_id', 'role', 'message_type']
         ),
         sorting=SortingConfig(
-            default_sort='created_at',
-            allowed_fields=['created_at', 'id', 'role']
+            default_sort='seq',
+            allowed_fields=['seq', 'created_at', 'id', 'role']
         ),
         validation=ValidationConfig(
             unique_fields=[]

@@ -16,13 +16,13 @@ const props = defineProps({
 // Declare emits for Vue 3 event handling
 const emit = defineEmits(['deleteMessage']);
 
-// Our strict structure: tool fields are available directly on the message object
-const toolName = computed(() => props.message.tool_name || props.message.content_json?.tool_name || 'Unknown Tool');
-const toolParams = computed(() => props.message.tool_args || props.message.content_json?.tool_args || {});
-const executionStatus = computed(() => props.message.execution_status || props.message.content_json?.execution_status || 'pending');
-const result = computed(() => props.message.result || props.message.content_json?.result || null);
-const executedBy = computed(() => props.message.executed_by || props.message.content_json?.executed_by || 'unknown');
-const executionTime = computed(() => props.message.execution_time || props.message.content_json?.execution_time || null);
+// Our strict structure: tool fields are available directly on the message object (no fallbacks)
+const toolName = computed(() => props.message.tool_name || 'Unknown Tool');
+const toolParams = computed(() => props.message.tool_args || {});
+const executionStatus = computed(() => props.message.execution_status || 'pending');
+const result = computed(() => props.message.result || null);
+const executedBy = computed(() => props.message.executed_by || 'unknown');
+const executionTime = computed(() => props.message.execution_time || null);
 
 // Format parameters compactly
 const formattedParams = computed(() => {
