@@ -47,7 +47,7 @@ class ChatMessageHandler(MessageTypeHandler):
             'message_id': chat_msg.id,
             'role': chat_msg.role,
             'message_type': 'user',
-            'content': chat_msg.content_json,
+            'content_json': chat_msg.content_json,
             'status': chat_msg.status,
             'seq': chat_msg.seq,
             'turn_id': chat_msg.turn_id,

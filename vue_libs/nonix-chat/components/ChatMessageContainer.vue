@@ -198,7 +198,7 @@ const handleMessageReceived = (data) => {
       id: incoming.message_id,
       role: incoming.role,
       message_type: derivedType,
-      content_json: incoming.content_json || null,
+      content_json: (incoming.content_json || incoming.content || null),
       status: incoming.status || 'complete',
       created_at: incoming.timestamp || new Date().toISOString(),
       tool_name: incoming.tool_name,
@@ -232,6 +232,7 @@ const handleMessageReceived = (data) => {
       executed_by: incoming.executed_by,
       execution_time: incoming.execution_time,
       execution_path: incoming.execution_path,
+      content_json: (incoming.content_json || incoming.content || null),
       created_at: incoming.timestamp
     });
   }
