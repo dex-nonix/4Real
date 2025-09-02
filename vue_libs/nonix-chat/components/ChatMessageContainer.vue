@@ -74,6 +74,20 @@ const orderedTurns = computed(() => {
   return arr.sort((a, b) => a.firstSeq - b.firstSeq);
 });
 
+// Compute per-turn status for header
+const computeTurnStatus = (turn) => {
+  try {
+    const items = Array.from(turn.obj.items.values());
+    if (!items.length) return 'complete';
+    const assistants = items.filter(i => i && i.role === 'assistant');
+    if (assistants.some(i => i.status === 'error')) return 'error';
+    if (assistants.length && assistants.every(i => i.status === 'complete')) return 'complete';
+    return 'in_progress';
+  } catch (_) {
+    return 'in_progress';
+  }
+};
+
 // WebSocket Real-time State
 const llmStatus = ref(null);
 const toolStatus = ref(null);
@@ -435,7 +449,7 @@ const loadMessages = async (historyId) => {
     turnsById.value.clear();
     for (const m of messages.value) {
       if (m.turn_id && m.seq) {
-        upsertTurnItem({ id: m.id, role: m.role, message_type: m.message_type || (m.role === 'assistant' ? 'assistant' : m.role), seq: m.seq, turn_id: m.turn_id, tool_run_id: m.tool_run_id, tool_name: m.tool_name, tool_args: m.tool_args, execution_status: m.execution_status, result: m.result, executed_by: m.executed_by, execution_time: m.execution_time, execution_path: m.execution_path, created_at: m.created_at });
+        upsertTurnItem({ id: m.id, role: m.role, message_type: m.message_type || (m.role === 'assistant' ? 'assistant' : m.role), seq: m.seq, turn_id: m.turn_id, status: m.status, content_json: m.content_json, tool_run_id: m.tool_run_id, tool_name: m.tool_name, tool_args: m.tool_args, execution_status: m.execution_status, result: m.result, executed_by: m.executed_by, execution_time: m.execution_time, execution_path: m.execution_path, created_at: m.created_at });
       }
     }
 
@@ -784,7 +798,7 @@ defineExpose({
       
       <div v-else>
         <div v-for="turn in orderedTurns" :key="turn.turnId" class="mb-3">
-          <TurnHeader :turn-id="turn.turnId" :first-seq="turn.firstSeq" :last-seq="turn.lastSeq" :tools-count="turn.obj.tools.size" :status="'in_progress'" />
+          <TurnHeader :turn-id="turn.turnId" :first-seq="turn.firstSeq" :last-seq="turn.lastSeq" :tools-count="turn.obj.tools.size" :status="computeTurnStatus(turn)" />
           <TurnTimeline :items="Array.from(turn.obj.items.values())" :tools-by-run-id="Object.fromEntries(turn.obj.tools)" >
             <template #item="{ item }">
               <component

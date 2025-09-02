@@ -80,6 +80,15 @@ const handleStreamingError = (data) => {
 
 onMounted(() => {
   initFromProps();
+  // If this message is already finalized, render from persisted content immediately
+  if (props.message && props.message.status && props.message.status !== 'streaming') {
+    streamingStatus.value = props.message.status;
+    isTyping.value = false;
+    stopTypingAnimation();
+    const finalText = (props.message?.content_json && props.message.content_json.text) || '';
+    renderMarkdown(finalText);
+    return;
+  }
   if (streamingStatus.value === 'streaming') {
     subscribe();
     startTypingAnimation();
@@ -93,15 +102,15 @@ onUnmounted(() => {
 
 // React to parent status changes (e.g., manual Stop)
 watch(() => props.message.status, (val) => {
-  const next = val || 'streaming'
-  streamingStatus.value = next
+  const next = val || 'streaming';
+  streamingStatus.value = next;
   if (next !== 'streaming') {
-    isTyping.value = false
-    unsubscribe()
-    const finalText = (props.message?.content_json && props.message.content_json.text) || streamingContent.value || ''
-    renderMarkdown(finalText)
+    isTyping.value = false;
+    unsubscribe();
+    const finalText = (props.message?.content_json && props.message.content_json.text) || streamingContent.value || '';
+    renderMarkdown(finalText);
   }
-})
+});
 
 const toggleMenu = (event, message) => {
     selectedMessage.value = message;
@@ -151,8 +160,8 @@ const cancelDelete = () => {
 };
 
 const displayContent = computed(() => {
-  if (streamingStatus.value === 'complete') {
-    return streamingContent.value || 'No content';
+  if (streamingStatus.value !== 'streaming') {
+    return (props.message?.content_json && props.message.content_json.text) || streamingContent.value || '';
   }
   return streamingContent.value || '';
 });
