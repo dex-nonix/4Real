@@ -112,8 +112,8 @@ class ToolCallMessageHandler(MessageTypeHandler):
             'role': tool_call_msg.role,
             'message_type': 'tool_call',
             'status': 'complete',  # Tool call message status
-            'tool_name': tool_call_msg.content_json.get('tool_name'),
-            'tool_args': tool_call_msg.content_json.get('tool_args'),
+            'tool_name': tool_name,
+            'tool_args': tool_args,
             'execution_status': None,  # Not applicable for tool_call
             'result': None,  # Not applicable for tool_call
             'executed_by': tool_call_msg.content_json.get('executed_by'),
@@ -138,18 +138,6 @@ class ToolCallMessageHandler(MessageTypeHandler):
         )
 
         exec_result = await self.agentic_tool_manager.execute_tool(persona.id, tool_name, tool_args)
-
-        # Emit WebSocket event for tool execution completed
-        await chat_service.emit_tool_event(
-            session_id,
-            history_id,
-            tool_name,
-            'completed',
-            result=exec_result,
-            seq=tool_result_msg.seq,
-            turn_id=tool_result_msg.turn_id,
-            tool_run_id=tool_result_msg.tool_run_id
-        )
 
         # Create second async database session for tool result message
         async with AsyncSessionLocal() as db_session:
@@ -197,6 +185,18 @@ class ToolCallMessageHandler(MessageTypeHandler):
             'tool_run_id': tool_result_msg.tool_run_id,
             'timestamp': tool_result_msg.created_at.isoformat()
         })
+
+        # Emit WebSocket event for tool execution completed (after result message is persisted)
+        await chat_service.emit_tool_event(
+            session_id,
+            history_id,
+            tool_name,
+            'completed',
+            result=exec_result,
+            seq=tool_result_msg.seq,
+            turn_id=tool_result_msg.turn_id,
+            tool_run_id=tool_result_msg.tool_run_id
+        )
 
         return {
             'tool_call_message_id': tool_call_msg.id,

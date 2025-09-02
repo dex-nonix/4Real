@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, inject, watch } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, inject, watch } from 'vue';
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 import IconField from 'primevue/iconfield';
@@ -62,10 +62,10 @@ const inputText = ref('');
 const loading = ref(false);
 
 // NEW: Turns state
-const turnsById = ref(new Map()); // turn_id -> { items: Map(seq->item), tools: Map(tool_run_id->{tool_name,status}) }
+const turnsById = reactive(new Map()); // turn_id -> { items: Map(seq->item), tools: Map(tool_run_id->{tool_name,status}) }
 const orderedTurns = computed(() => {
   const arr = [];
-  for (const [turnId, obj] of turnsById.value.entries()) {
+  for (const [turnId, obj] of turnsById.entries()) {
     const seqs = Array.from(obj.items.keys()).sort((a, b) => a - b);
     const firstSeq = seqs[0] || 0;
     const lastSeq = seqs[seqs.length - 1] || firstSeq;
@@ -94,8 +94,8 @@ const toolStatus = ref(null);
 const realTimeMessages = ref([]);
 
 // NEW: Streaming message state management
-const streamingMessages = ref(new Map()); // message_id -> { content, status, metadata }
-const streamingStatus = ref(new Map());   // message_id -> 'streaming' | 'complete' | 'error'
+const streamingMessages = reactive(new Map()); // message_id -> { content, status, metadata }
+const streamingStatus = reactive(new Map());   // message_id -> 'streaming' | 'complete' | 'error'
 
 // Session-specific input text storage
 const sessionInputTexts = ref(new Map());
@@ -161,10 +161,10 @@ onUnmounted(() => {
 // Helpers to upsert into turns
 const ensureTurn = (turnId) => {
   if (!turnId) return null;
-  if (!turnsById.value.has(turnId)) {
-    turnsById.value.set(turnId, { items: new Map(), tools: new Map() });
+  if (!turnsById.has(turnId)) {
+    turnsById.set(turnId, { items: new Map(), tools: new Map() });
   }
-  return turnsById.value.get(turnId);
+  return turnsById.get(turnId);
 };
 
 const upsertTurnItem = (payload) => {
@@ -297,8 +297,8 @@ const handleAssistantStarted = (data) => {
   console.log('Added streaming message to UI. Total messages:', messages.value.length);
   
   // Track streaming state
-  streamingMessages.value.set(message_id, { content: '', status: 'streaming', metadata });
-  streamingStatus.value.set(message_id, 'streaming');
+  streamingMessages.set(message_id, { content: '', status: 'streaming', metadata });
+  streamingStatus.set(message_id, 'streaming');
   if (metadata && metadata.turn_id && metadata.seq) {
     upsertTurnItem({ id: message_id, role: 'assistant', message_type: 'assistant', seq: metadata.seq, turn_id: metadata.turn_id, created_at: new Date().toISOString(), status: 'streaming' });
   }
@@ -321,10 +321,10 @@ const handleAssistantChunk = (data) => {
     messages.value[messageIndex].content_json = { text: newText };
     
     // Update streaming state
-    const streamingData = streamingMessages.value.get(message_id);
+    const streamingData = streamingMessages.get(message_id);
     if (streamingData) {
       streamingData.content = newText;
-      streamingMessages.value.set(message_id, streamingData);
+      streamingMessages.set(message_id, streamingData);
     }
   } else {
     // If start was missed, create the assistant message now
@@ -337,11 +337,11 @@ const handleAssistantChunk = (data) => {
       created_at: new Date().toISOString()
     };
     messages.value.push(assistantMessage);
-    streamingMessages.value.set(message_id, { content: chunk || '', status: 'streaming', metadata });
-    streamingStatus.value.set(message_id, 'streaming');
+    streamingMessages.set(message_id, { content: chunk || '', status: 'streaming', metadata });
+    streamingStatus.set(message_id, 'streaming');
   }
   if (metadata && metadata.turn_id && metadata.seq) {
-    const sd = streamingMessages.value.get(message_id);
+    const sd = streamingMessages.get(message_id);
     const text = sd && sd.content ? sd.content : (chunk || '');
     upsertTurnItem({ id: message_id, role: 'assistant', message_type: 'assistant', seq: metadata.seq, turn_id: metadata.turn_id, content_json: { text }, status: 'streaming', created_at: new Date().toISOString() });
   }
@@ -355,7 +355,7 @@ const handleAssistantComplete = (data) => {
     messages.value[messageIndex].status = 'complete';
   } else {
     // If no prior start/chunk, create a complete assistant message now
-    const finalContent = (streamingMessages.value.get(message_id)?.content) || '';
+    const finalContent = (streamingMessages.get(message_id)?.content) || '';
     const assistantMessage = {
       id: message_id,
       role: 'assistant',
@@ -368,14 +368,14 @@ const handleAssistantComplete = (data) => {
   }
   
   // Update streaming state
-  streamingStatus.value.set(message_id, 'complete');
-  const streamingData = streamingMessages.value.get(message_id);
+  streamingStatus.set(message_id, 'complete');
+  const streamingData = streamingMessages.get(message_id);
   if (streamingData) {
     streamingData.status = 'complete';
-    streamingMessages.value.set(message_id, streamingData);
+    streamingMessages.set(message_id, streamingData);
   }
   if (metadata && metadata.turn_id && metadata.seq) {
-    const sd = streamingMessages.value.get(message_id);
+    const sd = streamingMessages.get(message_id);
     const finalText = (sd && sd.content) ? sd.content : '';
     upsertTurnItem({ id: message_id, role: 'assistant', message_type: 'assistant', seq: metadata.seq, turn_id: metadata.turn_id, content_json: { text: finalText }, status: 'complete', created_at: new Date().toISOString() });
   }
@@ -391,10 +391,10 @@ const handleStreamingError = (data) => {
     messages.value[messageIndex].status = 'error';
   }
   // Update streaming state
-  streamingStatus.value.set(message_id, 'error');
-  const streamingData = streamingMessages.value.get(message_id) || {};
+  streamingStatus.set(message_id, 'error');
+  const streamingData = streamingMessages.get(message_id) || {};
   streamingData.status = 'error';
-  streamingMessages.value.set(message_id, streamingData);
+  streamingMessages.set(message_id, streamingData);
 };
 
 // State Update Functions (inline in handlers, helpers not needed) — removed
@@ -446,7 +446,7 @@ const loadMessages = async (historyId) => {
     console.log('Messages loaded successfully:', messages.value.length);
     
     // Rebuild turnsById from loaded messages
-    turnsById.value.clear();
+    turnsById.clear();
     for (const m of messages.value) {
       if (m.turn_id && m.seq) {
         upsertTurnItem({ id: m.id, role: m.role, message_type: m.message_type || (m.role === 'assistant' ? 'assistant' : m.role), seq: m.seq, turn_id: m.turn_id, status: m.status, content_json: m.content_json, tool_run_id: m.tool_run_id, tool_name: m.tool_name, tool_args: m.tool_args, execution_status: m.execution_status, result: m.result, executed_by: m.executed_by, execution_time: m.execution_time, execution_path: m.execution_path, created_at: m.created_at });
@@ -495,14 +495,14 @@ const onSend = async () => {
   
   try {
     // Clear error states when sending new message
-    streamingStatus.value.forEach((status, messageId) => {
+    streamingStatus.forEach((status, messageId) => {
       if (status === 'error') {
-        streamingStatus.value.set(messageId, 'complete');
+        streamingStatus.set(messageId, 'complete');
       }
     });
     
     // Clear streaming messages
-    streamingMessages.value.clear();
+    streamingMessages.clear();
     
     // Send proper message payload (type=text per base chat message)
     const messageData = {
@@ -564,7 +564,7 @@ const handleDeleteMessage = async (messageData) => {
       messages.value = messages.value.filter(msg => msg.id !== messageData.messageId);
       // Also remove from turn timeline immediately
       try {
-        for (const [turnId, obj] of turnsById.value.entries()) {
+        for (const [turnId, obj] of turnsById.entries()) {
           const toDelete = [];
           for (const [seq, item] of obj.items.entries()) {
             if (item && String(item.id) === String(messageData.messageId)) {
@@ -573,7 +573,7 @@ const handleDeleteMessage = async (messageData) => {
           }
           toDelete.forEach(seq => obj.items.delete(seq));
           if (obj.items.size === 0 && obj.tools.size === 0) {
-            turnsById.value.delete(turnId);
+            turnsById.delete(turnId);
           }
         }
       } catch (_) {}
@@ -680,14 +680,14 @@ const executeToolWithForm = async (formData) => {
 const clearLocalMessages = () => {
   messages.value = [];
   try {
-    if (turnsById.value && typeof turnsById.value.clear === 'function') {
-      turnsById.value.clear();
+    if (turnsById && typeof turnsById.clear === 'function') {
+      turnsById.clear();
     }
-    if (streamingMessages.value && typeof streamingMessages.value.clear === 'function') {
-      streamingMessages.value.clear();
+    if (streamingMessages && typeof streamingMessages.clear === 'function') {
+      streamingMessages.clear();
     }
-    if (streamingStatus.value && typeof streamingStatus.value.clear === 'function') {
-      streamingStatus.value.clear();
+    if (streamingStatus && typeof streamingStatus.clear === 'function') {
+      streamingStatus.clear();
     }
   } catch (_) {}
 };
@@ -702,12 +702,12 @@ const getMessageComponent = (message) => {
 
 // Check if message is currently streaming
 const isMessageStreaming = (messageId) => {
-  return streamingStatus.value.get(messageId) === 'streaming';
+  return streamingStatus.get(messageId) === 'streaming';
 };
 
 // Get streaming content for a message
 const getStreamingContent = (messageId) => {
-  const streamingData = streamingMessages.value.get(messageId);
+  const streamingData = streamingMessages.get(messageId);
   return streamingData ? streamingData.content : '';
 };
 
@@ -715,8 +715,8 @@ const getStreamingContent = (messageId) => {
 const hasHistory = computed(() => !!props.historyId);
 
 // Button state management
-const isStreaming = computed(() => { try { if (!(streamingStatus.value instanceof Map)) return false; return Array.from(streamingStatus.value.values()).some(status => status === 'streaming'); } catch { return false; } });
-const hasErrors = computed(() => { try { if (!(streamingStatus.value instanceof Map)) return false; return Array.from(streamingStatus.value.values()).some(status => status === 'error'); } catch { return false; } });
+const isStreaming = computed(() => { try { if (!(streamingStatus instanceof Map)) return false; return Array.from(streamingStatus.values()).some(status => status === 'streaming'); } catch { return false; } });
+const hasErrors = computed(() => { try { if (!(streamingStatus instanceof Map)) return false; return Array.from(streamingStatus.values()).some(status => status === 'error'); } catch { return false; } });
 const canRetry = computed(() => hasErrors.value && !isStreaming.value);
 
 const buttonIcon = computed(() => { if (isStreaming.value) return 'pi pi-stop'; if (canRetry.value) return 'pi pi-refresh'; return 'pi pi-send'; });
@@ -725,13 +725,13 @@ const buttonLabel = computed(() => { if (isStreaming.value) return 'Stop'; if (c
 const buttonSeverity = computed(() => { if (isStreaming.value) return 'danger'; if (canRetry.value) return 'warning'; return 'primary'; });
 
 // Computed property for streaming status display
-const showStreamingStatus = computed(() => { try { if (!(streamingStatus.value instanceof Map)) return false; return Array.from(streamingStatus.value.values()).some(status => status === 'streaming'); } catch { return false; } });
+const showStreamingStatus = computed(() => { try { if (!(streamingStatus instanceof Map)) return false; return Array.from(streamingStatus.values()).some(status => status === 'streaming'); } catch { return false; } });
 
 // Stop streaming functionality
-const onStop = async () => { if (!props.selectedSession?.id || !chatService) return; try { const streamingMsg = messages.value.find(m => m.role === 'assistant' && m.status === 'streaming'); let response; if (streamingMsg && props.historyId) response = await chatService.cancelMessage(props.selectedSession.id, props.historyId, streamingMsg.id); else return; if (response && response.cancelled) { streamingStatus.value.forEach((status, messageId) => { if (status === 'streaming') streamingStatus.value.set(messageId, 'complete'); }); streamingMessages.value.clear(); messages.value.forEach(msg => { if (msg.status === 'streaming') { msg.status = 'complete'; } }); } } catch { } };
+const onStop = async () => { if (!props.selectedSession?.id || !chatService) return; try { const streamingMsg = messages.value.find(m => m.role === 'assistant' && m.status === 'streaming'); let response; if (streamingMsg && props.historyId) response = await chatService.cancelMessage(props.selectedSession.id, props.historyId, streamingMsg.id); else return; if (response && response.cancelled) { streamingStatus.forEach((status, messageId) => { if (status === 'streaming') streamingStatus.set(messageId, 'complete'); }); streamingMessages.clear(); messages.value.forEach(msg => { if (msg.status === 'streaming') { msg.status = 'complete'; } }); } } catch { } };
 
 // Retry functionality
-const onRetry = async () => { if (!props.selectedSession?.id || !chatService) return; try { const response = await chatService.retryLastMessage(props.selectedSession.id); if (response?.status === 'processing') { streamingStatus.value.forEach((status, messageId) => { if (status === 'error') streamingStatus.value.set(messageId, 'complete'); }); streamingMessages.value.clear(); messages.value.forEach(msg => { if (msg.status === 'error') { msg.status = 'complete'; } }); } } catch { } };
+const onRetry = async () => { if (!props.selectedSession?.id || !chatService) return; try { const response = await chatService.retryLastMessage(props.selectedSession.id); if (response?.status === 'processing') { streamingStatus.forEach((status, messageId) => { if (status === 'error') streamingStatus.set(messageId, 'complete'); }); streamingMessages.clear(); messages.value.forEach(msg => { if (msg.status === 'error') { msg.status = 'complete'; } }); } } catch { } };
 
 // Expose methods for parent component
 defineExpose({
@@ -743,8 +743,8 @@ defineExpose({
   // Expose streaming methods
   isMessageStreaming,
   getStreamingContent,
-  getStreamingStatus: () => Object.fromEntries(streamingStatus.value),
-  getStreamingMessages: () => Object.fromEntries(streamingMessages.value)
+  getStreamingStatus: () => Object.fromEntries(streamingStatus),
+  getStreamingMessages: () => Object.fromEntries(streamingMessages)
 });
 </script>
 
