@@ -28,6 +28,8 @@ from ....models.chat_message import ChatMessage
 from ....models.chat_session import ChatSession
 from ....models.persona import Persona
 from ....models.tool_invocation_log import ToolInvocationLog
+from ...sequence_service import SequenceService
+import uuid
 
 
 class ChatMessageMixin(WebSocketMixinProtocol):
@@ -155,12 +157,16 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         self._logger.debug(f"Creating assistant message placeholder for history {history_id}")
 
         async with AsyncSessionLocal() as db_session:
+            seq_val = await SequenceService.next_seq(history_id)
+            turn = str(uuid.uuid4())
             asst_msg = ChatMessage(
                 history_id=history_id,
                 role='assistant',
                 message_type='assistant',
                 content_json={'text': ''},
-                status='processing'
+                status='processing',
+                seq=seq_val,
+                turn_id=turn
             )
             db_session.add(asst_msg)
             await db_session.commit()
@@ -179,7 +185,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             # Add system messages
             system_result = await db_session.execute(
                 select(ChatMessage).where(ChatMessage.history_id == history_id, ChatMessage.role == 'system').order_by(
-                    ChatMessage.created_at.asc())
+                    ChatMessage.seq.asc())
             )
             system_msgs = system_result.scalars().all()
             self._logger.debug(f"Found {len(system_msgs)} system messages")
@@ -191,7 +197,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             user_result = await db_session.execute(
                 select(ChatMessage).where(ChatMessage.history_id == history_id,
                                           ChatMessage.id <= user_msg_id).order_by(
-                    ChatMessage.created_at.asc())
+                    ChatMessage.seq.asc())
             )
             user_msgs = user_result.scalars().all()
             self._logger.debug(f"Found {len(user_msgs)} user/assistant messages")
@@ -250,12 +256,17 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
         async with AsyncSessionLocal() as db_session:
             # Log tool execution
+            tool_run = str(uuid.uuid4())
+            turn_id = str(uuid.uuid4())
             log = ToolInvocationLog(
                 history_id=history_id,
                 message_id=user_msg_id,
                 tool_name=tool_name,
                 input_json=tool_args,
-                status='started'
+                status='started',
+                seq=await SequenceService.next_seq(history_id),
+                turn_id=turn_id,
+                tool_run_id=tool_run
             )
             db_session.add(log)
             await db_session.commit()
@@ -274,7 +285,10 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                     'execution_time': datetime.now(timezone.utc).isoformat(),
                     'execution_path': 'streaming'
                 },
-                status='complete'
+                status='complete',
+                seq=await SequenceService.next_seq(history_id),
+                turn_id=turn_id,
+                tool_run_id=tool_run
             )
             db_session.add(tool_call_msg)
             await db_session.commit()
@@ -296,6 +310,9 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                     'executed_by': 'llm',
                     'execution_time': tool_call_msg.content_json.get('execution_time'),
                     'execution_path': 'streaming',
+                    'seq': tool_call_msg.seq,
+                    'turn_id': tool_call_msg.turn_id,
+                    'tool_run_id': tool_call_msg.tool_run_id,
                     'timestamp': tool_call_msg.created_at.isoformat()
                 })
 
@@ -330,7 +347,10 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                     'executed_by': 'llm',          # ✅ Standardized: execution context
                     'execution_time': datetime.now(timezone.utc).isoformat(),  # ✅ Standardized: timestamp
                     'execution_path': 'streaming'  # ✅ Standardized: execution path identifier
-                }
+                },
+                seq=await SequenceService.next_seq(history_id),
+                turn_id=turn_id,
+                tool_run_id=tool_run
             )
             db_session.add(tool_msg)
             await db_session.commit()
@@ -351,6 +371,9 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                     'executed_by': 'llm',
                     'execution_time': tool_msg.content_json.get('execution_time'),
                     'execution_path': 'streaming',
+                    'seq': tool_msg.seq,
+                    'turn_id': tool_msg.turn_id,
+                    'tool_run_id': tool_msg.tool_run_id,
                     'timestamp': tool_msg.created_at.isoformat()
                 })
 
@@ -402,7 +425,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
                 msgs = await db_session.execute(
                     select(ChatMessage).where(ChatMessage.history_id == session.current_history_id).order_by(
-                        ChatMessage.created_at.asc())
+                        ChatMessage.seq.asc())
                 ).scalars().all()
 
                 return {'data': [m.to_dict() for m in msgs], 'total': len(msgs)}
@@ -584,6 +607,11 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         try:
             # Set the existing assistant message ID
             message_handler.assistant_message_id = asst_msg_id
+            # Load assistant message to propagate seq/turn_id
+            async with AsyncSessionLocal() as meta_session:
+                asst_msg_obj = await meta_session.get(ChatMessage, asst_msg_id)
+                asst_seq = getattr(asst_msg_obj, 'seq', None)
+                asst_turn = getattr(asst_msg_obj, 'turn_id', None)
 
             # Validate message exists
             if not await message_handler.ensure_message_exists():
@@ -625,6 +653,11 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                     if message.chunk_type == "text":
                         # accumulate full text for final persistence
                         accumulated_text += message.content or ""
+                        message.metadata = message.metadata or {}
+                        if asst_seq is not None:
+                            message.metadata['seq'] = asst_seq
+                        if asst_turn is not None:
+                            message.metadata['turn_id'] = asst_turn
                         if await message_handler.update_content_safely(message.content):
                             await event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
                         else:
@@ -632,11 +665,19 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                             self._logger.error(f"Failed to update content for chunk: {message.content[:50]}...")
 
                     elif message.chunk_type == "ai_start":
+                        message.metadata = message.metadata or {}
+                        if asst_seq is not None:
+                            message.metadata['seq'] = asst_seq
+                        if asst_turn is not None:
+                            message.metadata['turn_id'] = asst_turn
                         await event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
 
                     elif message.chunk_type == "tool_start":
                         tool_name = message.metadata.get("tool_name", "")
                         tool_args = message.metadata.get("args", {})
+                        tool_run = message.metadata.get("tool_run_id")
+                        run_id = message.metadata.get("run_id")
+                        parent_ids = message.metadata.get("parent_ids", [])
 
                         # ✅ FIXED: Create tool_call message for LangChain tool execution
                         async with AsyncSessionLocal() as db_session:
@@ -646,7 +687,12 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                                 message_id=user_msg_id,  # Use the current user message ID
                                 tool_name=tool_name,
                                 input_json=tool_args,
-                                status='started'
+                                status='started',
+                                seq=await SequenceService.next_seq(history_id),
+                                turn_id=asst_turn,
+                                run_id=run_id,
+                                parent_ids=parent_ids,
+                                tool_run_id=tool_run
                             )
                             db_session.add(log)
                             await db_session.commit()
@@ -663,7 +709,12 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                                     'execution_time': datetime.now(timezone.utc).isoformat(),
                                     'execution_path': 'langchain'
                                 },
-                                status='complete'
+                                status='complete',
+                                seq=await SequenceService.next_seq(history_id),
+                                turn_id=asst_turn,
+                                tool_run_id=tool_run,
+                                run_id=run_id,
+                                parent_ids=parent_ids
                             )
                             db_session.add(tool_call_msg)
                             await db_session.commit()
@@ -680,6 +731,11 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                                 'executed_by': 'llm',
                                 'execution_time': tool_call_msg.content_json.get('execution_time'),
                                 'execution_path': 'langchain',
+                                'seq': tool_call_msg.seq,
+                                'turn_id': tool_call_msg.turn_id,
+                                'tool_run_id': tool_call_msg.tool_run_id,
+                                'run_id': tool_call_msg.run_id,
+                                'parent_ids': parent_ids,
                                 'timestamp': tool_call_msg.created_at.isoformat()
                             })
 
@@ -688,6 +744,9 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                     elif message.chunk_type == "tool_end":
                         tool_name = message.metadata.get("tool_name", "")
                         tool_args = message.metadata.get("args", {})
+                        tool_run = message.metadata.get("tool_run_id")
+                        run_id = message.metadata.get("run_id")
+                        parent_ids = message.metadata.get("parent_ids", [])
 
                         # ✅ FIXED: Create tool_result message for LangChain tool execution
                         # Note: LangChain may not provide detailed result in metadata, so we create a basic message
@@ -697,7 +756,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                             log_result = await db_session.execute(
                                 select(ToolInvocationLog).where(
                                     ToolInvocationLog.history_id == history_id,
-                                    ToolInvocationLog.tool_name == tool_name,
+                                    ToolInvocationLog.tool_run_id == tool_run,
                                     ToolInvocationLog.status == 'started'
                                 ).order_by(ToolInvocationLog.created_at.desc())
                             )
@@ -720,7 +779,12 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                                     'executed_by': 'llm',
                                     'execution_time': datetime.now(timezone.utc).isoformat(),
                                     'execution_path': 'langchain'
-                                }
+                                },
+                                seq=await SequenceService.next_seq(history_id),
+                                turn_id=asst_turn,
+                                tool_run_id=tool_run,
+                                run_id=run_id,
+                                parent_ids=parent_ids
                             )
                             db_session.add(tool_result_msg)
                             await db_session.commit()
@@ -739,14 +803,26 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                                 'executed_by': 'llm',
                                 'execution_time': tool_result_msg.content_json.get('execution_time'),
                                 'execution_path': 'langchain',
+                                'seq': tool_result_msg.seq,
+                                'turn_id': tool_result_msg.turn_id,
+                                'tool_run_id': tool_result_msg.tool_run_id,
+                                'run_id': tool_result_msg.run_id,
+                                'parent_ids': parent_ids,
                                 'timestamp': tool_result_msg.created_at.isoformat()
                             })
 
                         # Remove tool_name from metadata to avoid duplicate keyword argument
                         metadata = {k: v for k, v in message.metadata.items() if k != "tool_name"}
+                        metadata['seq'] = tool_result_msg.seq
+                        metadata['turn_id'] = tool_result_msg.turn_id
                         await event_manager.emit_tool_event(session_id, history_id, tool_name, "completed", **metadata)
 
                     elif message.chunk_type == "complete":
+                        message.metadata = message.metadata or {}
+                        if asst_seq is not None:
+                            message.metadata['seq'] = asst_seq
+                        if asst_turn is not None:
+                            message.metadata['turn_id'] = asst_turn
                         await message_handler.finalize_assistant_message(accumulated_text if accumulated_text else None)
                         await event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
                         break
@@ -804,7 +880,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             async with AsyncSessionLocal() as db_session:
                 result = await db_session.execute(
                     select(ChatMessage).where(ChatMessage.history_id == history_id).order_by(
-                        ChatMessage.created_at.asc())
+                        ChatMessage.seq.asc())
                 )
                 msgs = result.scalars().all()
                 return JSONResponse({'data': [m.to_dict() for m in msgs], 'total': len(msgs)})
@@ -996,7 +1072,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                     select(ChatMessage)
                     .join(ChatHistory, ChatMessage.history_id == ChatHistory.id)
                     .where(ChatHistory.session_id == session_id, ChatMessage.role == 'user')
-                    .order_by(ChatMessage.created_at.desc())
+                    .order_by(ChatMessage.seq.desc())
                     .limit(1)
                 )
                 return result.scalar_one_or_none()

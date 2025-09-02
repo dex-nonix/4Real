@@ -118,7 +118,7 @@ Add canonical sequencing and threading fields. Prefer minimal, explicit columns 
 #### WebSocket Payload Contract (snake_case, no fallbacks)
 Required on every event:
 - `message_id`, `history_id`, `role`, `message_type`, `status`, `timestamp`
-- `seq`, `turn_id`, `run_id`, `parent_ids`
+- `seq`, `turn_id`, `run_id`, `parent_ids` (parent_ids is a list of strings)
 - Tool fields when applicable: `tool_run_id`, `tool_name`, `tool_args`, `execution_status`, `result`
 - Provenance: `executed_by`, `execution_time`, `execution_path`
 

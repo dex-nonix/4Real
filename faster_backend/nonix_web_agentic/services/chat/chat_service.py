@@ -209,27 +209,42 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
                 })):
                     if mode == "start":
                         if isinstance(message, LCAIMessage):
-                            yield StreamingChunk(content="", chunk_type="ai_start")
+                            yield StreamingChunk(content="", chunk_type="ai_start", metadata={
+                                "run_id": message.msg_id,
+                                "parent_ids": message.status.get("parent_ids", [])
+                            })
                             initial_content = message.status.get("content", "")
                             if initial_content:
-                                yield StreamingChunk(content=initial_content, chunk_type="text")
+                                yield StreamingChunk(content=initial_content, chunk_type="text", metadata={
+                                    "run_id": message.msg_id,
+                                    "parent_ids": message.status.get("parent_ids", [])
+                                })
                         elif isinstance(message, LCToolMessage):
                             yield StreamingChunk(
                                 content="",
                                 chunk_type="tool_start",
                                 metadata={
                                     "tool_name": message.status.get("tool_name", "unknown"),
-                                    "args": message.status.get("input", {})
+                                    "args": message.status.get("input", {}),
+                                    "run_id": message.msg_id,
+                                    "tool_run_id": message.msg_id,
+                                    "parent_ids": message.status.get("parent_ids", [])
                                 }
                             )
 
                     elif mode == "update":
                         if isinstance(message, LCAIMessage):
-                            yield StreamingChunk(content=message.status.get("content", ""), chunk_type="text")
+                            yield StreamingChunk(content=message.status.get("content", ""), chunk_type="text", metadata={
+                                "run_id": message.msg_id,
+                                "parent_ids": message.status.get("parent_ids", [])
+                            })
 
                     elif mode == "end":
                         if isinstance(message, LCAIMessage):
-                            yield StreamingChunk(content="", chunk_type="complete", is_final=True)
+                            yield StreamingChunk(content="", chunk_type="complete", is_final=True, metadata={
+                                "run_id": message.msg_id,
+                                "parent_ids": message.status.get("parent_ids", [])
+                            })
                         elif isinstance(message, LCToolMessage):
                             raw_output = message.get_status("output")
                             parsed = None
@@ -251,7 +266,10 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
                                 chunk_type="tool_end",
                                 metadata={
                                     "tool_name": message.status.get("tool_name", "unknown"),
-                                    "result": exec_result
+                                    "result": exec_result,
+                                    "run_id": message.msg_id,
+                                    "tool_run_id": message.msg_id,
+                                    "parent_ids": message.status.get("parent_ids", [])
                                 }
                             )
 

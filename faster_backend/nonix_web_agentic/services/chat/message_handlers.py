@@ -6,6 +6,8 @@ from nonix_web_db import AsyncSessionLocal
 from .message_type_registry import MessageTypeHandler
 from ...llm.agentic_tool_manager import AgenticToolManager
 from ...models.chat_message import ChatMessage
+from ..sequence_service import SequenceService
+import uuid
 
 if TYPE_CHECKING:
     from .chat_service import ChatService
@@ -22,12 +24,16 @@ class ChatMessageHandler(MessageTypeHandler):
         # Create async database session
         async with AsyncSessionLocal() as db_session:
             # Create chat message
+            turn = str(uuid.uuid4())
+            seq_val = await SequenceService.next_seq(history_id)
             chat_msg = ChatMessage(
                 history_id=history_id,
                 role='user',
                 message_type='user',
                 content_json=content,
-                status='complete'
+                status='complete',
+                seq=seq_val,
+                turn_id=turn
             )
 
             # Use async database operations
@@ -43,6 +49,8 @@ class ChatMessageHandler(MessageTypeHandler):
             'message_type': 'user',
             'content': chat_msg.content_json,
             'status': chat_msg.status,
+            'seq': chat_msg.seq,
+            'turn_id': chat_msg.turn_id,
             'timestamp': chat_msg.created_at.isoformat()
         })
 
@@ -78,12 +86,18 @@ class ToolCallMessageHandler(MessageTypeHandler):
         # Create async database session
         async with AsyncSessionLocal() as db_session:
             # Create tool call message
+            turn = str(uuid.uuid4())
+            seq_val = await SequenceService.next_seq(history_id)
+            tool_run = str(uuid.uuid4())
             tool_call_msg = ChatMessage(
                 history_id=history_id,
                 role='user',
                 message_type='tool_call',
                 content_json=content,
-                status='complete'
+                status='complete',
+                seq=seq_val,
+                turn_id=turn,
+                tool_run_id=tool_run
             )
 
             # Use async database operations
@@ -105,6 +119,9 @@ class ToolCallMessageHandler(MessageTypeHandler):
             'executed_by': tool_call_msg.content_json.get('executed_by'),
             'execution_time': tool_call_msg.content_json.get('execution_time'),
             'execution_path': tool_call_msg.content_json.get('execution_path'),
+            'seq': tool_call_msg.seq,
+            'turn_id': tool_call_msg.turn_id,
+            'tool_run_id': tool_call_msg.tool_run_id,
             'timestamp': tool_call_msg.created_at.isoformat()
         })
 
@@ -119,6 +136,7 @@ class ToolCallMessageHandler(MessageTypeHandler):
         # Create second async database session for tool result message
         async with AsyncSessionLocal() as db_session:
             # Create tool result message
+            seq_val_res = await SequenceService.next_seq(history_id)
             tool_result_msg = ChatMessage(
                 history_id=history_id,
                 role='tool',
@@ -132,7 +150,10 @@ class ToolCallMessageHandler(MessageTypeHandler):
                     'executed_by': 'user',         # ✅ Standardized: snake_case
                     'execution_time': datetime.now(timezone.utc).isoformat(),  # ✅ Standardized: snake_case
                     'execution_path': 'manual'    # ✅ Standardized: execution path identifier
-                }
+                },
+                seq=seq_val_res,
+                turn_id=tool_call_msg.turn_id,
+                tool_run_id=tool_call_msg.tool_run_id
             )
 
             # Use async database operations
@@ -153,6 +174,9 @@ class ToolCallMessageHandler(MessageTypeHandler):
             'execution_time': tool_result_msg.content_json.get('execution_time'),
             'execution_path': tool_result_msg.content_json.get('execution_path'),
             'status': tool_result_msg.status if hasattr(tool_result_msg, 'status') else 'complete',
+            'seq': tool_result_msg.seq,
+            'turn_id': tool_result_msg.turn_id,
+            'tool_run_id': tool_result_msg.tool_run_id,
             'timestamp': tool_result_msg.created_at.isoformat()
         })
 

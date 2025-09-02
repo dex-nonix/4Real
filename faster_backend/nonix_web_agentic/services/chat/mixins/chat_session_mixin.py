@@ -14,6 +14,8 @@ from ....models.chat_history import ChatHistory
 from ....models.chat_message import ChatMessage
 from ....models.chat_session import ChatSession
 from ....models.persona import Persona
+from ...sequence_service import SequenceService
+import uuid
 
 
 class ChatSessionMixin:
@@ -100,12 +102,16 @@ class ChatSessionMixin:
 
                 # Optional initial system message from persona.system_prompt
                 if persona.system_prompt:
+                    seq_val = await SequenceService.next_seq(history.id)
+                    turn = str(uuid.uuid4())
                     sys_msg = ChatMessage(
                         history_id=history.id,
                         role='system',
                         message_type='system',
-                        status='complete',  # ✅ FIXED: Add required status field
-                        content_json={'text': persona.system_prompt}
+                        status='complete',
+                        content_json={'text': persona.system_prompt},
+                        seq=seq_val,
+                        turn_id=turn
                     )
                     db_session.add(sys_msg)
                     await db_session.commit()
@@ -276,12 +282,16 @@ class ChatSessionMixin:
 
                 # Add system message if persona has one
                 if persona.system_prompt:
+                    seq_val = await SequenceService.next_seq(history.id)
+                    turn = str(uuid.uuid4())
                     sys_msg = ChatMessage(
                         history_id=history.id,
                         role='system',
                         message_type='system',
-                        status='complete',  # ✅ FIXED: Add required status field
-                        content_json={'text': persona.system_prompt}
+                        status='complete',
+                        content_json={'text': persona.system_prompt},
+                        seq=seq_val,
+                        turn_id=turn
                     )
                     db_session.add(sys_msg)
                     await db_session.commit()

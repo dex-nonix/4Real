@@ -12,24 +12,41 @@ class StreamingEventManager:
 
     async def emit_chunk_event(self, session_id: int, history_id: int, chunk: StreamingChunk, message_id: int):
         """Emit chunk event via WebSocket."""
+        meta = chunk.metadata or {}
+        seq = meta.get('seq')
+        turn_id = meta.get('turn_id')
+        run_id = meta.get('run_id')
+        parent_ids = meta.get('parent_ids') or []
         if chunk.chunk_type == "text":
             await self.chat_service.emit_chat_event(session_id, history_id, 'assistant_message_chunk', {
                 'message_id': message_id,
                 'chunk': chunk.content,
                 'metadata': chunk.metadata,
-                'is_final': chunk.is_final
+                'seq': seq,
+                'turn_id': turn_id,
+                'run_id': run_id,
+                'is_final': chunk.is_final,
+                'parent_ids': parent_ids
             })
         elif chunk.chunk_type == "ai_start":
             await self.chat_service.emit_chat_event(session_id, history_id, 'assistant_message_started', {
                 'message_id': message_id,
                 'status': 'streaming',
-                'metadata': chunk.metadata
+                'metadata': chunk.metadata,
+                'seq': seq,
+                'turn_id': turn_id,
+                'run_id': run_id,
+                'parent_ids': parent_ids
             })
         elif chunk.chunk_type == "complete":
             await self.chat_service.emit_chat_event(session_id, history_id, 'assistant_message_complete', {
                 'message_id': message_id,
                 'status': 'complete',
-                'metadata': chunk.metadata
+                'metadata': chunk.metadata,
+                'seq': seq,
+                'turn_id': turn_id,
+                'run_id': run_id,
+                'parent_ids': parent_ids
             })
         elif chunk.chunk_type == "error":
             await self.emit_streaming_error(

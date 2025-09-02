@@ -76,19 +76,24 @@ async def iter_messages(events):
         event_type = event.get("event")
 
         run_id = event.get("run_id", None)
+        parent_ids = event.get("parent_ids", [])
 
         if event_type in ["on_chain_start", "on_chain_end"] and not len(event.get("parent_ids")):
             if event_type == "on_chain_start":
-                yield "start", put_msg(LCUserMessage(run_id, event["data"]["input"]))
+                msg = put_msg(LCUserMessage(run_id, event["data"]["input"]))
+                msg.set_status("parent_ids", parent_ids)
+                yield "start", msg
             else:
                 yield "end", get_msg(run_id)
 
         if event_type == "on_tool_start":
-            yield "start", put_msg(LCToolMessage(
+            m = LCToolMessage(
                 run_id,
                 event['name'],
                 event['data']['input'],
-            ))
+            )
+            m.set_status("parent_ids", parent_ids)
+            yield "start", put_msg(m)
 
         elif event_type == "on_tool_end":
             tool = get_msg(run_id)
@@ -100,7 +105,9 @@ async def iter_messages(events):
             if chunk.content:
                 current_ai_message = get_msg(run_id, True)
                 if current_ai_message is None:
-                    yield "start", put_msg(LCAIMessage(run_id, chunk.content))
+                    m = LCAIMessage(run_id, chunk.content)
+                    m.set_status("parent_ids", parent_ids)
+                    yield "start", put_msg(m)
                 else:
                     yield "update", current_ai_message.add_chunk(chunk.content)
 

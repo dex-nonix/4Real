@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, List
 
 from pydantic import BaseModel, Field
 
@@ -19,7 +19,7 @@ class ToolInvocationLogBase(BaseModel):
     seq: Optional[int] = Field(None, ge=1)
     turn_id: Optional[str] = Field(None, max_length=64)
     run_id: Optional[str] = Field(None, max_length=64)
-    parent_ids: Optional[Dict[str, Any]] = None
+    parent_ids: Optional[List[str]] = None
     tool_run_id: Optional[str] = Field(None, max_length=64)
 
 

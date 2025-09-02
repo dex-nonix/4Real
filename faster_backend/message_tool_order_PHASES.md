@@ -30,6 +30,7 @@ Goal: Add canonical sequencing and topology fields; provide atomic sequence allo
 
 Exit criteria:
 - New columns and indexes present; constraints enforce monotonic `(history_id, seq)`.
+- DONE in repo.
 
 
 ### Phase 2 — Backend Sequencing and Persistence
@@ -42,22 +43,25 @@ Goal: Ensure every persisted streaming item and tool lifecycle event carries `se
 
 - Files to update (exist):
   - `faster_backend/nonix_web_agentic/services/chat/chat_service.py`
-    - `emit_chat_event(...)`, `emit_tool_event(...)`: ensure downstream payloads will include new top-level fields provided by mixins/managers.
-    - `run_chat_streaming` uses `iter_messages(...)` (see `llm/llm_message_utils.py`) and creates `StreamingChunk`s; metadata must propagate to event manager.
+    - `emit_chat_event(...)`, `emit_tool_event(...)`: downstream payloads now include `seq`/`turn_id` when provided.
+    - `run_chat_streaming` uses `iter_messages(...)` (see `llm/llm_message_utils.py`); attaches `run_id` and `parent_ids` to `StreamingChunk.metadata` for ai/tool events.
   - `faster_backend/nonix_web_agentic/services/chat/streaming_event_manager.py`
-    - In `emit_chunk_event(...)`: include `seq`, `turn_id`, `run_id`, `parent_ids`, and `tool_run_id` on all emitted WS payloads based on chunk metadata.
+    - In `emit_chunk_event(...)`: includes `seq`, `turn_id`, `run_id`, and `parent_ids` on WS payloads based on chunk metadata.
   - `faster_backend/nonix_web_agentic/services/chat/mixins/chat_message_mixin.py`
-    - `create_assistant_placeholder(...)`: assign a `turn_id` that will be reused for the turn; persist placeholder with `seq`.
-    - `_process_message_async(...)`: before persisting or emitting for each event (`ai_start`, `text`, `complete`, `error`, `tool_start`, `tool_end`), allocate `seq = await SequenceService.next_seq(history_id)` and persist to `ChatMessage`/`ToolInvocationLog`.
-    - `_build_chat_history(...)`: change ordering to `seq` ascending instead of `created_at` (currently orders by `created_at`).
-    - `_execute_tool_call(...)`: ensure both `tool_call` and `tool_result` messages share a `tool_run_id`; allocate and persist `seq` for each; include `turn_id`/`run_id`/`parent_ids`.
+    - `create_assistant_placeholder(...)`: assigns `seq` and generates `turn_id` for the turn.
+    - `_process_message_async(...)`: attaches assistant `seq`/`turn_id` to streaming metadata; persists tool_start/tool_end with `seq`/`turn_id`/`run_id`/`parent_ids`/`tool_run_id`.
+    - `_build_chat_history(...)`: orders by `seq` ascending.
+    - `_execute_tool_call(...)`: generates `turn_id` and `tool_run_id`, allocates `seq` for call and result, and includes fields in WS payloads.
   - `faster_backend/nonix_web_agentic/services/chat/mixins/chat_history_mixin.py`
     - For any history + messages retrieval endpoints, order messages by `seq ASC`; add pagination using `since_seq` and `limit`.
   - `faster_backend/nonix_web_agentic/services/chat_message/chat_message_service.py`
     - Update CRUD `sorting` to allow and default to `seq` for list endpoints.
+  - `faster_backend/nonix_web_agentic/services/chat/mixins/chat_session_mixin.py`
+    - System messages created at session start now get `seq` and `turn_id`.
 
 Exit criteria:
-- Every persisted event carries `seq`; WS payloads contain the required top-level fields; history queries order by `seq`.
+- Every persisted event carries `seq`; WS payloads contain `seq`/`turn_id`/`run_id`/`parent_ids`; history queries order by `seq`.
+- DONE in repo.
 
 
 ### Phase 3 — WebSocket Payload Contract and Tool Pairing
@@ -70,7 +74,7 @@ Goal: Standardize WS event payloads and ensure tool start/end are paired via `to
   - `faster_backend/nonix_web_agentic/services/chat/message_handlers.py`
     - `message_received` payloads for user/tool calls: include `seq`, `turn_id`, `run_id`, `parent_ids`, `tool_run_id` when applicable.
   - `faster_backend/nonix_web_agentic/llm/llm_message_utils.py`
-    - Ensure `iter_messages(...)` surfaces `run_id` and any parent topology so downstream can persist `run_id`/`parent_ids`.
+    - `iter_messages(...)` surfaces `run_id` and `parent_ids` so downstream can persist/emit them.
 
 Exit criteria:
 - All WS events have consistent top-level fields; tools paired by `tool_run_id`.
