@@ -48,6 +48,15 @@ def _pattern_matches(pattern: str, name: str) -> bool:
     return pattern == name
 
 
+def make_agent_tool_wrapper(manager, persona_id: int, tool_name: str):
+    async def wrapped_tool(**kwargs):
+        exec_result = await manager.execute_tool(persona_id, tool_name, kwargs or {})
+        if exec_result.get('status') == 'success':
+            return exec_result.get('result')
+        return {'success': False, 'error': exec_result.get('error')}
+    return wrapped_tool
+
+
 class AgenticToolManager:
     """Minimal in-process registry mapping qualified tool names to callables."""
 
@@ -269,11 +278,7 @@ class AgenticToolManager:
                     })
 
                     # Route through manager execute path to preserve auto-injection
-                    async def wrapped_tool(_tool_name: str = tool_name, _persona_id: int = persona_id, **kwargs):
-                        exec_result = await self.execute_tool(_persona_id, _tool_name, kwargs or {})
-                        if exec_result.get('status') == 'success':
-                            return exec_result.get('result')
-                        return {'success': False, 'error': exec_result.get('error')}
+                    wrapped_tool = make_agent_tool_wrapper(self, persona_id, tool_name)
                     langchain_tool = StructuredTool.from_function(
                         coroutine=wrapped_tool,
                         name=tool_name,
@@ -290,11 +295,7 @@ class AgenticToolManager:
             else:
                 # Always create a schema (may be zero-field) and enforce strict call path
                 ToolSchema = type(f'{tool_name}Schema', (BaseModel,), {})
-                async def wrapped_tool(_tool_name: str = tool_name, _persona_id: int = persona_id, **kwargs):
-                    exec_result = await self.execute_tool(_persona_id, _tool_name, kwargs or {})
-                    if exec_result.get('status') == 'success':
-                        return exec_result.get('result')
-                    return {'success': False, 'error': exec_result.get('error')}
+                wrapped_tool = make_agent_tool_wrapper(self, persona_id, tool_name)
                 langchain_tool = StructuredTool.from_function(
                     coroutine=wrapped_tool,
                     name=tool_name,
