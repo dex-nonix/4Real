@@ -70,14 +70,19 @@ Goal: Standardize WS event payloads and ensure tool start/end are paired via `to
 
 - Files to update (exist):
   - `faster_backend/nonix_web_agentic/services/chat/streaming_event_manager.py`
-    - For `tool_start`/`tool_end`, propagate `tool_run_id`, `tool_name`, `args`, and `result` in top-level fields.
+    - For `tool_start`/`tool_end`, propagate `tool_run_id`, `tool_name`, `args`, `result`, `run_id`, and `parent_ids` in top-level fields.
   - `faster_backend/nonix_web_agentic/services/chat/message_handlers.py`
-    - `message_received` payloads for user/tool calls: include `seq`, `turn_id`, `run_id`, `parent_ids`, `tool_run_id` when applicable.
+    - `message_received` payloads for user/tool calls: include `seq`, `turn_id`, `tool_run_id` (when applicable). Direct tool lifecycle emits include `seq`, `turn_id`, `tool_run_id`.
   - `faster_backend/nonix_web_agentic/llm/llm_message_utils.py`
     - `iter_messages(...)` surfaces `run_id` and `parent_ids` so downstream can persist/emit them.
+  - `faster_backend/nonix_web_agentic/services/chat/chat_service.py`
+    - Attaches `run_id` and `parent_ids` into `StreamingChunk.metadata` for ai/tool events.
+  - `faster_backend/nonix_web_agentic/services/chat/mixins/chat_message_mixin.py`
+    - Streaming tool start/end now persist and emit `seq`, `turn_id`, `tool_run_id`, `run_id`, `parent_ids`. Assistant chunks include `seq`/`turn_id` in WS payloads.
 
 Exit criteria:
 - All WS events have consistent top-level fields; tools paired by `tool_run_id`.
+- DONE in repo.
 
 
 ### Phase 4 — Frontend UI: Turn Grouping and Interleaved Timeline

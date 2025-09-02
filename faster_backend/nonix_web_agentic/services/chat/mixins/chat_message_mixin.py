@@ -317,7 +317,16 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 })
 
                 # Emit WebSocket event for tool execution started
-                await self.emit_tool_event(session_id, history_id, tool_name, 'started', args=tool_args)
+                await self.emit_tool_event(
+                    session_id,
+                    history_id,
+                    tool_name,
+                    'started',
+                    args=tool_args,
+                    seq=tool_call_msg.seq,
+                    turn_id=tool_call_msg.turn_id,
+                    tool_run_id=tool_run
+                )
 
             # Execute tool
             self._logger.debug(f"Calling execute_tool for '{tool_name}'")
@@ -328,10 +337,6 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
             status = 'success' if exec_result.get('status') == 'success' else 'error'
             self._logger.info(f"Tool '{tool_name}' execution completed with status: {status}")
-
-            # Emit WebSocket event for tool execution completed
-            if history_obj:
-                await self.emit_tool_event(session_id, history_id, tool_name, 'completed', result=exec_result)
 
             # Create tool result message
             tool_msg = ChatMessage(
@@ -356,6 +361,19 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             await db_session.commit()
             await db_session.refresh(tool_msg)
             self._logger.debug(f"Tool result message {tool_msg.id} created")
+
+            # Emit WebSocket event for tool execution completed (with finalized seq/turn_id)
+            if history_obj:
+                await self.emit_tool_event(
+                    session_id,
+                    history_id,
+                    tool_name,
+                    'completed',
+                    result=exec_result,
+                    seq=tool_msg.seq,
+                    turn_id=tool_msg.turn_id,
+                    tool_run_id=tool_run
+                )
 
             # Emit WebSocket event for tool result message with top-level fields
             if history_obj:
@@ -739,7 +757,18 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                                 'timestamp': tool_call_msg.created_at.isoformat()
                             })
 
-                        await event_manager.emit_tool_event(session_id, history_id, tool_name, "started", args=tool_args)
+                        await event_manager.emit_tool_event(
+                            session_id,
+                            history_id,
+                            tool_name,
+                            "started",
+                            args=tool_args,
+                            seq=tool_call_msg.seq,
+                            turn_id=tool_call_msg.turn_id,
+                            tool_run_id=tool_run,
+                            run_id=run_id,
+                            parent_ids=parent_ids
+                        )
 
                     elif message.chunk_type == "tool_end":
                         tool_name = message.metadata.get("tool_name", "")
