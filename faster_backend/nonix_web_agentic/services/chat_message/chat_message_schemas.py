@@ -12,6 +12,11 @@ class ChatMessageBase(BaseModel):
     message_type: str = Field(..., max_length=50)
     content_json: Optional[Dict[str, Any]] = None
     status: str = Field(..., max_length=50)
+    seq: Optional[int] = Field(None, ge=1)
+    turn_id: Optional[str] = Field(None, max_length=64)
+    run_id: Optional[str] = Field(None, max_length=64)
+    parent_ids: Optional[Dict[str, Any]] = None
+    tool_run_id: Optional[str] = Field(None, max_length=64)
 
 
 class ChatMessageCreate(ChatMessageBase):

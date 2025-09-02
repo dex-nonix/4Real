@@ -16,6 +16,11 @@ class ToolInvocationLogBase(BaseModel):
     started_at: datetime
     completed_at: Optional[datetime] = None
     duration_ms: Optional[int] = Field(None, ge=0)
+    seq: Optional[int] = Field(None, ge=1)
+    turn_id: Optional[str] = Field(None, max_length=64)
+    run_id: Optional[str] = Field(None, max_length=64)
+    parent_ids: Optional[Dict[str, Any]] = None
+    tool_run_id: Optional[str] = Field(None, max_length=64)
 
 
 class ToolInvocationLogCreate(ToolInvocationLogBase):

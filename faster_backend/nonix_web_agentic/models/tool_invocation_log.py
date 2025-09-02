@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import Column, ForeignKey, DateTime, Integer, JSON, String
+from sqlalchemy import Column, ForeignKey, DateTime, Integer, JSON, String, Index
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 
@@ -9,6 +9,10 @@ from nonix_web_db import BaseModel
 
 class ToolInvocationLog(BaseModel):
     __tablename__ = 'tool_invocation_logs'
+    __table_args__ = (
+        Index('ix_tool_logs_history_seq', 'history_id', 'seq'),
+        Index('ix_tool_logs_history_tool_run', 'history_id', 'tool_run_id'),
+    )
 
     history_id = Column(Integer, ForeignKey('chat_histories.id'), nullable=False)
     message_id = Column(Integer, ForeignKey('chat_messages.id'), nullable=False)
@@ -19,6 +23,11 @@ class ToolInvocationLog(BaseModel):
     started_at = Column(DateTime, nullable=False, server_default=func.now())
     completed_at = Column(DateTime)
     duration_ms = Column(Integer)
+    seq = Column(Integer, nullable=False)
+    turn_id = Column(String(64), nullable=False)
+    run_id = Column(String(64))
+    parent_ids = Column(JSON)
+    tool_run_id = Column(String(64), nullable=False)
 
     # Relationships
     history = relationship('ChatHistory', foreign_keys=[history_id], backref=backref('tool_logs', lazy=True))

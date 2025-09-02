@@ -16,8 +16,8 @@ class ToolInvocationLogService(GenericCRUDService):
             allowed_fields=['session_id', 'message_id', 'tool_name', 'status']
         ),
         sorting=SortingConfig(
-            default_sort='started_at',
-            allowed_fields=['started_at', 'completed_at', 'duration_ms']
+            default_sort='seq',
+            allowed_fields=['seq', 'started_at', 'completed_at', 'duration_ms']
         ),
         validation=ValidationConfig(
             unique_fields=[]
