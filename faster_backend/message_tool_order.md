@@ -38,11 +38,7 @@
 - Update history retrieval to order by `seq` instead of `created_at`.
 - Ensure pagination uses `seq` for consistent continuation.
 
-6) Backfill/migration
-- For existing records without `seq`, compute a consistent sequence from their insertion order per history as a one-time migration.
-- Future writes must always include `seq`.
-
-7) Validation and invariants
+6) Validation and invariants
 - `seq` must be strictly increasing per history/session.
 - All events must carry `turn_id` and `run_id`.
 - Tool events must include `tool_run_id` and `tool_name`.
@@ -87,7 +83,7 @@ Add canonical sequencing and threading fields. Prefer minimal, explicit columns 
 
 4) Migration
 - Create Alembic migration adding the new columns/indexes and the `message_sequences` table.
-- Backfill: for each `history_id`, assign `seq` by ordering existing rows by `(created_at, id)` and incrementing from 1; set `turn_id` to the nearest assistant placeholder or create a synthetic one; set `run_id`/`parent_ids`/`tool_run_id` to null where unknown.
+- All new writes must include `seq`.
 
 #### Backend Services/Files To Add or Update
 
@@ -162,6 +158,6 @@ Frontend relies solely on these top-level fields.
 #### Testing & Verification
 - Unit: sequence allocation atomicity; uniqueness of `(history_id, seq)`.
 - Integration: simulate interleaved `on_chat_model_stream`, `on_tool_start`, `on_tool_end`, `complete` and verify DB order by `seq` and UI grouping/rendering.
-- Backfill: run migration on existing histories and verify stable ordering and rendering.
+
 
 
