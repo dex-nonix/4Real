@@ -192,30 +192,39 @@ const handleMessageReceived = (data) => {
         : 'tool_result');
   incoming.message_type = derivedType;
 
-  try {
-    const idx = messages.value.findIndex(m => String(m.id) === String(incoming.message_id));
-    const msgObj = {
-      id: incoming.message_id,
-      role: incoming.role,
-      message_type: derivedType,
-      content_json: (incoming.content_json || incoming.content || null),
-      status: incoming.status || 'complete',
-      created_at: incoming.timestamp || new Date().toISOString(),
-      tool_name: incoming.tool_name,
-      tool_args: incoming.tool_args,
-      execution_status: incoming.execution_status,
-      result: incoming.result,
-      executed_by: incoming.executed_by,
-      execution_time: incoming.execution_time,
-      execution_path: incoming.execution_path,
-      seq: incoming.seq,
-      turn_id: incoming.turn_id,
-      tool_run_id: incoming.tool_run_id,
-      run_id: incoming.run_id
-    };
-    if (idx !== -1) messages.value[idx] = Object.assign({}, messages.value[idx], msgObj);
-    else messages.value.push(msgObj);
-  } catch (_) {}
+  // Strict payload: require content_json for text roles
+  if ((derivedType === 'assistant' || derivedType === 'user' || derivedType === 'system') && !incoming.content_json) {
+    console.error('Invalid payload: content_json is required for text message types', incoming);
+    return;
+  }
+  // Strict required fields
+  if (!incoming.message_id || !incoming.role || !incoming.message_type || typeof incoming.seq === 'undefined' || !incoming.turn_id) {
+    console.error('Invalid payload: required fields missing', incoming);
+    return;
+  }
+
+  const idx = messages.value.findIndex(m => String(m.id) === String(incoming.message_id));
+  const msgObj = {
+    id: incoming.message_id,
+    role: incoming.role,
+    message_type: derivedType,
+    content_json: incoming.content_json || null,
+    status: incoming.status || 'complete',
+    created_at: incoming.timestamp || new Date().toISOString(),
+    tool_name: incoming.tool_name,
+    tool_args: incoming.tool_args,
+    execution_status: incoming.execution_status,
+    result: incoming.result,
+    executed_by: incoming.executed_by,
+    execution_time: incoming.execution_time,
+    execution_path: incoming.execution_path,
+    seq: incoming.seq,
+    turn_id: incoming.turn_id,
+    tool_run_id: incoming.tool_run_id,
+    run_id: incoming.run_id
+  };
+  if (idx !== -1) messages.value[idx] = Object.assign({}, messages.value[idx], msgObj);
+  else messages.value.push(msgObj);
 
   if (incoming.turn_id && incoming.seq) {
     upsertTurnItem({
@@ -232,7 +241,7 @@ const handleMessageReceived = (data) => {
       executed_by: incoming.executed_by,
       execution_time: incoming.execution_time,
       execution_path: incoming.execution_path,
-      content_json: (incoming.content_json || incoming.content || null),
+      content_json: (incoming.content_json || null),
       created_at: incoming.timestamp
     });
   }
@@ -539,6 +548,21 @@ const handleDeleteMessage = async (messageData) => {
     if (response) {
       // Remove the message from local state immediately
       messages.value = messages.value.filter(msg => msg.id !== messageData.messageId);
+      // Also remove from turn timeline immediately
+      try {
+        for (const [turnId, obj] of turnsById.value.entries()) {
+          const toDelete = [];
+          for (const [seq, item] of obj.items.entries()) {
+            if (item && String(item.id) === String(messageData.messageId)) {
+              toDelete.push(seq);
+            }
+          }
+          toDelete.forEach(seq => obj.items.delete(seq));
+          if (obj.items.size === 0 && obj.tools.size === 0) {
+            turnsById.value.delete(turnId);
+          }
+        }
+      } catch (_) {}
       
       // Emit success to parent for toast notification
       emit('deleteMessage', { success: true, messageData, response });
