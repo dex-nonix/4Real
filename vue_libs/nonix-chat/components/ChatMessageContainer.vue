@@ -132,6 +132,7 @@ onMounted(() => {
   chatMessageTypeManager.registerMessageType('assistant', StreamingMessage);
   chatMessageTypeManager.registerMessageType('system', SystemMessage);
   chatMessageTypeManager.registerMessageType('tool_result', ToolMessage);
+  chatMessageTypeManager.registerMessageType('tool_call', ToolMessage);
 });
 
 // Cleanup WebSocket resources on unmount
@@ -316,7 +317,9 @@ const handleAssistantChunk = (data) => {
     streamingStatus.value.set(message_id, 'streaming');
   }
   if (metadata && metadata.turn_id && metadata.seq) {
-    upsertTurnItem({ id: message_id, role: 'assistant', message_type: 'assistant', seq: metadata.seq, turn_id: metadata.turn_id, content_json: { text: streamingData.content }, status: 'streaming', created_at: new Date().toISOString() });
+    const sd = streamingMessages.value.get(message_id);
+    const text = sd && sd.content ? sd.content : (chunk || '');
+    upsertTurnItem({ id: message_id, role: 'assistant', message_type: 'assistant', seq: metadata.seq, turn_id: metadata.turn_id, content_json: { text }, status: 'streaming', created_at: new Date().toISOString() });
   }
 };
 
@@ -348,7 +351,9 @@ const handleAssistantComplete = (data) => {
     streamingMessages.value.set(message_id, streamingData);
   }
   if (metadata && metadata.turn_id && metadata.seq) {
-    upsertTurnItem({ id: message_id, role: 'assistant', message_type: 'assistant', seq: metadata.seq, turn_id: metadata.turn_id, content_json: { text: finalContent }, status: 'complete', created_at: new Date().toISOString() });
+    const sd = streamingMessages.value.get(message_id);
+    const finalText = (sd && sd.content) ? sd.content : '';
+    upsertTurnItem({ id: message_id, role: 'assistant', message_type: 'assistant', seq: metadata.seq, turn_id: metadata.turn_id, content_json: { text: finalText }, status: 'complete', created_at: new Date().toISOString() });
   }
 };
 
@@ -635,6 +640,17 @@ const executeToolWithForm = async (formData) => {
 // Clear local messages (for when backend clears them)
 const clearLocalMessages = () => {
   messages.value = [];
+  try {
+    if (turnsById.value && typeof turnsById.value.clear === 'function') {
+      turnsById.value.clear();
+    }
+    if (streamingMessages.value && typeof streamingMessages.value.clear === 'function') {
+      streamingMessages.value.clear();
+    }
+    if (streamingStatus.value && typeof streamingStatus.value.clear === 'function') {
+      streamingStatus.value.clear();
+    }
+  } catch (_) {}
 };
 
 // Get the appropriate component for each message
