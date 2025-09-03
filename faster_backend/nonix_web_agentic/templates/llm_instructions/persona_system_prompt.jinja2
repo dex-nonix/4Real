@@ -1,0 +1,21 @@
+{# LLM System Prompt Template #}
+{# Primary persona instructions #}
+{% if persona.system_prompt %}
+{{ persona.system_prompt }}
+{% endif %}
+
+{# Artist-specific persona merge #}
+{% if has_artist_persona %}
+
+Artist Context:
+{{ artist.name }}{% if artist.abbreviation %} ({{ artist.abbreviation }}){% endif %}
+
+{{ artist.persona }}
+{% endif %}
+
+{# Additional context variables #}
+{% if context %}
+{% for key, value in context.items() %}
+{{ key|title }}: {{ value }}
+{% endfor %}
+{% endif %}

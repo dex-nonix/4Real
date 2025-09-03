@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langgraph.prebuilt import create_react_agent
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from nonix_web.plugin.descriptor import InjectPlugin
 from nonix_web.services.base_service import BaseService, routed_service, route
@@ -22,6 +23,7 @@ from .streaming_interface import StreamingChunk
 from .task_manager import ChatTaskManager
 from ...llm.llm_message_utils import LCAIMessage, LCToolMessage, iter_messages
 from ...models.persona import Persona
+from ..services.template_service import template_service
 
 if TYPE_CHECKING:
     from ...plugin import NxWebAgenticPlugin
@@ -158,11 +160,16 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
             persona_system_prompt = ""
             async with AsyncSessionLocal() as db_session:
                 persona_result = await db_session.execute(
-                    select(Persona).where(Persona.id == persona_id)
+                    select(Persona).options(selectinload(Persona.artist))
+                    .where(Persona.id == persona_id)
                 )
                 persona = persona_result.scalar_one_or_none()
                 if persona:
-                    persona_system_prompt = persona.system_prompt or ""
+                    persona_system_prompt = template_service.render_llm_instructions(
+                        persona=persona,
+                        artist=persona.artist if persona.artist else None,
+                        context={'session_id': session_id, 'timestamp': datetime.now()}
+                    )
 
             template_messages = [
                 MessagesPlaceholder(variable_name="chat_history"),
