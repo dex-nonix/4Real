@@ -179,7 +179,7 @@ def _get_route_info(cls) -> _RoutedServiceMethodDefinition:
 from nonix_web.server import NxWebServer
 
 
-class BaseService(ABC):
+class NxWebServerRouter(ABC):
     server: "NxWebServer" = Inject(NxWebServer)
     router: APIRouter
 
