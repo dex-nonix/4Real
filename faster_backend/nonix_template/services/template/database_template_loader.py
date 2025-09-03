@@ -1,13 +1,16 @@
 from typing import List, Tuple, Optional
 from jinja2 import TemplateNotFound
+from jinja2_async_environment import AsyncBaseLoader
 from pathlib import Path
-import asyncio
-import os
+from sqlalchemy import select
+import aiofiles
 
+from nonix_web_db import AsyncSessionLocal
 from .template_exceptions import TemplateNotFoundError
+from ...models.template import Template as DbTemplate
 
 
-class DatabaseTemplateLoader:
+class DatabaseTemplateLoader(AsyncBaseLoader):
     """Custom Jinja2 loader that loads templates from database and filesystem with inheritance support"""
 
     # Supported template file extensions
@@ -18,9 +21,9 @@ class DatabaseTemplateLoader:
         self._cache = {}  # template_name -> (content, filename, uptodate)
         self._inheritance_cache = {}  # template_name -> resolved_content
 
-    def get_source(self, environment, template_name) -> Tuple[str, str, bool]:
+    async def get_source(self, environment, template_name) -> Tuple[str, str, bool]:
         """
-        Load template source from database first, then filesystem fallback
+        Load template source from database first, then filesystem fallback (async)
         Returns: (source, filename, uptodate)
         """
         try:
@@ -31,8 +34,9 @@ class DatabaseTemplateLoader:
 
             # Step 1: Try to load from database
             try:
-                template = self._load_template_sync(template_name)
+                template = await self._load_template_by_name(template_name)
                 if template:
+                    print(f"DEBUG: Found template '{template_name}' in database")
                     # Store in cache
                     source = template.content
                     filename = f"database:{template.name}"
@@ -40,11 +44,14 @@ class DatabaseTemplateLoader:
 
                     self._cache[template_name] = (source, filename, uptodate)
                     return source, filename, uptodate
-            except TemplateNotFoundError:
-                pass  # Continue to filesystem fallback
+                else:
+                    print(f"DEBUG: Template '{template_name}' not found in database, trying filesystem")
+            except Exception as e:
+                print(f"DEBUG: Database lookup failed for '{template_name}': {e}, trying filesystem")
 
             # Step 2: Try to load from filesystem paths
-            source, filename, uptodate = self._load_from_filesystem(template_name)
+            print(f"DEBUG: Current search paths: {[str(p) for p in self._search_paths]}")
+            source, filename, uptodate = await self._load_from_filesystem_async(template_name)
 
             # Store in cache
             self._cache[template_name] = (source, filename, uptodate)
@@ -53,12 +60,14 @@ class DatabaseTemplateLoader:
         except TemplateNotFoundError:
             raise TemplateNotFound(template_name)
 
-    def _load_from_filesystem(self, template_name: str) -> Tuple[str, str, bool]:
+    async def _load_from_filesystem_async(self, template_name: str) -> Tuple[str, str, bool]:
         """
-        Load template from filesystem search paths
+        Load template from filesystem search paths (async)
         Returns: (source, filename, uptodate)
         """
+        print(f"DEBUG: Loading from filesystem for '{template_name}'")
         if not self._search_paths:
+            print("DEBUG: No search paths configured!")
             raise TemplateNotFoundError(template_name)
 
         # Convert template name with "/" to filesystem path
@@ -67,15 +76,18 @@ class DatabaseTemplateLoader:
 
         # Try each search path
         for search_path in self._search_paths:
+            print(f"DEBUG: Checking search path: {search_path}")
             # Try each file extension
             for ext in self.TEMPLATE_EXTENSIONS:
                 file_path = search_path / template_path.with_suffix(ext)
+                print(f"DEBUG: Checking file: {file_path}")
 
                 if file_path.exists() and file_path.is_file():
+                    print(f"DEBUG: Found template file: {file_path}")
                     try:
-                        # Read file content
-                        with open(file_path, 'r', encoding='utf-8') as f:
-                            source = f.read()
+                        # Read file content asynchronously
+                        async with aiofiles.open(file_path, 'r', encoding='utf-8') as f:
+                            source = await f.read()
 
                         # For now, consider files up-to-date
                         uptodate = True
@@ -102,28 +114,12 @@ class DatabaseTemplateLoader:
         for key in fs_keys:
             del self._cache[key]
 
-    def _load_template_sync(self, template_name: str):
-        """Load template from database synchronously"""
-        # Create event loop if needed
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
 
-        # Run the async method in the event loop
-        return loop.run_until_complete(self._load_template_by_name(template_name))
 
     async def _load_template_by_name(self, template_name: str):
         """Load template from database by name"""
-        # Get async session
-        from nonix_web_db import AsyncSessionLocal
-        from sqlalchemy import select
-
         async with AsyncSessionLocal() as session:
-            from ...models.template import Template
-
-            stmt = select(Template).where(Template.name == template_name)
+            stmt = select(DbTemplate).where(DbTemplate.name == template_name)
             result = await session.execute(stmt)
             template = result.scalar_one_or_none()
 
@@ -132,7 +128,7 @@ class DatabaseTemplateLoader:
 
             # Load parent template if exists (for inheritance resolution)
             if template.parent_template_id:
-                parent_stmt = select(Template).where(Template.id == template.parent_template_id)
+                parent_stmt = select(DbTemplate).where(DbTemplate.id == template.parent_template_id)
                 parent_result = await session.execute(parent_stmt)
                 template.parent_template = parent_result.scalar_one_or_none()
 

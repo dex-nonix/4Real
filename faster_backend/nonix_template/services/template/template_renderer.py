@@ -1,10 +1,11 @@
-from typing import Dict, Any, Optional, Union
-from jinja2 import Environment, Template
-import asyncio
+from typing import Dict, Any, Optional
+from jinja2_async_environment import AsyncEnvironment
 from sqlalchemy import select
 
+from nonix_web_db import AsyncSessionLocal
 from .database_template_loader import DatabaseTemplateLoader
 from .template_exceptions import TemplateNotFoundError, TemplateRenderingError, InvalidContextError
+from ...models.template import Template
 
 
 class TemplateRenderer:
@@ -12,30 +13,38 @@ class TemplateRenderer:
 
     def __init__(self, search_paths=None):
         self.loader = DatabaseTemplateLoader(search_paths)
-        self.env = Environment(
+        self.env = AsyncEnvironment(
             loader=self.loader,
             trim_blocks=True,
             lstrip_blocks=True,
-            keep_trailing_newline=True,
-            enable_async=True
+            keep_trailing_newline=True
         )
 
     async def render_by_name(self, template_name: str, context: Optional[Dict[str, Any]] = None) -> str:
         """Render template by name with optional context"""
         try:
-            template = await self._get_template_by_name(template_name)
-            return await self._render_template(template, context)
+            # Use AsyncEnvironment which will call our DatabaseTemplateLoader asynchronously
+            jinja_template = await self.env.get_template(template_name)
+            return await jinja_template.render_async(**context) if context else await jinja_template.render_async()
         except Exception as e:
-            if isinstance(e, TemplateNotFoundError):
-                raise
+            if "TemplateNotFound" in str(e) or "Template" in str(e) and "not found" in str(e):
+                raise TemplateNotFoundError(template_name)
             raise TemplateRenderingError(template_name, str(e))
 
     async def render_by_id(self, template_id: int, context: Optional[Dict[str, Any]] = None) -> str:
         """Render template by ID with optional context"""
         try:
+            # First get the template name from database
             template = await self._get_template_by_id(template_id)
-            return await self._render_template(template, context)
+            if not template:
+                raise TemplateNotFoundError(f"id:{template_id}")
+
+            # Then use AsyncEnvironment with the template name
+            jinja_template = await self.env.get_template(template.name)
+            return await jinja_template.render_async(**context) if context else await jinja_template.render_async()
         except Exception as e:
+            if isinstance(e, TemplateNotFoundError):
+                raise
             raise TemplateRenderingError(f"id:{template_id}", str(e))
 
     async def render_template_object(self, template, context: Optional[Dict[str, Any]] = None) -> str:
@@ -49,9 +58,6 @@ class TemplateRenderer:
 
     async def list_available_templates(self) -> Dict[str, Dict[str, Any]]:
         """List all available templates with metadata"""
-        from nonix_web_db import AsyncSessionLocal
-        from ...models.template import Template
-
         async with AsyncSessionLocal() as session:
             # Eager load parent template relationship
             stmt = select(Template).outerjoin(Template.parent_template)
@@ -72,9 +78,6 @@ class TemplateRenderer:
 
     async def _get_template_by_name(self, template_name: str):
         """Get template by name"""
-        from nonix_web_db import AsyncSessionLocal
-        from ...models.template import Template
-
         async with AsyncSessionLocal() as session:
             stmt = select(Template).where(Template.name == template_name)
             result = await session.execute(stmt)
@@ -87,9 +90,6 @@ class TemplateRenderer:
 
     async def _get_template_by_id(self, template_id: int):
         """Get template by ID"""
-        from nonix_web_db import AsyncSessionLocal
-        from ...models.template import Template
-
         async with AsyncSessionLocal() as session:
             stmt = select(Template).where(Template.id == template_id)
             result = await session.execute(stmt)
