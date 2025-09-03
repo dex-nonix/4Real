@@ -21,13 +21,14 @@ from .mixins.persona_chat_mixin import PersonaChatMixin
 from .mixins.tool_execution_mixin import ToolExecutionMixin
 from .streaming_interface import StreamingChunk
 from .task_manager import ChatTaskManager
-from ..template_service import template_service
+
 from ...llm.llm_message_utils import LCAIMessage, LCToolMessage, iter_messages
 from ...models.persona import Persona
 
 
 if TYPE_CHECKING:
     from ...plugin import NxWebAgenticPlugin
+    from nonix_template.plugin import NxWebTemplatePlugin
 
 
 @routed_service("/chat", tags=["Chat"])
@@ -43,6 +44,7 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
     - ToolExecutionMixin: Tool execution and MCP operations
     """
     agentic_plugin: "NxWebAgenticPlugin" = InjectPlugin("agentic")
+    template_plugin: "NxWebTemplatePlugin" = InjectPlugin("template")
 
     def __init__(self, router):
         super().__init__(router)
@@ -64,6 +66,25 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
             'message': message,
             'timestamp': datetime.utcnow().isoformat()
         })
+
+    async def render_persona_prompt(self, persona, artist=None, context=None):
+        """Render LLM system prompt for persona using template plugin"""
+        # Prepare context variables - let template handle all conditional logic
+        template_vars = {
+            'persona': persona,
+            'artist': artist,
+        }
+
+        # Add any additional context
+        if context:
+            template_vars.update(context)
+
+        # Render template using the new template plugin
+        # Template handles all conditional logic (artist checks, etc.)
+        return await self.template_plugin.render_template(
+            "llm_instructions/persona_system_prompt",
+            context=template_vars
+        )
 
     async def emit_tool_event(self, session_id: int, history_id: int, tool_name: str, status: str, **extra) -> None:
         await self.emit_chat_event(session_id, history_id, 'tool_status', {
@@ -166,7 +187,7 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
                 )
                 persona = persona_result.scalar_one_or_none()
                 if persona:
-                    persona_system_prompt = template_service.render_llm_instructions(
+                    persona_system_prompt = await self.render_persona_prompt(
                         persona=persona,
                         artist=persona.artist if persona.artist else None,
                         context={'persona_id': persona_id, 'timestamp': datetime.now()}

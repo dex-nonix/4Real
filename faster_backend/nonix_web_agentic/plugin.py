@@ -2,7 +2,7 @@ from typing import Dict, Any, TYPE_CHECKING
 
 from nonix_web.plugin.base_plugin import BasePlugin
 from nonix_web.plugin.base_plugin import api_services
-from nonix_web.utils.di import di_register
+from nonix_web.utils.di import di_register, InjectPlugin
 from .llm.agentic_tool_manager import AgenticToolManager
 from .services.ai_analysis_result import AIAnalysisResultService
 from .services.ai_model_mapping import AIModelMappingService
@@ -21,6 +21,7 @@ from .services.tool_invocation_log import ToolInvocationLogService
 
 if TYPE_CHECKING:
     from nonix_web.server import NxWebServer
+    from nonix_template.plugin import NxWebTemplatePlugin
 
 
 @api_services([
@@ -41,7 +42,22 @@ if TYPE_CHECKING:
 ])
 class NxWebAgenticPlugin(BasePlugin):
     agentic_tool_manager: AgenticToolManager = None
+    template_plugin: "NxWebTemplatePlugin" = InjectPlugin("template")
 
     def _configure(self, server: "NxWebServer", config: Dict[str, Any]):
         self.agentic_tool_manager = AgenticToolManager()
         di_register(AgenticToolManager, instance=self.agentic_tool_manager)
+
+    async def _startup(self, server: "NxWebServer", config: Dict[str, Any]):
+        """Register template directory during startup"""
+        # Register the agentic plugin's template directory
+        import os
+        from pathlib import Path
+
+        template_dir = Path(__file__).parent / "templates"
+        if template_dir.exists():
+            try:
+                await self.template_plugin.add_search_path(str(template_dir))
+                self._logger.info(f"Registered template directory: {template_dir}")
+            except Exception as e:
+                self._logger.warning(f"Failed to register template directory: {e}")

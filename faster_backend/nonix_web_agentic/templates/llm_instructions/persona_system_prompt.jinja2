@@ -5,7 +5,7 @@
 {% endif %}
 
 {# Artist-specific persona merge #}
-{% if has_artist_persona %}
+{% if artist and artist.persona %}
 
 Artist Context:
 {{ artist.name }}{% if artist.abbreviation %} ({{ artist.abbreviation }}){% endif %}
