@@ -21,9 +21,10 @@ from .mixins.persona_chat_mixin import PersonaChatMixin
 from .mixins.tool_execution_mixin import ToolExecutionMixin
 from .streaming_interface import StreamingChunk
 from .task_manager import ChatTaskManager
+from ..template_service import template_service
 from ...llm.llm_message_utils import LCAIMessage, LCToolMessage, iter_messages
 from ...models.persona import Persona
-from ..services.template_service import template_service
+
 
 if TYPE_CHECKING:
     from ...plugin import NxWebAgenticPlugin
@@ -168,7 +169,7 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
                     persona_system_prompt = template_service.render_llm_instructions(
                         persona=persona,
                         artist=persona.artist if persona.artist else None,
-                        context={'session_id': session_id, 'timestamp': datetime.now()}
+                        context={'persona_id': persona_id, 'timestamp': datetime.now()}
                     )
 
             template_messages = [
