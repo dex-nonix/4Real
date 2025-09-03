@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional
-from nonix_web.services.base_db_model_mixin import BaseDbModelMixin
+from nonix_web.services.base_db_model_mixin import BaseDbModelMixin, BaseUpdateModel
 
 class FileLinkBase(BaseModel):
     file_id: int = Field(..., gt=0)
@@ -13,7 +13,7 @@ class FileLinkBase(BaseModel):
 class FileLinkCreate(FileLinkBase):
     pass
 
-class FileLinkUpdate(FileLinkBase):
+class FileLinkUpdate(BaseUpdateModel, base_model=FileLinkBase):
     pass
 
 class FileLinkInDbModel(FileLinkBase, BaseDbModelMixin):

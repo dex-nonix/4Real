@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from nonix_web.services.base_db_model_mixin import BaseDbModelMixin
+from nonix_web.services.base_db_model_mixin import BaseDbModelMixin, BaseUpdateModel
 
 
 class RhymeTechniqueBase(BaseModel):
@@ -11,7 +11,7 @@ class RhymeTechniqueCreate(RhymeTechniqueBase):
     pass
 
 
-class RhymeTechniqueUpdate(RhymeTechniqueBase):
+class RhymeTechniqueUpdate(BaseUpdateModel, base_model=RhymeTechniqueBase):
     pass
 
 

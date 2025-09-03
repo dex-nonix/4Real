@@ -2,7 +2,7 @@ from typing import Optional, Any, Dict
 
 from pydantic import BaseModel, Field
 
-from nonix_web.services.base_db_model_mixin import BaseDbModelMixin
+from nonix_web.services.base_db_model_mixin import BaseDbModelMixin, BaseUpdateModel
 
 
 class PersonaMCPServerBase(BaseModel):
@@ -17,7 +17,7 @@ class PersonaMCPServerCreate(PersonaMCPServerBase):
     pass
 
 
-class PersonaMCPServerUpdate(PersonaMCPServerBase):
+class PersonaMCPServerUpdate(BaseUpdateModel, base_model=PersonaMCPServerBase):
     pass
 
 

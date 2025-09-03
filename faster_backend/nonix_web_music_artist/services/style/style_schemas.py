@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from nonix_web.services.base_db_model_mixin import BaseDbModelMixin
+from nonix_web.services.base_db_model_mixin import BaseDbModelMixin, BaseUpdateModel
 
 
 class StyleBase(BaseModel):
@@ -11,7 +11,7 @@ class StyleCreate(StyleBase):
     pass
 
 
-class StyleUpdate(StyleBase):
+class StyleUpdate(BaseUpdateModel, base_model=StyleBase):
     pass
 
 

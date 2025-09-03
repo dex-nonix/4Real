@@ -2,7 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from nonix_web.services.base_db_model_mixin import BaseDbModelMixin
+from nonix_web.services.base_db_model_mixin import BaseDbModelMixin, BaseUpdateModel
 
 
 class TrackBase(BaseModel):
@@ -17,7 +17,7 @@ class TrackCreate(TrackBase):
     pass
 
 
-class TrackUpdate(TrackBase):
+class TrackUpdate(BaseUpdateModel, base_model=TrackBase):
     pass
 
 

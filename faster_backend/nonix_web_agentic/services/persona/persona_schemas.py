@@ -2,7 +2,7 @@ from typing import Optional, Any, Dict
 
 from pydantic import BaseModel, Field
 
-from nonix_web.services.base_db_model_mixin import BaseDbModelMixin
+from nonix_web.services.base_db_model_mixin import BaseDbModelMixin, BaseUpdateModel
 
 
 class PersonaBase(BaseModel):
@@ -19,7 +19,7 @@ class PersonaCreate(PersonaBase):
     pass
 
 
-class PersonaUpdate(PersonaBase):
+class PersonaUpdate(BaseUpdateModel, base_model=PersonaBase):
     pass
 
 

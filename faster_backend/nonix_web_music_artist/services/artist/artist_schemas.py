@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from nonix_web.services.base_db_model_mixin import BaseDbModelMixin
+from nonix_web.services.base_db_model_mixin import BaseDbModelMixin, BaseUpdateModel
 
 
 class ArtistBase(BaseModel):
@@ -17,7 +17,7 @@ class ArtistCreate(ArtistBase):
     pass
 
 
-class ArtistUpdate(ArtistBase):
+class ArtistUpdate(BaseUpdateModel, base_model=ArtistBase):
     pass
 
 

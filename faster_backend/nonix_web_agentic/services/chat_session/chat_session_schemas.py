@@ -2,7 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from nonix_web.services.base_db_model_mixin import BaseDbModelMixin
+from nonix_web.services.base_db_model_mixin import BaseDbModelMixin, BaseUpdateModel
 
 
 class ChatSessionBase(BaseModel):
@@ -17,7 +17,7 @@ class ChatSessionCreate(ChatSessionBase):
     pass
 
 
-class ChatSessionUpdate(ChatSessionBase):
+class ChatSessionUpdate(BaseUpdateModel, base_model=ChatSessionBase):
     pass
 
 

@@ -2,7 +2,7 @@ from typing import Optional, Any, Dict
 
 from pydantic import BaseModel, Field
 
-from nonix_web.services.base_db_model_mixin import BaseDbModelMixin
+from nonix_web.services.base_db_model_mixin import BaseDbModelMixin, BaseUpdateModel
 
 
 class AIProviderBase(BaseModel):
@@ -19,7 +19,7 @@ class AIProviderCreate(AIProviderBase):
     pass
 
 
-class AIProviderUpdate(AIProviderBase):
+class AIProviderUpdate(BaseUpdateModel, base_model=AIProviderBase):
     pass
 
 

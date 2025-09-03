@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
 
-from nonix_web.services.base_db_model_mixin import BaseDbModelMixin
+from nonix_web.services.base_db_model_mixin import BaseDbModelMixin, BaseUpdateModel
 
 
 class AlbumBase(BaseModel):
@@ -24,7 +24,7 @@ class AlbumCreate(AlbumBase):
     pass
 
 
-class AlbumUpdate(AlbumBase):
+class AlbumUpdate(BaseUpdateModel, base_model=AlbumBase):
     pass
 
 

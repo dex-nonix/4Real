@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from nonix_web.services.base_db_model_mixin import BaseDbModelMixin
+from nonix_web.services.base_db_model_mixin import BaseDbModelMixin, BaseUpdateModel
 
 
 class PersonaToolAccessBase(BaseModel):
@@ -13,7 +13,7 @@ class PersonaToolAccessCreate(PersonaToolAccessBase):
     pass
 
 
-class PersonaToolAccessUpdate(PersonaToolAccessBase):
+class PersonaToolAccessUpdate(BaseUpdateModel, base_model=PersonaToolAccessBase):
     pass
 
 

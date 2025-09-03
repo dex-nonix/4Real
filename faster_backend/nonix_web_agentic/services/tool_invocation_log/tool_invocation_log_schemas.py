@@ -3,7 +3,7 @@ from typing import Optional, Any, Dict, List
 
 from pydantic import BaseModel, Field
 
-from nonix_web.services.base_db_model_mixin import BaseDbModelMixin
+from nonix_web.services.base_db_model_mixin import BaseDbModelMixin, BaseUpdateModel
 
 
 class ToolInvocationLogBase(BaseModel):
@@ -27,7 +27,7 @@ class ToolInvocationLogCreate(ToolInvocationLogBase):
     pass
 
 
-class ToolInvocationLogUpdate(ToolInvocationLogBase):
+class ToolInvocationLogUpdate(BaseUpdateModel, base_model=ToolInvocationLogBase):
     pass
 
 

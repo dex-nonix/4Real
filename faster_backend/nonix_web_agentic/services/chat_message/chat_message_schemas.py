@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field
 
-from nonix_web.services.base_db_model_mixin import BaseDbModelMixin
+from nonix_web.services.base_db_model_mixin import BaseDbModelMixin, BaseUpdateModel
 
 
 class ChatMessageBase(BaseModel):
@@ -23,7 +23,7 @@ class ChatMessageCreate(ChatMessageBase):
     pass
 
 
-class ChatMessageUpdate(ChatMessageBase):
+class ChatMessageUpdate(BaseUpdateModel, base_model=ChatMessageBase):
     pass
 
 
