@@ -2,6 +2,7 @@ import ArtistService from '@/services/ArtistService.js'
 import AlbumService from '@/services/AlbumService.js'
 import TrackService from '@/services/TrackService.js'
 import StyleService from '@/services/StyleService.js'
+import TemplateService from '@/services/TemplateService.js'
 import RhymeTechniqueService from '@/services/RhymeTechniqueService.js'
 import AIProviderService from '@/services/AIProviderService.js'
 import AIModelMappingService from '@/services/AIModelMappingService.js'
@@ -12,7 +13,9 @@ import PersonaToolAccessService from '@/services/PersonaToolAccessService.js'
 import MCPServerService from '@/services/MCPServerService.js'
 import PersonaMCPServerService from '@/services/PersonaMCPServerService.js'
 import ChatSessionService from '@/services/ChatSessionService.js'
+import ChatHistoryService from '@/services/ChatHistoryService.js'
 import ChatMessageService from '@/services/ChatMessageService.js'
+import ChatPromptService from '@/services/ChatPromptService.js'
 import ToolInvocationLogService from '@/services/ToolInvocationLogService.js'
 import FileCategoryService from '@/services/FileCategoryService.js'
 import FileService from '@/services/FileService.js'
@@ -42,6 +45,7 @@ export const appConfig = {
         {type: "crud", entity: 'albums'},
         {type: "crud", entity: 'tracks'},
         {type: "crud", entity: 'styles'},
+        {type: "crud", entity: 'templates'},
         {type: "crud", entity: 'rhyme-techniques'},
         {type: "crud", entity: 'ai-providers'},
         {type: "crud", entity: 'ai-model-mappings'},
@@ -53,7 +57,9 @@ export const appConfig = {
         {type: "crud", entity: 'mcp-servers'},
         {type: "crud", entity: 'persona-mcp-servers'},
         {type: "crud", entity: 'chat-sessions'},
+        {type: "crud", entity: 'chat-histories'},
         {type: "crud", entity: 'chat-messages'},
+        {type: "crud", entity: 'chat-prompts'},
         {type: "crud", entity: 'tool-invocation-logs'},
         {type: "crud", entity: 'file-categories'},
         {type: "crud", entity: 'files'},
@@ -67,6 +73,7 @@ export const appConfig = {
         "albums": (app) => new AlbumService(app),
         "tracks": (app) => new TrackService(app),
         "styles": (app) => new StyleService(app),
+        "templates": (app) => new TemplateService(app),
         "rhyme-techniques": (app) => new RhymeTechniqueService(app),
         "ai-providers": (app) => new AIProviderService(app),
         "ai-model-mappings": (app) => new AIModelMappingService(app),
@@ -77,7 +84,9 @@ export const appConfig = {
         "mcp-servers": (app) => new MCPServerService(app),
         "persona-mcp-servers": (app) => new PersonaMCPServerService(app),
         "chat-sessions": (app) => new ChatSessionService(app),
+        "chat-histories": (app) => new ChatHistoryService(app),
         "chat-messages": (app) => new ChatMessageService(app),
+        "chat-prompts": (app) => new ChatPromptService(app),
         "tool-invocation-logs": (app) => new ToolInvocationLogService(app),
         "file-categories": (app) => new FileCategoryService(app),
         "files": (app) => new FileService(app),
