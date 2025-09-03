@@ -10,8 +10,8 @@ from .template_exceptions import TemplateNotFoundError, TemplateRenderingError, 
 class TemplateRenderer:
     """Handles template rendering with inheritance support"""
 
-    def __init__(self):
-        self.loader = DatabaseTemplateLoader()
+    def __init__(self, search_paths=None):
+        self.loader = DatabaseTemplateLoader(search_paths)
         self.env = Environment(
             loader=self.loader,
             trim_blocks=True,
