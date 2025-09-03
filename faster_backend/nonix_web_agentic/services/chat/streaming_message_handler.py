@@ -3,6 +3,7 @@ from typing import Optional
 
 from nonix_web_db import AsyncSessionLocal
 from ...models.chat_message import ChatMessage
+from ..sequence_service import SequenceService
 
 
 class StreamingMessageHandler:
@@ -15,7 +16,7 @@ class StreamingMessageHandler:
         self._logger = logging.getLogger(__name__)
 
     async def finalize_assistant_message(self, final_content: str = None, error: bool = False):
-        """Mark assistant message as complete or error."""
+        """Mark assistant message as complete or error, and assign final seq."""
         if not self.assistant_message_id:
             raise ValueError("Assistant message not created yet")
 
@@ -25,7 +26,6 @@ class StreamingMessageHandler:
                 if not asst_msg:
                     raise ValueError(f"Assistant message {self.assistant_message_id} not found")
 
-                # Update content if provided
                 if final_content is not None:
                     if error:
                         asst_msg.content_json = {
@@ -40,11 +40,16 @@ class StreamingMessageHandler:
                 else:
                     asst_msg.status = 'complete' if not error else 'error'
 
+                # Assign the final seq at completion so tools appear before assistant
+                new_seq = await SequenceService.next_seq(asst_msg.history_id)
+                asst_msg.seq = new_seq
+
                 await db_session.commit()
+                await db_session.refresh(asst_msg)
 
                 status = 'error' if error else 'complete'
-                self._logger.info(f"Finalized assistant message {self.assistant_message_id} with status: {status}")
-                return asst_msg.id
+                self._logger.info(f"Finalized assistant message {self.assistant_message_id} with status: {status} and seq: {asst_msg.seq}")
+                return asst_msg
 
             except Exception as e:
                 await db_session.rollback()
@@ -73,8 +78,13 @@ class StreamingMessageHandler:
             else:
                 asst_msg.status = 'complete' if not error else 'error'
 
+            # Assign the final seq at completion
+            new_seq = await SequenceService.next_seq(asst_msg.history_id)
+            asst_msg.seq = new_seq
+
             await db_session.commit()
-            return asst_msg.id
+            await db_session.refresh(asst_msg)
+            return asst_msg
         except Exception as e:
             await db_session.rollback()
             self._logger.error(f"Failed to finalize assistant message (session): {e}", exc_info=True)
