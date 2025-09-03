@@ -40,15 +40,11 @@ class StreamingMessageHandler:
                 else:
                     asst_msg.status = 'complete' if not error else 'error'
 
-                # Assign the final seq at completion so tools appear before assistant
-                new_seq = await SequenceService.next_seq(asst_msg.history_id)
-                asst_msg.seq = new_seq
-
                 await db_session.commit()
                 await db_session.refresh(asst_msg)
 
                 status = 'error' if error else 'complete'
-                self._logger.info(f"Finalized assistant message {self.assistant_message_id} with status: {status} and seq: {asst_msg.seq}")
+                self._logger.info(f"Finalized assistant message {self.assistant_message_id} with status: {status}")
                 return asst_msg
 
             except Exception as e:
@@ -77,10 +73,6 @@ class StreamingMessageHandler:
                     asst_msg.status = 'complete'
             else:
                 asst_msg.status = 'complete' if not error else 'error'
-
-            # Assign the final seq at completion
-            new_seq = await SequenceService.next_seq(asst_msg.history_id)
-            asst_msg.seq = new_seq
 
             await db_session.commit()
             await db_session.refresh(asst_msg)

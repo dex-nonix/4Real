@@ -672,6 +672,8 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                         # accumulate full text for final persistence
                         accumulated_text += message.content or ""
                         message.metadata = message.metadata or {}
+                        if asst_seq is not None:
+                            message.metadata['seq'] = asst_seq
                         if asst_turn is not None:
                             message.metadata['turn_id'] = asst_turn
                         if await message_handler.update_content_safely(message.content):
@@ -682,6 +684,8 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
                     elif message.chunk_type == "ai_start":
                         message.metadata = message.metadata or {}
+                        if asst_seq is not None:
+                            message.metadata['seq'] = asst_seq
                         if asst_turn is not None:
                             message.metadata['turn_id'] = asst_turn
                         await event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
@@ -844,9 +848,12 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
                     elif message.chunk_type == "complete":
                         message.metadata = message.metadata or {}
-                        finalized_msg = await message_handler.finalize_assistant_message(accumulated_text if accumulated_text else None)
-                        message.metadata['seq'] = getattr(finalized_msg, 'seq', None)
-                        message.metadata['turn_id'] = getattr(finalized_msg, 'turn_id', None)
+                        # Keep original placeholder seq; finalize without changing seq
+                        await message_handler.finalize_assistant_message(accumulated_text if accumulated_text else None)
+                        if asst_seq is not None:
+                            message.metadata['seq'] = asst_seq
+                        if asst_turn is not None:
+                            message.metadata['turn_id'] = asst_turn
                         await event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
                         break
 
