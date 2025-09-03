@@ -18,23 +18,7 @@ class NxWebTemplatePlugin(BasePlugin):
         """Initialize template renderer during plugin configuration"""
         self.template_renderer = TemplateRenderer()
 
-    async def _startup(self, server: "NxWebServer", config: Dict[str, Any]):
-        """Set up template service during startup"""
-        # The TemplateService will be available through the plugin system
-        # For now, we don't need to do anything special here
 
-    def _ensure_template_service(self):
-        """Ensure template service is available"""
-        if not self.template_renderer.template_service:
-            # Create a template service instance if not available
-            
-
-            # Initialize template renderer if not done
-            if not self.template_renderer:
-                self.template_renderer = TemplateRenderer()
-
-            template_service = TemplateService()  # Router will be set by the service itself
-            self.template_renderer.set_template_service(template_service)
 
     # Public API methods for consumers
     async def render_template(self, template_name: str, context: Dict[str, Any] = None) -> str:
@@ -55,7 +39,6 @@ class NxWebTemplatePlugin(BasePlugin):
         if not self.template_renderer:
             raise RuntimeError("Template renderer not initialized")
 
-        self._ensure_template_service()
         return await self.template_renderer.render_by_name(template_name, context)
 
     async def render_template_by_id(self, template_id: int, context: Dict[str, Any] = None) -> str:
@@ -76,7 +59,6 @@ class NxWebTemplatePlugin(BasePlugin):
         if not self.template_renderer:
             raise RuntimeError("Template renderer not initialized")
 
-        self._ensure_template_service()
         return await self.template_renderer.render_by_id(template_id, context)
 
     async def get_template_content(self, template_name: str) -> str:
@@ -95,7 +77,6 @@ class NxWebTemplatePlugin(BasePlugin):
         if not self.template_renderer:
             raise RuntimeError("Template renderer not initialized")
 
-        self._ensure_template_service()
         return await self.template_renderer.get_template_content(template_name)
 
     async def list_available_templates(self) -> Dict[str, Dict[str, Any]]:
@@ -108,7 +89,6 @@ class NxWebTemplatePlugin(BasePlugin):
         if not self.template_renderer:
             raise RuntimeError("Template renderer not initialized")
 
-        self._ensure_template_service()
         return await self.template_renderer.list_available_templates()
 
     def clear_template_cache(self):

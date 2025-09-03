@@ -8,8 +8,7 @@ from .template_exceptions import TemplateNotFoundError, CircularInheritanceError
 class DatabaseTemplateLoader:
     """Custom Jinja2 loader that loads templates from the database with inheritance support"""
 
-    def __init__(self, template_service=None):
-        self.template_service = template_service
+    def __init__(self):
         self._cache = {}  # template_name -> (content, filename, uptodate)
         self._inheritance_cache = {}  # template_name -> resolved_content
 

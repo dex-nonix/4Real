@@ -1,6 +1,7 @@
 from typing import Dict, Any, Optional, Union
 from jinja2 import Environment, Template
 import asyncio
+from sqlalchemy import select
 
 from .database_template_loader import DatabaseTemplateLoader
 from .template_exceptions import TemplateNotFoundError, TemplateRenderingError, InvalidContextError
@@ -9,9 +10,8 @@ from .template_exceptions import TemplateNotFoundError, TemplateRenderingError, 
 class TemplateRenderer:
     """Handles template rendering with inheritance support"""
 
-    def __init__(self, template_service=None):
-        self.template_service = template_service
-        self.loader = DatabaseTemplateLoader(template_service)
+    def __init__(self):
+        self.loader = DatabaseTemplateLoader()
         self.env = Environment(
             loader=self.loader,
             trim_blocks=True,
@@ -19,11 +19,6 @@ class TemplateRenderer:
             keep_trailing_newline=True,
             enable_async=True
         )
-
-    def set_template_service(self, template_service):
-        """Set the template service after initialization"""
-        self.template_service = template_service
-        self.loader.template_service = template_service
 
     async def render_by_name(self, template_name: str, context: Optional[Dict[str, Any]] = None) -> str:
         """Render template by name with optional context"""
@@ -58,9 +53,10 @@ class TemplateRenderer:
         from ...models.template import Template
 
         async with AsyncSessionLocal() as session:
-            stmt = select(Template)
+            # Eager load parent template relationship
+            stmt = select(Template).outerjoin(Template.parent_template)
             result = await session.execute(stmt)
-            templates = result.scalars().all()
+            templates = result.unique().scalars().all()
 
             template_info = {}
             for template in templates:
