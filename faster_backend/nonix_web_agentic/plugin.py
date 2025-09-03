@@ -11,6 +11,7 @@ from .services.chat.chat_service import ChatService
 from .services.chat_history import ChatHistoryService
 from .services.chat_message import ChatMessageService
 from .services.chat_session import ChatSessionService
+from .services.chat_prompt import ChatPromptService
 from .services.internal_tool import InternalToolService
 from .services.mcp_server import MCPServerService
 from .services.persona import PersonaService
@@ -30,6 +31,7 @@ if TYPE_CHECKING:
     ChatHistoryService,
     ChatMessageService,
     ChatSessionService,
+    ChatPromptService,
     InternalToolService,
     MCPServerService,
     PersonaService,

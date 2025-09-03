@@ -9,6 +9,7 @@ if __name__ == "__main__":
         {"name": "cors"},
         {"name": "open-api"},
         {"name": "db"},
+        {"name": "template"},
         {"name": "static-files"},
         {"name": "agentic"},
         # {"name": "file-manager"}, # settings problem
