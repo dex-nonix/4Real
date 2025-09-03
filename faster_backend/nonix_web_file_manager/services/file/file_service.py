@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import HTTPException, UploadFile, Form
 
 
-from nonix_web.services.base_service import routed_service, route
+from nonix_web.services.web_server_router import routed_service, route
 from nonix_web_db import AsyncSessionLocal
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     GenericCRUDService

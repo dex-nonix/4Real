@@ -4,7 +4,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 
-import nonix_web.services.base_service
+import nonix_web.services.web_server_router
 from nonix_web_db import AsyncSessionLocal
 from .models_and_schemas import (
     HistoryListResponse,

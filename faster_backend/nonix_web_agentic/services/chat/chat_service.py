@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from nonix_web.plugin.descriptor import InjectPlugin
-from nonix_web.services.base_service import BaseService, routed_service, route
+from nonix_web.services.web_server_router import BaseService, routed_service, route
 from nonix_web_db import AsyncSessionLocal
 from .mixins.chat_history_mixin import ChatHistoryMixin
 from .mixins.chat_message_mixin import ChatMessageMixin

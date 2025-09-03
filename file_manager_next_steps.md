@@ -28,15 +28,16 @@ class Settings:
 **File:** `/home/dex/Desktop/shadewalk/4Real/faster_backend/nonix_web_file_manager/services/file/file_service.py`
 
 **Current State:**
+
 ```python
-from nonix_web.services.base_service import routed_service, route
+from nonix_web.services.web_server_router import routed_service, route
 from nonix_web_db import AsyncSessionLocal
 ```
 
 **Action:** Add settings import:
 
 ```python
-from nonix_web.services.base_service import routed_service, route
+from nonix_web.services.web_server_router import routed_service, route
 from nonix_web.config import settings  # ← ADD THIS LINE
 from nonix_web_db import AsyncSessionLocal
 ```
@@ -744,15 +745,18 @@ di_register(FileManagerService, singleton=True)  # ← ADD THIS
 **File:** `/home/dex/Desktop/shadewalk/4Real/faster_backend/nonix_web_music_artist/services/album/album_service.py`
 
 **Current Content Analysis:**
+
 ```python
-from nonix_web.services.base_service import routed_service
-from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, GenericCRUDService
+from nonix_web.services.web_server_router import routed_service
+from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig,
+    GenericCRUDService
 from .album_schemas import AlbumCreate, AlbumUpdate, AlbumInDbModel
 from ...models.album import Album
 
+
 @routed_service("/albums", tags=["Albums"])
 class AlbumService(GenericCRUDService):
-    # CRUD configuration for albums
+# CRUD configuration for albums
 ```
 
 #### **Step 5.2: Add FileManagerService Integration**
@@ -761,18 +765,19 @@ class AlbumService(GenericCRUDService):
 **Action:** Add FileManagerService injection and file management methods:
 
 ```python
-from nonix_web.services.base_service import routed_service
+from nonix_web.services.web_server_router import routed_service
 from nonix_web.utils.di import Inject  # ← ADD THIS IMPORT
-from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, GenericCRUDService
+from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig,
+    GenericCRUDService
 from .album_schemas import AlbumCreate, AlbumUpdate, AlbumInDbModel
 from ...models.album import Album
 
 # ADD THIS: Import the FileManagerService
 from nonix_web_file_manager.services.file_manager_service import FileManagerService
 
+
 @routed_service("/albums", tags=["Albums"])
 class AlbumService(GenericCRUDService):
-
     # ADD THIS: Inject FileManagerService
     file_manager: FileManagerService = Inject(FileManagerService)
 
@@ -800,9 +805,9 @@ class AlbumService(GenericCRUDService):
 
     # ADD THIS: Method to create album with cover file
     async def create_album_with_cover(
-        self,
-        album_data: dict,
-        cover_file_id: int = None
+            self,
+            album_data: dict,
+            cover_file_id: int = None
     ) -> Album:
         """
         Create an album and optionally attach a cover file.
@@ -823,8 +828,8 @@ class AlbumService(GenericCRUDService):
 
     # ADD THIS: Method to get album with file information
     async def get_album_with_files(
-        self,
-        album_id: int
+            self,
+            album_id: int
     ) -> dict:
         """
         Get album with all attached files.
@@ -853,9 +858,9 @@ class AlbumService(GenericCRUDService):
 
     # ADD THIS: Method to update album cover
     async def update_album_cover(
-        self,
-        album_id: int,
-        new_cover_file_id: int
+            self,
+            album_id: int,
+            new_cover_file_id: int
     ) -> bool:
         """
         Update album cover (replaces existing cover).
@@ -887,10 +892,10 @@ class AlbumService(GenericCRUDService):
 
     # ADD THIS: Method to attach additional files
     async def attach_files_to_album(
-        self,
-        album_id: int,
-        file_ids: list,
-        status: str = "attached"
+            self,
+            album_id: int,
+            file_ids: list,
+            status: str = "attached"
     ) -> int:
         """
         Attach multiple files to an album.
