@@ -52,13 +52,12 @@ class NxWebAgenticPlugin(BasePlugin):
     async def _startup(self, server: "NxWebServer", config: Dict[str, Any]):
         """Register template directory during startup"""
         # Register the agentic plugin's template directory
-        import os
         from pathlib import Path
 
         template_dir = Path(__file__).parent / "templates"
         if template_dir.exists():
             try:
-                await self.template_plugin.add_search_path(str(template_dir))
+                self.template_plugin.add_search_path(str(template_dir))
                 self._logger.info(f"Registered template directory: {template_dir}")
             except Exception as e:
                 self._logger.warning(f"Failed to register template directory: {e}")
