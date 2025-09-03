@@ -1,6 +1,7 @@
 from typing import List, Tuple, Optional
 from jinja2 import TemplateNotFound
 from jinja2_async_environment import AsyncBaseLoader
+from aiopath import AsyncPath
 from pathlib import Path
 from sqlalchemy import select
 import aiofiles
@@ -18,32 +19,34 @@ class DatabaseTemplateLoader(AsyncBaseLoader):
 
     def __init__(self, search_paths: Optional[List[Path]] = None):
         self._search_paths = search_paths or []
-        self._cache = {}  # template_name -> (content, filename, uptodate)
+        self._cache = {}  # template_name -> (content, path, uptodate)
         self._inheritance_cache = {}  # template_name -> resolved_content
 
-    async def get_source(self, environment, template_name) -> Tuple[str, str, bool]:
+    async def get_source(self, template: AsyncPath) -> Tuple[str, AsyncPath, bool]:
         """
         Load template source from database first, then filesystem fallback (async)
         Returns: (source, filename, uptodate)
         """
+        template_name = str(template)
+        print(f"DEBUG: get_source called with template: {template}, template_name: {template_name}")
         try:
             # Check cache first
             if template_name in self._cache:
-                source, filename, uptodate = self._cache[template_name]
-                return source, filename, uptodate
+                source, path, uptodate = self._cache[template_name]
+                return source, path, uptodate
 
             # Step 1: Try to load from database
             try:
-                template = await self._load_template_by_name(template_name)
-                if template:
+                template_obj = await self._load_template_by_name(template_name)
+                if template_obj:
                     print(f"DEBUG: Found template '{template_name}' in database")
                     # Store in cache
-                    source = template.content
-                    filename = f"database:{template.name}"
+                    source = template_obj.content
+                    path = AsyncPath(template_name)
                     uptodate = True  # Database templates are always considered up-to-date
 
-                    self._cache[template_name] = (source, filename, uptodate)
-                    return source, filename, uptodate
+                    self._cache[template_name] = (source, path, uptodate)
+                    return source, path, uptodate
                 else:
                     print(f"DEBUG: Template '{template_name}' not found in database, trying filesystem")
             except Exception as e:
@@ -51,16 +54,16 @@ class DatabaseTemplateLoader(AsyncBaseLoader):
 
             # Step 2: Try to load from filesystem paths
             print(f"DEBUG: Current search paths: {[str(p) for p in self._search_paths]}")
-            source, filename, uptodate = await self._load_from_filesystem_async(template_name)
+            source, path, uptodate = await self._load_from_filesystem_async(template_name)
 
             # Store in cache
-            self._cache[template_name] = (source, filename, uptodate)
-            return source, filename, uptodate
+            self._cache[template_name] = (source, path, uptodate)
+            return source, path, uptodate
 
         except TemplateNotFoundError:
             raise TemplateNotFound(template_name)
 
-    async def _load_from_filesystem_async(self, template_name: str) -> Tuple[str, str, bool]:
+    async def _load_from_filesystem_async(self, template_name: str) -> Tuple[str, AsyncPath, bool]:
         """
         Load template from filesystem search paths (async)
         Returns: (source, filename, uptodate)
@@ -70,16 +73,13 @@ class DatabaseTemplateLoader(AsyncBaseLoader):
             print("DEBUG: No search paths configured!")
             raise TemplateNotFoundError(template_name)
 
-        # Convert template name with "/" to filesystem path
-        # e.g., "emails/welcome" becomes "emails/welcome"
-        template_path = Path(template_name)
-
         # Try each search path
         for search_path in self._search_paths:
             print(f"DEBUG: Checking search path: {search_path}")
             # Try each file extension
             for ext in self.TEMPLATE_EXTENSIONS:
-                file_path = search_path / template_path.with_suffix(ext)
+                # Preserve the directory structure by adding extension to the full path
+                file_path = search_path / (template_name + ext)
                 print(f"DEBUG: Checking file: {file_path}")
 
                 if file_path.exists() and file_path.is_file():
@@ -92,8 +92,8 @@ class DatabaseTemplateLoader(AsyncBaseLoader):
                         # For now, consider files up-to-date
                         uptodate = True
 
-                        filename = f"filesystem:{file_path}"
-                        return source, filename, uptodate
+                        path = AsyncPath(file_path)
+                        return source, path, uptodate
 
                     except (IOError, OSError):
                         # Log error but continue to next file
@@ -109,8 +109,8 @@ class DatabaseTemplateLoader(AsyncBaseLoader):
         self._search_paths = search_paths.copy()
         # Clear filesystem cache when paths change
         # Keep database cache as it's still valid
-        fs_keys = [k for k, (_, filename, _) in self._cache.items()
-                  if filename.startswith('filesystem:')]
+        fs_keys = [k for k, (_, path, _) in self._cache.items()
+                  if str(path).startswith('/')]  # filesystem paths start with /
         for key in fs_keys:
             del self._cache[key]
 
@@ -150,19 +150,19 @@ class DatabaseTemplateLoader(AsyncBaseLoader):
 
     def clear_filesystem_cache(self):
         """Clear only filesystem template cache"""
-        fs_keys = [k for k, (_, filename, _) in self._cache.items()
-                  if filename.startswith('filesystem:')]
+        fs_keys = [k for k, (_, path, _) in self._cache.items()
+                  if str(path).startswith('/')]  # filesystem paths start with /
         for key in fs_keys:
             del self._cache[key]
 
     def clear_database_cache(self):
         """Clear only database template cache"""
-        db_keys = [k for k, (_, filename, _) in self._cache.items()
-                  if filename.startswith('database:')]
+        db_keys = [k for k, (_, path, _) in self._cache.items()
+                  if not str(path).startswith('/')]  # database paths don't start with /
         for key in db_keys:
             del self._cache[key]
 
     def add_template_to_cache(self, template_name: str, content: str):
         """Manually add template to cache (useful for testing)"""
-        filename = f"database:{template_name}"
-        self._cache[template_name] = (content, filename, True)
+        path = AsyncPath(template_name)
+        self._cache[template_name] = (content, path, True)

@@ -15,6 +15,7 @@ class TemplateRenderer:
         self.loader = DatabaseTemplateLoader(search_paths)
         self.env = AsyncEnvironment(
             loader=self.loader,
+            enable_async=True,
             trim_blocks=True,
             lstrip_blocks=True,
             keep_trailing_newline=True
@@ -105,8 +106,8 @@ class TemplateRenderer:
         # Merge contexts: template default context + user context
         merged_context = self._merge_contexts(template.context, context)
 
-        # Create Jinja2 template
-        jinja_template = self.env.from_string(template.content)
+        # Use the loader to get template (supports inheritance and async)
+        jinja_template = await self.env.get_template(template.name)
 
         # Render template
         try:
