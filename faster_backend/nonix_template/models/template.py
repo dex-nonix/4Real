@@ -15,8 +15,13 @@ class Template(BaseModel):
     context = Column(JSON)
     parent_template_id = Column(Integer, ForeignKey("templates.id"), nullable=True)
 
-    # Relationships
-    parent_template = relationship("Template", remote_side=[id], backref="child_templates")
-
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Template id={self.id} name={self.name!r}>"
+
+
+# Define self-referencing relationship after class definition to avoid forward reference issues
+Template.parent_template = relationship(
+    "Template",
+    remote_side=lambda: Template.id,
+    backref="child_templates"
+)

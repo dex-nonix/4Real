@@ -2,7 +2,8 @@ from typing import Dict, Any, TYPE_CHECKING
 
 from nonix_web.plugin.base_plugin import BasePlugin
 from nonix_web.plugin.base_plugin import api_services
-from nonix_web.utils.di import di_register, InjectPlugin
+from nonix_web.plugin.descriptor import InjectPlugin
+from nonix_web.utils.di import di_register
 from .llm.agentic_tool_manager import AgenticToolManager
 from .services.ai_analysis_result import AIAnalysisResultService
 from .services.ai_model_mapping import AIModelMappingService
