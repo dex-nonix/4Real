@@ -182,16 +182,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         async with AsyncSessionLocal() as db_session:
             chat_history = []
 
-            # Add system messages
-            system_result = await db_session.execute(
-                select(ChatMessage).where(ChatMessage.history_id == history_id, ChatMessage.role == 'system').order_by(
-                    ChatMessage.seq.asc())
-            )
-            system_msgs = system_result.scalars().all()
-            self._logger.debug(f"Found {len(system_msgs)} system messages")
-            for sm in system_msgs:
-                content = sm.content_json if isinstance(sm.content_json, dict) else {'text': str(sm.content_json)}
-                chat_history.append({'role': 'system', 'content': content})
+
 
             # Add user and assistant messages up to current user message
             user_result = await db_session.execute(

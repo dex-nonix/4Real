@@ -199,7 +199,7 @@ class ChatService(BaseService, ChatSessionMixin, ChatMessageMixin, ChatHistoryMi
                     elif role == 'assistant':
                         conversation_history.append(("ai", content))
                     elif role == 'system':
-                        conversation_history.append(("system", content))
+                        pass
 
                 # Use streaming with astream_events
 

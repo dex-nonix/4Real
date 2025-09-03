@@ -100,21 +100,7 @@ class ChatSessionMixin:
                 session.current_history_id = history.id
                 await db_session.commit()
 
-                # Optional initial system message from persona.system_prompt
-                if persona.system_prompt:
-                    seq_val = await SequenceService.next_seq(history.id)
-                    turn = str(uuid.uuid4())
-                    sys_msg = ChatMessage(
-                        history_id=history.id,
-                        role='system',
-                        message_type='system',
-                        status='complete',
-                        content_json={'text': persona.system_prompt},
-                        seq=seq_val,
-                        turn_id=turn
-                    )
-                    db_session.add(sys_msg)
-                    await db_session.commit()
+
 
                 return JSONResponse({'data': session.to_dict()})
             except Exception as exc:
@@ -280,21 +266,7 @@ class ChatSessionMixin:
                 session.current_history_id = history.id
                 await db_session.commit()
 
-                # Add system message if persona has one
-                if persona.system_prompt:
-                    seq_val = await SequenceService.next_seq(history.id)
-                    turn = str(uuid.uuid4())
-                    sys_msg = ChatMessage(
-                        history_id=history.id,
-                        role='system',
-                        message_type='system',
-                        status='complete',
-                        content_json={'text': persona.system_prompt},
-                        seq=seq_val,
-                        turn_id=turn
-                    )
-                    db_session.add(sys_msg)
-                    await db_session.commit()
+
 
                 return JSONResponse({'data': session.to_dict()}, 201)
             except Exception as exc:
