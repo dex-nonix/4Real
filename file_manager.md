@@ -90,7 +90,7 @@ class InternalFileService:  # ← INTERNAL SERVICE (no routing)
 Create internal services that other plugins can inject:
 
 ```python
-# nonix_web_file_manager/services/internal/file_service.py
+# nonix_web_file_manager/routers/internal/file_service.py
 from typing import List, Optional
 from nonix_web_db import AsyncSessionLocal
 from ...models.file import File
@@ -131,7 +131,7 @@ class InternalFileService:
 ```
 
 ```python
-# nonix_web_file_manager/services/internal/file_link_service.py
+# nonix_web_file_manager/routers/internal/file_link_service.py
 from typing import List, Optional
 from nonix_web_db import AsyncSessionLocal
 from ...models.file_link import FileLink
@@ -210,7 +210,7 @@ class InternalFileLinkService:
 
 ### **Phase 3: Create FileManagerService (2-3 hours)**
 ```python
-# nonix_web_file_manager/services/file_manager_service.py
+# nonix_web_file_manager/routers/file_manager_service.py
 from typing import List
 from nonix_web.utils.di import Inject
 from .internal.file_service import InternalFileService
@@ -293,13 +293,13 @@ class FileManagerService:
 
 ### **Phase 4: Register Internal Services (1 hour)**
 ```python
-# nonix_web_file_manager/services/__init__.py
+# nonix_web_file_manager/routers/__init__.py
 from nonix_web.utils.di import di_register
 from .internal.file_service import InternalFileService
 from .internal.file_link_service import InternalFileLinkService
 from .file_manager_service import FileManagerService
 
-# Register internal services for other plugins to inject
+# Register internal routers for other plugins to inject
 di_register(InternalFileService, singleton=True)
 di_register(InternalFileLinkService, singleton=True)
 di_register(FileManagerService, singleton=True)

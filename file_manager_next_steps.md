@@ -419,13 +419,13 @@ class InternalFileCategoryService:
 
 **Content:**
 ```python
-# Import and register internal services for dependency injection
+# Import and register internal routers for dependency injection
 from nonix_web.utils.di import di_register
 from .internal.file_service import InternalFileService
 from .internal.file_link_service import InternalFileLinkService
 from .internal.file_category_service import InternalFileCategoryService
 
-# Register internal services as singletons for other plugins to inject
+# Register internal routers as singletons for other plugins to inject
 di_register(InternalFileService, singleton=True)
 di_register(InternalFileLinkService, singleton=True)
 di_register(InternalFileCategoryService, singleton=True)
@@ -439,7 +439,7 @@ di_register(InternalFileCategoryService, singleton=True)
 **Action:** Ensure services are imported:
 
 ```python
-# Import services to ensure they are registered
+# Import routers to ensure they are registered
 from . import services
 ```
 
@@ -725,14 +725,14 @@ class FileManagerService:
 **Action:** Update the services __init__.py:
 
 ```python
-# Import and register internal services for dependency injection
+# Import and register internal routers for dependency injection
 from nonix_web.utils.di import di_register
 from .internal.file_service import InternalFileService
 from .internal.file_link_service import InternalFileLinkService
 from .internal.file_category_service import InternalFileCategoryService
 from .file_manager_service import FileManagerService  # ← ADD THIS
 
-# Register internal services as singletons for other plugins to inject
+# Register internal routers as singletons for other plugins to inject
 di_register(InternalFileService, singleton=True)
 di_register(InternalFileLinkService, singleton=True)
 di_register(InternalFileCategoryService, singleton=True)

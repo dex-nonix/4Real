@@ -116,26 +116,3 @@ async def iter_messages(events):
             if cim:
                 cim.set_status("output", event["data"]["output"])
                 yield "end", cim
-
-
-"""
-
-        async for mode, message in iter_messages(runnable.astream_events(
-                { # template vatriables
-                    "instructions": await self._create_instructions(invoke_message),
-                    "history": await self._create_history(),
-                    "attachments": await self._create_attachments(invoke_message),
-                    "content": await self._create_content(invoke_message),
-                    "footer": await self._create_footers(invoke_message),
-                }, await self._create_config(config)) #optional config
-        ):
-            if mode == "end": # status message finish
-                if isinstance(message, LCToolMessage):
-                    message_history.add_message(message.get_status("output"))
-                if isinstance(message, LCAIMessage):
-                    response_output = message.get_status("output")
-                    message_history.add_ai_message(response_output)
-
-            await self._handle_message(mode, message)
-        return response_output.content
-"""

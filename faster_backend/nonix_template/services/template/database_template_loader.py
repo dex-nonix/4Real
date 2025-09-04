@@ -43,7 +43,7 @@ class DatabaseTemplateLoader(AsyncBaseLoader):
                     # Store in cache
                     source = template_obj.content
                     path = AsyncPath(template_name)
-                    uptodate = True  # Database templates are always considered up-to-date
+                    uptodate = None  # Database templates are always considered up-to-date
 
                     self._cache[template_name] = (source, path, uptodate)
                     return source, path, uptodate
@@ -90,7 +90,7 @@ class DatabaseTemplateLoader(AsyncBaseLoader):
                             source = await f.read()
 
                         # For now, consider files up-to-date
-                        uptodate = True
+                        uptodate = None
 
                         path = AsyncPath(file_path)
                         return source, path, uptodate

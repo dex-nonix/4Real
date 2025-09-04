@@ -5,20 +5,20 @@ from nonix_web.plugin.base_plugin import api_services
 from nonix_web.plugin.descriptor import InjectPlugin
 from nonix_web.utils.di import di_register
 from .llm.agentic_tool_manager import AgenticToolManager
-from .services.ai_analysis_result import AIAnalysisResultService
-from .services.ai_model_mapping import AIModelMappingService
-from .services.ai_provider import AIProviderService
-from .services.chat.chat_service import ChatService
-from .services.chat_history import ChatHistoryService
-from .services.chat_message import ChatMessageService
-from .services.chat_session import ChatSessionService
-from .services.chat_prompt import ChatPromptService
-from .services.internal_tool import InternalToolService
-from .services.mcp_server import MCPServerService
-from .services.persona import PersonaService
-from .services.persona_mcp_server import PersonaMCPServerService
-from .services.persona_tool_access import PersonaToolAccessService
-from .services.tool_invocation_log import ToolInvocationLogService
+from .routers.ai_analysis_result import AIAnalysisResultRouter
+from .routers.ai_model_mapping import AIModelMappingRouter
+from .routers.ai_provider import AIProviderRouter
+from .routers.chat.chat_router import ChatRouter
+from .routers.chat_history import ChatHistoryRouter
+from .routers.chat_message import ChatMessageRouter
+from .routers.chat_session import ChatSessionRouter
+from .routers.chat_prompt import ChatPromptRouter
+from .routers.internal_tool import InternalToolRouter
+from .routers.mcp_server import MCPServerRouter
+from .routers.persona import PersonaRouter
+from .routers.persona_mcp_server import PersonaMCPServerRouter
+from .routers.persona_tool_access import PersonaToolAccessRouter
+from .routers.tool_invocation_log import ToolInvocationLogRouter
 
 if TYPE_CHECKING:
     from nonix_web.server import NxWebServer
@@ -26,20 +26,20 @@ if TYPE_CHECKING:
 
 
 @api_services([
-    AIAnalysisResultService,
-    AIModelMappingService,
-    AIProviderService,
-    ChatService,
-    ChatHistoryService,
-    ChatMessageService,
-    ChatSessionService,
-    ChatPromptService,
-    InternalToolService,
-    MCPServerService,
-    PersonaService,
-    PersonaMCPServerService,
-    PersonaToolAccessService,
-    ToolInvocationLogService
+    AIAnalysisResultRouter,
+    AIModelMappingRouter,
+    AIProviderRouter,
+    ChatRouter,
+    ChatHistoryRouter,
+    ChatMessageRouter,
+    ChatSessionRouter,
+    ChatPromptRouter,
+    InternalToolRouter,
+    MCPServerRouter,
+    PersonaRouter,
+    PersonaMCPServerRouter,
+    PersonaToolAccessRouter,
+    ToolInvocationLogRouter
 ])
 class NxWebAgenticPlugin(BasePlugin):
     agentic_tool_manager: AgenticToolManager = None
