@@ -17,25 +17,24 @@ from ....models.persona import Persona
 class PersonaChatMixin:
     """Mixin for persona-related chat operations."""
 
-    # Reusable schema for persona responses
-    PERSONA_SCHEMA = {
-        "type": "object",
-        "properties": {
-            "id": {"type": "integer"},
-            "name": {"type": "string"},
-            "avatar_url": {"type": "string"},
-            "description": {"type": "string"},
-            "system_prompt": {"type": "string"},
-            "ai_model_mapping_id": {"type": "integer"},
-            "artist_id": {"type": "integer"},
-            "is_active": {"type": "boolean"},
-            "metadata_json": {"type": "object"},
-            "created_at": {"type": "string", "format": "date-time"},
-            "updated_at": {"type": "string", "format": "date-time"},
-            "active_sessions_count": {"type": "integer"}
-        }
-    }
 
+    # PERSONA_SCHEMA = {
+    #     "type": "object",
+    #     "properties": {
+    #         "id": {"type": "integer"},
+    #         "name": {"type": "string"},
+    #         "avatar_url": {"type": "string"},
+    #         "description": {"type": "string"},
+    #         "system_prompt": {"type": "string"},
+    #         "ai_model_mapping_id": {"type": "integer"},
+    #         "artist_id": {"type": "integer"},
+    #         "is_active": {"type": "boolean"},
+    #         "metadata_json": {"type": "object"},
+    #         "created_at": {"type": "string", "format": "date-time"},
+    #         "updated_at": {"type": "string", "format": "date-time"},
+    #         "active_sessions_count": {"type": "integer"}
+    #     }
+    # }
     def _build_persona_query(self, persona_id: int = None):
         """Build base query for personas with session counts."""
         query = select(

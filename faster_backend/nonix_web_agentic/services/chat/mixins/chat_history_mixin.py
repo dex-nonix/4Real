@@ -4,7 +4,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 
-import nonix_web.services.web_server_router
+from nonix_web.services.web_server_router import route
 from nonix_web_db import AsyncSessionLocal
 from .models_and_schemas import (
     HistoryListResponse,
@@ -12,11 +12,9 @@ from .models_and_schemas import (
     HistoryResponse,
     HistoryWithMessagesResponse,
     UpdateHistoryRequest,
-    DeleteHistoryResponse,
-    MessageListResponse
+    DeleteHistoryResponse
 )
 from ....models.chat_history import ChatHistory
-from ....models.chat_message import ChatMessage
 from ....models.chat_session import ChatSession
 
 
@@ -46,7 +44,7 @@ class ChatHistoryMixin:
 
         return session, None, None
 
-    @nonix_web.services.base_service.route(
+    @route(
         '/sessions/{id}/histories',
         methods=['GET'],
         response_model=HistoryListResponse
@@ -69,7 +67,7 @@ class ChatHistoryMixin:
             except Exception as exc:  # noqa: BLE001
                 return JSONResponse({'error': str(exc)}, status_code=500)
 
-    @nonix_web.services.base_service.route(
+    @route(
         '/sessions/{id}/histories',
         methods=['POST'],
         response_model=HistoryResponse
@@ -99,7 +97,7 @@ class ChatHistoryMixin:
                 await db_session.rollback()
                 return JSONResponse({'error': str(exc)}, status_code=500)
 
-    @nonix_web.services.base_service.route(
+    @route(
         '/sessions/{id}/histories/{history_id}',
         methods=['GET'],
         response_model=HistoryWithMessagesResponse
@@ -117,7 +115,7 @@ class ChatHistoryMixin:
             except Exception as exc:
                 return JSONResponse({'error': str(exc)}, status_code=500)
 
-    @nonix_web.services.base_service.route(
+    @route(
         '/sessions/{id}/histories/{history_id}',
         methods=['PUT'],
         response_model=HistoryResponse
@@ -141,7 +139,7 @@ class ChatHistoryMixin:
                 await db_session.rollback()
                 return JSONResponse({'error': str(exc)}, status_code=500)
 
-    @nonix_web.services.base_service.route(
+    @route(
         '/sessions/{id}/histories/{history_id}',
         methods=['DELETE'],
         response_model=DeleteHistoryResponse
@@ -165,5 +163,3 @@ class ChatHistoryMixin:
             except Exception as exc:  # noqa: BLE001
                 await db_session.rollback()
                 return JSONResponse({'error': str(exc)}, status_code=500)
-
-    

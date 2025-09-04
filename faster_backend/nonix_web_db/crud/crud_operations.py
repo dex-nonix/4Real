@@ -9,11 +9,16 @@ from .utils import execute_query_all, create_paginated_response, get_item_by_id
 
 ModelType = TypeVar("ModelType")
 
-
+# needs to be the service
 class CRUDOperations(Generic[ModelType]):
-    def __init__(self, model: Type[ModelType], config: CRUDConfig):
-        self.model = model
-        self.config = config
+    model: Type[ModelType]
+    config: CRUDConfig
+
+    def __init__(self, model: Type[ModelType] = None, config: CRUDConfig = None):
+        if model:
+            self.model = model
+        if config:
+            self.config = config
 
     async def create(self, data: BaseModel, session: AsyncSession) -> ModelType:
         await self._validate_unique_fields(data, None, session)
