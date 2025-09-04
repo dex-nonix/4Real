@@ -22,7 +22,7 @@
 The existing services are **API ROUTED SERVICES** (for external HTTP access):
 ```python
 @routed_service("/files", tags=["Files"])  # ← EXTERNAL API ROUTES
-class FileService(GenericCRUDService):
+class FileService(NxWebServerCrudRouter):
     # This creates HTTP endpoints like GET /api/files
     # Used by frontend, external clients, etc.
 ```
@@ -311,7 +311,7 @@ di_register(FileManagerService, singleton=True)
 from nonix_web.utils.di import Inject
 from nonix_web_file_manager.services.file_manager_service import FileManagerService
 
-class AlbumService(GenericCRUDService):
+class AlbumService(NxWebServerCrudRouter):
     file_manager: FileManagerService = Inject(FileManagerService)
 
     async def create_album_with_cover(self, album_data, cover_file_id=None):

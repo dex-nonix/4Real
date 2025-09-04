@@ -1,12 +1,12 @@
 from nonix_web.services.web_server_router import routed_service
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
-    GenericCRUDService
+    NxWebServerCrudRouter
 from .file_link_schemas import FileLinkCreate, FileLinkUpdate, FileLinkInDbModel
 from ...models.file_link import FileLink
 
 
 @routed_service("/file-links", tags=["File Links"])
-class FileLinkService(GenericCRUDService):
+class FileLinkService(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=FileLink,
         create_schema=FileLinkCreate,

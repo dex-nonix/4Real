@@ -1,12 +1,12 @@
 from nonix_web.services.web_server_router import routed_service
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
-    GenericCRUDService
+    NxWebServerCrudRouter
 from .internal_tool_schemas import InternalToolCreate, InternalToolUpdate, InternalToolInDbModel
 from ...models.internal_tool import InternalTool
 
 
 @routed_service("/internal-tools", tags=["Internal Tools"])
-class InternalToolService(GenericCRUDService):
+class InternalToolService(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=InternalTool,
         create_schema=InternalToolCreate,

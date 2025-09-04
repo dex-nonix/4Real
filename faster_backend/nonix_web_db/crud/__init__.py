@@ -1,5 +1,5 @@
 from .query_processor import QueryProcessor
-from .generic_crud_service import GenericCRUDService
+from .generic_crud_service import NxWebServerCrudRouter
 from .models_and_schemas import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, PaginationConfig
 
 __all__ = [
@@ -9,5 +9,5 @@ __all__ = [
     "ValidationConfig",
     "SelectorConfig",
     "PaginationConfig",
-    "GenericCRUDService",
+    "NxWebServerCrudRouter",
 ]

@@ -1,12 +1,12 @@
 from nonix_web.services.web_server_router import routed_service
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
-    GenericCRUDService
+    NxWebServerCrudRouter
 from .rhyme_technique_schemas import RhymeTechniqueCreate, RhymeTechniqueUpdate, RhymeTechniqueInDbModel
 from ...models.rhyme_technique import RhymeTechnique
 
 
 @routed_service("/rhyme-techniques", tags=["Rhyme Techniques"])
-class RhymeTechniqueService(GenericCRUDService):
+class RhymeTechniqueService(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=RhymeTechnique,
         create_schema=RhymeTechniqueCreate,

@@ -1,12 +1,12 @@
 from nonix_web.services.web_server_router import routed_service
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
-    GenericCRUDService
+    NxWebServerCrudRouter
 from .chat_prompt_schemas import ChatPromptCreate, ChatPromptUpdate, ChatPromptInDbModel
 from ...models.chat_prompt import ChatPrompt
 
 
 @routed_service("/chat-prompts", tags=["Chat Prompts"])
-class ChatPromptService(GenericCRUDService):
+class ChatPromptService(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=ChatPrompt,
         create_schema=ChatPromptCreate,

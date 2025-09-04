@@ -20,13 +20,13 @@ __all__ = [
     "SortingConfig",
     "ValidationConfig",
     "SelectorConfig",
-    "GenericCRUDService",
+    "NxWebServerCrudRouter",
 ]
 
 from ..plugin import AsyncSessionLocal
 
 
-class GenericCRUDService(NxWebServerRouter):
+class NxWebServerCrudRouter(NxWebServerRouter):
     config: CRUDConfig
 
     def __init__(self, router: APIRouter):

@@ -1,12 +1,12 @@
 from nonix_web.services.web_server_router import routed_service
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
-    GenericCRUDService
+    NxWebServerCrudRouter
 from .persona_schemas import PersonaCreate, PersonaUpdate, PersonaInDbModel
 from ...models.persona import Persona
 
 
 @routed_service("/personas", tags=["Personas"])
-class PersonaService(GenericCRUDService):
+class PersonaService(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=Persona,
         create_schema=PersonaCreate,

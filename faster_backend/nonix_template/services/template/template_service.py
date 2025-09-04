@@ -1,12 +1,12 @@
 from nonix_web.services.web_server_router import routed_service
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
-    GenericCRUDService
+    NxWebServerCrudRouter
 from .template_schemas import TemplateCreate, TemplateUpdate, TemplateInDbModel
 from ...models.template import Template
 
 
 @routed_service("/templates", tags=["Templates"])
-class TemplateService(GenericCRUDService):
+class TemplateService(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=Template,
         create_schema=TemplateCreate,

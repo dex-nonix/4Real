@@ -1,12 +1,12 @@
 from nonix_web.services.web_server_router import routed_service
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
-    GenericCRUDService
+    NxWebServerCrudRouter
 from .chat_history_schemas import ChatHistoryCreate, ChatHistoryUpdate, ChatHistoryInDbModel
 from ...models.chat_history import ChatHistory
 
 
 @routed_service("/chat-histories", tags=["Chat Histories"])
-class ChatHistoryService(GenericCRUDService):
+class ChatHistoryService(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=ChatHistory,
         create_schema=ChatHistoryCreate,

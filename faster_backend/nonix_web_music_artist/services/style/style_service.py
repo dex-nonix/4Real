@@ -1,12 +1,12 @@
 from nonix_web.services.web_server_router import routed_service
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
-    GenericCRUDService
+    NxWebServerCrudRouter
 from .style_schemas import StyleCreate, StyleUpdate, StyleInDbModel
 from ...models.style import Style
 
 
 @routed_service("/styles", tags=["Styles"])
-class StyleService(GenericCRUDService):
+class StyleService(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=Style,
         create_schema=StyleCreate,

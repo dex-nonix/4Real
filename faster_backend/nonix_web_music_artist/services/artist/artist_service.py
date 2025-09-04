@@ -1,12 +1,12 @@
 from nonix_web.services.web_server_router import routed_service, route
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
-    GenericCRUDService
+    NxWebServerCrudRouter
 from .artist_schemas import ArtistCreate, ArtistUpdate, ArtistInDbModel
 from ...models.artist import Artist
 
 
 @routed_service("/artists", tags=["Artists"])
-class ArtistService(GenericCRUDService):
+class ArtistService(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=Artist,
         create_schema=ArtistCreate,

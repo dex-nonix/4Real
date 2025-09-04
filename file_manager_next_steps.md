@@ -749,13 +749,13 @@ di_register(FileManagerService, singleton=True)  # ← ADD THIS
 ```python
 from nonix_web.services.web_server_router import routed_service
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig,
-    GenericCRUDService
+    NxWebServerCrudRouter
 from .album_schemas import AlbumCreate, AlbumUpdate, AlbumInDbModel
 from ...models.album import Album
 
 
 @routed_service("/albums", tags=["Albums"])
-class AlbumService(GenericCRUDService):
+class AlbumService(NxWebServerCrudRouter):
 # CRUD configuration for albums
 ```
 
@@ -768,7 +768,7 @@ class AlbumService(GenericCRUDService):
 from nonix_web.services.web_server_router import routed_service
 from nonix_web.utils.di import Inject  # ← ADD THIS IMPORT
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig,
-    GenericCRUDService
+    NxWebServerCrudRouter
 from .album_schemas import AlbumCreate, AlbumUpdate, AlbumInDbModel
 from ...models.album import Album
 
@@ -777,7 +777,7 @@ from nonix_web_file_manager.services.file_manager_service import FileManagerServ
 
 
 @routed_service("/albums", tags=["Albums"])
-class AlbumService(GenericCRUDService):
+class AlbumService(NxWebServerCrudRouter):
     # ADD THIS: Inject FileManagerService
     file_manager: FileManagerService = Inject(FileManagerService)
 
