@@ -2,7 +2,7 @@ import asyncio
 import importlib
 from datetime import datetime
 import json
-from typing import Any, Dict, List, AsyncGenerator, TYPE_CHECKING, Optional
+from typing import Any, Dict, List, AsyncGenerator, TYPE_CHECKING
 
 from fastapi.responses import JSONResponse
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from nonix_web.plugin.descriptor import InjectPlugin
-from nonix_web.services.web_server_router import NxWebServerRouter, routed_service, route
+from nonix_web.router.web_server_router import NxWebServerRouter, routed_service, route
 from nonix_web_db import AsyncSessionLocal
 from .mixins.chat_history_mixin import ChatHistoryMixin
 from .mixins.chat_message_mixin import ChatMessageMixin

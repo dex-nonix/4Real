@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional
-from nonix_web.services.base_db_model_mixin import BaseDbModelMixin, BaseUpdateModel
+from nonix_web.router.base_db_model_mixin import BaseDbModelMixin, BaseUpdateModel
 
 class FileBase(BaseModel):
     category_id: Optional[int] = Field(None, gt=0)

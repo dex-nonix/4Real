@@ -4,7 +4,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 
-from nonix_web.services.web_server_router import route
+from nonix_web.router.web_server_router import route
 from nonix_web_db import AsyncSessionLocal
 from .models_and_schemas import (
     PersonaListResponse,

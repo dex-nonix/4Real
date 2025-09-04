@@ -1,4 +1,4 @@
-from nonix_web.services.web_server_router import routed_service
+from nonix_web.router.web_server_router import routed_service
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     NxWebServerCrudRouter
 from .persona_tool_access_schemas import PersonaToolAccessCreate, PersonaToolAccessUpdate, PersonaToolAccessInDbModel

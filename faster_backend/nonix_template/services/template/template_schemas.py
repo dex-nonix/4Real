@@ -2,7 +2,7 @@ from typing import Optional, Any, Dict
 
 from pydantic import BaseModel, Field
 
-from nonix_web.services.base_db_model_mixin import BaseDbModelMixin, BaseUpdateModel
+from nonix_web.router.base_db_model_mixin import BaseDbModelMixin, BaseUpdateModel
 
 
 class TemplateBase(BaseModel):

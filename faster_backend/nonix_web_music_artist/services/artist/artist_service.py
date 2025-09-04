@@ -1,4 +1,4 @@
-from nonix_web.services.web_server_router import routed_service, route
+from nonix_web.router.web_server_router import routed_service, route
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     NxWebServerCrudRouter
 from .artist_schemas import ArtistCreate, ArtistUpdate, ArtistInDbModel

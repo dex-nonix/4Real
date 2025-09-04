@@ -6,7 +6,7 @@ from sqlalchemy import select
 from starlette import status
 from starlette.requests import Request
 
-from nonix_web.services.web_server_router import NxWebServerRouter
+from nonix_web.router.web_server_router import NxWebServerRouter
 from .models_and_schemas import BulkOperationsPayload, PaginatedResponse, SelectorItem, CRUDConfig
 from .models_and_schemas import FilterConfig, SortingConfig, ValidationConfig, SelectorConfig
 from .query_processor import QueryProcessor
