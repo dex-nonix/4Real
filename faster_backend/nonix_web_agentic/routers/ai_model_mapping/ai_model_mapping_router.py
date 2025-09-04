@@ -1,11 +1,11 @@
-from nonix_web.router.web_server_router import routed_service
+from nonix_web.router.web_server_router import router
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     NxWebServerCrudRouter
 from .ai_model_mapping_schemas import AIModelMappingCreate, AIModelMappingUpdate, AIModelMappingInDbModel
 from ...models.ai_model_mapping import AIModelMapping
 
 
-@routed_service("/ai-model-mappings", tags=["AI Model Mappings"])
+@router("/ai-model-mappings", tags=["AI Model Mappings"])
 class AIModelMappingRouter(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=AIModelMapping,

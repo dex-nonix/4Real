@@ -1,10 +1,10 @@
 from .file_category_schemas import FileCategoryCreate, FileCategoryUpdate, FileCategoryInDbModel
-from nonix_web.router.web_server_router import routed_service
+from nonix_web.router.web_server_router import router
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, NxWebServerCrudRouter
 from ...models.file_category import FileCategory
 
 
-@routed_service("/file-categories", tags=["File Categories"])
+@router("/file-categories", tags=["File Categories"])
 class FileCategoryService(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=FileCategory,

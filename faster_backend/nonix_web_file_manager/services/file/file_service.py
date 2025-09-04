@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import HTTPException, UploadFile, Form
 
 
-from nonix_web.router.web_server_router import routed_service, route
+from nonix_web.router.web_server_router import router, route
 from nonix_web_db import AsyncSessionLocal
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     NxWebServerCrudRouter
@@ -13,7 +13,7 @@ from .file_schemas import FileCreate, FileUpdate, FileInDbModel
 from ...models.file import File
 
 
-@routed_service("/files", tags=["Files"])
+@router("/files", tags=["Files"])
 class FileService(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=File,

@@ -30,14 +30,14 @@ class Settings:
 **Current State:**
 
 ```python
-from nonix_web.router.web_server_router import routed_service, route
+from nonix_web.router.web_server_router import router, route
 from nonix_web_db import AsyncSessionLocal
 ```
 
 **Action:** Add settings import:
 
 ```python
-from nonix_web.router.web_server_router import routed_service, route
+from nonix_web.router.web_server_router import router, route
 from nonix_web.config import settings  # ← ADD THIS LINE
 from nonix_web_db import AsyncSessionLocal
 ```
@@ -747,7 +747,7 @@ di_register(FileManagerService, singleton=True)  # ← ADD THIS
 **Current Content Analysis:**
 
 ```python
-from nonix_web.router.web_server_router import routed_service
+from nonix_web.router.web_server_router import router
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig,
 
 NxWebServerCrudRouter
@@ -755,7 +755,7 @@ from .album_schemas import AlbumCreate, AlbumUpdate, AlbumInDbModel
 from ...models.album import Album
 
 
-@routed_service("/albums", tags=["Albums"])
+@router("/albums", tags=["Albums"])
 class AlbumService(NxWebServerCrudRouter):
 # CRUD configuration for albums
 ```
@@ -766,7 +766,7 @@ class AlbumService(NxWebServerCrudRouter):
 **Action:** Add FileManagerService injection and file management methods:
 
 ```python
-from nonix_web.router.web_server_router import routed_service
+from nonix_web.router.web_server_router import router
 from nonix_web.utils.di import Inject  # ← ADD THIS IMPORT
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig,
 
@@ -778,7 +778,7 @@ from ...models.album import Album
 from nonix_web_file_manager.services.file_manager_service import FileManagerService
 
 
-@routed_service("/albums", tags=["Albums"])
+@router("/albums", tags=["Albums"])
 class AlbumService(NxWebServerCrudRouter):
     # ADD THIS: Inject FileManagerService
     file_manager: FileManagerService = Inject(FileManagerService)

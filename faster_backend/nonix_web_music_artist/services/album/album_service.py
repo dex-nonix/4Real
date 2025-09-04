@@ -1,11 +1,11 @@
-from nonix_web.router.web_server_router import routed_service
+from nonix_web.router.web_server_router import router
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     NxWebServerCrudRouter
 from .album_schemas import AlbumCreate, AlbumUpdate, AlbumInDbModel
 from ...models.album import Album
 
 
-@routed_service("/albums", tags=["Albums"])
+@router("/albums", tags=["Albums"])
 class AlbumService(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=Album,

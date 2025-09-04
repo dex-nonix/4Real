@@ -1,11 +1,11 @@
-from nonix_web.router.web_server_router import routed_service
+from nonix_web.router.web_server_router import router
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     NxWebServerCrudRouter
 from .ai_provider_schemas import AIProviderCreate, AIProviderUpdate, AIProviderInDbModel
 from ...models.ai_provider import AIProvider
 
 
-@routed_service("/ai-providers", tags=["AI Providers"])
+@router("/ai-providers", tags=["AI Providers"])
 class AIProviderRouter(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=AIProvider,

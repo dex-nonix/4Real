@@ -1,11 +1,11 @@
-from nonix_web.router.web_server_router import routed_service
+from nonix_web.router.web_server_router import router
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     NxWebServerCrudRouter
 from .tool_invocation_log_schemas import ToolInvocationLogCreate, ToolInvocationLogUpdate, ToolInvocationLogInDbModel
 from ...models.tool_invocation_log import ToolInvocationLog
 
 
-@routed_service("/tool-invocation-logs", tags=["Tool Invocation Logs"])
+@router("/tool-invocation-logs", tags=["Tool Invocation Logs"])
 class ToolInvocationLogRouter(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=ToolInvocationLog,

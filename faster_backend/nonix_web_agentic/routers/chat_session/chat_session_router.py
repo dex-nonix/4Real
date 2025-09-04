@@ -1,11 +1,11 @@
-from nonix_web.router.web_server_router import routed_service
+from nonix_web.router.web_server_router import router
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     NxWebServerCrudRouter
 from .chat_session_schemas import ChatSessionCreate, ChatSessionUpdate, ChatSessionInDbModel
 from ...models.chat_session import ChatSession
 
 
-@routed_service("/chat-sessions", tags=["Chat Sessions"])
+@router("/chat-sessions", tags=["Chat Sessions"])
 class ChatSessionRouter(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=ChatSession,

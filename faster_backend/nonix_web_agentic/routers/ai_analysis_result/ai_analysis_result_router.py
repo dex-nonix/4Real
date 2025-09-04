@@ -1,11 +1,11 @@
-from nonix_web.router.web_server_router import routed_service
+from nonix_web.router.web_server_router import router
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     NxWebServerCrudRouter
 from .ai_analysis_result_schemas import AIAnalysisResultCreate, AIAnalysisResultUpdate, AIAnalysisResultInDbModel
 from ...models.ai_analysis_result import AIAnalysisResult
 
 
-@routed_service("/ai-analysis-results", tags=["AI Analysis Results"])
+@router("/ai-analysis-results", tags=["AI Analysis Results"])
 class AIAnalysisResultRouter(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=AIAnalysisResult,

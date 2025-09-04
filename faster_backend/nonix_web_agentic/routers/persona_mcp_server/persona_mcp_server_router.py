@@ -1,11 +1,11 @@
-from nonix_web.router.web_server_router import routed_service
+from nonix_web.router.web_server_router import router
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     NxWebServerCrudRouter
 from .persona_mcp_server_schemas import PersonaMCPServerCreate, PersonaMCPServerUpdate, PersonaMCPServerInDbModel
 from ...models.persona_mcp_server import PersonaMCPServer
 
 
-@routed_service("/persona-mcp-servers", tags=["Persona MCP Servers"])
+@router("/persona-mcp-servers", tags=["Persona MCP Servers"])
 class PersonaMCPServerRouter(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=PersonaMCPServer,

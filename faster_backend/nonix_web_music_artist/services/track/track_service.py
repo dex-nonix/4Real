@@ -1,11 +1,11 @@
-from nonix_web.router.web_server_router import routed_service
+from nonix_web.router.web_server_router import router
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     NxWebServerCrudRouter
 from .track_schemas import TrackCreate, TrackUpdate, TrackInDbModel
 from ...models.track import Track
 
 
-@routed_service("/tracks", tags=["Tracks"])
+@router("/tracks", tags=["Tracks"])
 class TrackService(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=Track,

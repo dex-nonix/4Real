@@ -21,7 +21,7 @@
 
 The existing services are **API ROUTED SERVICES** (for external HTTP access):
 ```python
-@routed_service("/files", tags=["Files"])  # ← EXTERNAL API ROUTES
+@router("/files", tags=["Files"])  # ← EXTERNAL API ROUTES
 class FileService(NxWebServerCrudRouter):
     # This creates HTTP endpoints like GET /api/files
     # Used by frontend, external clients, etc.
@@ -357,7 +357,7 @@ class AlbumService(NxWebServerCrudRouter):
 ### **Key Differences**
 | Aspect | Routed Service | Internal Service |
 |--------|----------------|------------------|
-| **Decorator** | `@routed_service` | None |
+| **Decorator** | `@router` | None |
 | **Purpose** | HTTP API endpoints | Plugin-to-plugin communication |
 | **Usage** | `axios.get('/api/files')` | `service = Inject(MyService)` |
 | **Return** | JSON responses | Python objects |

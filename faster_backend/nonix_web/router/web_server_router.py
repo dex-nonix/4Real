@@ -64,7 +64,7 @@ class _RoutedServiceMethodDefinition:
     generate_unique_id_function: Callable[[routing.APIRoute], str]
 
 
-def routed_service(
+def router(
         prefix: Optional[str] = None,
         tags: Optional[List[Union[str, Enum]]] = None,
         dependencies: Optional[Sequence[params.Depends]] = None,
@@ -175,7 +175,7 @@ def _get_route_info(cls) -> _RoutedServiceMethodDefinition:
     return getattr(cls, '_route_info', None)
 
 
-# if TYPE_CHECKING:
+
 from nonix_web.server import NxWebServer
 
 
