@@ -1,10 +1,10 @@
-from typing import Dict, Any, List, TYPE_CHECKING
-from pathlib import Path
 import os
+from pathlib import Path
+from typing import Dict, Any, List, TYPE_CHECKING
 
+from nonix_template.template_renderer import TemplateRenderer
 from nonix_web.plugin.base_plugin import BasePlugin, api_services
-from .services.template import TemplateService
-from .services.template.template_renderer import TemplateRenderer
+from .router.template_router import TemplateRouter
 
 if TYPE_CHECKING:
     from nonix_web.server import NxWebServer
@@ -16,7 +16,7 @@ class TemplatePathError(Exception):
 
 
 @api_services([
-    TemplateService
+    TemplateRouter
 ])
 class NxWebTemplatePlugin(BasePlugin):
     template_renderer: TemplateRenderer = None
