@@ -79,7 +79,7 @@ class InternalFileService:  # ← INTERNAL SERVICE (no routing)
 
 2. **Fix settings import in FileRouter**:
    ```python
-   # Add to file_service.py
+   # Add to file_router.py
    from ..config import settings
    ```
 
@@ -90,7 +90,7 @@ class InternalFileService:  # ← INTERNAL SERVICE (no routing)
 Create internal services that other plugins can inject:
 
 ```python
-# nonix_web_file_manager/routers/internal/file_service.py
+# nonix_web_file_manager/routers/internal/file_router.py
 from typing import List, Optional
 from nonix_web_db import AsyncSessionLocal
 from ...models.file import File

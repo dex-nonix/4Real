@@ -1,38 +1,17 @@
 from nonix_web.router.web_server_router import router, route
-from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
-    NxWebServerCrudRouter
-from .artist_schemas import ArtistCreate, ArtistUpdate, ArtistInDbModel
-from nonix_web_music_artist.models.artist import Artist
+from nonix_web_db.crud import NxWebServerCrudRouter
+from nonix_web.utils.di import Inject
+from nonix_web_music_artist.services.artist_service import ArtistService
 
 
 @router("/artists", tags=["Artists"])
 class ArtistRouter(NxWebServerCrudRouter):
-    config = CRUDConfig(
-        model=Artist,
-        create_schema=ArtistCreate,
-        update_schema=ArtistUpdate,
-        response_schema=ArtistInDbModel,
-        filters=FilterConfig(
-            allowed_fields=['name', 'abbreviation']
-        ),
-        sorting=SortingConfig(
-            default_sort='name',
-            allowed_fields=['name', 'abbreviation', 'created_at']
-        ),
-        validation=ValidationConfig(
-            unique_fields=['name']
-        ),
-        selector=SelectorConfig(
-            fields=['name', 'abbreviation'],
-            display_format='{name}',
-            search_fields=['name', 'abbreviation']
-        )
-    )
+    service: ArtistService = Inject(ArtistService)
 
     ############### EXAMPLE CUSTOM ROUTE ---------------------------
     @route("/{item_id}/persona_summary", methods=["GET"])
     async def persona_summary(self, item_id: int):
-        artist = await self.get_one(item_id)
+        artist = await self.service.get_one(item_id)
         persona_text = artist.persona or ""
         return {
             "artist_name": artist.name,
