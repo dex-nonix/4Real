@@ -1,30 +1,9 @@
-from .file_category_schemas import FileCategoryCreate, FileCategoryUpdate, FileCategoryInDbModel
 from nonix_web.router.web_server_router import router
-from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, NxWebServerCrudRouter
-from nonix_web_file_manager.models.file_category import FileCategory
+from nonix_web_db.crud import NxWebServerCrudRouter
+from nonix_web.utils.di import Inject
+from nonix_web_file_manager.services.file_category_service import FileCategoryService
 
 
 @router("/file-categories", tags=["File Categories"])
 class FileCategoryRouter(NxWebServerCrudRouter):
-    config = CRUDConfig(
-        model=FileCategory,
-        create_schema=FileCategoryCreate,
-        update_schema=FileCategoryUpdate,
-        response_schema=FileCategoryInDbModel,
-        filters=FilterConfig(
-            allowed_fields=['name', 'slug']
-        ),
-        sorting=SortingConfig(
-            default_sort='name',
-            allowed_fields=['name', 'created_at']
-        ),
-        validation=ValidationConfig(
-            unique_fields=['slug']
-        ),
-        selector=SelectorConfig(
-            fields=['name'],
-            display_format='{name}',
-            search_fields=['name', 'slug'],
-            order_by='name'
-        )
-    )
+    service: FileCategoryService = Inject(FileCategoryService)  # ✅ Just inject!

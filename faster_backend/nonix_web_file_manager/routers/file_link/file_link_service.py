@@ -1,31 +1,9 @@
 from nonix_web.router.web_server_router import router
-from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
-    NxWebServerCrudRouter
-from .file_link_schemas import FileLinkCreate, FileLinkUpdate, FileLinkInDbModel
-from nonix_web_file_manager.models.file_link import FileLink
+from nonix_web_db.crud import NxWebServerCrudRouter
+from nonix_web.utils.di import Inject
+from nonix_web_file_manager.services.file_link_service import FileLinkService
 
 
 @router("/file-links", tags=["File Links"])
 class FileLinkRouter(NxWebServerCrudRouter):
-    config = CRUDConfig(
-        model=FileLink,
-        create_schema=FileLinkCreate,
-        update_schema=FileLinkUpdate,
-        response_schema=FileLinkInDbModel,
-        filters=FilterConfig(
-            allowed_fields=['entity_type', 'entity_id', 'status', 'file_id']
-        ),
-        sorting=SortingConfig(
-            default_sort='sort_order',
-            allowed_fields=['sort_order', 'created_at']
-        ),
-        validation=ValidationConfig(
-            unique_fields=[]
-        ),
-        selector=SelectorConfig(
-            fields=[],
-            display_format=None,
-            search_fields=[],
-            order_by='created_at'
-        )
-    )
+    service: FileLinkService = Inject(FileLinkService)  # ✅ Just inject!

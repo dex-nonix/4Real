@@ -6,37 +6,14 @@ from fastapi import HTTPException, UploadFile, Form
 
 
 from nonix_web.router.web_server_router import router, route
-from nonix_web_db import AsyncSessionLocal
-from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
-    NxWebServerCrudRouter
-from .file_schemas import FileCreate, FileUpdate, FileInDbModel
-from nonix_web_file_manager.models.file import File
+from nonix_web_db.crud import NxWebServerCrudRouter
+from nonix_web.utils.di import Inject
+from nonix_web_file_manager.services.file_service import FileService
 
 
 @router("/files", tags=["Files"])
 class FileRouter(NxWebServerCrudRouter):
-    config = CRUDConfig(
-        model=File,
-        create_schema=FileCreate,
-        update_schema=FileUpdate,
-        response_schema=FileInDbModel,
-        filters=FilterConfig(
-            allowed_fields=['category_id', 'mime_type', 'title', 'original_filename']
-        ),
-        sorting=SortingConfig(
-            default_sort='created_at',
-            allowed_fields=['created_at', 'title', 'original_filename', 'size_bytes']
-        ),
-        validation=ValidationConfig(
-            unique_fields=[]
-        ),
-        selector=SelectorConfig(
-            fields=['title', 'original_filename'],
-            display_format=None,
-            search_fields=['title', 'original_filename', 'mime_type'],
-            order_by='created_at'
-        )
-    )
+    service: FileService = Inject(FileService)  # ✅ Just inject!
 
     @route('/upload', methods=['POST'])
     async def upload(self, file: UploadFile, title: str = Form(None), category_id: int = Form(None)) -> Any:
