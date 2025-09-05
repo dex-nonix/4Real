@@ -1,374 +1,195 @@
-import asyncio
-import importlib
-import json
-from datetime import datetime
-from typing import Any, Dict, List, AsyncGenerator, TYPE_CHECKING
-
+from fastapi import Request
 from fastapi.responses import JSONResponse
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langgraph.prebuilt import create_react_agent
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
-from nonix_web.plugin.descriptor import InjectPlugin
 from nonix_web.router.web_server_router import NxWebServerRouter, router, route
-from nonix_web_db import AsyncSessionLocal
-from .mixins.chat_history_mixin import ChatHistoryMixin
-from .mixins.chat_message_mixin import ChatMessageMixin
-from .mixins.chat_session_mixin import ChatSessionMixin
-from .mixins.models_and_schemas import TaskManagerHealthResponse
-from .mixins.persona_chat_mixin import PersonaChatMixin
-from .mixins.tool_execution_mixin import ToolExecutionMixin
-from ...llm.llm_message_utils import LCAIMessage, LCToolMessage, iter_messages
-from ...models.persona import Persona
-from ...services.chat.streaming_interface import StreamingChunk
-from ...services.chat.task_manager import ChatTaskManager
-
-if TYPE_CHECKING:
-    from ...plugin import NxWebAgenticPlugin
-    from nonix_template.plugin import NxWebTemplatePlugin
+from nonix_web.utils.di import Inject
+from ..chat_session.chat_session_schemas import ChatSessionCreate
+from ..chat_history.chat_history_schemas import CreateHistoryRequest, UpdateHistoryRequest
+from ..chat_message.chat_message_schemas import SendMessageToHistoryRequest
+from ...services.chat_session_service import ChatSessionService
+from ...services.chat_message_service import ChatMessageService
+from ...services.chat_history_service import ChatHistoryService
+from ...services.persona_service import PersonaService
+from ...services.tool_execution_service import ToolExecutionService
 
 
 @router("/chat", tags=["Chat"])
-class ChatRouter(NxWebServerRouter, ChatSessionMixin, ChatMessageMixin, ChatHistoryMixin, PersonaChatMixin,
-                 ToolExecutionMixin):
-    """Complete chat service handling session lifecycle, messaging, and tool execution.
-    
-    This service is composed of multiple mixins for better organization:
-    - ChatSessionMixin: Session CRUD operations
-    - ChatMessageMixin: Message handling and sending
-    - ChatHistoryMixin: History management
-    - PersonaChatMixin: Persona-related operations
-    - ToolExecutionMixin: Tool execution and MCP operations
+class ChatRouter(NxWebServerRouter):
+    """Unified chat service using dependency injection and DRY patterns.
+
+    This router uses the base class service_call_and_respond method for:
+    - Consistent error handling (400/500 responses)
+    - DRY response formatting (defaults to {'data': result})
+    - Optional custom converters for special cases
+
+    Services:
+    - ChatSessionService: Session CRUD operations
+    - ChatMessageService: Message handling and LLM integration
+    - ChatHistoryService: History management
+    - PersonaService: Persona operations
+    - ToolExecutionService: Tool execution and MCP operations
     """
-    agentic_plugin: "NxWebAgenticPlugin" = InjectPlugin("agentic")
-    template_plugin: "NxWebTemplatePlugin" = InjectPlugin("template")
 
-    def __init__(self, router):
-        super().__init__(router)
-        self._task_manager = ChatTaskManager()
-        ChatMessageMixin.__init__(self)
-        self._logger.info("ChatRouter initialized with task manager")
+    # Dependency injection for all services
+    session_service: ChatSessionService = Inject(ChatSessionService)
+    message_service: ChatMessageService = Inject(ChatMessageService)
+    history_service: ChatHistoryService = Inject(ChatHistoryService)
+    persona_service: PersonaService = Inject(PersonaService)
+    tool_service: ToolExecutionService = Inject(ToolExecutionService)
 
-    async def emit_chat_event(self, session_id: int, history_id: int, event: str, data: dict) -> None:
-        room = f'chat/{session_id}/{history_id}'
-        await self.send_ws_message(room, {
-            'event': event,
-            'data': data,
-            'timestamp': datetime.utcnow().isoformat()
-        })
+    # ==========================================
+    # SESSION ROUTES
+    # ==========================================
 
-    async def emit_llm_event(self, session_id: int, history_id: int, stage: str, message: str) -> None:
-        await self.emit_chat_event(session_id, history_id, 'llm_status', {
-            'stage': stage,
-            'message': message,
-            'timestamp': datetime.utcnow().isoformat()
-        })
-
-    async def render_persona_prompt(self, persona, artist=None, context=None):
-        """Render LLM system prompt for persona using template plugin"""
-        # Prepare context variables - let template handle all conditional logic
-        template_vars = {
-            'persona': persona,
-            'artist': artist,
-        }
-
-        # Add any additional context
-        if context:
-            template_vars.update(context)
-
-        # Render template using the new template plugin
-        # Template handles all conditional logic (artist checks, etc.)
-        return await self.template_plugin.render_template(
-            "llm_instructions/persona_system_prompt",
-            context=template_vars
+    @route('/sessions', methods=['POST'])
+    async def create_session(self, req: Request, payload: ChatSessionCreate):
+        """Create a new chat session."""
+        return await self.service_call_and_respond(
+            self.session_service.create_session_with_history,
+            payload.persona_id, payload.session_name, payload.session_icon,
+            response_converter=lambda r: JSONResponse({'data': r.to_dict()})
         )
 
-    async def emit_tool_event(self, session_id: int, history_id: int, tool_name: str, status: str, **extra) -> None:
-        await self.emit_chat_event(session_id, history_id, 'tool_status', {
-            'tool_name': tool_name,
-            'status': status,
-            'timestamp': datetime.utcnow().isoformat(),
-            **extra
-        })
+    @route('/sessions', methods=['GET'])
+    async def list_sessions(self, req: Request):
+        """List all active chat sessions."""
+        return await self.service_call_and_respond(
+            self.session_service.get_sessions_with_counts,
+            response_converter=lambda r: JSONResponse({'data': r, 'total': len(r)})
+        )
 
-    async def submit_async_task(self, func, *args, **kwargs):
-        try:
-            future = await self._task_manager.submit_task(func, *args, **kwargs)
-            self._logger.debug(f"Task submitted to task manager: {func.__name__}")
-            return future
-        except Exception as e:
-            self._logger.error(f"Failed to submit task to task manager: {e}", exc_info=True)
-            raise
+    @route('/sessions/{id}', methods=['GET'])
+    async def get_session(self, req: Request, id: int):
+        """Get a specific chat session by ID."""
+        return await self.service_call_and_respond(self.session_service.get_session_with_count, id)
 
-    def get_task_manager_health(self):
-        return self._task_manager.get_health_status()
+    @route('/sessions/{id}', methods=['PUT'])
+    async def update_session(self, req: Request, payload: ChatSessionCreate, id: int):
+        """Update a chat session."""
+        return await self.service_call_and_respond(
+            self.session_service.update_session,
+            id, payload.session_name, payload.session_icon, payload.is_active,
+            response_converter=lambda r: JSONResponse({'data': r.to_dict()})
+        )
 
-    def get_task_manager_stats(self):
-        """Get task manager statistics for monitoring."""
-        return self._task_manager.get_stats()
+    @route('/sessions/{id}', methods=['DELETE'])
+    async def delete_session(self, req: Request, id: int):
+        """Delete a chat session."""
+        return await self.service_call_and_respond(self.session_service.delete_session, id)
 
-    @route(
-        '/health/task-manager',
-        methods=['GET'],
-        response_model=TaskManagerHealthResponse
-    )
-    async def task_manager_health(self, req):
-        try:
-            health_status = self.get_task_manager_health()
-            return health_status
-        except Exception as e:
-            self._logger.error(f"Failed to get task manager health: {e}", exc_info=True)
-            return JSONResponse(f"Failed to get task manager health: {e}", 500)
+    @route('/personas/{persona_id}/sessions', methods=['GET'])
+    async def get_persona_sessions(self, req: Request, persona_id: int):
+        """Get all sessions for a specific persona."""
+        return await self.service_call_and_respond(
+            self.session_service.get_persona_sessions, persona_id,
+            response_converter=lambda r: JSONResponse({'data': r, 'total': len(r)})
+        )
 
-    async def run_chat_streaming(
-            self,
-            provider: Any,
-            mapping: Any,
-            messages: List[Dict[str, Any]],
-            available_tools_info: List[Dict[str, Any]],
-            persona_id: int
-    ) -> AsyncGenerator[StreamingChunk, None]:
-        cfg: Dict[str, Any] = provider.config_json or {}
-        model_name: str = mapping.model_name
-        params: Dict[str, Any] = mapping.parameters_json or {}
+    @route('/personas/{persona_id}/start-chat', methods=['POST'])
+    async def start_chat_with_persona(self, req: Request, payload: ChatSessionCreate, persona_id: int):
+        """Start a new chat session with a persona."""
+        return await self.service_call_and_respond(
+            self.session_service.start_chat_with_persona,
+            persona_id, payload.session_name, payload.session_icon,
+            response_converter=lambda r: JSONResponse({'data': r.to_dict()}, 201)
+        )
 
-        module_name: str = getattr(provider, 'module', '') or ''
-        class_name: str = getattr(provider, 'cls', '') or ''
-        # method_name: str = (getattr(provider, 'method', None) or 'invoke')
+    # ==========================================
+    # HISTORY ROUTES
+    # ==========================================
 
-        if not module_name or not class_name:
-            # Fallback: echo last user
-            last_user = next((m for m in reversed(messages) if m.get('role') == 'user'), None)
-            text = (last_user or {}).get('content', '')
-            if isinstance(text, dict):
-                text = text.get('text', str(text))
-            yield StreamingChunk(
-                content=f"Provider not configured (module/class missing). Echo: {text}",
-                chunk_type="complete",
-                is_final=True
-            )
-            return
+    @route('/sessions/{id}/histories', methods=['GET'])
+    async def list_session_histories(self, req: Request, id: int):
+        """List all histories for a specific session."""
+        return await self.service_call_and_respond(
+            self.history_service.list_session_histories, id,
+            response_converter=lambda r: JSONResponse({'data': r, 'total': len(r)})
+        )
 
-        # Build kwargs: provider creds/connection + model + mapping params (mapping overrides)
-        kwargs: Dict[str, Any] = {}
-        kwargs.update(cfg or {})
-        kwargs['model'] = model_name
-        kwargs.update(params or {})
+    @route('/sessions/{id}/histories', methods=['POST'])
+    async def create_session_history(self, req: Request, payload: CreateHistoryRequest, id: int):
+        """Create a new history for a specific session."""
+        return await self.service_call_and_respond(
+            self.history_service.create_session_history, id, payload.title,
+            response_converter=lambda r: JSONResponse({'data': r.to_dict()}, 201)
+        )
 
-        try:
-            module = importlib.import_module(module_name)
-            client_cls = getattr(module, class_name)
-        except Exception as exc:  # noqa: BLE001
-            self._logger.error(f"Provider import error: {exc}", exc_info=True)
-            error_message = self._format_user_friendly_error(exc, "provider_config_error")
-            yield StreamingChunk(content=error_message, chunk_type="error", is_final=True)
-            return
+    @route('/sessions/{id}/histories/{history_id}', methods=['GET'])
+    async def get_session_history(self, req: Request, id: int, history_id: int):
+        """Get a specific history within a session."""
+        return await self.service_call_and_respond(self.history_service.get_session_history, id, history_id)
 
-        try:
-            client = client_cls(**kwargs)
+    @route('/sessions/{id}/histories/{history_id}', methods=['PUT'])
+    async def update_session_history(self, req: Request, payload: UpdateHistoryRequest, id: int, history_id: int):
+        """Update a specific history within a session."""
+        return await self.service_call_and_respond(
+            self.history_service.update_session_history, id, history_id, payload.title,
+            response_converter=lambda r: JSONResponse({'data': r.to_dict()})
+        )
 
-            # Create LangChain tools (can be empty list if no tools)
-            langchain_tools = []
-            if available_tools_info is not None:
-                langchain_tools = await self.agentic_tool_manager.create_langchain_tools(
-                    persona_id,
-                    available_tools_info
-                )
-                self._logger.info(f"🔧 Created {len(langchain_tools)} LangChain tools for persona {persona_id}")
+    @route('/sessions/{id}/histories/{history_id}', methods=['DELETE'])
+    async def delete_session_history(self, req: Request, id: int, history_id: int):
+        """Delete a specific history within a session."""
+        return await self.service_call_and_respond(self.history_service.delete_session_history, id, history_id)
 
-            persona_system_prompt = ""
-            async with AsyncSessionLocal() as db_session:
-                persona_result = await db_session.execute(
-                    select(Persona).options(selectinload(Persona.artist))
-                    .where(Persona.id == persona_id)
-                )
-                persona = persona_result.scalar_one_or_none()
-                if persona:
-                    persona_system_prompt = await self.render_persona_prompt(
-                        persona=persona,
-                        artist=persona.artist if persona.artist else None,
-                        context={'persona_id': persona_id, 'timestamp': datetime.now()}
-                    )
+    # ==========================================
+    # MESSAGE ROUTES
+    # ==========================================
 
-            template_messages = [
-                MessagesPlaceholder(variable_name="chat_history"),
-                ("human", "{input}")
-            ]
-            # Create the ChatPromptTemplate with persona system prompt
-            if persona_system_prompt:
-                template_messages.insert(0, ("system", persona_system_prompt), )
-            chat_prompt = ChatPromptTemplate.from_messages(template_messages)
+    @route('/sessions/{id}/messages', methods=['GET'])
+    async def list_messages(self, req: Request, id: int):
+        """List messages from a chat session's current history."""
+        return await self.service_call_and_respond(
+            self.message_service.list_messages, id,
+            response_converter=lambda r: JSONResponse({'data': r, 'total': len(r)})
+        )
 
-            agent = create_react_agent(client, tools=langchain_tools)
+    @route('/sessions/{session_id}/histories/{history_id}/send', methods=['POST'])
+    async def send_message(self, req: Request, payload: SendMessageToHistoryRequest, session_id: int, history_id: int):
+        """Send message to session."""
+        return await self.service_call_and_respond(self.message_service.send_message, session_id, history_id, payload)
 
-            self._logger.info(f"🔧 Created ReAct agent with {len(langchain_tools)} tools")
+    @route('/sessions/{session_id}/histories/{history_id}/messages', methods=['GET'])
+    async def list_history_messages(self, req: Request, session_id: int, history_id: int):
+        """Get messages from a specific history within a session."""
+        # This method doesn't exist in the service yet, using list_messages for now
+        return await self.service_call_and_respond(
+            self.message_service.list_messages, session_id,
+            response_converter=lambda r: JSONResponse({'data': r, 'total': len(r)})
+        )
 
-            # Chain the prompt with the agent
-            new_agent = chat_prompt | agent
+    # ==========================================
+    # PERSONA ROUTES
+    # ==========================================
 
-            # Get the last user message
-            last_user_msg = next((m for m in reversed(messages) if m.get('role') == 'user'), None)
-            if last_user_msg:
-                user_content = last_user_msg.get('content', '')
-                if isinstance(user_content, dict):
-                    user_content = user_content.get('text', str(user_content))
+    @route('/personas', methods=['GET'])
+    async def list_personas(self, req: Request):
+        """List all available personas with active session counts."""
+        return await self.service_call_and_respond(
+            self.persona_service.list_personas_with_session_counts,
+            response_converter=lambda r: JSONResponse({'data': r, 'total': len(r)})
+        )
 
-                # Build conversation history as tuples aligned with ChatPromptTemplate
-                conversation_history = []
-                for m in messages:
-                    role = m.get('role')
-                    content = m.get('content')
-                    if isinstance(content, dict):
-                        content = content.get('text', str(content))
-                    if role == 'user':
-                        conversation_history.append(("human", content))
-                    elif role == 'assistant':
-                        conversation_history.append(("ai", content))
-                    elif role == 'system':
-                        pass
+    @route('/personas/{persona_id}', methods=['GET'])
+    async def get_persona(self, req: Request, persona_id: int):
+        """Get a single persona by ID with active session count."""
+        return await self.service_call_and_respond(self.persona_service.get_persona_with_session_count, persona_id)
 
-                # Use streaming with astream_events
+    # ==========================================
+    # TOOL ROUTES
+    # ==========================================
 
-                async for mode, message in iter_messages(new_agent.astream_events({
-                    "chat_history": conversation_history,
-                    "input": user_content
-                })):
-                    if mode == "start":
-                        if isinstance(message, LCAIMessage):
-                            yield StreamingChunk(content="", chunk_type="ai_start", metadata={
-                                "run_id": message.msg_id,
-                                "parent_ids": message.status.get("parent_ids", [])
-                            })
-                            initial_content = message.status.get("content", "")
-                            if initial_content:
-                                yield StreamingChunk(content=initial_content, chunk_type="text", metadata={
-                                    "run_id": message.msg_id,
-                                    "parent_ids": message.status.get("parent_ids", [])
-                                })
-                        elif isinstance(message, LCToolMessage):
-                            yield StreamingChunk(
-                                content="",
-                                chunk_type="tool_start",
-                                metadata={
-                                    "tool_name": message.status.get("tool_name", "unknown"),
-                                    "args": message.status.get("input", {}),
-                                    "run_id": message.msg_id,
-                                    "tool_run_id": message.msg_id,
-                                    "parent_ids": message.status.get("parent_ids", [])
-                                }
-                            )
+    @route('/personas/{persona_id}/tools', methods=['GET'])
+    async def persona_tools(self, req: Request, persona_id: int):
+        """Get available tools for a specific persona."""
+        return await self.service_call_and_respond(self.tool_service.list_persona_tools, persona_id)
 
-                    elif mode == "update":
-                        if isinstance(message, LCAIMessage):
-                            yield StreamingChunk(content=message.status.get("content", ""), chunk_type="text",
-                                                 metadata={
-                                                     "run_id": message.msg_id,
-                                                     "parent_ids": message.status.get("parent_ids", [])
-                                                 })
+    @route('/tools/registry', methods=['GET'])
+    async def registry_tools(self, req: Request):
+        """List all registered LLM tools from the in-memory registry."""
+        return await self.service_call_and_respond(self.tool_service.list_registry_tools)
 
-                    elif mode == "end":
-                        if isinstance(message, LCAIMessage):
-                            yield StreamingChunk(content="", chunk_type="complete", is_final=True, metadata={
-                                "run_id": message.msg_id,
-                                "parent_ids": message.status.get("parent_ids", [])
-                            })
-                        elif isinstance(message, LCToolMessage):
-                            raw_output = message.get_status("output")
-                            parsed = None
-                            # Normalize LangChain ToolMessage output to JSON-serializable exec_result
-                            if hasattr(raw_output, 'content'):
-                                content_text = raw_output.content
-                                try:
-                                    parsed = json.loads(content_text)
-                                except Exception:
-                                    parsed = {"success": False, "error": "Non-JSON tool output",
-                                              "content": content_text}
-                            else:
-                                parsed = raw_output if isinstance(raw_output, (dict, list, str, int, float, bool,
-                                                                               type(None))) else {
-                                    "value": str(raw_output)}
-
-                            status_val = 'success' if isinstance(parsed, dict) and parsed.get(
-                                'success') is True else 'error'
-                            exec_result = {"status": status_val, "result": parsed}
-
-                            yield StreamingChunk(
-                                content="",
-                                chunk_type="tool_end",
-                                metadata={
-                                    "tool_name": message.status.get("tool_name", "unknown"),
-                                    "result": exec_result,
-                                    "run_id": message.msg_id,
-                                    "tool_run_id": message.msg_id,
-                                    "parent_ids": message.status.get("parent_ids", [])
-                                }
-                            )
-
-            else:
-                error_message = "No user message found. Please try sending a message again."
-                yield StreamingChunk(content=error_message, chunk_type="error", is_final=True)
-
-        except Exception as exc:  # noqa: BLE001
-            self._logger.error(f"Provider error: {exc}", exc_info=True)
-            error_message = self._format_user_friendly_error(exc, "connection_error")
-            yield StreamingChunk(content=error_message, chunk_type="error", is_final=True)
-
-    async def run_chat_streaming_with_retry(self, provider, mapping, messages, available_tools_info, persona_id,
-                                            max_retries: int = 2):
-        """Run chat streaming with automatic retry for connection errors."""
-        last_exception = None
-
-        for attempt in range(max_retries + 1):
-            try:
-                async for chunk in self.run_chat_streaming(provider, mapping, messages, available_tools_info,
-                                                           persona_id):
-                    yield chunk
-                return  # Success, exit retry loop
-
-            except Exception as exc:
-                last_exception = exc
-
-                # Check if this is a retryable error
-                if not self._is_retryable_error(exc):
-                    break
-
-                # Don't retry on last attempt
-                if attempt >= max_retries:
-                    break
-
-                # Calculate delay with exponential backoff
-                delay = min(1.0 * (2 ** attempt), 10.0)
-
-                # Log retry attempt
-                self._logger.warning(f"Retry attempt {attempt + 1}/{max_retries} after {delay}s for error: {exc}")
-
-                # Wait before retry
-                await asyncio.sleep(delay)
-
-        # All retries exhausted, yield error chunk
-        error_message = f"Service unavailable after {max_retries} attempts. Please try again later."
-        yield StreamingChunk(content=error_message, chunk_type="error", is_final=True)
-
-    def _is_retryable_error(self, exc: Exception) -> bool:
-        """Determine if an error is retryable."""
-        retryable_errors = [
-            "Connection error",
-            "All connection attempts failed",
-            "APIConnectionError",
-            "ConnectError",
-            "TimeoutError"
-        ]
-
-        error_str = str(exc)
-        return any(retryable in error_str for retryable in retryable_errors)
-
-    def _format_user_friendly_error(self, exc: Exception, error_type: str) -> str:
-        """Format error messages for end users."""
-        error_messages = {
-            "connection_error": "Unable to connect to AI service. Please check your internet connection and try again.",
-            "provider_config_error": "AI service configuration error. Please contact support.",
-            "api_connection_error": "AI service is currently unavailable. Please try again later.",
-            "general_error": "An error occurred while processing your request. Please try again."
-        }
-        return error_messages.get(error_type, "An unexpected error occurred. Please try again.")
+    @route('/mcp/servers/status', methods=['GET'])
+    async def mcp_status(self, req: Request):
+        """Get status of all MCP servers."""
+        return await self.service_call_and_respond(self.tool_service.get_mcp_servers_status)

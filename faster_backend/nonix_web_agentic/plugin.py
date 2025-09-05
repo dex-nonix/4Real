@@ -8,7 +8,7 @@ from .llm.agentic_tool_manager import AgenticToolManager
 from .routers.ai_analysis_result import AIAnalysisResultRouter
 from .routers.ai_model_mapping import AIModelMappingRouter
 from .routers.ai_provider import AIProviderRouter
-# from .routers.chat.chat_router import ChatRouter
+from .routers.chat.chat_router import ChatRouter
 from .routers.chat_history import ChatHistoryRouter
 from .routers.chat_message import ChatMessageRouter
 from .routers.chat_session import ChatSessionRouter
@@ -32,6 +32,7 @@ from .services.persona_service import PersonaService
 from .services.persona_mcp_server_service import PersonaMCPServerService
 from .services.persona_tool_access_service import PersonaToolAccessService
 from .services.tool_invocation_log_service import ToolInvocationLogService
+from .services.tool_execution_service import ToolExecutionService
 
 if TYPE_CHECKING:
     from nonix_web.server import NxWebServer
@@ -42,7 +43,7 @@ if TYPE_CHECKING:
     AIAnalysisResultRouter,
     AIModelMappingRouter,
     AIProviderRouter,
-    # ChatRouter,
+    ChatRouter,
     ChatHistoryRouter,
     ChatMessageRouter,
     ChatSessionRouter,
@@ -76,6 +77,7 @@ class NxWebAgenticPlugin(BasePlugin):
         di_register(PersonaMCPServerService)
         di_register(PersonaToolAccessService)
         di_register(ToolInvocationLogService)
+        di_register(ToolExecutionService)
 
     async def _startup(self, server: "NxWebServer", config: Dict[str, Any]):
         """Register template directory during startup"""

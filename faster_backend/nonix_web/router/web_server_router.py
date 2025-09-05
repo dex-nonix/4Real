@@ -2,7 +2,7 @@ import logging
 from abc import ABC
 from dataclasses import dataclass, asdict
 from enum import Enum
-from typing import Type, List, Dict, Any, Optional, Union, Sequence, Callable, TYPE_CHECKING
+from typing import Type, List, Dict, Any, Optional, Union, Sequence, Callable, TYPE_CHECKING, Awaitable
 
 from fastapi import APIRouter, params, routing, utils, types
 from fastapi.datastructures import Default
@@ -197,6 +197,53 @@ class NxWebServerRouter(ABC):
             await self.server.sio.emit(event, data, room=room)
         except Exception as e:
             self._logger.error(f"Failed to send message to room {room}: {e}")
+
+    async def service_call_and_respond(
+        self,
+        service_method: Callable[..., Awaitable[Any]],
+        *args,
+        response_converter: Optional[Callable[[Any], JSONResponse]] = None,
+        **kwargs
+    ) -> JSONResponse:
+        """DRY unified method: calls service safely and formats response.
+
+        Combines service call error handling with response formatting in one method.
+        Used by all routes for consistent service calls and responses.
+
+        Args:
+            service_method: The async service method to call
+            *args: Positional arguments for the service method
+            response_converter: Optional converter for custom response formatting
+            **kwargs: Keyword arguments for the service method
+
+        Returns:
+            JSONResponse: Either error response (400/500) or success response
+
+        Usage:
+            # Simple case (70% of routes):
+            return await self.service_call_and_respond(service.list_items)
+
+            # With custom converter:
+            return await self.service_call_and_respond(
+                service.get_item, item_id,
+                response_converter=lambda r: JSONResponse({'data': r.to_dict()})
+            )
+        """
+        try:
+            # Call service method
+            result = await service_method(*args, **kwargs)
+
+            # Format response
+            if response_converter:
+                return response_converter(result)
+            return JSONResponse({'data': result})
+
+        except ValueError as e:
+            # Business logic errors -> 400 Bad Request
+            return JSONResponse({'error': str(e)}, 400)
+        except Exception as e:
+            # System errors -> 500 Internal Server Error
+            return JSONResponse({'error': str(e)}, 500)
 
     @classmethod
     def to_router(cls, *args, **kwargs) -> APIRouter:
