@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, TYPE_CHECKING
 
@@ -6,13 +7,10 @@ from nonix_web_db import AsyncSessionLocal
 from .message_type_registry import MessageTypeHandler
 from ...llm.agentic_tool_manager import AgenticToolManager
 from ...models.chat_message import ChatMessage
-
-import uuid
-
 from ...sequence_utils import next_seq
 
 if TYPE_CHECKING:
-    from .chat_router import ChatRouter
+    from ...routers.chat.chat_router import ChatRouter
 
 
 class ChatMessageHandler(MessageTypeHandler):
@@ -76,10 +74,10 @@ class ChatMessageHandler(MessageTypeHandler):
 
 class ToolCallMessageHandler(MessageTypeHandler):
     """Handle tool call messages - direct tool execution."""
-    agentic_tool_manager:AgenticToolManager = Inject(AgenticToolManager)
+    agentic_tool_manager: AgenticToolManager = Inject(AgenticToolManager)
 
     async def handle(self, chat_service: "ChatRouter", session, persona, history_id: int, content: Dict[str, Any]) -> \
-    Dict[str, Any]:
+            Dict[str, Any]:
         chat_service._logger.info(f"🔧 ToolCallMessageHandler received content: {content}")
         tool_name = content.get('tool')
         tool_args = content.get('args', {})
@@ -151,13 +149,14 @@ class ToolCallMessageHandler(MessageTypeHandler):
                 message_type='tool_result',
                 status='complete',  # ✅ FIXED: Add required status field
                 content_json={
-                    'tool_name': tool_name,        # ✅ Standardized: snake_case
-                    'tool_args': tool_args,        # ✅ Standardized: snake_case
-                    'execution_status': 'success' if exec_result.get('status') == 'success' else 'error',  # ✅ Standardized: snake_case
-                    'result': exec_result,         # ✅ Consistent field
-                    'executed_by': 'user',         # ✅ Standardized: snake_case
+                    'tool_name': tool_name,  # ✅ Standardized: snake_case
+                    'tool_args': tool_args,  # ✅ Standardized: snake_case
+                    'execution_status': 'success' if exec_result.get('status') == 'success' else 'error',
+                    # ✅ Standardized: snake_case
+                    'result': exec_result,  # ✅ Consistent field
+                    'executed_by': 'user',  # ✅ Standardized: snake_case
                     'execution_time': datetime.now(timezone.utc).isoformat(),  # ✅ Standardized: snake_case
-                    'execution_path': 'manual'    # ✅ Standardized: execution path identifier
+                    'execution_path': 'manual'  # ✅ Standardized: execution path identifier
                 },
                 seq=seq_val_res,
                 turn_id=tool_call_msg.turn_id,

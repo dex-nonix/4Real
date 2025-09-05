@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List
 
@@ -15,11 +16,6 @@ from .models_and_schemas import (
     DeleteMessageResponse,
     MessageResponse
 )
-from ..message_handlers import ChatMessageHandler, ToolCallMessageHandler
-from ..message_type_registry import message_type_registry
-from ..streaming_event_manager import StreamingEventManager
-from ..streaming_interface import StreamingChunk
-from ..streaming_message_handler import StreamingMessageHandler
 from ..websocket_protocol import WebSocketMixinProtocol
 from ....models.ai_model_mapping import AIModelMapping
 from ....models.ai_provider import AIProvider
@@ -28,9 +24,12 @@ from ....models.chat_message import ChatMessage
 from ....models.chat_session import ChatSession
 from ....models.persona import Persona
 from ....models.tool_invocation_log import ToolInvocationLog
-import uuid
-
 from ....sequence_utils import next_seq
+from ....services.chat.message_handlers import ChatMessageHandler, ToolCallMessageHandler
+from ....services.chat.message_type_registry import message_type_registry
+from ....services.chat.streaming_event_manager import StreamingEventManager
+from ....services.chat.streaming_interface import StreamingChunk
+from ....services.chat.streaming_message_handler import StreamingMessageHandler
 
 
 class ChatMessageMixin(WebSocketMixinProtocol):
@@ -182,8 +181,6 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
         async with AsyncSessionLocal() as db_session:
             chat_history = []
-
-
 
             # Add user and assistant messages up to current user message
             user_result = await db_session.execute(
@@ -337,11 +334,11 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 message_type='tool_result',
                 status='complete',  # ✅ FIXED: Add required status field
                 content_json={
-                    'tool_name': tool_name,        # ✅ Standardized: snake_case
-                    'tool_args': tool_args,        # ✅ Standardized: snake_case
-                    'execution_status': status,    # ✅ Standardized: consistent field
-                    'result': exec_result,         # ✅ Standardized: consistent field
-                    'executed_by': 'llm',          # ✅ Standardized: execution context
+                    'tool_name': tool_name,  # ✅ Standardized: snake_case
+                    'tool_args': tool_args,  # ✅ Standardized: snake_case
+                    'execution_status': status,  # ✅ Standardized: consistent field
+                    'result': exec_result,  # ✅ Standardized: consistent field
+                    'executed_by': 'llm',  # ✅ Standardized: execution context
                     'execution_time': datetime.now(timezone.utc).isoformat(),  # ✅ Standardized: timestamp
                     'execution_path': 'streaming'  # ✅ Standardized: execution path identifier
                 },
@@ -556,7 +553,8 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                 pass
 
             # Log successful submission with proper logger
-            self._logger.info(f"Message {user_msg_id} submitted to task manager for async processing (session: {session_id})")
+            self._logger.info(
+                f"Message {user_msg_id} submitted to task manager for async processing (session: {session_id})")
             return future
 
         except Exception as e:
@@ -1024,7 +1022,6 @@ class ChatMessageMixin(WebSocketMixinProtocol):
         except Exception as exc:  # noqa: BLE001
             return await self._format_error_response(str(exc), 500)
 
-
     @route(
         '/sessions/{session_id}/retry',
         methods=['POST'],
@@ -1045,7 +1042,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
             # Create new assistant message placeholder
             asst_msg = await self.create_assistant_placeholder(history.id if history else session.current_history_id)
-            
+
             # Submit for retry processing
             future = await self.submit_message_for_async_processing(
                 last_user_msg.id,
@@ -1077,7 +1074,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
 
             # Use the enhanced session-specific cancellation
             cancelled_count = await task_manager.cancel_session_tasks(session_id)
-            
+
             self._logger.info(f"Cancelled {cancelled_count} active tasks for session {session_id}")
             return cancelled_count > 0
 
@@ -1108,7 +1105,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
             last_msg = await self._get_last_user_message(session_id)
             if not last_msg:
                 return None
-                
+
             # Extract the message content in the format expected by the frontend
             content = last_msg.content_json or {}
             if isinstance(content, dict):
@@ -1123,7 +1120,7 @@ class ChatMessageMixin(WebSocketMixinProtocol):
                     'type': 'text',
                     'text': str(content)
                 }
-                
+
         except Exception as e:
             self._logger.error(f"Failed to get last user message content for session {session_id}: {e}", exc_info=True)
             return None

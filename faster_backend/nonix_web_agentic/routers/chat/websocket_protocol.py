@@ -1,12 +1,11 @@
 from typing import Protocol, TYPE_CHECKING, Any, List, Dict, AsyncGenerator
 
 from nonix_web.utils.di import Inject
-
 from ...llm.agentic_tool_manager import AgenticToolManager
 
 if TYPE_CHECKING:
-    from .task_manager import ChatTaskManager
-    from .streaming_interface import StreamingChunk
+    from ...services.chat.task_manager import ChatTaskManager
+    from ...services.chat.streaming_interface import StreamingChunk
     from nonix_web.server import NxWebServer
     from logging import Logger
 
@@ -15,7 +14,7 @@ class WebSocketMixinProtocol(Protocol):
     """Protocol for WebSocket event emission - Python's way of defining contracts."""
 
     _logger: "Logger"
-    _task_manager : "ChatTaskManager"
+    _task_manager: "ChatTaskManager"
     server: "NxWebServer"
     agentic_tool_manager: AgenticToolManager = Inject(AgenticToolManager)
 

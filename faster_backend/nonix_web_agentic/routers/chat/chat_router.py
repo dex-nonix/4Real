@@ -1,7 +1,7 @@
 import asyncio
 import importlib
-from datetime import datetime
 import json
+from datetime import datetime
 from typing import Any, Dict, List, AsyncGenerator, TYPE_CHECKING
 
 from fastapi.responses import JSONResponse
@@ -19,12 +19,10 @@ from .mixins.chat_session_mixin import ChatSessionMixin
 from .mixins.models_and_schemas import TaskManagerHealthResponse
 from .mixins.persona_chat_mixin import PersonaChatMixin
 from .mixins.tool_execution_mixin import ToolExecutionMixin
-from .streaming_interface import StreamingChunk
-from .task_manager import ChatTaskManager
-
 from ...llm.llm_message_utils import LCAIMessage, LCToolMessage, iter_messages
 from ...models.persona import Persona
-
+from ...services.chat.streaming_interface import StreamingChunk
+from ...services.chat.task_manager import ChatTaskManager
 
 if TYPE_CHECKING:
     from ...plugin import NxWebAgenticPlugin
@@ -263,10 +261,11 @@ class ChatRouter(NxWebServerRouter, ChatSessionMixin, ChatMessageMixin, ChatHist
 
                     elif mode == "update":
                         if isinstance(message, LCAIMessage):
-                            yield StreamingChunk(content=message.status.get("content", ""), chunk_type="text", metadata={
-                                "run_id": message.msg_id,
-                                "parent_ids": message.status.get("parent_ids", [])
-                            })
+                            yield StreamingChunk(content=message.status.get("content", ""), chunk_type="text",
+                                                 metadata={
+                                                     "run_id": message.msg_id,
+                                                     "parent_ids": message.status.get("parent_ids", [])
+                                                 })
 
                     elif mode == "end":
                         if isinstance(message, LCAIMessage):
@@ -283,11 +282,15 @@ class ChatRouter(NxWebServerRouter, ChatSessionMixin, ChatMessageMixin, ChatHist
                                 try:
                                     parsed = json.loads(content_text)
                                 except Exception:
-                                    parsed = {"success": False, "error": "Non-JSON tool output", "content": content_text}
+                                    parsed = {"success": False, "error": "Non-JSON tool output",
+                                              "content": content_text}
                             else:
-                                parsed = raw_output if isinstance(raw_output, (dict, list, str, int, float, bool, type(None))) else {"value": str(raw_output)}
+                                parsed = raw_output if isinstance(raw_output, (dict, list, str, int, float, bool,
+                                                                               type(None))) else {
+                                    "value": str(raw_output)}
 
-                            status_val = 'success' if isinstance(parsed, dict) and parsed.get('success') is True else 'error'
+                            status_val = 'success' if isinstance(parsed, dict) and parsed.get(
+                                'success') is True else 'error'
                             exec_result = {"status": status_val, "result": parsed}
 
                             yield StreamingChunk(
@@ -311,36 +314,38 @@ class ChatRouter(NxWebServerRouter, ChatSessionMixin, ChatMessageMixin, ChatHist
             error_message = self._format_user_friendly_error(exc, "connection_error")
             yield StreamingChunk(content=error_message, chunk_type="error", is_final=True)
 
-    async def run_chat_streaming_with_retry(self, provider, mapping, messages, available_tools_info, persona_id, max_retries: int = 2):
+    async def run_chat_streaming_with_retry(self, provider, mapping, messages, available_tools_info, persona_id,
+                                            max_retries: int = 2):
         """Run chat streaming with automatic retry for connection errors."""
         last_exception = None
-        
+
         for attempt in range(max_retries + 1):
             try:
-                async for chunk in self.run_chat_streaming(provider, mapping, messages, available_tools_info, persona_id):
+                async for chunk in self.run_chat_streaming(provider, mapping, messages, available_tools_info,
+                                                           persona_id):
                     yield chunk
                 return  # Success, exit retry loop
-                
+
             except Exception as exc:
                 last_exception = exc
-                
+
                 # Check if this is a retryable error
                 if not self._is_retryable_error(exc):
                     break
-                
+
                 # Don't retry on last attempt
                 if attempt >= max_retries:
                     break
-                
+
                 # Calculate delay with exponential backoff
                 delay = min(1.0 * (2 ** attempt), 10.0)
-                
+
                 # Log retry attempt
                 self._logger.warning(f"Retry attempt {attempt + 1}/{max_retries} after {delay}s for error: {exc}")
-                
+
                 # Wait before retry
                 await asyncio.sleep(delay)
-        
+
         # All retries exhausted, yield error chunk
         error_message = f"Service unavailable after {max_retries} attempts. Please try again later."
         yield StreamingChunk(content=error_message, chunk_type="error", is_final=True)
@@ -354,7 +359,7 @@ class ChatRouter(NxWebServerRouter, ChatSessionMixin, ChatMessageMixin, ChatHist
             "ConnectError",
             "TimeoutError"
         ]
-        
+
         error_str = str(exc)
         return any(retryable in error_str for retryable in retryable_errors)
 
