@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import TypeVar, Generic, Type, List, Dict, Optional
+from typing import TypeVar, Generic, List, Dict, Optional
 from sqlalchemy import select, update, func, or_
 from fastapi import HTTPException, status
 from pydantic import BaseModel
@@ -40,7 +40,7 @@ class BaseCrudService(ABC, Generic[ModelType]):
             await session.execute(stmt)
             await session.commit()
 
-            return await self.get_one(item_id, session)
+            return await self.get_one(item_id)
 
     async def delete(self, item_id: int):
         """Delete a record"""
@@ -306,26 +306,25 @@ class BaseCrudService(ABC, Generic[ModelType]):
 
     async def search(self, query_params: dict, search_query: str) -> Dict:
         """Search records"""
-        async with AsyncSessionLocal() as session:
-            if not search_query:
-                return create_paginated_response(data=[], page=1, per_page=10, total=0)
+        if not search_query:
+            return create_paginated_response(data=[], page=1, per_page=10, total=0)
 
-            fields_param = query_params.get("fields", "")
-            search_fields = (
-                fields_param.split(",") if fields_param else
-                [c.name for c in self.model.__table__.columns if hasattr(c.type, "length")]
-            )
+        fields_param = query_params.get("fields", "")
+        search_fields = (
+            fields_param.split(",") if fields_param else
+            [c.name for c in self.model.__table__.columns if hasattr(c.type, "length")]
+        )
 
-            conditions = [
-                getattr(self.model, field).ilike(f"%{search_query}%")
-                for field in search_fields
-                if hasattr(self.model, field)
-            ]
+        conditions = [
+            getattr(self.model, field).ilike(f"%{search_query}%")
+            for field in search_fields
+            if hasattr(self.model, field)
+        ]
 
-            if conditions:
-                query_params["filters"] = query_params.get("filters", []) + conditions
+        if conditions:
+            query_params["filters"] = query_params.get("filters", []) + conditions
 
-            return await self.get_all(query_params, session)
+        return await self.get_all(query_params)
 
     def _format_selector_label(self, item: ModelType) -> str:
         selector_cfg = self.config.selector
@@ -365,10 +364,9 @@ class BaseCrudService(ABC, Generic[ModelType]):
 
     async def single_selector(self, item_id: int) -> Dict:
         """Get single selector item"""
-        async with AsyncSessionLocal() as session:
-            item = await self.get_one(item_id, session)
-            return {
-                "id": item.id,
-                "value": item.id,
-                "label": self._format_selector_label(item),
-            }
+        item = await self.get_one(item_id)
+        return {
+            "id": item.id,
+            "value": item.id,
+            "label": self._format_selector_label(item),
+        }
