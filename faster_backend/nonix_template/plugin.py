@@ -3,7 +3,9 @@ from pathlib import Path
 from typing import Dict, Any, List, TYPE_CHECKING
 
 from nonix_web.plugin.base_plugin import BasePlugin, routers
+from nonix_web.utils.di import di_register
 from .router.template_router import TemplateRouter
+from .services.template_service import TemplateService
 from .template_renderer import TemplateRenderer
 
 if TYPE_CHECKING:
@@ -27,7 +29,10 @@ class NxWebTemplatePlugin(BasePlugin):
         self._search_paths = []
 
     def _configure(self, server: "NxWebServer", config: Dict[str, Any]):
-        """Initialize template renderer during plugin configuration"""
+        """Initialize template renderer and services during plugin configuration"""
+        # Register services in DI system
+        di_register(TemplateService)
+
         # Initialize with empty search paths initially
         self.template_renderer = TemplateRenderer(self._search_paths)
 
