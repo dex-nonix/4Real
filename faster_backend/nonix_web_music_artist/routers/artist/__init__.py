@@ -1,4 +1,4 @@
-from nonix_web_music_artist.routers.artist.artist_service import ArtistRouter
+from .artist_router import ArtistRouter
 
 __all__ = [
 
