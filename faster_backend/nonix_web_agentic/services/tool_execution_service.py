@@ -1,4 +1,5 @@
 from typing import List, Dict, Any, Optional
+from datetime import datetime
 from sqlalchemy import select
 
 from nonix_web_db import AsyncSessionLocal
@@ -50,11 +51,11 @@ class ToolExecutionService:
             await self.web_socket_service.send_ws_message(
                 f'persona/{persona_id}',
                 {
-                    'event': 'tool_execution_started',
+                    'event': 'tool_status',
                     'data': {
                         'tool_name': tool_name,
-                        'parameters': parameters,
-                        'status': 'running'
+                        'status': 'running',
+                        'timestamp': datetime.utcnow().isoformat()
                     }
                 }
             )
@@ -78,11 +79,12 @@ class ToolExecutionService:
                 await self.web_socket_service.send_ws_message(
                     f'persona/{persona_id}',
                     {
-                        'event': 'tool_execution_completed',
+                        'event': 'tool_status',
                         'data': {
                             'tool_name': tool_name,
-                            'result': result,
-                            'status': 'completed'
+                            'status': 'completed',
+                            'result': tool_result,
+                            'timestamp': datetime.utcnow().isoformat()
                         }
                     }
                 )
@@ -93,11 +95,12 @@ class ToolExecutionService:
                 await self.web_socket_service.send_ws_message(
                     f'persona/{persona_id}',
                     {
-                        'event': 'tool_execution_error',
+                        'event': 'tool_status',
                         'data': {
                             'tool_name': tool_name,
+                            'status': 'failed',
                             'error': str(e),
-                            'status': 'failed'
+                            'timestamp': datetime.utcnow().isoformat()
                         }
                     }
                 )

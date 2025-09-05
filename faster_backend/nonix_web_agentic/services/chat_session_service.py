@@ -113,19 +113,6 @@ class ChatSessionService(BaseCrudService):
                 session.current_history_id = history.id
                 await db_session.commit()
 
-                # Emit WebSocket event for new session creation
-                await self.web_socket_service.send_ws_message(
-                    f'persona/{persona_id}',
-                    {
-                        'event': 'session_created',
-                        'data': {
-                            'session_id': session.id,
-                            'session_name': session.session_name,
-                            'persona_id': persona_id,
-                            'persona_name': persona.name
-                        }
-                    }
-                )
 
                 return session
             except Exception as exc:
