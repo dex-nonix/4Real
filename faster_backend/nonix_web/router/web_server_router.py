@@ -213,7 +213,7 @@ class NxWebServerRouter(ABC):
         Args:
             service_method: The async service method to call
             *args: Positional arguments for the service method
-            response_converter: Optional converter for custom response formatting
+            response_converter: Optional converter that returns data dict (not JSONResponse)
             **kwargs: Keyword arguments for the service method
 
         Returns:
@@ -223,20 +223,32 @@ class NxWebServerRouter(ABC):
             # Simple case (70% of routes):
             return await self.service_call_and_respond(service.list_items)
 
-            # With custom converter:
+            # With custom converter (return data dict):
             return await self.service_call_and_respond(
                 service.get_item, item_id,
-                response_converter=lambda r: JSONResponse({'data': r.to_dict()})
+                response_converter=lambda r: {'data': r.to_dict()}
+            )
+
+            # With status code (return tuple: data_dict, status_code):
+            return await self.service_call_and_respond(
+                service.create_item, data,
+                response_converter=lambda r: ({'data': r.to_dict()}, 201)
             )
         """
         try:
             # Call service method
             result = await service_method(*args, **kwargs)
 
-            # Format response
+            # Format response - converters return data dicts (or tuples for status codes)
             if response_converter:
-                return response_converter(result)
-            return JSONResponse({'data': result})
+                converter_result = response_converter(result)
+                if isinstance(converter_result, tuple):
+                    data, status_code = converter_result
+                else:
+                    data, status_code = converter_result, 200
+            else:
+                data, status_code = {'data': result}, 200
+            return JSONResponse(data, status_code)
 
         except ValueError as e:
             # Business logic errors -> 400 Bad Request

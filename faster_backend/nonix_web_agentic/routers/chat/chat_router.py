@@ -1,5 +1,4 @@
 from fastapi import Request
-from fastapi.responses import JSONResponse
 
 from nonix_web.router.web_server_router import NxWebServerRouter, router, route
 from nonix_web.utils.di import Inject
@@ -47,7 +46,7 @@ class ChatRouter(NxWebServerRouter):
         return await self.service_call_and_respond(
             self.session_service.create_session_with_history,
             payload.persona_id, payload.session_name, payload.session_icon,
-            response_converter=lambda r: JSONResponse({'data': r.to_dict()})
+            response_converter=lambda r: {'data': r.to_dict()}
         )
 
     @route('/sessions', methods=['GET'])
@@ -55,7 +54,7 @@ class ChatRouter(NxWebServerRouter):
         """List all active chat sessions."""
         return await self.service_call_and_respond(
             self.session_service.get_sessions_with_counts,
-            response_converter=lambda r: JSONResponse({'data': r, 'total': len(r)})
+            response_converter=lambda r: {'data': r, 'total': len(r)}
         )
 
     @route('/sessions/{id}', methods=['GET'])
@@ -69,7 +68,7 @@ class ChatRouter(NxWebServerRouter):
         return await self.service_call_and_respond(
             self.session_service.update_session,
             id, payload.session_name, payload.session_icon, payload.is_active,
-            response_converter=lambda r: JSONResponse({'data': r.to_dict()})
+            response_converter=lambda r: {'data': r.to_dict()}
         )
 
     @route('/sessions/{id}', methods=['DELETE'])
@@ -82,7 +81,7 @@ class ChatRouter(NxWebServerRouter):
         """Get all sessions for a specific persona."""
         return await self.service_call_and_respond(
             self.session_service.get_persona_sessions, persona_id,
-            response_converter=lambda r: JSONResponse({'data': r, 'total': len(r)})
+            response_converter=lambda r: {'data': r, 'total': len(r)}
         )
 
     @route('/personas/{persona_id}/start-chat', methods=['POST'])
@@ -91,7 +90,7 @@ class ChatRouter(NxWebServerRouter):
         return await self.service_call_and_respond(
             self.session_service.start_chat_with_persona,
             persona_id, payload.session_name, payload.session_icon,
-            response_converter=lambda r: JSONResponse({'data': r.to_dict()}, 201)
+            response_converter=lambda r: ({'data': r.to_dict()}, 201)
         )
 
     # ==========================================
@@ -103,7 +102,7 @@ class ChatRouter(NxWebServerRouter):
         """List all histories for a specific session."""
         return await self.service_call_and_respond(
             self.history_service.list_session_histories, id,
-            response_converter=lambda r: JSONResponse({'data': r, 'total': len(r)})
+            response_converter=lambda r: {'data': r, 'total': len(r)}
         )
 
     @route('/sessions/{id}/histories', methods=['POST'])
@@ -111,7 +110,7 @@ class ChatRouter(NxWebServerRouter):
         """Create a new history for a specific session."""
         return await self.service_call_and_respond(
             self.history_service.create_session_history, id, payload.title,
-            response_converter=lambda r: JSONResponse({'data': r.to_dict()}, 201)
+            response_converter=lambda r: ({'data': r.to_dict()}, 201)
         )
 
     @route('/sessions/{id}/histories/{history_id}', methods=['GET'])
@@ -124,7 +123,7 @@ class ChatRouter(NxWebServerRouter):
         """Update a specific history within a session."""
         return await self.service_call_and_respond(
             self.history_service.update_session_history, id, history_id, payload.title,
-            response_converter=lambda r: JSONResponse({'data': r.to_dict()})
+            response_converter=lambda r: {'data': r.to_dict()}
         )
 
     @route('/sessions/{id}/histories/{history_id}', methods=['DELETE'])
@@ -141,7 +140,7 @@ class ChatRouter(NxWebServerRouter):
         """List messages from a chat session's current history."""
         return await self.service_call_and_respond(
             self.message_service.list_messages, id,
-            response_converter=lambda r: JSONResponse({'data': r, 'total': len(r)})
+            response_converter=lambda r: {'data': r, 'total': len(r)}
         )
 
     @route('/sessions/{session_id}/histories/{history_id}/send', methods=['POST'])
@@ -155,7 +154,7 @@ class ChatRouter(NxWebServerRouter):
         # This method doesn't exist in the service yet, using list_messages for now
         return await self.service_call_and_respond(
             self.message_service.list_messages, session_id,
-            response_converter=lambda r: JSONResponse({'data': r, 'total': len(r)})
+            response_converter=lambda r: {'data': r, 'total': len(r)}
         )
 
     # ==========================================
@@ -167,7 +166,7 @@ class ChatRouter(NxWebServerRouter):
         """List all available personas with active session counts."""
         return await self.service_call_and_respond(
             self.persona_service.list_personas_with_session_counts,
-            response_converter=lambda r: JSONResponse({'data': r, 'total': len(r)})
+            response_converter=lambda r: {'data': r, 'total': len(r)}
         )
 
     @route('/personas/{persona_id}', methods=['GET'])
