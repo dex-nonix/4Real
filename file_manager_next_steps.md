@@ -24,7 +24,7 @@ class Settings:
 
 **Expected Result:** Settings class now has all required file management configuration.
 
-#### **Step 1.2: Fix Settings Import in FileService**
+#### **Step 1.2: Fix Settings Import in FileRouter**
 **File:** `/home/dex/Desktop/shadewalk/4Real/faster_backend/nonix_web_file_manager/services/file/file_service.py`
 
 **Current State:**
@@ -42,7 +42,7 @@ from nonix_web.config import settings  # ← ADD THIS LINE
 from nonix_web_db import AsyncSessionLocal
 ```
 
-**Expected Result:** FileService can now access `settings.MAX_FILE_SIZE`, `settings.ALLOWED_EXTENSIONS`, etc.
+**Expected Result:** FileRouter can now access `settings.MAX_FILE_SIZE`, `settings.ALLOWED_EXTENSIONS`, etc.
 
 #### **Step 1.3: Enable File Manager Plugin**
 **File:** `/home/dex/Desktop/shadewalk/4Real/faster_backend/main.py`
@@ -739,9 +739,9 @@ di_register(InternalFileCategoryService, singleton=True)
 di_register(FileManagerService, singleton=True)  # ← ADD THIS
 ```
 
-### **Phase 5: Integrate with AlbumService as Example**
+### **Phase 5: Integrate with AlbumRouter as Example**
 
-#### **Step 5.1: Examine AlbumService Structure**
+#### **Step 5.1: Examine AlbumRouter Structure**
 **File:** `/home/dex/Desktop/shadewalk/4Real/faster_backend/nonix_web_music_artist/services/album/album_service.py`
 
 **Current Content Analysis:**
@@ -756,7 +756,7 @@ from ...models.album import Album
 
 
 @router("/albums", tags=["Albums"])
-class AlbumService(NxWebServerCrudRouter):
+class AlbumRouter(NxWebServerCrudRouter):
 # CRUD configuration for albums
 ```
 
@@ -779,7 +779,7 @@ from nonix_web_file_manager.services.file_manager_service import FileManagerServ
 
 
 @router("/albums", tags=["Albums"])
-class AlbumService(NxWebServerCrudRouter):
+class AlbumRouter(NxWebServerCrudRouter):
     # ADD THIS: Inject FileManagerService
     file_manager: FileManagerService = Inject(FileManagerService)
 

@@ -8,7 +8,7 @@ import aiofiles
 
 from nonix_web_db import AsyncSessionLocal
 from .template_exceptions import TemplateNotFoundError
-from nonix_template.models.template import Template as DbTemplate
+from .models.template import Template as DbTemplate
 
 
 class DatabaseTemplateLoader(AsyncBaseLoader):
@@ -18,6 +18,7 @@ class DatabaseTemplateLoader(AsyncBaseLoader):
     TEMPLATE_EXTENSIONS = ['.jinja2', '.html', '.txt', '.md']
 
     def __init__(self, search_paths: Optional[List[Path]] = None):
+        AsyncBaseLoader.__init__(self, [])
         self._search_paths = search_paths or []
         self._cache = {}  # template_name -> (content, path, uptodate)
         self._inheritance_cache = {}  # template_name -> resolved_content

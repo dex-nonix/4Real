@@ -10,11 +10,11 @@ from nonix_web_db import AsyncSessionLocal
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     NxWebServerCrudRouter
 from .file_schemas import FileCreate, FileUpdate, FileInDbModel
-from ...models.file import File
+from nonix_web_file_manager.models.file import File
 
 
 @router("/files", tags=["Files"])
-class FileService(NxWebServerCrudRouter):
+class FileRouter(NxWebServerCrudRouter):
     config = CRUDConfig(
         model=File,
         create_schema=FileCreate,

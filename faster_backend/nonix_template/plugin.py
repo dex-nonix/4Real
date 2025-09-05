@@ -2,9 +2,9 @@ import os
 from pathlib import Path
 from typing import Dict, Any, List, TYPE_CHECKING
 
-from nonix_template.template_renderer import TemplateRenderer
-from nonix_web.plugin.base_plugin import BasePlugin, api_services
+from nonix_web.plugin.base_plugin import BasePlugin, routers
 from .router.template_router import TemplateRouter
+from .template_renderer import TemplateRenderer
 
 if TYPE_CHECKING:
     from nonix_web.server import NxWebServer
@@ -15,7 +15,7 @@ class TemplatePathError(Exception):
     pass
 
 
-@api_services([
+@routers([
     TemplateRouter
 ])
 class NxWebTemplatePlugin(BasePlugin):

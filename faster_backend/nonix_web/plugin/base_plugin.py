@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from ..server import NxWebServer
 
 
-def api_services(services, prefix="/api"):
+def routers(services, prefix="/api"):
     def _add_services(plugin, server, config):
         include_router = server.app.include_router
         for routed_service in services:

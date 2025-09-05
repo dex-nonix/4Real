@@ -22,7 +22,7 @@
 The existing services are **API ROUTED SERVICES** (for external HTTP access):
 ```python
 @router("/files", tags=["Files"])  # ← EXTERNAL API ROUTES
-class FileService(NxWebServerCrudRouter):
+class FileRouter(NxWebServerCrudRouter):
     # This creates HTTP endpoints like GET /api/files
     # Used by frontend, external clients, etc.
 ```
@@ -39,7 +39,7 @@ class InternalFileService:  # ← INTERNAL SERVICE (no routing)
 
 #### **Critical Issues**
 1. **Missing Settings Configuration**:
-   - `FileService.upload()` references undefined settings:
+   - `FileRouter.upload()` references undefined settings:
      - `settings.MAX_FILE_SIZE`
      - `settings.ALLOWED_EXTENSIONS`
      - `settings.UPLOAD_FOLDER`
@@ -77,7 +77,7 @@ class InternalFileService:  # ← INTERNAL SERVICE (no routing)
    STATIC_URL_PREFIX: str = "/static"
    ```
 
-2. **Fix settings import in FileService**:
+2. **Fix settings import in FileRouter**:
    ```python
    # Add to file_service.py
    from ..config import settings
@@ -311,7 +311,7 @@ di_register(FileManagerService, singleton=True)
 from nonix_web.utils.di import Inject
 from nonix_web_file_manager.services.file_manager_service import FileManagerService
 
-class AlbumService(NxWebServerCrudRouter):
+class AlbumRouter(NxWebServerCrudRouter):
     file_manager: FileManagerService = Inject(FileManagerService)
 
     async def create_album_with_cover(self, album_data, cover_file_id=None):
@@ -340,10 +340,10 @@ class AlbumService(NxWebServerCrudRouter):
 │   EXTERNAL API  │    │ INTERNAL SERVICES│
 │   (HTTP Routes) │    │  (Plugin Inject) │
 ├─────────────────┤    ├──────────────────┤
-│ FileService     │    │ InternalFileSvc  │
+│ FileRouter     │    │ InternalFileSvc  │
 │ (/api/files)    │◄──►│ (Direct Methods) │
 │                 │    │                  │
-│ FileLinkService │    │ InternalFileLink │
+│ FileLinkRouter │    │ InternalFileLink │
 │ (/api/file-links│◄──►│ (Direct Methods) │
 │                 │    │                  │
 │ FileCategorySvc │    │ InternalFileCat  │
@@ -381,7 +381,7 @@ class AlbumService(NxWebServerCrudRouter):
 
 ### **Short Term (This Week)**
 1. Create FileManagerService with high-level methods
-2. Integrate with AlbumService as example
+2. Integrate with AlbumRouter as example
 3. Test cross-plugin file attachment
 
 ### **Medium Term (Next Month)**

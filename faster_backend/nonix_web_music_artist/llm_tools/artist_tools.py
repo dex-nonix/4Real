@@ -1,11 +1,11 @@
-from typing import Dict, Any, Optional
 from datetime import date
+from typing import Dict, Any, Optional
 
 from nonix_web_agentic.llm.agentic_crud_tools import AgenticCrudTools
 from nonix_web_agentic.llm.agentic_tools import tool
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, PaginationConfig
 from ..models.artist import Artist
-from ..services.artist.artist_schemas import ArtistCreate, ArtistUpdate, ArtistInDbModel
+from ..routers.artist.artist_schemas import ArtistCreate, ArtistUpdate, ArtistInDbModel
 
 
 class ArtistToolService(AgenticCrudTools):
@@ -50,8 +50,6 @@ class ArtistToolService(AgenticCrudTools):
         if birth_date is not None:
             update_data['birth_date'] = birth_date
         return await self.update(item_id=artist_id, **update_data)
-
-    
 
     @tool("catalog")
     async def get_artist_catalog(self, artist_id: int) -> Dict[str, Any]:

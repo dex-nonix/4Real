@@ -1,11 +1,12 @@
 from typing import Dict, Any, Optional
+
 from jinja2_async_environment import AsyncEnvironment
 from sqlalchemy import select
 
 from nonix_web_db import AsyncSessionLocal
 from .database_template_loader import DatabaseTemplateLoader
+from .models.template import Template
 from .template_exceptions import TemplateNotFoundError, TemplateRenderingError, InvalidContextError
-from nonix_template.models.template import Template
 
 
 class TemplateRenderer:
@@ -117,7 +118,7 @@ class TemplateRenderer:
             raise TemplateRenderingError(template.name, str(e))
 
     def _merge_contexts(self, template_context: Optional[Dict[str, Any]],
-                       user_context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+                        user_context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         """Merge template and user contexts with proper precedence"""
         merged = {}
 

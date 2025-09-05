@@ -6,7 +6,7 @@ from nonix_web_db import AsyncSessionLocal
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, PaginationConfig
 from ..models.album import Album
 from ..models.track import Track
-from ..services.track.track_schemas import TrackCreate, TrackUpdate
+from nonix_web_music_artist.routers.track import TrackCreate, TrackUpdate
 
 
 class TrackToolService(AgenticCrudTools):

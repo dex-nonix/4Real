@@ -1,7 +1,7 @@
 from typing import Dict, Any, TYPE_CHECKING
 
 from nonix_web.plugin.base_plugin import BasePlugin
-from nonix_web.plugin.base_plugin import api_services
+from nonix_web.plugin.base_plugin import routers
 from nonix_web.plugin.descriptor import InjectPlugin
 from nonix_web.utils.di import di_register
 from .llm.agentic_tool_manager import AgenticToolManager
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from nonix_template.plugin import NxWebTemplatePlugin
 
 
-@api_services([
+@routers([
     AIAnalysisResultRouter,
     AIModelMappingRouter,
     AIProviderRouter,

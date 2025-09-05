@@ -26,7 +26,7 @@ This document outlines the two-phase approach to:
 ┌─────────────────────────────────────────────────────────────┐
 │                    HTTP Layer (Thin)                        │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐          │
-│  │AlbumService │ │TrackService │ │ArtistService│          │
+│  │AlbumRouter │ │TrackRouter │ │ArtistRouter│          │
 │  │(Config)     │ │(Config)     │ │(Config)     │          │
 │  └─────────────┘ └─────────────┘ └─────────────┘          │
 └─────────────────────────────────────────────────────────────┘

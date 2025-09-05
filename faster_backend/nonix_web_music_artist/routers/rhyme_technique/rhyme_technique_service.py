@@ -1,17 +1,17 @@
 from nonix_web.router.web_server_router import router
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     NxWebServerCrudRouter
-from .style_schemas import StyleCreate, StyleUpdate, StyleInDbModel
-from ...models.style import Style
+from .rhyme_technique_schemas import RhymeTechniqueCreate, RhymeTechniqueUpdate, RhymeTechniqueInDbModel
+from nonix_web_music_artist.models.rhyme_technique import RhymeTechnique
 
 
-@router("/styles", tags=["Styles"])
-class StyleService(NxWebServerCrudRouter):
+@router("/rhyme-techniques", tags=["Rhyme Techniques"])
+class RhymeTechniqueRouter(NxWebServerCrudRouter):
     config = CRUDConfig(
-        model=Style,
-        create_schema=StyleCreate,
-        update_schema=StyleUpdate,
-        response_schema=StyleInDbModel,
+        model=RhymeTechnique,
+        create_schema=RhymeTechniqueCreate,
+        update_schema=RhymeTechniqueUpdate,
+        response_schema=RhymeTechniqueInDbModel,
         filters=FilterConfig(
             allowed_fields=['name']
         ),
