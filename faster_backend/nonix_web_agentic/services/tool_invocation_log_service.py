@@ -1,6 +1,6 @@
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     BaseCrudService
-from ..routers.tool_invocation_log.tool_invocation_log_schemas import ToolInvocationLogCreate, ToolInvocationLogUpdate, ToolInvocationLogInDbModel
+from nonix_web_agentic.schemas.tool_invocation_log_schemas import ToolInvocationLogCreate, ToolInvocationLogUpdate, ToolInvocationLogInDbModel
 from ..models.tool_invocation_log import ToolInvocationLog
 
 

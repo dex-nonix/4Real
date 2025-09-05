@@ -1,10 +1,9 @@
-from typing import List, Dict, Any, Optional
 from sqlalchemy import func, select
 
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     BaseCrudService
 from nonix_web_db import AsyncSessionLocal
-from ..routers.persona.persona_schemas import PersonaCreate, PersonaUpdate, PersonaInDbModel
+from nonix_web_agentic.schemas.persona_schemas import PersonaCreate, PersonaUpdate, PersonaInDbModel
 from ..models.persona import Persona
 from ..models.chat_session import ChatSession
 

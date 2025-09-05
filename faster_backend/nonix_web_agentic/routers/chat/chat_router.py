@@ -2,9 +2,9 @@ from fastapi import Request
 
 from nonix_web.router.web_server_router import NxWebServerRouter, router, route
 from nonix_web.utils.di import Inject
-from ..chat_session.chat_session_schemas import ChatSessionCreate
-from ..chat_history.chat_history_schemas import CreateHistoryRequest, UpdateHistoryRequest
-from ..chat_message.chat_message_schemas import SendMessageToHistoryRequest
+from nonix_web_agentic.schemas.chat_session_schemas import ChatSessionCreate
+from nonix_web_agentic.schemas.chat_history_schemas import ChatHistoryCreate, ChatHistoryUpdate
+from nonix_web_agentic.schemas.chat_message_schemas import ChatMessageCreate
 from ...services.chat_session_service import ChatSessionService
 from ...services.chat_message_service import ChatMessageService
 from ...services.chat_history_service import ChatHistoryService
@@ -45,7 +45,7 @@ class ChatRouter(NxWebServerRouter):
         """Create a new chat session."""
         return await self.service_call_and_respond(
             self.session_service.create_session_with_history,
-            payload.persona_id, payload.session_name, payload.session_icon,
+            service_args=(payload.persona_id, payload.session_name, payload.session_icon),
             response_converter=lambda r: {'data': r.to_dict()}
         )
 
@@ -60,27 +60,34 @@ class ChatRouter(NxWebServerRouter):
     @route('/sessions/{id}', methods=['GET'])
     async def get_session(self, req: Request, id: int):
         """Get a specific chat session by ID."""
-        return await self.service_call_and_respond(self.session_service.get_session_with_count, id)
+        return await self.service_call_and_respond(
+            self.session_service.get_session_with_count,
+            service_args=(id,)
+        )
 
     @route('/sessions/{id}', methods=['PUT'])
     async def update_session(self, req: Request, payload: ChatSessionCreate, id: int):
         """Update a chat session."""
         return await self.service_call_and_respond(
             self.session_service.update_session,
-            id, payload.session_name, payload.session_icon, payload.is_active,
+            service_args=(id, payload.session_name, payload.session_icon, payload.is_active),
             response_converter=lambda r: {'data': r.to_dict()}
         )
 
     @route('/sessions/{id}', methods=['DELETE'])
     async def delete_session(self, req: Request, id: int):
         """Delete a chat session."""
-        return await self.service_call_and_respond(self.session_service.delete_session, id)
+        return await self.service_call_and_respond(
+            self.session_service.delete_session,
+            service_args=(id,)
+        )
 
     @route('/personas/{persona_id}/sessions', methods=['GET'])
     async def get_persona_sessions(self, req: Request, persona_id: int):
         """Get all sessions for a specific persona."""
         return await self.service_call_and_respond(
-            self.session_service.get_persona_sessions, persona_id,
+            self.session_service.get_persona_sessions,
+            service_args=(persona_id,),
             response_converter=lambda r: {'data': r, 'total': len(r)}
         )
 
@@ -89,7 +96,7 @@ class ChatRouter(NxWebServerRouter):
         """Start a new chat session with a persona."""
         return await self.service_call_and_respond(
             self.session_service.start_chat_with_persona,
-            persona_id, payload.session_name, payload.session_icon,
+            service_args=(persona_id, payload.session_name, payload.session_icon),
             response_converter=lambda r: ({'data': r.to_dict()}, 201)
         )
 
@@ -101,35 +108,44 @@ class ChatRouter(NxWebServerRouter):
     async def list_session_histories(self, req: Request, id: int):
         """List all histories for a specific session."""
         return await self.service_call_and_respond(
-            self.history_service.list_session_histories, id,
+            self.history_service.list_session_histories,
+            service_args=(id,),
             response_converter=lambda r: {'data': r, 'total': len(r)}
         )
 
     @route('/sessions/{id}/histories', methods=['POST'])
-    async def create_session_history(self, req: Request, payload: CreateHistoryRequest, id: int):
+    async def create_session_history(self, req: Request, payload: ChatHistoryCreate, id: int):
         """Create a new history for a specific session."""
         return await self.service_call_and_respond(
-            self.history_service.create_session_history, id, payload.title,
+            self.history_service.create_session_history,
+            service_args=(id, payload.title),
             response_converter=lambda r: ({'data': r.to_dict()}, 201)
         )
 
     @route('/sessions/{id}/histories/{history_id}', methods=['GET'])
     async def get_session_history(self, req: Request, id: int, history_id: int):
         """Get a specific history within a session."""
-        return await self.service_call_and_respond(self.history_service.get_session_history, id, history_id)
+        return await self.service_call_and_respond(
+            self.history_service.get_session_history,
+            service_args=(id, history_id)
+        )
 
     @route('/sessions/{id}/histories/{history_id}', methods=['PUT'])
-    async def update_session_history(self, req: Request, payload: UpdateHistoryRequest, id: int, history_id: int):
+    async def update_session_history(self, req: Request, payload: ChatHistoryUpdate, id: int, history_id: int):
         """Update a specific history within a session."""
         return await self.service_call_and_respond(
-            self.history_service.update_session_history, id, history_id, payload.title,
+            self.history_service.update_session_history,
+            service_args=(id, history_id, payload.title),
             response_converter=lambda r: {'data': r.to_dict()}
         )
 
     @route('/sessions/{id}/histories/{history_id}', methods=['DELETE'])
     async def delete_session_history(self, req: Request, id: int, history_id: int):
         """Delete a specific history within a session."""
-        return await self.service_call_and_respond(self.history_service.delete_session_history, id, history_id)
+        return await self.service_call_and_respond(
+            self.history_service.delete_session_history,
+            service_args=(id, history_id)
+        )
 
     # ==========================================
     # MESSAGE ROUTES
@@ -139,21 +155,25 @@ class ChatRouter(NxWebServerRouter):
     async def list_messages(self, req: Request, id: int):
         """List messages from a chat session's current history."""
         return await self.service_call_and_respond(
-            self.message_service.list_messages, id,
+            self.message_service.list_messages,
+            service_args=(id,),
             response_converter=lambda r: {'data': r, 'total': len(r)}
         )
 
     @route('/sessions/{session_id}/histories/{history_id}/send', methods=['POST'])
-    async def send_message(self, req: Request, payload: SendMessageToHistoryRequest, session_id: int, history_id: int):
+    async def send_message(self, req: Request, payload: ChatMessageCreate, session_id: int, history_id: int):
         """Send message to session."""
-        return await self.service_call_and_respond(self.message_service.send_message, session_id, history_id, payload)
+        return await self.service_call_and_respond(
+            self.message_service.send_message,
+            service_args=(session_id, history_id, payload)
+        )
 
     @route('/sessions/{session_id}/histories/{history_id}/messages', methods=['GET'])
     async def list_history_messages(self, req: Request, session_id: int, history_id: int):
         """Get messages from a specific history within a session."""
-        # This method doesn't exist in the service yet, using list_messages for now
         return await self.service_call_and_respond(
-            self.message_service.list_messages, session_id,
+            self.message_service.list_history_messages,
+            service_args=(session_id, history_id),
             response_converter=lambda r: {'data': r, 'total': len(r)}
         )
 
@@ -172,7 +192,10 @@ class ChatRouter(NxWebServerRouter):
     @route('/personas/{persona_id}', methods=['GET'])
     async def get_persona(self, req: Request, persona_id: int):
         """Get a single persona by ID with active session count."""
-        return await self.service_call_and_respond(self.persona_service.get_persona_with_session_count, persona_id)
+        return await self.service_call_and_respond(
+            self.persona_service.get_persona_with_session_count,
+            service_args=(persona_id,)
+        )
 
     # ==========================================
     # TOOL ROUTES
@@ -181,7 +204,10 @@ class ChatRouter(NxWebServerRouter):
     @route('/personas/{persona_id}/tools', methods=['GET'])
     async def persona_tools(self, req: Request, persona_id: int):
         """Get available tools for a specific persona."""
-        return await self.service_call_and_respond(self.tool_service.list_persona_tools, persona_id)
+        return await self.service_call_and_respond(
+            self.tool_service.list_persona_tools,
+            service_args=(persona_id,)
+        )
 
     @route('/tools/registry', methods=['GET'])
     async def registry_tools(self, req: Request):

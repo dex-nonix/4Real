@@ -1,6 +1,6 @@
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     BaseCrudService
-from ..routers.mcp_server.mcp_server_schemas import MCPServerCreate, MCPServerUpdate, MCPServerInDbModel
+from nonix_web_agentic.schemas.mcp_server_schemas import MCPServerCreate, MCPServerUpdate, MCPServerInDbModel
 from ..models.mcp_server import MCPServer
 
 

@@ -11,7 +11,7 @@ from starlette.routing import (
     BaseRoute,
 )
 from starlette.types import ASGIApp, Lifespan
-
+from nonix_web.server import NxWebServer
 from nonix_web.utils.di import Inject
 
 
@@ -176,7 +176,7 @@ def _get_route_info(cls) -> _RoutedServiceMethodDefinition:
 
 
 
-from nonix_web.server import NxWebServer
+
 
 
 class NxWebServerRouter(ABC):
@@ -201,9 +201,9 @@ class NxWebServerRouter(ABC):
     async def service_call_and_respond(
         self,
         service_method: Callable[..., Awaitable[Any]],
-        *args,
-        response_converter: Optional[Callable[[Any], JSONResponse]] = None,
-        **kwargs
+        service_args: tuple = (),
+        service_kwargs: dict = {},
+        response_converter: Optional[Callable[[Any], Any]] = None
     ) -> JSONResponse:
         """DRY unified method: calls service safely and formats response.
 
@@ -212,9 +212,9 @@ class NxWebServerRouter(ABC):
 
         Args:
             service_method: The async service method to call
-            *args: Positional arguments for the service method
+            service_args: Tuple of positional arguments for the service method (default: ())
+            service_kwargs: Dict of keyword arguments for the service method (default: {})
             response_converter: Optional converter that returns data dict (not JSONResponse)
-            **kwargs: Keyword arguments for the service method
 
         Returns:
             JSONResponse: Either error response (400/500) or success response
@@ -223,21 +223,26 @@ class NxWebServerRouter(ABC):
             # Simple case (70% of routes):
             return await self.service_call_and_respond(service.list_items)
 
+            # With arguments:
+            return await self.service_call_and_respond(
+                service.get_item, service_args=(item_id,)
+            )
+
             # With custom converter (return data dict):
             return await self.service_call_and_respond(
-                service.get_item, item_id,
+                service.get_item, service_args=(item_id,),
                 response_converter=lambda r: {'data': r.to_dict()}
             )
 
             # With status code (return tuple: data_dict, status_code):
             return await self.service_call_and_respond(
-                service.create_item, data,
+                service.create_item, service_args=(data,),
                 response_converter=lambda r: ({'data': r.to_dict()}, 201)
             )
         """
         try:
             # Call service method
-            result = await service_method(*args, **kwargs)
+            result = await service_method(*service_args, **service_kwargs)
 
             # Format response - converters return data dicts (or tuples for status codes)
             if response_converter:

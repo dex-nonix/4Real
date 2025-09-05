@@ -2,47 +2,39 @@ import asyncio
 import importlib
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Dict, List, AsyncGenerator, TYPE_CHECKING
 
-from fastapi.responses import JSONResponse
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langgraph.prebuilt import create_react_agent
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from nonix_web.utils.di import Inject
+from nonix_web_db import AsyncSessionLocal
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     BaseCrudService
-from nonix_web_db import AsyncSessionLocal
-from nonix_web.utils.di import Inject
-from ..routers.chat_message.chat_message_schemas import ChatMessageCreate, ChatMessageUpdate, ChatMessageInDbModel
+from ..llm.agentic_tool_manager import AgenticToolManager
+from ..llm.llm_message_utils import LCAIMessage, LCToolMessage, iter_messages
 from ..models.ai_model_mapping import AIModelMapping
 from ..models.ai_provider import AIProvider
 from ..models.chat_history import ChatHistory
 from ..models.chat_message import ChatMessage
 from ..models.chat_session import ChatSession
 from ..models.persona import Persona
-from ..models.tool_invocation_log import ToolInvocationLog
-from ..llm.llm_message_utils import LCAIMessage, LCToolMessage, iter_messages
+from ..schemas.chat_message_schemas import ChatMessageCreate, ChatMessageUpdate, ChatMessageInDbModel, SendMessageToHistoryRequest
 from ..sequence_utils import next_seq
 from ..services.chat.message_handlers import ChatMessageHandler, ToolCallMessageHandler
 from ..services.chat.message_type_registry import message_type_registry
-from ..services.chat.streaming_event_manager import StreamingEventManager
 from ..services.chat.streaming_interface import StreamingChunk
-from ..services.chat.streaming_message_handler import StreamingMessageHandler
 from ..services.chat.task_manager import ChatTaskManager
-from ..llm.agentic_tool_manager import AgenticToolManager
-from ..routers.chat.mixins.models_and_schemas import (
-    MessageListResponse, SendMessageToHistoryRequest, DeleteMessageResponse, MessageResponse
-)
-from ..routers.chat.websocket_protocol import WebSocketMixinProtocol
 
 if TYPE_CHECKING:
     from ..plugin import NxWebAgenticPlugin
     from nonix_template.plugin import NxWebTemplatePlugin
 
 
-class ChatMessageService(BaseCrudService, WebSocketMixinProtocol):
+class ChatMessageService(BaseCrudService):
     config = CRUDConfig(
         model=ChatMessage,
         create_schema=ChatMessageCreate,
@@ -73,6 +65,7 @@ class ChatMessageService(BaseCrudService, WebSocketMixinProtocol):
     def __init__(self):
         """Initialize message type handlers."""
         # Register message type handlers (meta-types)
+        super().__init__()
         message_type_registry.register('user', ChatMessageHandler())
         message_type_registry.register('tool_call', ToolCallMessageHandler())
         self._task_manager = ChatTaskManager()
@@ -344,6 +337,36 @@ class ChatMessageService(BaseCrudService, WebSocketMixinProtocol):
         except Exception as exc:
             raise exc
 
+    async def list_history_messages(self, session_id: int, history_id: int):
+        """List messages from a specific history within a session."""
+        try:
+            async with AsyncSessionLocal() as db_session:
+                # Validate session exists
+                session = (await db_session.execute(
+                    select(ChatSession).where(ChatSession.id == session_id, ChatSession.is_active == True)
+                )).scalar_one_or_none()
+
+                if not session:
+                    raise ValueError('Session not found or inactive')
+
+                # Validate history belongs to session
+                history = (await db_session.execute(
+                    select(ChatHistory).where(ChatHistory.id == history_id, ChatHistory.session_id == session_id)
+                )).scalar_one_or_none()
+
+                if not history:
+                    raise ValueError('History not found or does not belong to session')
+
+                # Get messages from specific history
+                msgs = await db_session.execute(
+                    select(ChatMessage).where(ChatMessage.history_id == history_id).order_by(
+                        ChatMessage.seq.asc())
+                ).scalars().all()
+
+                return [m.to_dict() for m in msgs]
+        except Exception as exc:
+            raise exc
+
     async def send_message(self, session_id: int, history_id: int, payload: SendMessageToHistoryRequest):
         """Send message to session."""
         self._logger.info(f"Processing send_message request for session {session_id}, history {history_id}")
@@ -419,7 +442,8 @@ class ChatMessageService(BaseCrudService, WebSocketMixinProtocol):
             raise exc
 
     async def run_chat_streaming(self, provider: Any, mapping: Any, messages: List[Dict[str, Any]],
-                                 available_tools_info: List[Dict[str, Any]], persona_id: int) -> AsyncGenerator[StreamingChunk, None]:
+                                 available_tools_info: List[Dict[str, Any]], persona_id: int) -> AsyncGenerator[
+        StreamingChunk, None]:
         """Run chat streaming with LLM integration."""
         cfg: Dict[str, Any] = provider.config_json or {}
         model_name: str = mapping.model_name
@@ -605,14 +629,14 @@ class ChatMessageService(BaseCrudService, WebSocketMixinProtocol):
             yield StreamingChunk(content=error_message, chunk_type="error", is_final=True)
 
     async def run_chat_streaming_with_retry(self, provider, mapping, messages, available_tools_info, persona_id,
-                                           max_retries: int = 2):
+                                            max_retries: int = 2):
         """Run chat streaming with automatic retry for connection errors."""
         last_exception = None
 
         for attempt in range(max_retries + 1):
             try:
                 async for chunk in self.run_chat_streaming(provider, mapping, messages, available_tools_info,
-                                                          persona_id):
+                                                           persona_id):
                     yield chunk
                 return  # Success, exit retry loop
 
@@ -664,7 +688,7 @@ class ChatMessageService(BaseCrudService, WebSocketMixinProtocol):
         return error_messages.get(error_type, "An unexpected error occurred. Please try again.")
 
     async def submit_message_for_async_processing(self, user_msg_id: int, asst_msg_id: int, session_id: int,
-                                                history_id: int, persona_id: int):
+                                                  history_id: int, persona_id: int):
         """Submit message processing to task manager for async execution."""
         try:
             # Use the task manager from the parent ChatRouter with session tracking

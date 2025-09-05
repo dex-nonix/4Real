@@ -1,6 +1,6 @@
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     BaseCrudService
-from ..routers.ai_model_mapping.ai_model_mapping_schemas import AIModelMappingCreate, AIModelMappingUpdate, AIModelMappingInDbModel
+from nonix_web_agentic.schemas.ai_model_mapping_schemas import AIModelMappingCreate, AIModelMappingUpdate, AIModelMappingInDbModel
 from ..models.ai_model_mapping import AIModelMapping
 
 
