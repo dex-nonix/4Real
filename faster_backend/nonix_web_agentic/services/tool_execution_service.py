@@ -46,9 +46,62 @@ class ToolExecutionService:
             if not persona:
                 raise ValueError('Persona not found')
 
-            # For now, return a placeholder response
-            # In a real implementation, this would call the actual tool execution
-            return {'status': 'success', 'result': 'Tool executed successfully'}
+            # Emit WebSocket event for tool execution start
+            await self.web_socket_service.send_ws_message(
+                f'persona/{persona_id}',
+                {
+                    'event': 'tool_execution_started',
+                    'data': {
+                        'tool_name': tool_name,
+                        'parameters': parameters,
+                        'status': 'running'
+                    }
+                }
+            )
+
+            try:
+                # Execute the actual tool using the agentic tool manager
+                tool_result = await self.agentic_tool_manager.execute_tool(
+                    persona_id=persona_id,
+                    tool_name=tool_name,
+                    parameters=parameters
+                )
+
+                result = {
+                    'status': 'success',
+                    'result': tool_result,
+                    'tool_name': tool_name,
+                    'execution_time': 'completed'
+                }
+
+                # Emit WebSocket event for tool execution completion
+                await self.web_socket_service.send_ws_message(
+                    f'persona/{persona_id}',
+                    {
+                        'event': 'tool_execution_completed',
+                        'data': {
+                            'tool_name': tool_name,
+                            'result': result,
+                            'status': 'completed'
+                        }
+                    }
+                )
+
+                return result
+            except Exception as e:
+                # Emit WebSocket event for tool execution error
+                await self.web_socket_service.send_ws_message(
+                    f'persona/{persona_id}',
+                    {
+                        'event': 'tool_execution_error',
+                        'data': {
+                            'tool_name': tool_name,
+                            'error': str(e),
+                            'status': 'failed'
+                        }
+                    }
+                )
+                raise
 
     async def get_mcp_servers_status(self):
         """Get status of all MCP servers."""

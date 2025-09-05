@@ -15,6 +15,7 @@ from nonix_web_db import AsyncSessionLocal
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     BaseCrudService
 from ..llm.agentic_tool_manager import AgenticToolManager
+from nonix_web.web_socket_service import WebSocketService
 from ..llm.llm_message_utils import LCAIMessage, LCToolMessage, iter_messages
 from ..models.ai_model_mapping import AIModelMapping
 from ..models.ai_provider import AIProvider
@@ -61,6 +62,7 @@ class ChatMessageService(BaseCrudService):
     agentic_plugin: "NxWebAgenticPlugin" = Inject("agentic")
     template_plugin: "NxWebTemplatePlugin" = Inject("template")
     agentic_tool_manager: AgenticToolManager = Inject(AgenticToolManager)
+    web_socket_service: WebSocketService = Inject(WebSocketService)
 
     def __init__(self):
         """Initialize message type handlers."""
@@ -72,7 +74,7 @@ class ChatMessageService(BaseCrudService):
 
     async def emit_chat_event(self, session_id: int, history_id: int, event: str, data: dict) -> None:
         room = f'chat/{session_id}/{history_id}'
-        await self.send_ws_message(room, {
+        await self.web_socket_service.send_ws_message(room, {
             'event': event,
             'data': data,
             'timestamp': datetime.utcnow().isoformat()

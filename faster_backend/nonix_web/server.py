@@ -8,8 +8,9 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 from .config import Settings
-from .plugin.plugin_manager import PluginManager
+from .web_socket_service import WebSocketService
 from .utils.di import di_register
+from .plugin.plugin_manager import PluginManager
 
 
 class NxWebServer:
@@ -92,6 +93,7 @@ class NxWebServer:
             cors_allowed_origins=self.settings.WS_ALLOWED_ORIGINS
         )
         di_register(AsyncServer, instance=sio)
+        di_register(WebSocketService)
 
         @sio.event
         async def connect(sid, environ):

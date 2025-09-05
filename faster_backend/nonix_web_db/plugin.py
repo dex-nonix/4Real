@@ -29,6 +29,9 @@ def AsyncSessionLocal() -> async_sessionmaker:
 class NxWebDbPlugin(BasePlugin):
     engine = None
 
+    def _configure(self, server: NxWebServer, config: Dict[str, Any]):
+        pass
+
     async def _startup(self, server: NxWebServer, config: Dict[str, Any]):
         global _async_session_local
         options = config.get("options", {})

@@ -3,6 +3,8 @@ from sqlalchemy import func, select
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     BaseCrudService
 from nonix_web_db import AsyncSessionLocal
+from nonix_web.web_socket_service import WebSocketService
+from nonix_web.utils.di import Inject
 from nonix_web_agentic.schemas.chat_session_schemas import ChatSessionCreate, ChatSessionUpdate, ChatSessionInDbModel
 from ..models.chat_session import ChatSession
 from ..models.chat_history import ChatHistory
@@ -10,6 +12,8 @@ from ..models.persona import Persona
 
 
 class ChatSessionService(BaseCrudService):
+    web_socket_service: WebSocketService = Inject(WebSocketService)
+
     config = CRUDConfig(
         model=ChatSession,
         create_schema=ChatSessionCreate,
@@ -108,6 +112,20 @@ class ChatSessionService(BaseCrudService):
                 # Set this as the current history
                 session.current_history_id = history.id
                 await db_session.commit()
+
+                # Emit WebSocket event for new session creation
+                await self.web_socket_service.send_ws_message(
+                    f'persona/{persona_id}',
+                    {
+                        'event': 'session_created',
+                        'data': {
+                            'session_id': session.id,
+                            'session_name': session.session_name,
+                            'persona_id': persona_id,
+                            'persona_name': persona.name
+                        }
+                    }
+                )
 
                 return session
             except Exception as exc:
