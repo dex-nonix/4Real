@@ -5,10 +5,10 @@ from starlette import status
 from starlette.requests import Request
 
 from nonix_web.router.web_server_router import NxWebServerRouter
+from .base_crud_service import BaseCrudService
 from .models_and_schemas import BulkOperationsPayload, PaginatedResponse, SelectorItem, CRUDConfig
 from .models_and_schemas import FilterConfig, SortingConfig, ValidationConfig, SelectorConfig
 from .query_processor import QueryProcessor
-from .base_crud_service import BaseCrudService
 
 __all__ = [
     "CRUDConfig",
@@ -38,7 +38,6 @@ class NxWebServerCrudRouter(NxWebServerRouter):
         self._register_routes()
 
     # All CRUD operations now delegate to the injected service
-
     def _register_routes(self) -> None:
         # Use cached service reference (injection already triggered in _init_components)
         service = self.service

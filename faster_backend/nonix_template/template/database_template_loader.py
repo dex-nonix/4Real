@@ -8,7 +8,7 @@ import aiofiles
 
 from nonix_web_db import AsyncSessionLocal
 from .template_exceptions import TemplateNotFoundError
-from .models.template import Template as DbTemplate
+from nonix_template.models.template import Template as DbTemplate
 
 
 class DatabaseTemplateLoader(AsyncBaseLoader):

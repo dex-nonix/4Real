@@ -80,8 +80,3 @@ def di_resolve( dependency, required = True ):
 class Inject(BaseInject[T, InjectDependencyType]):
     def _resolve(self) -> T | None:
         return di_resolve(self.dependency)
-
-        # resolved_dependency = _container.resolve(self.dependency)
-        # if resolved_dependency is None and self.required:
-        #     raise TypeError(f"Dependency {self.dependency.__name__} is not registered.")
-        # return resolved_dependency

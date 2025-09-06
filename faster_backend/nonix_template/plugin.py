@@ -6,7 +6,7 @@ from nonix_web.plugin.base_plugin import BasePlugin, routers
 from nonix_web.utils.di import di_register
 from .router.template_router import TemplateRouter
 from .services.template_service import TemplateService
-from .template_renderer import TemplateRenderer
+from .template.template_renderer import TemplateRenderer
 
 if TYPE_CHECKING:
     from nonix_web.server import NxWebServer

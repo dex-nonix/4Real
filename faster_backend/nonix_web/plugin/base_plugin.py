@@ -7,11 +7,11 @@ if TYPE_CHECKING:
     from ..server import NxWebServer
 
 
-def routers(services, prefix="/api"):
+def routers(classes, prefix="/api"):
     def _add_services(plugin, server, config):
         include_router = server.app.include_router
-        for routed_service in services:
-            include_router(routed_service.to_router(), prefix=prefix)
+        for router_class in classes:
+            include_router(router_class.to_router(), prefix=prefix)
 
     return lambda cls: add_configure_callback(cls, _add_services)
 
