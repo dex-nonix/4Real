@@ -23,6 +23,7 @@ from ..models.chat_history import ChatHistory
 from ..models.chat_message import ChatMessage
 from ..models.chat_session import ChatSession
 from ..models.persona import Persona
+from ..models.tool_invocation_log import ToolInvocationLog
 from ..schemas.chat_message_schemas import ChatMessageCreate, ChatMessageUpdate, ChatMessageInDbModel, SendMessageToHistoryRequest
 from ..sequence_utils import next_seq
 from ..services.chat.message_handlers import ChatMessageHandler, ToolCallMessageHandler
@@ -721,3 +722,110 @@ class ChatMessageService(BaseCrudService):
             # Emit error event
             await self.emit_llm_event(session_id, history_id, 'processing_failed', f'Failed to start processing: {e}')
             raise
+
+    async def clear_history_messages(self, session_id: int, history_id: int):
+        """Clear all messages from a specific history with validation."""
+        try:
+            async with AsyncSessionLocal() as db_session:
+                # Verify session exists and is active
+                session = (await db_session.execute(
+                    select(ChatSession).where(ChatSession.id == session_id, ChatSession.is_active == True)
+                )).scalar_one_or_none()
+
+                if not session:
+                    raise ValueError('Session not found or inactive')
+
+                # Verify history exists and belongs to session
+                history = (await db_session.execute(
+                    select(ChatHistory).where(ChatHistory.id == history_id, ChatHistory.session_id == session_id)
+                )).scalar_one_or_none()
+
+                if not history:
+                    raise ValueError('History not found')
+
+                # Count messages before deletion
+                messages_result = await db_session.execute(
+                    select(ChatMessage).where(ChatMessage.history_id == history_id)
+                )
+                messages = messages_result.scalars().all()
+                deleted_count = len(messages)
+
+                # Delete tool invocation logs
+                logs_result = await db_session.execute(
+                    select(ToolInvocationLog).where(ToolInvocationLog.history_id == history_id)
+                )
+                logs = logs_result.scalars().all()
+                for log in logs:
+                    await db_session.delete(log)
+
+                # Delete all messages in the history
+                for message in messages:
+                    await db_session.delete(message)
+
+                # Reset history message count
+                history.message_count = 0
+
+                await db_session.commit()
+
+                return {
+                    'message': f'Successfully cleared {deleted_count} messages from history',
+                    'deleted_count': deleted_count
+                }
+
+        except Exception as exc:
+            raise exc
+
+    async def delete_message_with_validation(self, session_id: int, history_id: int, message_id: int):
+        """Delete a specific message with session/history validation."""
+        try:
+            async with AsyncSessionLocal() as db_session:
+                # Verify session exists and is active
+                session = (await db_session.execute(
+                    select(ChatSession).where(ChatSession.id == session_id, ChatSession.is_active == True)
+                )).scalar_one_or_none()
+
+                if not session:
+                    raise ValueError('Session not found or inactive')
+
+                # Verify history exists and belongs to session
+                history = (await db_session.execute(
+                    select(ChatHistory).where(ChatHistory.id == history_id, ChatHistory.session_id == session_id)
+                )).scalar_one_or_none()
+
+                if not history:
+                    raise ValueError('History not found')
+
+                # Find and delete the specific message
+                message = (await db_session.execute(
+                    select(ChatMessage).where(ChatMessage.id == message_id, ChatMessage.history_id == history_id)
+                )).scalar_one_or_none()
+
+                if not message:
+                    raise ValueError('Message not found')
+
+                # Store message ID before deletion for response
+                deleted_message_id = message.id
+
+                # Delete associated tool invocation logs
+                logs_result = await db_session.execute(
+                    select(ToolInvocationLog).where(ToolInvocationLog.message_id == message.id)
+                )
+                logs = logs_result.scalars().all()
+                for log in logs:
+                    await db_session.delete(log)
+
+                # Delete the message
+                await db_session.delete(message)
+
+                # Update history message count
+                history.message_count = max(0, history.message_count - 1)
+
+                await db_session.commit()
+
+                return {
+                    'message': 'Message deleted successfully',
+                    'deleted_message_id': deleted_message_id
+                }
+
+        except Exception as exc:
+            raise exc

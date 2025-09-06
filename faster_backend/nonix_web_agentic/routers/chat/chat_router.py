@@ -219,3 +219,23 @@ class ChatRouter(NxWebServerRouter):
     async def mcp_status(self, req: Request):
         """Get status of all MCP servers."""
         return await self.service_call_and_respond(self.tool_service.get_mcp_servers_status)
+
+    # ==========================================
+    # DELETE MESSAGE ROUTES
+    # ==========================================
+
+    @route('/sessions/{session_id}/histories/{history_id}/messages', methods=['DELETE'])
+    async def clear_history_messages(self, req: Request, session_id: int, history_id: int):
+        """Clear all messages from a specific history."""
+        return await self.service_call_and_respond(
+            self.message_service.clear_history_messages,
+            service_args=(session_id, history_id)
+        )
+
+    @route('/sessions/{session_id}/histories/{history_id}/messages/{message_id}', methods=['DELETE'])
+    async def delete_message(self, req: Request, session_id: int, history_id: int, message_id: int):
+        """Delete a specific message from a history."""
+        return await self.service_call_and_respond(
+            self.message_service.delete_message_with_validation,
+            service_args=(session_id, history_id, message_id)
+        )
