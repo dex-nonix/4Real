@@ -3,15 +3,25 @@ from abc import ABC
 from functools import partial
 from typing import Dict, Any, TYPE_CHECKING, final, Type, List, Callable
 
+from ..utils.di import di_register
+
 if TYPE_CHECKING:
     from ..server import NxWebServer
 
 
 def routers(classes, prefix="/api"):
-    def _add_services(plugin, server, config):
+    def _add_router(plugin, server, config):
         include_router = server.app.include_router
         for router_class in classes:
             include_router(router_class.to_router(), prefix=prefix)
+
+    return lambda cls: add_configure_callback(cls, _add_router)
+
+
+def services(classes):
+    def _add_services(plugin, server, config):
+        for service_class in classes:
+            di_register(service_class)
 
     return lambda cls: add_configure_callback(cls, _add_services)
 

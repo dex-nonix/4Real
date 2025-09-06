@@ -1,9 +1,9 @@
-from typing import Dict, Any, TYPE_CHECKING
+from pathlib import Path
+from typing import Any, Dict
 
-from nonix_web.plugin.base_plugin import BasePlugin
+from nonix_web.plugin.base_plugin import BasePlugin, services
 from nonix_web.plugin.base_plugin import routers
 from nonix_web.plugin.descriptor import InjectPlugin
-from nonix_web.utils.di import di_register
 from .llm.agentic_tool_manager import AgenticToolManager
 from .routers.ai_analysis_result_router import AIAnalysisResultRouter
 from .routers.ai_model_mapping_router import AIModelMappingRouter
@@ -34,10 +34,6 @@ from .services.persona_tool_access_service import PersonaToolAccessService
 from .services.tool_execution_service import ToolExecutionService
 from .services.tool_invocation_log_service import ToolInvocationLogService
 
-if TYPE_CHECKING:
-    from nonix_web.server import NxWebServer
-    from nonix_template.plugin import NxWebTemplatePlugin
-
 
 @routers([
     AIAnalysisResultRouter,
@@ -55,39 +51,26 @@ if TYPE_CHECKING:
     PersonaToolAccessRouter,
     ToolInvocationLogRouter
 ])
+@services([
+    AgenticToolManager,
+    AIAnalysisResultService,
+    AIModelMappingService,
+    AIProviderService,
+    ChatHistoryService,
+    ChatMessageService,
+    ChatSessionService,
+    ChatPromptService,
+    InternalToolService,
+    MCPServerService,
+    PersonaService,
+    PersonaMCPServerService,
+    PersonaToolAccessService,
+    ToolInvocationLogService,
+    ToolExecutionService
+])
 class NxWebAgenticPlugin(BasePlugin):
-    agentic_tool_manager: AgenticToolManager = None
-    template_plugin: "NxWebTemplatePlugin" = InjectPlugin("template")
-
-    def _configure(self, server: "NxWebServer", config: Dict[str, Any]):
-        self.agentic_tool_manager = AgenticToolManager()
-        di_register(AgenticToolManager, instance=self.agentic_tool_manager)
-
-        # Register all CRUD services
-        di_register(AIAnalysisResultService)
-        di_register(AIModelMappingService)
-        di_register(AIProviderService)
-        di_register(ChatHistoryService)
-        di_register(ChatMessageService)
-        di_register(ChatSessionService)
-        di_register(ChatPromptService)
-        di_register(InternalToolService)
-        di_register(MCPServerService)
-        di_register(PersonaService)
-        di_register(PersonaMCPServerService)
-        di_register(PersonaToolAccessService)
-        di_register(ToolInvocationLogService)
-        di_register(ToolExecutionService)
+    template_plugin = InjectPlugin("template")
 
     async def _startup(self, server: "NxWebServer", config: Dict[str, Any]):
-        """Register template directory during startup"""
-        # Register the agentic plugin's template directory
-        from pathlib import Path
+        self.template_plugin.add_search_path(str(Path(__file__).parent / "templates"))
 
-        template_dir = Path(__file__).parent / "templates"
-        if template_dir.exists():
-            try:
-                self.template_plugin.add_search_path(str(template_dir))
-                self._logger.info(f"Registered template directory: {template_dir}")
-            except Exception as e:
-                self._logger.warning(f"Failed to register template directory: {e}")
