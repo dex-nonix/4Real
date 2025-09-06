@@ -2,7 +2,7 @@ import asyncio
 import importlib
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, AsyncGenerator, TYPE_CHECKING
 
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -28,7 +28,9 @@ from ..schemas.chat_message_schemas import ChatMessageCreate, ChatMessageUpdate,
 from ..sequence_utils import next_seq
 from ..services.chat.message_handlers import ChatMessageHandler, ToolCallMessageHandler
 from ..services.chat.message_type_registry import message_type_registry
+from ..services.chat.streaming_event_manager import StreamingEventManager
 from ..services.chat.streaming_interface import StreamingChunk
+from ..services.chat.streaming_message_handler import StreamingMessageHandler
 from ..services.chat.task_manager import ChatTaskManager
 
 if TYPE_CHECKING:
@@ -916,3 +918,285 @@ class ChatMessageService(BaseCrudService):
             }
         except Exception as exc:
             raise exc
+
+    async def _process_message_async(
+            self,
+            user_msg_id: int,
+            asst_msg_id: int,
+            history_id: int,
+            persona_id: int,
+            session_id: int
+    ):
+        """Process message asynchronously using streaming."""
+        message_handler = StreamingMessageHandler(session_id, history_id)
+        event_manager = StreamingEventManager(self)
+        accumulated_text = ""
+        try:
+            # Set the existing assistant message ID
+            message_handler.assistant_message_id = asst_msg_id
+            # Load assistant message to propagate seq/turn_id
+            async with AsyncSessionLocal() as meta_session:
+                asst_msg_obj = await meta_session.get(ChatMessage, asst_msg_id)
+                asst_seq = getattr(asst_msg_obj, 'seq', None)
+                asst_turn = getattr(asst_msg_obj, 'turn_id', None)
+
+            # Validate message exists
+            if not await message_handler.ensure_message_exists():
+                error_msg = "Assistant message not found or inaccessible"
+                await self.emit_llm_event(session_id, history_id, 'processing_failed', error_msg)
+                return
+
+            # Get model info and tools
+            model_info, provider, mapping_obj = await self._resolve_ai_model(persona_id)
+            available_tools_info = await self.agentic_tool_manager.list_persona_tools(persona_id)
+            if not model_info or not provider or not mapping_obj:
+                # No model available - mark as failed
+                error_msg = "AI model, provider, or mapping not available"
+                await message_handler.mark_as_error(error_msg)
+                await event_manager.emit_chunk_event(
+                    session_id,
+                    history_id,
+                    StreamingChunk(content="", chunk_type="complete", is_final=True),
+                    asst_msg_id
+                )
+                return
+
+            # Build chat history using helper method
+            chat_history = await self._build_chat_history(history_id, user_msg_id)
+
+            # Use streaming LLM client with retry
+            try:
+                async for message in self.run_chat_streaming_with_retry(
+                        provider,
+                        mapping_obj,
+                        chat_history,
+                        available_tools_info,
+                        persona_id,
+                        max_retries=2
+                ):
+                    # message is already a StreamingChunk
+
+                    # Handle each chunk
+                    if message.chunk_type == "text":
+                        # accumulate full text for final persistence
+                        accumulated_text += message.content or ""
+                        message.metadata = message.metadata or {}
+                        if asst_seq is not None:
+                            message.metadata['seq'] = asst_seq
+                        if asst_turn is not None:
+                            message.metadata['turn_id'] = asst_turn
+                        if await message_handler.update_content_safely(message.content):
+                            await event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
+                        else:
+                            # Log error but continue processing
+                            self._logger.error(f"Failed to update content for chunk: {message.content[:50]}...")
+
+                    elif message.chunk_type == "ai_start":
+                        message.metadata = message.metadata or {}
+                        if asst_seq is not None:
+                            message.metadata['seq'] = asst_seq
+                        if asst_turn is not None:
+                            message.metadata['turn_id'] = asst_turn
+                        await event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
+
+                    elif message.chunk_type == "tool_start":
+                        tool_name = message.metadata.get("tool_name", "")
+                        tool_args = message.metadata.get("args", {})
+                        tool_run = message.metadata.get("tool_run_id")
+                        run_id = message.metadata.get("run_id")
+                        parent_ids = message.metadata.get("parent_ids", [])
+
+                        # ✅ FIXED: Create tool_call message for LangChain tool execution
+                        async with AsyncSessionLocal() as db_session:
+                            # Create ToolInvocationLog for LangChain tool execution
+                            log = ToolInvocationLog(
+                                history_id=history_id,
+                                message_id=user_msg_id,  # Use the current user message ID
+                                tool_name=tool_name,
+                                input_json=tool_args,
+                                status='started',
+                                seq=await next_seq(history_id),
+                                turn_id=asst_turn,
+                                run_id=run_id,
+                                parent_ids=parent_ids,
+                                tool_run_id=tool_run
+                            )
+                            db_session.add(log)
+                            await db_session.commit()
+                            await db_session.refresh(log)
+
+                            tool_call_msg = ChatMessage(
+                                history_id=history_id,
+                                role='user',
+                                message_type='tool_call',
+                                content_json={
+                                    'tool_name': tool_name,
+                                    'tool_args': tool_args,
+                                    'executed_by': 'llm',
+                                    'execution_time': datetime.now(timezone.utc).isoformat(),
+                                    'execution_path': 'langchain'
+                                },
+                                status='complete',
+                                seq=await next_seq(history_id),
+                                turn_id=asst_turn,
+                                tool_run_id=tool_run,
+                                run_id=run_id,
+                                parent_ids=parent_ids
+                            )
+                            db_session.add(tool_call_msg)
+                            await db_session.commit()
+                            await db_session.refresh(tool_call_msg)
+
+                            # Emit WebSocket event for tool call message (top-level fields only)
+                            await self.emit_chat_event(session_id, history_id, 'message_received', {
+                                'message_id': tool_call_msg.id,
+                                'role': tool_call_msg.role,
+                                'message_type': 'tool_call',
+                                'status': 'complete',
+                                'tool_name': tool_name,
+                                'tool_args': tool_args,
+                                'executed_by': 'llm',
+                                'execution_time': tool_call_msg.content_json.get('execution_time'),
+                                'execution_path': 'langchain',
+                                'seq': tool_call_msg.seq,
+                                'turn_id': tool_call_msg.turn_id,
+                                'tool_run_id': tool_call_msg.tool_run_id,
+                                'run_id': tool_call_msg.run_id,
+                                'parent_ids': parent_ids,
+                                'timestamp': tool_call_msg.created_at.isoformat()
+                            })
+
+                        await event_manager.emit_tool_event(
+                            session_id,
+                            history_id,
+                            tool_name,
+                            "started",
+                            args=tool_args,
+                            seq=tool_call_msg.seq,
+                            turn_id=tool_call_msg.turn_id,
+                            tool_run_id=tool_run,
+                            run_id=run_id,
+                            parent_ids=parent_ids
+                        )
+
+                    elif message.chunk_type == "tool_end":
+                        tool_name = message.metadata.get("tool_name", "")
+                        tool_args = message.metadata.get("args", {})
+                        tool_run = message.metadata.get("tool_run_id")
+                        run_id = message.metadata.get("run_id")
+                        parent_ids = message.metadata.get("parent_ids", [])
+
+                        # ✅ FIXED: Create tool_result message for LangChain tool execution
+                        # Note: LangChain may not provide detailed result in metadata, so we create a basic message
+                        async with AsyncSessionLocal() as db_session:
+                            # Update ToolInvocationLog with completion status
+                            # Find the log entry created during tool_start
+                            log_result = await db_session.execute(
+                                select(ToolInvocationLog).where(
+                                    ToolInvocationLog.history_id == history_id,
+                                    ToolInvocationLog.tool_run_id == tool_run,
+                                    ToolInvocationLog.status == 'started'
+                                ).order_by(ToolInvocationLog.created_at.desc())
+                            )
+                            existing_log = log_result.scalar_one_or_none()
+                            if existing_log:
+                                existing_log.status = 'success'  # Assume success for LangChain tools
+                                existing_log.output_json = message.metadata.get("result", {"status": "completed"})
+                                await db_session.commit()
+
+                            tool_result_msg = ChatMessage(
+                                history_id=history_id,
+                                role='tool',
+                                message_type='tool_result',
+                                status='complete',  # ✅ FIXED: Add required status field
+                                content_json={
+                                    'tool_name': tool_name,
+                                    'tool_args': tool_args,
+                                    'execution_status': 'completed',  # LangChain handled the execution
+                                    'result': message.metadata.get("result", {"status": "completed"}),
+                                    'executed_by': 'llm',
+                                    'execution_time': datetime.now(timezone.utc).isoformat(),
+                                    'execution_path': 'langchain'
+                                },
+                                seq=await next_seq(history_id),
+                                turn_id=asst_turn,
+                                tool_run_id=tool_run,
+                                run_id=run_id,
+                                parent_ids=parent_ids
+                            )
+                            db_session.add(tool_result_msg)
+                            await db_session.commit()
+                            await db_session.refresh(tool_result_msg)
+
+                            # Emit WebSocket event for tool result message (top-level fields only)
+                            await self.emit_chat_event(session_id, history_id, 'message_received', {
+                                'message_id': tool_result_msg.id,
+                                'role': tool_result_msg.role,
+                                'message_type': 'tool_result',
+                                'status': 'complete',
+                                'tool_name': tool_name,
+                                'tool_args': tool_args,
+                                'execution_status': 'completed',
+                                'result': tool_result_msg.content_json.get('result'),
+                                'executed_by': 'llm',
+                                'execution_time': tool_result_msg.content_json.get('execution_time'),
+                                'execution_path': 'langchain',
+                                'seq': tool_result_msg.seq,
+                                'turn_id': tool_result_msg.turn_id,
+                                'tool_run_id': tool_result_msg.tool_run_id,
+                                'run_id': tool_result_msg.run_id,
+                                'parent_ids': parent_ids,
+                                'timestamp': tool_result_msg.created_at.isoformat()
+                            })
+
+                        # Remove tool_name from metadata to avoid duplicate keyword argument
+                        metadata = {k: v for k, v in message.metadata.items() if k != "tool_name"}
+                        metadata['seq'] = tool_result_msg.seq
+                        metadata['turn_id'] = tool_result_msg.turn_id
+                        await event_manager.emit_tool_event(session_id, history_id, tool_name, "completed", **metadata)
+
+                    elif message.chunk_type == "complete":
+                        message.metadata = message.metadata or {}
+                        # Keep original placeholder seq; finalize without changing seq
+                        await message_handler.finalize_assistant_message(accumulated_text if accumulated_text else None)
+                        if asst_seq is not None:
+                            message.metadata['seq'] = asst_seq
+                        if asst_turn is not None:
+                            message.metadata['turn_id'] = asst_turn
+                        await event_manager.emit_chunk_event(session_id, history_id, message, asst_msg_id)
+                        break
+
+                    elif message.chunk_type == "error":
+                        # Handle error chunks - mark message as error and emit error event
+                        await message_handler.mark_as_error(message.content)
+                        await event_manager.emit_streaming_error(
+                            session_id,
+                            history_id,
+                            message.content,
+                            "provider_error",
+                            asst_msg_id
+                        )
+                        break
+
+            except Exception as e:
+                # Handle streaming errors
+                await message_handler.mark_as_error(f"Streaming error: {str(e)}")
+                await message_handler.cleanup_on_error()  # Clean up on error
+                await event_manager.emit_streaming_error(
+                    session_id,
+                    history_id,
+                    f"Streaming error: {str(e)}",
+                    "streaming_error",
+                    asst_msg_id
+                )
+                await self.emit_llm_event(session_id, history_id, 'processing_failed', f"Streaming error: {str(e)}")
+
+        except Exception as e:
+            await message_handler.cleanup_on_error()
+            await self.emit_llm_event(
+                session_id,
+                history_id,
+                'processing_failed',
+                f"Async processing error: {str(e)}"
+            )
+            self._logger.error(f"Error in _process_message_async: {e}", exc_info=True)
