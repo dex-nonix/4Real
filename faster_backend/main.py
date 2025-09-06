@@ -10,10 +10,10 @@ if __name__ == "__main__":
         {"name": "open-api"},
         {"name": "db"},
         {"name": "template"},
-        # {"name": "static-files"},
-        # {"name": "agentic"},
+        {"name": "static-files"},
+        {"name": "agentic"},
         # {"name": "file-manager"}, # settings problem
-        # {"name": "music-artist"},
+        {"name": "music-artist"},
 
     ]
 
