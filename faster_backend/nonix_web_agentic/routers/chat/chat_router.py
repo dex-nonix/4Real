@@ -220,6 +220,14 @@ class ChatRouter(NxWebServerRouter):
         """Get status of all MCP servers."""
         return await self.service_call_and_respond(self.tool_service.get_mcp_servers_status)
 
+    @route('/personas/{persona_id}/tools/execute', methods=['POST'])
+    async def execute_tool(self, req: Request, payload: dict, persona_id: int):
+        """Execute a tool for a specific persona."""
+        return await self.service_call_and_respond(
+            self.tool_service.execute_tool_for_persona,
+            service_args=(persona_id, payload.get('tool_name'), payload.get('tool_args', {}))
+        )
+
     # ==========================================
     # DELETE MESSAGE ROUTES
     # ==========================================
@@ -238,4 +246,28 @@ class ChatRouter(NxWebServerRouter):
         return await self.service_call_and_respond(
             self.message_service.delete_message_with_validation,
             service_args=(session_id, history_id, message_id)
+        )
+
+    @route('/sessions/{session_id}/histories/{history_id}/messages/{assistant_message_id}/cancel', methods=['POST'])
+    async def cancel_message_streaming(self, req: Request, session_id: int, history_id: int, assistant_message_id: int):
+        """Cancel streaming for a single assistant message."""
+        return await self.service_call_and_respond(
+            self.message_service.cancel_message_streaming,
+            service_args=(session_id, history_id, assistant_message_id)
+        )
+
+    @route('/sessions/{session_id}/retry', methods=['POST'])
+    async def retry_last_message(self, req: Request, session_id: int):
+        """Retry the last user message in a session."""
+        return await self.service_call_and_respond(
+            self.message_service.retry_last_message,
+            service_args=(session_id,)
+        )
+
+    @route('/sessions/{session_id}/last-message', methods=['GET'])
+    async def get_last_user_message(self, req: Request, session_id: int):
+        """Get the last user message content for retry functionality."""
+        return await self.service_call_and_respond(
+            self.message_service.get_last_user_message,
+            service_args=(session_id,)
         )

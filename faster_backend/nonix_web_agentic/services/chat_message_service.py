@@ -829,3 +829,90 @@ class ChatMessageService(BaseCrudService):
 
         except Exception as exc:
             raise exc
+
+    async def cancel_message_streaming(self, session_id: int, history_id: int, assistant_message_id: int):
+        """Cancel streaming for a single assistant message."""
+        try:
+            # Validate session and history exist and match
+            session, history = await self._validate_session_history(session_id, history_id)
+            if not session or not history:
+                raise ValueError('Session or history not found')
+
+            # Find and cancel the task tagged with this assistant_message_id
+            cancelled = False
+            try:
+                active = getattr(self._task_manager, '_active_tasks', [])
+                for task in list(active):
+                    try:
+                        if getattr(task, '_assistant_message_id', None) == assistant_message_id and not task.done():
+                            task.cancel()
+                            cancelled = True
+                            break
+                    except Exception:
+                        continue
+            except Exception:
+                cancelled = False
+
+            return {
+                'message': 'Cancelled message task' if cancelled else 'No active task for message',
+                'assistant_message_id': assistant_message_id,
+                'cancelled': cancelled
+            }
+        except Exception as exc:
+            raise exc
+
+    async def retry_last_message(self, session_id: int):
+        """Retry the last user message in a session."""
+        try:
+            # Validate session exists
+            session, history = await self._validate_session_history(session_id)
+            if not session:
+                raise ValueError('Session not found or inactive')
+
+            # Get the last user message
+            last_user_msg = await self._get_last_user_message(session_id)
+            if not last_user_msg:
+                raise ValueError('No user messages to retry')
+
+            # Create new assistant message placeholder
+            asst_msg = await self.create_assistant_placeholder(history.id if history else session.current_history_id)
+
+            # Submit for retry processing
+            future = await self.submit_message_for_async_processing(
+                last_user_msg.id,
+                asst_msg.id,
+                session_id,
+                history.id if history else session.current_history_id,
+                session.persona_id
+            )
+
+            return {
+                'message': 'Message retry initiated',
+                'session_id': session_id,
+                'user_message_id': last_user_msg.id,
+                'assistant_message_id': asst_msg.id,
+                'status': 'processing'
+            }
+        except Exception as exc:
+            raise exc
+
+    async def get_last_user_message(self, session_id: int):
+        """Get the last user message content for retry functionality."""
+        try:
+            # Validate session exists
+            session, _ = await self._validate_session_history(session_id)
+            if not session:
+                raise ValueError('Session not found or inactive')
+
+            # Get the last user message content
+            last_message_content = await self._get_last_user_message_content(session_id)
+            if not last_message_content:
+                raise ValueError('No user messages found')
+
+            return {
+                'session_id': session_id,
+                'last_message': last_message_content,
+                'can_retry': True
+            }
+        except Exception as exc:
+            raise exc
