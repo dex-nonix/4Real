@@ -330,10 +330,10 @@ class ChatMessageService(BaseCrudService):
                 if not session.current_history_id:
                     return []
 
-                msgs = await db_session.execute(
+                msgs = (await db_session.execute(
                     select(ChatMessage).where(ChatMessage.history_id == session.current_history_id).order_by(
                         ChatMessage.seq.asc())
-                ).scalars().all()
+                )).scalars().all()
 
                 return [m.to_dict() for m in msgs]
         except Exception as exc:
@@ -360,10 +360,10 @@ class ChatMessageService(BaseCrudService):
                     raise ValueError('History not found or does not belong to session')
 
                 # Get messages from specific history
-                msgs = await db_session.execute(
+                msgs = (await db_session.execute(
                     select(ChatMessage).where(ChatMessage.history_id == history_id).order_by(
                         ChatMessage.seq.asc())
-                ).scalars().all()
+                )).scalars().all()
 
                 return [m.to_dict() for m in msgs]
         except Exception as exc:
