@@ -5,7 +5,7 @@ from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, Validatio
 from nonix_web_db import AsyncSessionLocal
 from nonix_web.web_socket_service import WebSocketService
 from nonix_web.utils.di import Inject
-from nonix_web_agentic.schemas.chat_session_schemas import ChatSessionCreate, ChatSessionUpdate, ChatSessionInDbModel
+from ..schemas.chat_session_schemas import ChatSessionCreate, ChatSessionUpdate, ChatSessionInDbModel
 from ..models.chat_session import ChatSession
 from ..models.chat_history import ChatHistory
 from ..models.persona import Persona
