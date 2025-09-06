@@ -1,5 +1,6 @@
 from abc import ABC
 from typing import TypeVar, Generic, List, Dict, Optional
+import logging
 from sqlalchemy import select, update, func, or_
 from fastapi import HTTPException, status
 from pydantic import BaseModel
@@ -18,6 +19,7 @@ class BaseCrudService(ABC, Generic[ModelType]):
     config: CRUDConfig
 
     def __init__(self):
+        self._logger = logging.getLogger(self.__class__.__name__)
         self.model = self.config.model
 
     async def create(self, data: BaseModel) -> ModelType:

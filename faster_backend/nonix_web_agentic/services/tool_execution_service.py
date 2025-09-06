@@ -1,6 +1,7 @@
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from sqlalchemy import select
+import logging
 
 from nonix_web_db import AsyncSessionLocal
 from nonix_web.utils.di import Inject
@@ -13,6 +14,9 @@ class ToolExecutionService:
     """Service for tool execution and MCP operations."""
 
     agentic_tool_manager: AgenticToolManager = Inject(AgenticToolManager)
+
+    def __init__(self):
+        self._logger = logging.getLogger(self.__class__.__name__)
 
     async def list_persona_tools(self, persona_id: int):
         """Get available tools for a specific persona."""
