@@ -41,7 +41,7 @@ class ChatRouter(NxWebServerRouter):
     # SESSION ROUTES
     # ==========================================
 
-    @route('/sessions', methods=['POST'])
+    @route('/sessions', methods=['POST']) 
     async def create_session(self, req: Request, payload: ChatSessionCreate):
         """Create a new chat session."""
         return await self.service_call_and_respond(

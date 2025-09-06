@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from nonix_web.utils.di import Inject
+from nonix_web.plugin.descriptor import InjectPlugin
 from nonix_web_db import AsyncSessionLocal
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     BaseCrudService
@@ -62,8 +63,8 @@ class ChatMessageService(BaseCrudService):
         )
     )
 
-    agentic_plugin: "NxWebAgenticPlugin" = Inject("agentic")
-    template_plugin: "NxWebTemplatePlugin" = Inject("template")
+    agentic_plugin: "NxWebAgenticPlugin" = InjectPlugin("agentic")
+    template_plugin: "NxWebTemplatePlugin" = InjectPlugin("template")
     agentic_tool_manager: AgenticToolManager = Inject(AgenticToolManager)
     web_socket_service: WebSocketService = Inject(WebSocketService)
 
