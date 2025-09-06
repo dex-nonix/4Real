@@ -5,7 +5,7 @@ from nonix_web.router.decorators import router, route
 from nonix_web.utils.di import Inject
 from nonix_web_agentic.schemas.chat_session_schemas import ChatSessionCreate
 from nonix_web_agentic.schemas.chat_history_schemas import ChatHistoryCreate, ChatHistoryUpdate
-from nonix_web_agentic.schemas.chat_message_schemas import ChatMessageCreate
+from nonix_web_agentic.schemas.chat_message_schemas import SendMessageToHistoryRequest
 from ...services.chat_session_service import ChatSessionService
 from ...services.chat_message_service import ChatMessageService
 from ...services.chat_history_service import ChatHistoryService
@@ -162,7 +162,7 @@ class ChatRouter(NxWebServerRouter):
         )
 
     @route('/sessions/{session_id}/histories/{history_id}/send', methods=['POST'])
-    async def send_message(self, req: Request, payload: ChatMessageCreate, session_id: int, history_id: int):
+    async def send_message(self, req: Request, payload: SendMessageToHistoryRequest, session_id: int, history_id: int):
         """Send message to session."""
         return await self.service_call_and_respond(
             self.message_service.send_message,
