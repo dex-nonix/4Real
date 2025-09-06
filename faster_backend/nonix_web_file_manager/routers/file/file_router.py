@@ -4,8 +4,7 @@ from typing import Any
 
 from fastapi import HTTPException, UploadFile, Form
 
-
-from nonix_web.router.web_server_router import router, route
+from nonix_web.router.decorators import router, route
 from nonix_web_db.crud import NxWebServerCrudRouter
 from nonix_web.utils.di import Inject
 from nonix_web_file_manager.services.file_service import FileService

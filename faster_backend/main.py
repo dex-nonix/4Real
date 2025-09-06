@@ -6,8 +6,8 @@ if __name__ == "__main__":
     settings.PLUGIN_SEARCH_PATH = ["./"]
     settings.LOG_LEVEL = "debug"
     settings.PLUGINS = [
-        # {"name": "cors"},
-        # {"name": "open-api"},
+        {"name": "cors"},
+        {"name": "open-api"},
         {"name": "db"},
         {"name": "template"},
         # {"name": "static-files"},

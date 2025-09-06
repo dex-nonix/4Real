@@ -30,14 +30,16 @@ class Settings:
 **Current State:**
 
 ```python
-from nonix_web.router.web_server_router import router, route
+
+from nonix_web.router.decorators import router, route
 from nonix_web_db import AsyncSessionLocal
 ```
 
 **Action:** Add settings import:
 
 ```python
-from nonix_web.router.web_server_router import router, route
+
+from nonix_web.router.decorators import router, route
 from nonix_web.config import settings  # ← ADD THIS LINE
 from nonix_web_db import AsyncSessionLocal
 ```
@@ -747,7 +749,8 @@ di_register(FileManagerService, singleton=True)  # ← ADD THIS
 **Current Content Analysis:**
 
 ```python
-from nonix_web.router.web_server_router import router
+
+from nonix_web.router.decorators import router
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig,
 
 NxWebServerCrudRouter
@@ -766,7 +769,8 @@ class AlbumRouter(NxWebServerCrudRouter):
 **Action:** Add FileManagerService injection and file management methods:
 
 ```python
-from nonix_web.router.web_server_router import router
+
+from nonix_web.router.decorators import router
 from nonix_web.utils.di import Inject  # ← ADD THIS IMPORT
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig,
 

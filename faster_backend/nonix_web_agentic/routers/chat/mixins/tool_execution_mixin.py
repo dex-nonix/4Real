@@ -4,7 +4,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
 
-from nonix_web.router.web_server_router import route
+from nonix_web.router.decorators import route
 from nonix_web.utils.di import Inject
 from nonix_web_db import AsyncSessionLocal
 from .models_and_schemas import (
