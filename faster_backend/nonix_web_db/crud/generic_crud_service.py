@@ -31,8 +31,7 @@ class NxWebServerCrudRouter(NxWebServerRouter):
     def _init_components(self):
         """Initialize components after service injection"""
         # Trigger service injection once and cache the service
-        self._service = self.service
-        config = self._service.config
+        config = self.service.config
 
         # Query processor stays in router (HTTP parsing responsibility)
         self.query_processor = QueryProcessor(model=config.model, config=config)
@@ -42,7 +41,7 @@ class NxWebServerCrudRouter(NxWebServerRouter):
 
     def _register_routes(self) -> None:
         # Use cached service reference (injection already triggered in _init_components)
-        service = self._service
+        service = self.service
         config = service.config
         ops = config.operations
         router = self.router
