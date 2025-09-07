@@ -554,7 +554,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="flex flex-column overflow-hidden" style="width: 1024px; height: 768px; border: 1px solid var(--surface-border)">
+  <div class="flex flex-column overflow-hidden h-full w-full">
     <ChatHeader 
       :persona="currentPersona" 
       :current-session="currentSession"

@@ -144,7 +144,7 @@ defineExpose({
 </script>
 
 <template>
-  <aside class="h-full surface-section flex-shrink-0 surface-border select-none">
+  <aside class="h-full surface-section flex-shrink-0 surface-border select-none" style="width: 80px; min-width: 80px;">
     <div class="flex flex-column h-full">
       <div class="flex flex-column flex-grow-1 overflow-y-auto">
         <div v-if="loading" class="p-3 text-center">

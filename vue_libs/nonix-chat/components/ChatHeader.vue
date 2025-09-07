@@ -159,7 +159,7 @@ const deleteMenuItems = [
             @keyup.enter="saveTitle"
             @keyup.esc="cancelEditing"
             class="p-inputtext p-inputtext-sm"
-            style="width: 200px;"
+            style="width: 100%; max-width: 200px;"
             ref="titleInput"
             @mounted="titleInput?.focus()"
           />

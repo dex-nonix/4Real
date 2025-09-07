@@ -1,11 +1,14 @@
 <template>
-  <Sidebar v-model:visible="visible" position="right" modal :dismissable="true">
-    <slot>
-      <div class="p-3">
-        <h3 class="m-0 mb-2">Tools</h3>
-        <p class="m-0 text-600">Add contextual tools here.</p>
-      </div>
-    </slot>
+  <Sidebar
+    v-model:visible="visible"
+    position="right"
+    modal
+    :dismissable="true"
+    :showCloseIcon="false"
+    :header="null"
+    :style="{ width: '450px' }"
+  >
+    <Chat />
   </Sidebar>
 </template>
 
@@ -13,6 +16,7 @@
 import Sidebar from 'primevue/sidebar'
 import { computed } from 'vue'
 import { useAppShell } from './useAppShell.js'
+import Chat from '@nonix-chat/components/Chat.vue'
 
 const { state } = useAppShell()
 const visible = computed({
