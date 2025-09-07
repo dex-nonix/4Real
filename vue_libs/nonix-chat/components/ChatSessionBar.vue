@@ -171,7 +171,7 @@ defineExpose({
       </div>
 
       <div class="mt-auto flex-shrink-0">
-        <Divider class="mb-1"/>
+        
         <div class="px-0 py-2 flex justify-content-center">
           <Button
             icon="pi pi-plus"

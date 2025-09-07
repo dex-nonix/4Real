@@ -829,7 +829,7 @@ defineExpose({
       />
 
       <!-- Input Field -->
-      <span class="p-input-icon-right flex-grow-1 mx-2">
+      <span class="p-input-icon-right flex-grow-1 mx-1">
         <IconField>
           <InputText
             v-model="inputText"
@@ -841,18 +841,6 @@ defineExpose({
           <InputIcon :class="buttonIcon" @click="buttonAction" />
         </IconField>
       </span>
-
-      <!-- Single Button: Send/Stop/Retry -->
-      <Button 
-        :icon="buttonIcon"
-        :label="buttonLabel"
-        text 
-        rounded 
-        :severity="buttonSeverity"
-        @click="buttonAction"
-        :disabled="!hasHistory"
-        class="mr-2"
-      />
 
       <!-- Options Button -->
       <div class="relative">
@@ -922,22 +910,18 @@ defineExpose({
   padding: 1rem;
 }
 
-/* Input area - normal fixed position */
+/* Input area - compact fixed position */
 .input-area {
   display: flex;
   align-items: center;
-  padding: 0.75rem;
-  border-top: 1px solid var(--surface-border);
+  padding: 0.5rem;
+  
   background: var(--surface-section);
 }
 
 /* Button layout and spacing */
 .input-area .p-button {
   flex-shrink: 0;
-}
-
-.input-area .p-button.mr-2 {
-  margin-right: 0.5rem;
 }
 
 /* Retry button styling */

@@ -2,7 +2,7 @@
   <!-- Layout container with sidebar inside -->
   <div class="layout-container" :class="{ 'sidebar-pinned': isSidebarPinned }">
     <!-- Main layout content -->
-    <div class="main-content">
+    <div class="main-content flex flex-col">
       <TopBar />
       <div class="flex flex-1 overflow-hidden">
         <LeftNavSidebar :pinned="false" />
