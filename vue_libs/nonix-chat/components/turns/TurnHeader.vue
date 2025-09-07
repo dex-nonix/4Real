@@ -12,37 +12,48 @@ const props = defineProps({
 </script>
 
 <template>
-  <div class="turn-header flex align-items-center justify-content-between py-0 px-1 surface-100 border-round">
-    <div class="flex align-items-center gap-1">
-      <span class="text-xs text-color-secondary">Turn {{ firstSeq }}</span>
+  <div class="turn-header flex align-items-center justify-content-between py-0 px-0">
+    <span class="text-xs text-color-secondary">Turn {{ firstSeq }}</span>
+    <div class="flex align-items-center gap-0">
+      <Badge v-if="toolsCount > 0" :value="toolsCount" severity="info" size="small" />
       <Button
         icon="pi pi-info-circle"
         text
         rounded
         size="small"
         severity="secondary"
+        class="info-btn"
         v-tooltip.bottom="`Turn ID: ${turnId}\nSequence: ${firstSeq} - ${lastSeq}\nStatus: ${status}\nTools: ${toolsCount}`"
       />
-    </div>
-    <div class="flex align-items-center gap-1">
-      <Badge v-if="toolsCount > 0" :value="toolsCount" severity="info" size="small" />
     </div>
   </div>
 </template>
 
 <style scoped>
 .turn-header {
-  border-left: 2px solid var(--primary-color);
-  font-size: 0.7rem;
-  line-height: 1.1;
-  min-height: 20px;
-  margin-bottom: 0.25rem;
-  opacity: 0.8;
+  border-left: 1px solid var(--primary-color);
+  font-size: 0.65rem;
+  line-height: 1;
+  min-height: 16px;
+  margin-bottom: 0.125rem;
+  opacity: 0.7;
+  padding: 0.125rem 0;
 }
 
 .turn-header:hover {
   opacity: 1;
   transition: opacity 0.2s ease;
+}
+
+.info-btn {
+  font-size: 0.6rem !important;
+  width: 16px !important;
+  height: 16px !important;
+  padding: 0 !important;
+}
+
+.info-btn .pi {
+  font-size: 0.5rem !important;
 }
 </style>
 
