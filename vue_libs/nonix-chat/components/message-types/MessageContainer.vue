@@ -87,38 +87,9 @@ const getMessageTypeColor = (messageType) => {
   width: 100%;
 }
 
-/* Message card styles for better differentiation */
-.message-card {
-  position: relative;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.ai-message {
-  background: var(--surface-200);
-  border: 2px solid var(--surface-300);
-  border-left: 4px solid var(--primary-color);
-  color: var(--text-color);
-}
-
-.user-message {
-  background: var(--primary-50);
-  border: 2px solid var(--primary-200);
-  border-right: 4px solid var(--primary-color);
-  color: var(--text-color);
-}
-
 /* Message card hover effects */
 .message-card:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* Ensure proper text contrast */
-.text-900 {
-  color: var(--text-color) !important;
-}
-
-.text-500 {
-  color: var(--text-color-secondary) !important;
 }
 </style>

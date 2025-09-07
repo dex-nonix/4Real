@@ -31,6 +31,22 @@ const emit = defineEmits(['delete-message', 'copy', 'retry', 'cancel'])
 </template>
 
 <style scoped>
+/* User Message Container */
+:deep(.flex.align-items-start.justify-content-start) {
+  background: var(--surface-ground) !important;
+  border: 2px solid var(--surface-border) !important;
+  border-left: 4px solid var(--primary-color) !important;
+  border-radius: 12px !important;
+  padding: 1rem !important;
+  transition: all 0.2s ease !important;
+}
+
+/* User Message hover effects */
+:deep(.flex.align-items-start.justify-content-start:hover) {
+  box-shadow: 0 6px 20px rgba(13, 110, 253, 0.2) !important;
+  transform: translateY(-1px) !important;
+}
+
 .message-actions .p-button {
   width: 20px !important;
   height: 20px !important;
