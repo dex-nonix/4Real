@@ -1,26 +1,17 @@
 <template>
   <!-- Sidebar positioned outside -->
-  <div class="resizable-sidebar-container"
-       :class="{ 'pinned-mode': isPinnedMode, 'overlay-mode': isOverlayMode }"
-       v-show="shouldShowSidebar">
-    <div class="sidebar-divider"
-         :class="{ dragging: isResizing }"
-         @mousedown="startResize"
-         @touchstart="startResize">
+  <div class="resizable-sidebar-container" :class="{ 'pinned-mode': isPinnedMode, 'overlay-mode': isOverlayMode }"
+    v-show="shouldShowSidebar">
+    <div class="sidebar-divider" :class="{ dragging: isResizing }" @mousedown="startResize" @touchstart="startResize">
       <div class="divider-handle"></div>
     </div>
 
     <div class="custom-sidebar" :style="{ width: sidebarWidth + 'px' }">
-      <Chat
-        :menu-items="chatMenuItems"
-        @menu-item-click="handleMenuItemClick"
-      />
+      <Chat :menu-items="chatMenuItems" />
     </div>
 
     <!-- Overlay for closing when in overlay mode -->
-    <div v-if="isOverlayMode"
-         class="sidebar-overlay"
-         @click="handleOverlayClick">
+    <div v-if="isOverlayMode" class="sidebar-overlay" @click="handleOverlayClick">
     </div>
   </div>
 </template>
@@ -173,11 +164,6 @@ const handleOverlayClick = (event) => {
   }
 }
 
-// Handle menu item clicks from ChatHeader
-const handleMenuItemClick = (item) => {
-  console.log('Menu item clicked:', item.label);
-  // The item's command is already executed in ChatHeader, just log here
-}
 
 // Resize functionality
 const startResize = (event) => {
@@ -200,11 +186,9 @@ const startResize = (event) => {
 
 const handleResize = (event) => {
   if (!isResizing.value) return
-
   const clientX = event.clientX || event.touches[0].clientX
   const deltaX = startX.value - clientX
-  const newWidth = Math.max(300, Math.min(800, startWidth.value + deltaX))
-
+  const newWidth = Math.max(300, Math.min(1200, startWidth.value + deltaX))
   sidebarWidth.value = newWidth
 }
 
@@ -224,17 +208,11 @@ const stopResize = () => {
 
 // Handle chat close through external menu system
 const handleChatClose = (force = false) => {
-  console.log('Chat close through menu system - closing sidebar, force:', force);
 
-  // If not forced and pinned, don't close (auto-close prevention)
   if (!force && state.rightPinned) {
-    console.log('Close prevented - sidebar is pinned');
     return;
   }
 
-  // Close the sidebar
   state.rightOpen = false;
 }
 </script>
-
-
