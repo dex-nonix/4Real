@@ -325,7 +325,6 @@ const startRecording = async () => {
     state.triedAudioCaptureRetry = false;
     await ensureAudioReady();
     await primeAudioCapture();
-    await new Promise(r => setTimeout(r, 200));
     state.recognition = createRecognition();
 
     // Bind event handlers
@@ -339,7 +338,6 @@ const startRecording = async () => {
           releaseAudioCapture();
           await ensureAudioReady();
           await primeAudioCapture();
-          await new Promise(r => setTimeout(r, 300));
           if (typeof state.recognition.abort === 'function') state.recognition.abort();
           state.recognition.start();
           return;
