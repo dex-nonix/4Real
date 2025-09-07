@@ -1,11 +1,5 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, inject, watch } from 'vue';
-import InputText from 'primevue/inputtext';
-import Button from 'primevue/button';
-import IconField from 'primevue/iconfield';
-import InputIcon from 'primevue/inputicon';
-import Menu from 'primevue/menu';
-import Badge from 'primevue/badge';
 import ErrorDialog from './ErrorDialog.vue';
 import chatMessageTypeManager from './ChatMessageTypeManager.js';
 import SystemMessage from './message-types/SystemMessage.vue';
@@ -13,10 +7,9 @@ import ToolMessage from './message-types/ToolMessage.vue';
 import UserMessage from './message-types/UserMessage.vue';
 import { IncomingMessageContainer, OutgoingMessageContainer } from './message-types/index.js';
 import StreamingMessage from './message-types/StreamingMessage.vue';
-import AvailableToolsDialog from './AvailableToolsDialog.vue';
-import ToolExecutionDialog from './ToolExecutionDialog.vue';
 import TurnHeader from './turns/TurnHeader.vue';
 import TurnTimeline from './turns/TurnTimeline.vue';
+import ChatInputArea from './ChatInputArea.vue';
 
 const props = defineProps({
   sessionId: { type: [String, Number, null], required: true },
@@ -58,7 +51,6 @@ const moreMenuItems = computed(() => [
 
 // State management - session-specific
 const messages = ref([]);
-const inputText = ref('');
 const loading = ref(false);
 
 // NEW: Turns state
@@ -97,15 +89,7 @@ const realTimeMessages = ref([]);
 const streamingMessages = reactive(new Map()); // message_id -> { content, status, metadata }
 const streamingStatus = reactive(new Map());   // message_id -> 'streaming' | 'complete' | 'error'
 
-// Session-specific input text storage
-const sessionInputTexts = ref(new Map());
 
-// Tools state
-const showToolsDialog = ref(false);
-const availableTools = ref([]);
-const toolsLoading = ref(false);
-const selectedTool = ref(null);
-const toolExecutionDialogRef = ref(null);
 
 // Track active WebSocket unsubscribers to avoid duplicate handlers
 const wsUnsubs = ref([]);
@@ -472,16 +456,6 @@ watch(() => props.historyId, async (newHistoryId) => { if (newHistoryId) await l
 // React to selectedSession changes
 watch(() => props.selectedSession, (newSession, oldSession) => {
   if (newSession) {
-    // Save input text for previous session if it exists
-    if (oldSession && oldSession.id) {
-      sessionInputTexts.value.set(oldSession.id, inputText.value);
-    }
-
-    // Load input text for new session
-    if (newSession.id) {
-      inputText.value = sessionInputTexts.value.get(newSession.id) || '';
-    }
-
     // Load messages for the new session if we have a history
     if (props.historyId) {
       loadMessages(props.historyId);
@@ -489,60 +463,6 @@ watch(() => props.selectedSession, (newSession, oldSession) => {
   }
 }, { immediate: true });
 
-// Send message
-const onSend = async () => {
-  if (!inputText.value?.trim() || !props.historyId || !chatService) return;
-
-  try {
-    // Clear error states when sending new message
-    streamingStatus.forEach((status, messageId) => {
-      if (status === 'error') {
-        streamingStatus.set(messageId, 'complete');
-      }
-    });
-
-    // Clear streaming messages
-    streamingMessages.clear();
-
-    // Send proper message payload (type=text per base chat message)
-    const messageData = {
-      historyId: props.historyId,
-      message_type: 'user',
-      content: {
-        text: inputText.value.trim()
-      }
-    };
-
-    // Save current input text for this session before clearing
-    if (props.selectedSession?.id) {
-      sessionInputTexts.value.set(props.selectedSession.id, inputText.value);
-    }
-
-    // Emit event for parent component
-    emit('sendMessage', messageData);
-
-    // Clear input after sending
-    inputText.value = '';
-
-    // Optimistic UI: append the user message locally instead of reloading full list
-    try {
-      const tempId = `temp-${Date.now()}`;
-      const userMessage = {
-        id: tempId,
-        message_type: 'user',
-        role: 'user',
-        content_json: { text: messageData.content.text },
-        status: 'sending',
-        created_at: new Date().toISOString()
-      };
-      messages.value.push(userMessage);
-    } catch (e) {
-      console.error('Failed to append optimistic user message:', e);
-    }
-  } catch (error) {
-    console.error('Failed to send message:', error);
-  }
-};
 
 // Handle message deletion
 const handleDeleteMessage = async (messageData) => {
@@ -588,93 +508,8 @@ const handleDeleteMessage = async (messageData) => {
   }
 };
 
-// Show tools
-const showTools = async () => {
-  try {
-    toolsLoading.value = true;
-    showToolsDialog.value = true;
-
-    // Load tools for the current persona
-    if (props.selectedSession?.persona_id && chatService) {
-      const toolsData = await chatService.personaTools(props.selectedSession.persona_id);
-
-      // Backend returns {data: Array} - extract the actual tools array
-      let toolsArray = [];
-      if (toolsData && toolsData.data && Array.isArray(toolsData.data)) {
-        toolsArray = toolsData.data;
-      } else if (Array.isArray(toolsData)) {
-        toolsArray = toolsData;
-      }
-
-      availableTools.value = toolsArray;
-    } else {
-      availableTools.value = [];
-    }
-  } catch (error) {
-    console.error('Failed to load tools:', error);
-    availableTools.value = [];
-  } finally {
-    toolsLoading.value = false;
-  }
-};
 
 
-
-// Select tool and show parameter form
-const selectTool = (toolData) => {
-  selectedTool.value = toolData;
-  if (toolExecutionDialogRef.value) {
-    toolExecutionDialogRef.value.openDialog(toolData);
-  }
-};
-
-// Execute tool with form data
-const executeToolWithForm = async (formData) => {
-  if (!selectedTool.value || !props.selectedSession?.persona_id || !props.historyId || !chatService) {
-    console.error('Cannot execute tool: Missing required data');
-    return;
-  }
-
-  // Extract the actual form data from DynamicForm's submit event
-  const args = formData.__full || formData.args || {};
-
-  try {
-
-    await chatService.sendMessage(
-      props.selectedSession.id,
-      props.historyId,
-      {
-        message_type: 'tool_call',
-        content: {
-          tool: selectedTool.value.name,
-          args: args
-        }
-      }
-    );
-
-
-
-    // Backend returns: { tool_call_message_id, tool_result_message_id, status, result }
-    // WebSocket events will update the UI with real database messages
-
-    // Close tool form immediately on success
-    showToolsDialog.value = false;
-    selectedTool.value = null;
-
-    // WebSocket events will automatically update the UI with real tool messages
-
-  } catch (error) {
-    console.error('Tool execution failed:', error);
-
-    // ✅ FIXED: Don't create dummy error messages - show error in UI differently
-    // For now, just log the error. Later we can add a proper error toast/notification
-    // WebSocket events should handle any backend-generated error messages
-
-    // Close tool form on error too
-    showToolsDialog.value = false;
-    selectedTool.value = null;
-  }
-};
 
 // Clear local messages (for when backend clears them)
 const clearLocalMessages = () => {
@@ -711,27 +546,10 @@ const getStreamingContent = (messageId) => {
   return streamingData ? streamingData.content : '';
 };
 
-// Computed values
-const hasHistory = computed(() => !!props.historyId);
-
-// Button state management
-const isStreaming = computed(() => { try { if (!(streamingStatus instanceof Map)) return false; return Array.from(streamingStatus.values()).some(status => status === 'streaming'); } catch { return false; } });
-const hasErrors = computed(() => { try { if (!(streamingStatus instanceof Map)) return false; return Array.from(streamingStatus.values()).some(status => status === 'error'); } catch { return false; } });
-const canRetry = computed(() => hasErrors.value && !isStreaming.value);
-
-const buttonIcon = computed(() => { if (isStreaming.value) return 'pi pi-stop'; if (canRetry.value) return 'pi pi-refresh'; return 'pi pi-send'; });
-const buttonAction = computed(() => { if (isStreaming.value) return onStop; if (canRetry.value) return onRetry; return onSend; });
-const buttonLabel = computed(() => { if (isStreaming.value) return 'Stop'; if (canRetry.value) return 'Retry'; return 'Send'; });
-const buttonSeverity = computed(() => { if (isStreaming.value) return 'danger'; if (canRetry.value) return 'warning'; return 'primary'; });
 
 // Computed property for streaming status display
 const showStreamingStatus = computed(() => { try { if (!(streamingStatus instanceof Map)) return false; return Array.from(streamingStatus.values()).some(status => status === 'streaming'); } catch { return false; } });
 
-// Stop streaming functionality
-const onStop = async () => { if (!props.selectedSession?.id || !chatService) return; try { const streamingMsg = messages.value.find(m => m.role === 'assistant' && m.status === 'streaming'); let response; if (streamingMsg && props.historyId) response = await chatService.cancelMessage(props.selectedSession.id, props.historyId, streamingMsg.id); else return; if (response && response.cancelled) { streamingStatus.forEach((status, messageId) => { if (status === 'streaming') streamingStatus.set(messageId, 'complete'); }); streamingMessages.clear(); messages.value.forEach(msg => { if (msg.status === 'streaming') { msg.status = 'complete'; } }); } } catch { } };
-
-// Retry functionality
-const onRetry = async () => { if (!props.selectedSession?.id || !chatService) return; try { const response = await chatService.retryLastMessage(props.selectedSession.id); if (response?.status === 'processing') { streamingStatus.forEach((status, messageId) => { if (status === 'error') streamingStatus.set(messageId, 'complete'); }); streamingMessages.clear(); messages.value.forEach(msg => { if (msg.status === 'error') { msg.status = 'complete'; } }); } } catch { } };
 
 // Expose methods for parent component
 defineExpose({
@@ -812,41 +630,19 @@ defineExpose({
       </div>
     </div>
 
-    <!-- Input Area - Fixed at bottom -->
-    <div class="input-area">
-
-      <!-- Tools Button -->
-      <Button icon="pi pi-box" text rounded severity="secondary" @click="showTools" v-tooltip.bottom="'Available Tools'"
-        :disabled="!hasHistory" />
-
-      <!-- Input Field -->
-      <span class="p-input-icon-right flex-grow-1 mx-1">
-        <IconField>
-          <InputText v-model="inputText" placeholder="Type a message..." class="w-full" @keyup.enter="buttonAction"
-            :disabled="!hasHistory || isStreaming" />
-          <InputIcon :class="buttonIcon" @click="buttonAction" />
-        </IconField>
-      </span>
-
-      <!-- Options Button -->
-      <div class="relative">
-        <Button icon="pi pi-ellipsis-h" text rounded severity="secondary" :disabled="!hasHistory"
-          @click="toggleMoreMenu" aria-haspopup="true" aria-controls="more_menu" />
-        <Badge v-if="props.errors.length > 0" :value="props.errors.length" severity="danger"
-          class="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2" />
-      </div>
-
-      <!-- More Menu -->
-      <Menu ref="moreMenu" id="more_menu" :model="moreMenuItems" :popup="true" />
-      <!-- Tools Dialog -->
-      <AvailableToolsDialog :visible="showToolsDialog" :tools="availableTools"
-        @update:visible="showToolsDialog = $event" @tool-selected="selectTool" />
-
-      <!-- Tool Execution Dialog -->
-      <ToolExecutionDialog ref="toolExecutionDialogRef" :selected-tool="selectedTool"
-        @execute-tool="executeToolWithForm" />
-    </div>
-
+    <!-- Input Area Component -->
+    <ChatInputArea
+      :session-id="sessionId"
+      :history-id="historyId"
+      :selected-session="selectedSession"
+      :errors="errors"
+      :available-tools="availableTools"
+      :streaming-status="streamingStatus"
+      :streaming-messages="streamingMessages"
+      :messages="messages"
+      @send-message="$emit('sendMessage', $event)"
+      @error="$emit('error', $event)"
+    />
 
     <!-- Error Dialog -->
     <ErrorDialog :visible="showErrorDialog" :errors="props.errors" @update:visible="showErrorDialog = $event" />
@@ -870,37 +666,6 @@ defineExpose({
   padding: 1rem;
 }
 
-/* Input area - compact fixed position */
-.input-area {
-  display: flex;
-  align-items: center;
-  padding: 0.5rem;
-
-  background: var(--surface-section);
-}
-
-/* Button layout and spacing */
-.input-area .p-button {
-  flex-shrink: 0;
-}
-
-/* Retry button styling */
-.input-area .p-button[severity="warning"] {
-  border-color: var(--warning-color);
-  color: var(--warning-color);
-}
-
-/* Stop button styling */
-.input-area .p-button[severity="danger"] {
-  border-color: var(--danger-color);
-  color: var(--danger-color);
-}
-
-/* Send button styling */
-.input-area .p-button[severity="primary"] {
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-}
 
 /* Real-time status display */
 .real-time-status {
