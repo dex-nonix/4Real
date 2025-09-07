@@ -18,6 +18,7 @@ export default class CrudService extends BaseApiService {
     const defaults = {
       table: {
         actions: ['view', 'edit', 'delete'],
+        actionsDisplay: 'icons-only',
         bulkActions: ['delete', 'export'],
         paginated: true,
         pageSize: 20,
