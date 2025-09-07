@@ -291,16 +291,6 @@ const buttonAction = computed(() => {
   if (canRetry.value) return onRetry;
   return onSend;
 });
-const buttonLabel = computed(() => {
-  if (isStreaming.value) return 'Stop';
-  if (canRetry.value) return 'Retry';
-  return 'Send';
-});
-const buttonSeverity = computed(() => {
-  if (isStreaming.value) return 'danger';
-  if (canRetry.value) return 'warning';
-  return 'primary';
-});
 
 // Watch for session changes
 watch(() => props.selectedSession, (newSession, oldSession) => {
