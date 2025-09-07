@@ -60,7 +60,7 @@ const { state, togglePin } = useAppShell()
 const chatMenuItems = ref([
   {
     label: 'Pin Chat',
-    icon: 'pi pi-bookmark',
+    icon: state.rightPinned ? 'pi pi-lock' : 'pi pi-unlock',
     command: () => togglePin()
   },
   {
@@ -72,12 +72,12 @@ const chatMenuItems = ref([
 
 // Update pin icon when pin state changes
 watch(() => state.rightPinned, (isPinned) => {
-  chatMenuItems.value[0].icon = isPinned ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'
+  chatMenuItems.value[0].icon = isPinned ? 'pi pi-lock' : 'pi pi-unlock'
   chatMenuItems.value[0].label = isPinned ? 'Unpin Chat' : 'Pin Chat'
 })
 
 // Set initial icon state
-chatMenuItems.value[0].icon = state.rightPinned ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'
+chatMenuItems.value[0].icon = state.rightPinned ? 'pi pi-lock' : 'pi pi-unlock'
 chatMenuItems.value[0].label = state.rightPinned ? 'Unpin Chat' : 'Pin Chat'
 
 // Mobile detection for pin behavior
