@@ -1,19 +1,15 @@
 <template>
-  <!-- Resizable sidebar container -->
+  <!-- Sidebar positioned outside -->
   <div class="resizable-sidebar-container"
-       :class="{ 'pinned-mode': isPinnedAndDesktop }"
+       :class="{ 'pinned-mode': isPinnedMode, 'overlay-mode': isOverlayMode }"
        v-show="shouldShowSidebar">
-
-    <!-- Only show divider when pinned (sidebar mode) -->
-    <div v-if="isPinnedAndDesktop"
-         class="sidebar-divider"
+    <div class="sidebar-divider"
          :class="{ dragging: isResizing }"
          @mousedown="startResize"
          @touchstart="startResize">
       <div class="divider-handle"></div>
     </div>
 
-    <!-- Sidebar content -->
     <div class="custom-sidebar" :style="{ width: sidebarWidth + 'px' }">
       <Chat
         :menu-items="chatMenuItems"
@@ -21,8 +17,8 @@
       />
     </div>
 
-    <!-- Overlay for mobile/unpinned mode -->
-    <div v-if="!isPinnedAndDesktop"
+    <!-- Overlay for closing when in overlay mode -->
+    <div v-if="isOverlayMode"
          class="sidebar-overlay"
          @click="handleOverlayClick">
     </div>
@@ -30,26 +26,26 @@
 </template>
 
 <style scoped>
-/* Resizable sidebar container - Overlay mode (default) */
+/* Sidebar positioned within layout container */
 .resizable-sidebar-container {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
+  width: 450px;
   height: 100vh;
-  z-index: 999;
   display: flex;
+  flex-shrink: 0; /* Don't shrink the sidebar */
 }
 
-/* Pinned mode - Sidebar alongside main content */
+/* Pinned mode: flex item (part of layout flow) */
 .resizable-sidebar-container.pinned-mode {
-  position: absolute;
+  position: relative;
+  z-index: 1;
+}
+
+/* Overlay mode: fixed positioning (overlays entire viewport) */
+.resizable-sidebar-container.overlay-mode {
+  position: fixed;
+  z-index: 999;
   top: 0;
   right: 0;
-  bottom: 0;
-  height: 100vh;
-  z-index: 1;
-  display: flex;
 }
 
 /* Draggable divider */
@@ -93,17 +89,17 @@
   transition: width 0.1s ease;
 }
 
-/* Overlay mode shadow */
-.resizable-sidebar-container:not(.pinned-mode) .custom-sidebar {
+/* Overlay mode: add shadow for visual separation */
+.overlay-mode .custom-sidebar {
   box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Pinned mode - no shadow needed */
-.resizable-sidebar-container.pinned-mode .custom-sidebar {
+/* Pinned mode: no shadow needed */
+.pinned-mode .custom-sidebar {
   box-shadow: none;
 }
 
-/* Overlay for mobile/unpinned mode */
+/* Overlay for closing when in overlay mode */
 .sidebar-overlay {
   position: fixed;
   top: 0;
@@ -163,17 +159,18 @@ if (typeof window !== 'undefined') {
   window.addEventListener('resize', updateMobileState)
 }
 
-// Visibility logic: show when open OR when pinned on desktop
+// Visibility logic: show when open (pin doesn't affect visibility)
 const shouldShowSidebar = computed(() => {
-  if (state.rightPinned && !isMobile.value) {
-    return true // Desktop pinned = always visible
-  }
-  return state.rightOpen // Mobile or unpinned = normal toggle
+  return state.rightOpen // Only show when explicitly opened
 })
 
-// Determine if we should use pinned sidebar mode (desktop + pinned)
-const isPinnedAndDesktop = computed(() => {
-  return state.rightPinned && !isMobile.value
+// Positioning logic
+const isPinnedMode = computed(() => {
+  return state.rightPinned && !isMobile.value // Desktop + pinned = push layout aside
+})
+
+const isOverlayMode = computed(() => {
+  return !state.rightPinned || isMobile.value // Unpinned OR mobile = overlay
 })
 
 // Handle overlay click (dismiss sidebar)
@@ -184,6 +181,9 @@ const handleOverlayClick = (event) => {
     handleChatClose(false);
   }
 }
+
+
+
 
 // Handle menu item clicks from ChatHeader
 const handleMenuItemClick = (item) => {
