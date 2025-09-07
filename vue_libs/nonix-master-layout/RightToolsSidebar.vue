@@ -8,7 +8,7 @@
     :header="null"
     :style="{ width: '450px' }"
   >
-    <Chat />
+    <Chat @close-chat="handleChatClose" />
   </Sidebar>
 </template>
 
@@ -23,6 +23,12 @@ const visible = computed({
   get: () => state.rightOpen,
   set: (v) => { state.rightOpen = v }
 })
+
+// Handle chat close event from standalone Chat component
+const handleChatClose = () => {
+  console.log('Chat close event received - closing sidebar');
+  state.rightOpen = false;
+}
 </script>
 
 

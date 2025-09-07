@@ -1,6 +1,6 @@
 <!-- Chat.vue -->
 <script setup>
-import { ref, computed, inject } from 'vue';
+import { ref, computed, inject, defineEmits } from 'vue';
 import ChatHeader from './ChatHeader.vue';
 import ChatSessionBar from './ChatSessionBar.vue';
 import ChatMessageContainer from './ChatMessageContainer.vue';
@@ -19,6 +19,9 @@ const chatService = inject('chat-service');
 
 // Toast service - Toast component is already in root app
 const toast = useToast();
+
+// Define emitted events for Vue 3 composition API
+const emit = defineEmits(['closeChat', 'viewHistory', 'renameHistory', 'clearMessages', 'deleteSession']);
 
 // Ref to ChatMessageContainer for direct method calls
 const chatMessageContainerRef = ref(null);
@@ -384,17 +387,11 @@ const handleViewHistory = async () => {
 // Handle chat close request
 const handleCloseChat = () => {
   console.log('Close chat requested');
-  
+
   try {
-    // Clear current session and reset state
-    selectedSession.value = null;
-    selectedHistory.value = null;
-    currentSessionId.value = null;
-    currentHistoryId.value = null;
-    
-    addSuccess('Chat closed successfully');
-    addInfo('Select a new session to continue chatting');
-    
+    // Emit close event to parent component
+    emit('closeChat');
+
   } catch (error) {
     console.error('Failed to close chat:', error);
     addError('Failed to close chat', error);
