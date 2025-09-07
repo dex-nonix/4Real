@@ -144,27 +144,27 @@ defineExpose({
 </script>
 
 <template>
-  <aside class="h-full surface-section flex-shrink-0 surface-border select-none" style="width: 80px; min-width: 80px;">
+  <aside class="h-full surface-section flex-shrink-0 surface-border select-none" style="width: 48px; min-width: 48px;">
     <div class="flex flex-column h-full">
       <div class="flex flex-column flex-grow-1 overflow-y-auto">
-        <div v-if="loading" class="p-3 text-center">
+        <div v-if="loading" class="p-2 text-center">
           <i class="pi pi-spin pi-spinner text-2xl"></i>
           <p class="mt-2 text-sm">Loading sessions...</p>
         </div>
-        <div v-else-if="sessions.length === 0" class="no-sessions p-3 text-center">
+        <div v-else-if="sessions.length === 0" class="no-sessions p-2 text-center">
           <span class="text-500 text-sm">No sessions available</span>
         </div>
-        <div 
-          v-for="session in sessions" 
-          :key="session.id" 
-          class="session-item cursor-pointer p-3 hover:surface-200"
+        <div
+          v-for="session in sessions"
+          :key="session.id"
+          class="session-item cursor-pointer p-1 hover:surface-200"
           :class="{ 'selected-session': currentSessionId === session.id }"
           @click="handleSessionSelected(session.id)"
         >
-          <Avatar 
-            :image="getAvatarDisplay(session).image" 
+          <Avatar
+            :image="getAvatarDisplay(session).image"
             :label="getAvatarDisplay(session).fallback"
-            size="large" 
+            size="normal"
             shape="circle"
           />
         </div>
@@ -172,11 +172,12 @@ defineExpose({
 
       <div class="mt-auto flex-shrink-0">
         <Divider class="mb-1"/>
-        <div class="p-2 mx-auto">
+        <div class="px-0 py-2 flex justify-content-center">
           <Button
             icon="pi pi-plus"
             rounded
             severity="secondary"
+            style="width: 24px; height: 24px;"
             @click="handleAddSession"
             v-tooltip.bottom="'Add New Session'"
           />
