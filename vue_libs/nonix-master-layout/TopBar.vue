@@ -12,7 +12,7 @@
         <Menu v-if="header.actions && header.actions.length" ref="menu" :model="header.actions" :popup="true" />
         <Button v-if="header.actions && header.actions.length" icon="pi pi-ellipsis-v" text @click="toggleMenu" class="md:hidden" aria-haspopup="menu" />
       </div>
-      <Button v-if="header.showRightToggle" icon="pi pi-cog" text @click="toggleRight" />
+      <Button icon="pi pi-cog" text @click="toggleRight" aria-label="Toggle Chat" />
     </div>
   </div>
 </template>
