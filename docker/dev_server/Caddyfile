@@ -1,0 +1,21 @@
+{
+    admin 0.0.0.0:2019
+}
+
+dev.local {
+    # API routes go to backend (strip /api prefix)
+    handle_path /api/* {
+        uri strip_prefix /api
+        reverse_proxy host.docker.internal:5000
+    }
+
+    # WebSocket routes go to backend (strip /socket.io prefix)
+    handle_path /socket.io/* {
+        uri strip_prefix /socket.io
+        reverse_proxy host.docker.internal:5000
+    }
+
+    # Everything else goes to frontend
+    reverse_proxy host.docker.internal:5173
+    tls /certs/dev.local.pem /certs/dev.local-key.pem
+}
