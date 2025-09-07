@@ -5,7 +5,7 @@
     https_port 8443
 }
 
-dev.local:8080 {
+dev.local:8080, :8080 {
     header {
         Permissions-Policy "microphone=(self)"
     }
@@ -23,7 +23,7 @@ dev.local:8080 {
     reverse_proxy localhost:5173
 }
 
-dev.local:8443 {
+dev.local:8443, :8443 {
     header {
         Permissions-Policy "microphone=(self)"
     }
