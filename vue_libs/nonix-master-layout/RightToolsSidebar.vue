@@ -168,15 +168,10 @@ const isOverlayMode = computed(() => {
 
 // Handle overlay click (dismiss sidebar)
 const handleOverlayClick = (event) => {
-  // Only close if clicked on the overlay itself, not on the sidebar content
   if (event.target === event.currentTarget) {
-    // Auto-close: don't force, so pin status is respected
-    handleChatClose(false);
+    handleChatClose();
   }
 }
-
-
-
 
 // Handle menu item clicks from ChatHeader
 const handleMenuItemClick = (item) => {
