@@ -66,19 +66,18 @@ const chatMenuItems = ref([
   {
     label: 'Close Chat',
     icon: 'pi pi-times',
-    command: () => handleChatClose()
+    command: () => handleChatClose(true)
   }
 ])
 
-// Update pin icon when pin state changes
 watch(() => state.rightPinned, (isPinned) => {
-  chatMenuItems.value[0].icon = isPinned ? 'pi pi-lock' : 'pi pi-unlock'
-  chatMenuItems.value[0].label = isPinned ? 'Unpin Chat' : 'Pin Chat'
+  chatMenuItems.value[0] = {
+    ...chatMenuItems.value[0],
+    icon: isPinned ? 'pi pi-lock' : 'pi pi-unlock',
+    label: isPinned ? 'Unpin Chat' : 'Pin Chat'
+  }
 })
 
-// Set initial icon state
-chatMenuItems.value[0].icon = state.rightPinned ? 'pi pi-lock' : 'pi pi-unlock'
-chatMenuItems.value[0].label = state.rightPinned ? 'Unpin Chat' : 'Pin Chat'
 
 // Mobile detection for pin behavior
 const isMobile = ref(false)
@@ -92,22 +91,17 @@ if (typeof window !== 'undefined') {
   window.addEventListener('resize', updateMobileState)
 }
 
-// Visibility logic: pinned on desktop = always visible, mobile = overlay
+// Visibility logic: always respect open state (pin is just a flag)
 const shouldShowSidebar = computed(() => {
-  if (state.rightPinned && !isMobile.value) {
-    return true // Desktop pinned = always visible
-  }
-  return state.rightOpen // Mobile or unpinned = normal toggle
+  return state.rightOpen
 })
 
 // Handle overlay click (dismiss sidebar)
 const handleOverlayClick = (event) => {
   // Only close if clicked on the overlay itself, not on the sidebar content
   if (event.target === event.currentTarget) {
-    // Don't close if pinned on desktop
-    if (!(state.rightPinned && !isMobile.value)) {
-      state.rightOpen = false;
-    }
+    // Auto-close: don't force, so pin status is respected
+    handleChatClose(false);
   }
 }
 
@@ -118,8 +112,16 @@ const handleMenuItemClick = (item) => {
 }
 
 // Handle chat close through external menu system
-const handleChatClose = () => {
-  console.log('Chat close through menu system - closing sidebar');
+const handleChatClose = (force = false) => {
+  console.log('Chat close through menu system - closing sidebar, force:', force);
+
+  // If not forced and pinned, don't close (auto-close prevention)
+  if (!force && state.rightPinned) {
+    console.log('Close prevented - sidebar is pinned');
+    return;
+  }
+
+  // Close the sidebar
   state.rightOpen = false;
 }
 </script>

@@ -39,10 +39,6 @@ export function useAppShell() {
 
   function togglePin() {
     shellState.rightPinned = !shellState.rightPinned
-    // When pinning, ensure sidebar is open
-    if (shellState.rightPinned) {
-      shellState.rightOpen = true
-    }
   }
 
   return {
