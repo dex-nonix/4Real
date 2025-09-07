@@ -1,8 +1,11 @@
 <template>
   <!-- Overlay always present, just hidden/shown with CSS -->
-  <div class="custom-sidebar-overlay" :class="{ 'overlay-visible': visible }" @click="handleOverlayClick">
+  <div class="custom-sidebar-overlay" :class="{ 'overlay-visible': shouldShowSidebar }" @click="handleOverlayClick">
     <div class="custom-sidebar">
-      <Chat @close-chat="handleChatClose" />
+      <Chat
+        :menu-items="chatMenuItems"
+        @menu-item-click="handleMenuItemClick"
+      />
     </div>
   </div>
 </template>
@@ -47,27 +50,76 @@
 </style>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useAppShell } from './useAppShell.js'
 import Chat from '@nonix-chat/components/Chat.vue'
 
-const { state } = useAppShell()
-const visible = computed({
-  get: () => state.rightOpen,
-  set: (v) => { state.rightOpen = v }
+const { state, togglePin } = useAppShell()
+
+// Menu items for ChatHeader - defined externally and reactive
+const chatMenuItems = ref([
+  {
+    label: 'Pin Chat',
+    icon: 'pi pi-bookmark',
+    command: () => togglePin()
+  },
+  {
+    label: 'Close Chat',
+    icon: 'pi pi-times',
+    command: () => handleChatClose()
+  }
+])
+
+// Update pin icon when pin state changes
+watch(() => state.rightPinned, (isPinned) => {
+  chatMenuItems.value[0].icon = isPinned ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'
+  chatMenuItems.value[0].label = isPinned ? 'Unpin Chat' : 'Pin Chat'
+})
+
+// Set initial icon state
+chatMenuItems.value[0].icon = state.rightPinned ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'
+chatMenuItems.value[0].label = state.rightPinned ? 'Unpin Chat' : 'Pin Chat'
+
+// Mobile detection for pin behavior
+const isMobile = ref(false)
+const updateMobileState = () => {
+  isMobile.value = window.innerWidth < 768
+}
+
+// Handle window resize
+if (typeof window !== 'undefined') {
+  updateMobileState()
+  window.addEventListener('resize', updateMobileState)
+}
+
+// Visibility logic: pinned on desktop = always visible, mobile = overlay
+const shouldShowSidebar = computed(() => {
+  if (state.rightPinned && !isMobile.value) {
+    return true // Desktop pinned = always visible
+  }
+  return state.rightOpen // Mobile or unpinned = normal toggle
 })
 
 // Handle overlay click (dismiss sidebar)
 const handleOverlayClick = (event) => {
   // Only close if clicked on the overlay itself, not on the sidebar content
   if (event.target === event.currentTarget) {
-    state.rightOpen = false;
+    // Don't close if pinned on desktop
+    if (!(state.rightPinned && !isMobile.value)) {
+      state.rightOpen = false;
+    }
   }
 }
 
-// Handle chat close event from Chat component
+// Handle menu item clicks from ChatHeader
+const handleMenuItemClick = (item) => {
+  console.log('Menu item clicked:', item.label);
+  // The item's command is already executed in ChatHeader, just log here
+}
+
+// Handle chat close through external menu system
 const handleChatClose = () => {
-  console.log('Chat close event received - closing sidebar');
+  console.log('Chat close through menu system - closing sidebar');
   state.rightOpen = false;
 }
 </script>

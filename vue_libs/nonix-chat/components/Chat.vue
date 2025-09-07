@@ -11,6 +11,11 @@ import ProgressSpinner from 'primevue/progressspinner';
 import { useToast } from 'primevue/usetoast';
 import { nextTick } from 'vue';
 
+// Chat component accepts external menu items
+const props = defineProps({
+  menuItems: { type: Array, required: false, default: () => [] }
+});
+
 // Chat component is now fully self-contained - no props needed
 // It manages its own session state and can be used multiple times
 
@@ -21,7 +26,7 @@ const chatService = inject('chat-service');
 const toast = useToast();
 
 // Define emitted events for Vue 3 composition API
-const emit = defineEmits(['closeChat', 'viewHistory', 'renameHistory', 'clearMessages', 'deleteSession']);
+const emit = defineEmits(['viewHistory', 'renameHistory', 'clearMessages', 'deleteSession', 'menuItemClick']);
 
 // Ref to ChatMessageContainer for direct method calls
 const chatMessageContainerRef = ref(null);
@@ -384,19 +389,12 @@ const handleViewHistory = async () => {
   }
 };
 
-// Handle chat close request
-const handleCloseChat = () => {
-  console.log('Close chat requested');
-
-  try {
-    // Emit close event to parent component
-    emit('closeChat');
-
-  } catch (error) {
-    console.error('Failed to close chat:', error);
-    addError('Failed to close chat', error);
-  }
+// Handle menu item clicks from ChatHeader
+const handleMenuItemClick = (item) => {
+  console.log('Menu item clicked:', item.label);
+  emit('menuItemClick', item);
 };
+
 
 // Handle history rename request - FLAT DATA
 const handleRenameHistory = async (historyId, newTitle) => {
@@ -552,16 +550,17 @@ defineExpose({
 
 <template>
   <div class="flex flex-column overflow-hidden h-full w-full">
-    <ChatHeader 
-      :persona="currentPersona" 
+    <ChatHeader
+      :persona="currentPersona"
       :current-session="currentSession"
       :current-history="currentHistory"
+      :menu-items="menuItems"
       @add-persona="handleAddPersona"
       @view-history="handleViewHistory"
-      @close-chat="handleCloseChat"
       @rename-history="handleRenameHistory"
       @clear-messages="handleClearMessages"
       @delete-session="handleDeleteSession"
+      @menu-item-click="handleMenuItemClick"
     />
 
     <div class="flex flex-row flex-1" style="min-height: 0; height: 100%;">

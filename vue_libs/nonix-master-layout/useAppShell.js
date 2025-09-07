@@ -4,7 +4,8 @@ import { reactive } from 'vue'
 const shellState = reactive({
   leftOpen: false,      // mobile off-canvas visibility
   leftCollapsed: false, // desktop pinned collapse
-  rightOpen: false
+  rightOpen: false,     // right sidebar visibility
+  rightPinned: false    // right sidebar pinned state
 })
 
 export function useAppShell() {
@@ -36,6 +37,14 @@ export function useAppShell() {
     shellState.rightOpen = false
   }
 
+  function togglePin() {
+    shellState.rightPinned = !shellState.rightPinned
+    // When pinning, ensure sidebar is open
+    if (shellState.rightPinned) {
+      shellState.rightOpen = true
+    }
+  }
+
   return {
     state: shellState,
     toggleLeft,
@@ -43,7 +52,8 @@ export function useAppShell() {
     openLeft,
     closeLeft,
     openRight,
-    closeRight
+    closeRight,
+    togglePin
   }
 }
 

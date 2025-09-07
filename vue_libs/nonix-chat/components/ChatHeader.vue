@@ -9,10 +9,11 @@ import { ref, inject, watch } from 'vue';
 const props = defineProps({
   persona: { type: Object, required: false, default: null },
   currentSession: { type: Object, required: false, default: null },
-  currentHistory: { type: Object, required: false, default: null }
+  currentHistory: { type: Object, required: false, default: null },
+  menuItems: { type: Array, required: false, default: () => [] }
 });
 
-const emit = defineEmits(['viewHistory', 'closeChat', 'renameHistory', 'clearMessages', 'deleteSession']);
+const emit = defineEmits(['viewHistory', 'renameHistory', 'clearMessages', 'deleteSession', 'menuItemClick']);
 
 // Service injection
 const chatService = inject('chat-service');
@@ -120,6 +121,14 @@ const getAvatarDisplay = () => {
   return { image: null, fallback: initials };
 };
 
+// Handle external menu item clicks
+const handleMenuItemClick = (item) => {
+  if (item.command) {
+    item.command();
+  }
+  emit('menuItemClick', item);
+};
+
 // Menu items for delete dropdown - FIXED, NEVER CHANGE
 const deleteMenuItems = [
   {
@@ -170,22 +179,23 @@ const deleteMenuItems = [
     </div>
 
     <div class="flex align-items-center gap-1">
-      <Button icon="pi pi-history" text rounded severity="secondary" @click="emit('viewHistory')" v-tooltip.bottom="'View History'" />
+      <!-- Built-in buttons first (left side) -->
+      <Button icon="pi pi-history" text rounded severity="secondary" @click="emit('viewHistory')" aria-label="View History" />
       <div class="relative" ref="deleteButtonRef">
-        <Button 
-          icon="pi pi-trash" 
-          text 
-          rounded 
-          severity="danger" 
-          @click="(event) => { console.log('Button clicked'); toggleDeleteMenu(event); }" 
-          v-tooltip.bottom="'Delete Options'"
+        <Button
+          icon="pi pi-trash"
+          text
+          rounded
+          severity="danger"
+          @click="(event) => { console.log('Button clicked'); toggleDeleteMenu(event); }"
+          aria-label="Delete Options"
           aria-haspopup="true"
           aria-controls="delete_menu"
         />
-        <Menu 
-          ref="deleteMenu" 
-          id="delete_menu" 
-          :model="deleteMenuItems" 
+        <Menu
+          ref="deleteMenu"
+          id="delete_menu"
+          :model="deleteMenuItems"
           :popup="true"
         >
           <template #item="{ item }">
@@ -193,7 +203,18 @@ const deleteMenuItems = [
           </template>
         </Menu>
       </div>
-      <Button icon="pi pi-times" text rounded severity="secondary" @click="emit('closeChat')" v-tooltip.bottom="'Close Chat'"/>
+
+      <!-- External menu items (right side) -->
+      <Button
+        v-for="item in menuItems"
+        :key="item.label"
+        :icon="item.icon"
+        text
+        rounded
+        severity="secondary"
+        @click="handleMenuItemClick(item)"
+        :aria-label="item.label"
+      />
     </div>
   </header>
 </template>
