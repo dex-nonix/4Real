@@ -10,8 +10,7 @@ const emit = defineEmits(['delete-message', 'copy', 'retry', 'cancel'])
 
 <template>
   <div class="flex flex-column gap-1">
-    <div class="flex align-items-center justify-content-between">
-      <div class="text-xs text-400">{{ message.created_at }}</div>
+    <div class="flex align-items-center justify-content-end">
       <div class="flex align-items-center gap-1">
         <button v-if="message.status==='sending'" class="p-button p-button-text p-button-rounded p-button-danger p-button-sm" @click="$emit('cancel', message.id)">
           <i class="pi pi-times"></i>
