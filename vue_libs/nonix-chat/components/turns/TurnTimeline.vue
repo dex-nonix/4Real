@@ -14,7 +14,7 @@ const orderedItems = computed(() => {
 
 <template>
   <div class="turn-timeline">
-    <div class="mb-1">
+    <div class="mb-0">
       <ToolRunBadge
         v-for="(tool, runId) in toolsByRunId"
         :key="runId"
@@ -23,17 +23,17 @@ const orderedItems = computed(() => {
         :toolRunId="runId"
       />
     </div>
-    <div v-for="item in orderedItems" :key="item.id || item.seq" class="timeline-item py-1">
+    <div v-for="item in orderedItems" :key="item.id || item.seq" class="timeline-item py-0">
       <slot name="item" :item="item" />
     </div>
   </div>
-  <div class="mt-1" />
+  <div class="mt-0" />
 </template>
 
 <style scoped>
 .turn-timeline {
-  border-left: 2px dashed var(--surface-border);
-  padding-left: 0.5rem;
+  border-left: 1px solid var(--surface-border);
+  padding-left: 0.25rem;
 }
 .timeline-item {
   position: relative;
@@ -41,12 +41,13 @@ const orderedItems = computed(() => {
 .timeline-item::before {
   content: '';
   position: absolute;
-  left: -11px;
-  top: 8px;
-  width: 6px;
-  height: 6px;
+  left: -7px;
+  top: 4px;
+  width: 2px;
+  height: 2px;
   border-radius: 50%;
-  background: var(--surface-500);
+  background: var(--surface-300);
+  opacity: 0.3;
 }
 </style>
 

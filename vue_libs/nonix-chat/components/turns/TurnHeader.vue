@@ -31,7 +31,6 @@ const props = defineProps({
 
 <style scoped>
 .turn-header {
-  border-left: 1px solid var(--primary-color);
   font-size: 0.65rem;
   line-height: 1;
   min-height: 16px;
