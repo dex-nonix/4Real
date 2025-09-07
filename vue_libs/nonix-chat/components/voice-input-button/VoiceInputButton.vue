@@ -56,7 +56,10 @@ const state = reactive({
   permissionGranted: false,
   recordingStartTime: null,
   browser: '',
-  version: ''
+  version: '',
+  captureStream: null,
+  audioContext: null,
+  triedAudioCaptureRetry: false 
 });
 
 // Computed Properties
@@ -160,6 +163,30 @@ const requestMicrophonePermission = async () => {
   }
 };
 
+const ensureAudioReady = async () => {
+  if (!state.audioContext) {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (Ctx) state.audioContext = new Ctx();
+  }
+  if (state.audioContext && state.audioContext.state === 'suspended') {
+    await state.audioContext.resume();
+  }
+};
+
+const primeAudioCapture = async () => {
+  if (state.captureStream) return;
+  state.captureStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+};
+
+const releaseAudioCapture = () => {
+  if (state.captureStream) {
+    try {
+      state.captureStream.getTracks().forEach(t => t.stop());
+    } catch (_) {}
+    state.captureStream = null;
+  }
+};
+
 // Speech Recognition Setup
 const createRecognition = () => {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -203,6 +230,7 @@ const handleEnd = () => {
     timestamp: endTime,
     duration: duration
   });
+  releaseAudioCapture();
 };
 
 const handleResult = (event) => {
@@ -253,6 +281,7 @@ const handleAudioStart = () => {
 
 const handleAudioEnd = () => {
   emit('audio-end', { timestamp: new Date() });
+  releaseAudioCapture();
 };
 
 const handleSoundStart = () => {
@@ -293,13 +322,31 @@ const startRecording = async () => {
 
   try {
     state.isProcessing = true;
+    state.triedAudioCaptureRetry = false;
+    await ensureAudioReady();
+    await primeAudioCapture();
+    await new Promise(r => setTimeout(r, 200));
     state.recognition = createRecognition();
 
     // Bind event handlers
     state.recognition.onstart = handleStart;
     state.recognition.onend = handleEnd;
     state.recognition.onresult = handleResult;
-    state.recognition.onerror = (event) => handleError(event.error, event.message);
+    state.recognition.onerror = async (event) => {
+      if (event && event.error === 'audio-capture' && !state.triedAudioCaptureRetry) {
+        state.triedAudioCaptureRetry = true;
+        try {
+          releaseAudioCapture();
+          await ensureAudioReady();
+          await primeAudioCapture();
+          await new Promise(r => setTimeout(r, 300));
+          if (typeof state.recognition.abort === 'function') state.recognition.abort();
+          state.recognition.start();
+          return;
+        } catch (_) {}
+      }
+      handleError(event.error, event.message);
+    };
     state.recognition.onaudiostart = handleAudioStart;
     state.recognition.onaudioend = handleAudioEnd;
     state.recognition.onsoundstart = handleSoundStart;
