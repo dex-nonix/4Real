@@ -9,6 +9,7 @@ import Badge from 'primevue/badge';
 import AvailableToolsDialog from './AvailableToolsDialog.vue';
 import ToolExecutionDialog from './ToolExecutionDialog.vue';
 import ErrorDialog from './ErrorDialog.vue';
+import { VoiceInputButton } from './voice-input-button/index.js';
 
 const props = defineProps({
   // Session context
@@ -49,13 +50,35 @@ const toggleMoreMenu = (event) => {
   moreMenu.value.toggle(event);
 };
 
-// Menu items
+// Consolidated menu items (errors + tools)
 const moreMenuItems = computed(() => [
+  // Errors section
   {
     label: 'Show Errors',
     icon: 'pi pi-exclamation-triangle',
     command: showErrors,
-    badge: props.errors.length > 0 ? props.errors.length : null
+    badge: props.errors.length > 0 ? props.errors.length : null,
+    disabled: props.errors.length === 0
+  },
+
+  // Tools section
+  {
+    label: 'Available Tools',
+    icon: 'pi pi-box',
+    command: showTools,
+    badge: availableToolsLocal.value.length > 0 ? availableToolsLocal.value.length : null,
+    disabled: !hasHistory.value || toolsLoading.value
+  },
+
+  // Separator
+  { separator: true },
+
+  // Additional utilities
+  {
+    label: 'Clear Input',
+    icon: 'pi pi-times',
+    command: () => inputText.value = '',
+    disabled: !inputText.value?.trim()
   }
 ]);
 
@@ -66,6 +89,11 @@ const availableToolsLocal = ref([]);
 const toolsLoading = ref(false);
 const selectedTool = ref(null);
 const toolExecutionDialogRef = ref(null);
+
+// Badge computation for consolidated notifications
+const totalNotifications = computed(() => {
+  return props.errors.length + (toolsLoading.value ? 1 : 0);
+});
 
 // Session-specific input text storage
 const sessionInputTexts = ref(new Map());
@@ -292,6 +320,26 @@ const buttonAction = computed(() => {
   return onSend;
 });
 
+// Voice input event handlers
+const handleVoiceText = ({ text, confidence, isFinal }) => {
+  if (isFinal && text.trim()) {
+    // Append to current input or replace if empty
+    if (inputText.value) {
+      inputText.value += ' ' + text.trim();
+    } else {
+      inputText.value = text.trim();
+    }
+  }
+};
+
+const handleRecordingError = ({ error, code }) => {
+  console.error('Voice recording error:', error, code);
+  emit('error', {
+    message: 'Voice input error',
+    details: { error, code }
+  });
+};
+
 // Watch for session changes
 watch(() => props.selectedSession, (newSession, oldSession) => {
   if (newSession) {
@@ -315,9 +363,14 @@ defineExpose({
 
 <template>
   <div class="input-area">
-    <!-- Tools Button -->
-    <Button icon="pi pi-box" text rounded severity="secondary" @click="showTools"
-      v-tooltip.bottom="'Available Tools'" :disabled="!hasHistory" />
+    <!-- Voice Input Button -->
+    <VoiceInputButton
+      :disabled="!hasHistory || isStreaming"
+      @text="handleVoiceText"
+      @recording-error="handleRecordingError"
+      size="small"
+      class="voice-input-spacing"
+    />
 
     <!-- Input Field -->
     <span class="p-input-icon-right flex-grow-1 mx-1">
@@ -332,7 +385,7 @@ defineExpose({
     <div class="relative">
       <Button icon="pi pi-ellipsis-h" text rounded severity="secondary" :disabled="!hasHistory"
         @click="toggleMoreMenu" aria-haspopup="true" aria-controls="more_menu" />
-      <Badge v-if="props.errors.length > 0" :value="props.errors.length" severity="danger"
+      <Badge v-if="totalNotifications > 0" :value="totalNotifications" severity="danger"
         class="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2" />
     </div>
 
@@ -364,6 +417,12 @@ defineExpose({
 /* Button layout and spacing */
 .input-area .p-button {
   flex-shrink: 0;
+}
+
+/* Voice input button spacing */
+.voice-input-spacing {
+  margin-left: 0.25rem;
+  margin-right: 0.25rem;
 }
 
 /* Retry button styling */
