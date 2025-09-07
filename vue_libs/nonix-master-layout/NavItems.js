@@ -9,7 +9,6 @@ export const leftNavItems = [
       { label: 'Tracks', icon: 'pi pi-play', to: '/tracks' }, 
       { label: 'Styles', icon: 'pi pi-tag', to: '/styles' }, 
       { label: 'Rhyme Techniques', icon: 'pi pi-sliders-h', to: '/rhyme-techniques' },
-      { label: 'Chat', icon: 'pi pi-comments', to: { name: 'chat' } }
     ]
   },
   {

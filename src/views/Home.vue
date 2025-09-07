@@ -23,16 +23,6 @@
         </div>
       </div>
 
-      <div class="grid" style="margin-top: 2rem;">
-        <div class="col-12 md:col-6">
-          <h3 class="m-0 mb-2">Chat Component A</h3>
-          <Chat />
-        </div>
-        <div class="col-12 md:col-6">
-          <h3 class="m-0 mb-2">Chat Component B</h3>
-          <Chat />
-        </div>
-      </div>
     </section>
   </Page>
 </template>
@@ -40,7 +30,6 @@
 <script setup>
 import Button from 'primevue/button'
 import Page from '@nonix/page/Page.vue'
-import Chat from '@nonix-chat/components/Chat.vue'
 </script>
 
 <style scoped>

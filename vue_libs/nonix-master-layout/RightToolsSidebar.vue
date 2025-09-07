@@ -1,8 +1,12 @@
 <template>
   <!-- Resizable sidebar container -->
-  <div class="resizable-sidebar-container" v-show="shouldShowSidebar">
-    <!-- Draggable divider -->
-    <div class="sidebar-divider"
+  <div class="resizable-sidebar-container"
+       :class="{ 'pinned-mode': isPinnedAndDesktop }"
+       v-show="shouldShowSidebar">
+
+    <!-- Only show divider when pinned (sidebar mode) -->
+    <div v-if="isPinnedAndDesktop"
+         class="sidebar-divider"
          :class="{ dragging: isResizing }"
          @mousedown="startResize"
          @touchstart="startResize">
@@ -16,11 +20,17 @@
         @menu-item-click="handleMenuItemClick"
       />
     </div>
+
+    <!-- Overlay for mobile/unpinned mode -->
+    <div v-if="!isPinnedAndDesktop"
+         class="sidebar-overlay"
+         @click="handleOverlayClick">
+    </div>
   </div>
 </template>
 
 <style scoped>
-/* Resizable sidebar container */
+/* Resizable sidebar container - Overlay mode (default) */
 .resizable-sidebar-container {
   position: fixed;
   top: 0;
@@ -28,6 +38,17 @@
   bottom: 0;
   height: 100vh;
   z-index: 999;
+  display: flex;
+}
+
+/* Pinned mode - Sidebar alongside main content */
+.resizable-sidebar-container.pinned-mode {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  height: 100vh;
+  z-index: 1;
   display: flex;
 }
 
@@ -64,13 +85,33 @@
 .custom-sidebar {
   background: var(--surface-card);
   border-left: 1px solid var(--surface-border);
-  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   min-width: 300px;
   max-width: 800px;
   transition: width 0.1s ease;
+}
+
+/* Overlay mode shadow */
+.resizable-sidebar-container:not(.pinned-mode) .custom-sidebar {
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Pinned mode - no shadow needed */
+.resizable-sidebar-container.pinned-mode .custom-sidebar {
+  box-shadow: none;
+}
+
+/* Overlay for mobile/unpinned mode */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: -1;
 }
 </style>
 
@@ -128,6 +169,11 @@ const shouldShowSidebar = computed(() => {
     return true // Desktop pinned = always visible
   }
   return state.rightOpen // Mobile or unpinned = normal toggle
+})
+
+// Determine if we should use pinned sidebar mode (desktop + pinned)
+const isPinnedAndDesktop = computed(() => {
+  return state.rightPinned && !isMobile.value
 })
 
 // Handle overlay click (dismiss sidebar)

@@ -36,7 +36,6 @@ export const appConfig = {
         {path: '/about', name: 'about', component: About, meta: {layout: 'alt'}},
         {path: '/dynamic-form', name: 'dynamic-form', component: DynamicFormExample},
         {path: '/dynamic-table', name: 'dynamic-table', component: DynamicTableExample},
-        {path: '/chat', name: 'chat', component: Chat},
 
         // Dynamic route
         {type: "dynamic", path: '/dashboard', page: 'dashboard'},
