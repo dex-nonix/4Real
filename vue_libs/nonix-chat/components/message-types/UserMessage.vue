@@ -26,7 +26,7 @@ const isValid = computed(() => props.message.metadata?.isValid !== false);
   <!-- No header/avatar for user messages -->
   
   <!-- Message Content -->
-  <div class="flex align-items-start justify-content-end">
+  <div class="flex align-items-start justify-content-start">
     <p class="m-0 text-normal" style="hyphens: auto; word-break: break-word;">{{ messageContent }}</p>
     
     <!-- Validation Indicator -->
