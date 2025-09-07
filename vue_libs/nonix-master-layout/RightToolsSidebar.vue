@@ -28,24 +28,17 @@
 <style scoped>
 /* Sidebar positioned within layout container */
 .resizable-sidebar-container {
-  width: 450px;
   height: 100vh;
   display: flex;
-  flex-shrink: 0; /* Don't shrink the sidebar */
-}
-
-/* Pinned mode: flex item (part of layout flow) */
-.resizable-sidebar-container.pinned-mode {
-  position: relative;
-  z-index: 1;
+  flex-shrink: 0;
 }
 
 /* Overlay mode: fixed positioning (overlays entire viewport) */
 .resizable-sidebar-container.overlay-mode {
   position: fixed;
-  z-index: 999;
   top: 0;
   right: 0;
+  z-index: 999;
 }
 
 /* Draggable divider */
