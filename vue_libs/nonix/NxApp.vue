@@ -2,7 +2,7 @@
   <component :is="layout">
     <router-view :key="$route.fullPath"/>
   </component>
-  <Toast/>
+  <Toast position="bottom-left"/>
 </template>
 
 <script setup>
