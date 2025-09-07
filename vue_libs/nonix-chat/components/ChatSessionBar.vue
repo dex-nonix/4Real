@@ -2,7 +2,6 @@
 <script setup>
 import { ref, onMounted, inject, watch } from 'vue';
 import Button from 'primevue/button';
-import Divider from 'primevue/divider';
 import Avatar from 'primevue/avatar';
 
 const props = defineProps({
@@ -144,7 +143,7 @@ defineExpose({
 </script>
 
 <template>
-  <aside class="h-full surface-section flex-shrink-0 surface-border select-none" style="width: 48px; min-width: 48px;">
+  <aside class="h-full surface-section flex-shrink-0 surface-border select-none" style="width: 40px; min-width: 40px;">
     <div class="flex flex-column h-full">
       <div class="flex flex-column flex-grow-1 overflow-y-auto">
         <div v-if="loading" class="p-2 text-center">
