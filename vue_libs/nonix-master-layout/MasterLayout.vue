@@ -58,6 +58,8 @@ if (typeof window !== 'undefined') {
   height: 100%;
   min-width: 0; /* Allow flex item to shrink */
   transition: flex-basis 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 /* When sidebar is pinned, main content takes remaining space */
