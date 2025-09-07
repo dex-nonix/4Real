@@ -115,7 +115,7 @@ const wsEventHandlers = ref(new Map()); // Track registered handlers to prevent 
 const registerWsHandler = (event, handler) => {
   if (wsEventHandlers.value.has(event)) {
     const existingUnsub = wsEventHandlers.value.get(event);
-    try { typeof existingUnsub === 'function' && existingUnsub(); } catch (_) {}
+    try { typeof existingUnsub === 'function' && existingUnsub(); } catch (_) { }
   }
   const unsub = chatService.onWebSocketEvent(event, handler);
   wsEventHandlers.value.set(event, unsub);
@@ -132,7 +132,7 @@ const cleanupWsListeners = () => {
       wsEventHandlers.value.clear();
     }
     if (Array.isArray(wsUnsubs.value)) {
-      wsUnsubs.value.forEach(unsub => { try { typeof unsub === 'function' && unsub(); } catch (_) {} });
+      wsUnsubs.value.forEach(unsub => { try { typeof unsub === 'function' && unsub(); } catch (_) { } });
     }
   } finally {
     wsUnsubs.value = [];
@@ -201,9 +201,9 @@ const handleMessageReceived = (data) => {
   const incoming = Object.assign({}, data);
   const derivedType = incoming.message_type
     || (incoming.role === 'assistant' ? 'assistant'
-        : incoming.role === 'user' ? 'user'
+      : incoming.role === 'user' ? 'user'
         : incoming.role === 'system' ? 'system'
-        : 'tool_result');
+          : 'tool_result');
   incoming.message_type = derivedType;
 
   // Strict payload: require content_json for text roles
@@ -279,7 +279,7 @@ const handleAssistantStarted = (data) => {
   // Create empty assistant message
   const { message_id, status, metadata } = data;
   console.log('Creating streaming message with ID:', message_id);
-  
+
   const existingIndex = messages.value.findIndex(m => m.id === message_id);
   if (existingIndex !== -1) {
     messages.value[existingIndex].status = 'streaming';
@@ -295,7 +295,7 @@ const handleAssistantStarted = (data) => {
     messages.value.push(assistantMessage);
   }
   console.log('Added streaming message to UI. Total messages:', messages.value.length);
-  
+
   // Track streaming state
   streamingMessages.set(message_id, { content: '', status: 'streaming', metadata });
   streamingStatus.set(message_id, 'streaming');
@@ -309,17 +309,17 @@ const handleAssistantChunk = (data) => {
   // Find existing assistant message and append chunk
   const { message_id, chunk, metadata } = data;
   console.log('Looking for message with ID:', message_id, 'in', messages.value.length, 'messages');
-  
+
   const messageIndex = messages.value.findIndex(m => m.id === message_id);
   console.log('Found message at index:', messageIndex);
-  
+
   if (messageIndex !== -1) {
     const currentText = messages.value[messageIndex].content_json?.text || '';
     const newText = currentText + chunk;
     console.log('Updating message text from:', currentText, 'to:', newText);
-    
+
     messages.value[messageIndex].content_json = { text: newText };
-    
+
     // Update streaming state
     const streamingData = streamingMessages.get(message_id);
     if (streamingData) {
@@ -366,7 +366,7 @@ const handleAssistantComplete = (data) => {
     };
     messages.value.push(assistantMessage);
   }
-  
+
   // Update streaming state
   streamingStatus.set(message_id, 'complete');
   const streamingData = streamingMessages.get(message_id);
@@ -424,27 +424,27 @@ watch([() => props.selectedSession, () => props.historyId], ([newSession, newHis
 // Load messages for specific history
 const loadMessages = async (historyId) => {
   if (!historyId || !chatService) return;
-  
+
   try {
     loading.value = true;
-    
+
     // Use the new ChatService method that requires both sessionId and historyId
     if (!props.selectedSession?.id) {
       messages.value = [];
       return;
     }
-    
+
     const sessionId = props.selectedSession.id;
     const response = await chatService.getHistoryMessages(sessionId, historyId);
-    
+
     // Backend returns {data: [...], total: X} - extract the actual messages array
     const messagesData = response?.data || response || [];
-    
+
     // Force Vue to detect the change by creating a new array
     messages.value = [...messagesData];
-    
+
     console.log('Messages loaded successfully:', messages.value.length);
-    
+
     // Rebuild turnsById from loaded messages
     turnsById.clear();
     for (const m of messages.value) {
@@ -476,12 +476,12 @@ watch(() => props.selectedSession, (newSession, oldSession) => {
     if (oldSession && oldSession.id) {
       sessionInputTexts.value.set(oldSession.id, inputText.value);
     }
-    
+
     // Load input text for new session
     if (newSession.id) {
       inputText.value = sessionInputTexts.value.get(newSession.id) || '';
     }
-    
+
     // Load messages for the new session if we have a history
     if (props.historyId) {
       loadMessages(props.historyId);
@@ -492,7 +492,7 @@ watch(() => props.selectedSession, (newSession, oldSession) => {
 // Send message
 const onSend = async () => {
   if (!inputText.value?.trim() || !props.historyId || !chatService) return;
-  
+
   try {
     // Clear error states when sending new message
     streamingStatus.forEach((status, messageId) => {
@@ -500,10 +500,10 @@ const onSend = async () => {
         streamingStatus.set(messageId, 'complete');
       }
     });
-    
+
     // Clear streaming messages
     streamingMessages.clear();
-    
+
     // Send proper message payload (type=text per base chat message)
     const messageData = {
       historyId: props.historyId,
@@ -550,15 +550,15 @@ const handleDeleteMessage = async (messageData) => {
     console.error('Cannot delete message: Missing required data', messageData);
     return;
   }
-  
+
   try {
     // Call the backend to delete the message
     const response = await chatService.deleteMessage(
-      props.selectedSession.id, 
-      props.historyId, 
+      props.selectedSession.id,
+      props.historyId,
       messageData.messageId
     );
-    
+
     if (response) {
       // Remove the message from local state immediately
       messages.value = messages.value.filter(msg => msg.id !== messageData.messageId);
@@ -576,8 +576,8 @@ const handleDeleteMessage = async (messageData) => {
             turnsById.delete(turnId);
           }
         }
-      } catch (_) {}
-      
+      } catch (_) { }
+
       // Emit success to parent for toast notification
       emit('deleteMessage', { success: true, messageData, response });
     }
@@ -593,11 +593,11 @@ const showTools = async () => {
   try {
     toolsLoading.value = true;
     showToolsDialog.value = true;
-    
+
     // Load tools for the current persona
     if (props.selectedSession?.persona_id && chatService) {
       const toolsData = await chatService.personaTools(props.selectedSession.persona_id);
-      
+
       // Backend returns {data: Array} - extract the actual tools array
       let toolsArray = [];
       if (toolsData && toolsData.data && Array.isArray(toolsData.data)) {
@@ -605,7 +605,7 @@ const showTools = async () => {
       } else if (Array.isArray(toolsData)) {
         toolsArray = toolsData;
       }
-      
+
       availableTools.value = toolsArray;
     } else {
       availableTools.value = [];
@@ -634,7 +634,7 @@ const executeToolWithForm = async (formData) => {
     console.error('Cannot execute tool: Missing required data');
     return;
   }
-  
+
   // Extract the actual form data from DynamicForm's submit event
   const args = formData.__full || formData.args || {};
 
@@ -689,7 +689,7 @@ const clearLocalMessages = () => {
     if (streamingStatus && typeof streamingStatus.clear === 'function') {
       streamingStatus.clear();
     }
-  } catch (_) {}
+  } catch (_) { }
 };
 
 // Get the appropriate component for each message
@@ -739,7 +739,7 @@ defineExpose({
   clearLocalMessages,
   refreshMessages: () => loadMessages(props.historyId),
   triggerRefresh: () => loadMessages(props.historyId),
-  
+
   // Expose streaming methods
   isMessageStreaming,
   getStreamingContent,
@@ -760,7 +760,7 @@ defineExpose({
           <span class="text-color-secondary">{{ llmStatus.message }}</span>
         </div>
       </div>
-      
+
       <!-- Tool Status -->
       <div v-if="toolStatus" class="tool-status">
         <div class="flex align-items-center gap-2">
@@ -773,7 +773,7 @@ defineExpose({
           <span v-if="toolStatus.error" class="text-danger">({{ toolStatus.error }})</span>
         </div>
       </div>
-      
+
       <!-- Streaming Status -->
       <div v-if="showStreamingStatus" class="streaming-status mt-2">
         <div class="flex align-items-center gap-2">
@@ -783,31 +783,29 @@ defineExpose({
         </div>
       </div>
     </div>
-    
+
     <!-- Messages Area - Takes remaining space and scrolls -->
     <div class="messages-area">
       <div v-if="orderedTurns.length === 0 && !loading" class="text-center text-color-secondary p-4">
         <i class="pi pi-comments text-4xl mb-2"></i>
         <p>No messages yet. Start a conversation!</p>
       </div>
-      
+
       <div v-else-if="loading" class="text-center text-color-secondary p-4">
         <i class="pi pi-spin pi-spinner text-2xl"></i>
         <p class="mt-2">Loading messages...</p>
       </div>
-      
+
       <div v-else>
         <div v-for="turn in orderedTurns" :key="turn.turnId" class="mb-3">
-          <TurnHeader :turn-id="turn.turnId" :first-seq="turn.firstSeq" :last-seq="turn.lastSeq" :tools-count="turn.obj.tools.size" :status="computeTurnStatus(turn)" />
-          <TurnTimeline :items="Array.from(turn.obj.items.values())" :tools-by-run-id="Object.fromEntries(turn.obj.tools)" >
+          <TurnHeader :turn-id="turn.turnId" :first-seq="turn.firstSeq" :last-seq="turn.lastSeq"
+            :tools-count="turn.obj.tools.size" :status="computeTurnStatus(turn)" />
+          <TurnTimeline :items="Array.from(turn.obj.items.values())"
+            :tools-by-run-id="Object.fromEntries(turn.obj.tools)">
             <template #item="{ item }">
-              <component
-                :is="item.role === 'user' ? OutgoingMessageContainer : IncomingMessageContainer"
-                :message="item"
-                :component="getMessageComponent(item)"
-                :current-user-id="currentUserId"
-                @delete-message="handleDeleteMessage"
-              />
+              <component :is="item.role === 'user' ? OutgoingMessageContainer : IncomingMessageContainer"
+                :message="item" :component="getMessageComponent(item)" :current-user-id="currentUserId"
+                @delete-message="handleDeleteMessage" />
             </template>
           </TurnTimeline>
         </div>
@@ -816,82 +814,44 @@ defineExpose({
 
     <!-- Input Area - Fixed at bottom -->
     <div class="input-area">
-      
+
       <!-- Tools Button -->
-      <Button 
-        icon="pi pi-box" 
-        text 
-        rounded 
-        severity="secondary"
-        @click="showTools"
-        v-tooltip.bottom="'Available Tools'"
-        :disabled="!hasHistory"
-      />
+      <Button icon="pi pi-box" text rounded severity="secondary" @click="showTools" v-tooltip.bottom="'Available Tools'"
+        :disabled="!hasHistory" />
 
       <!-- Input Field -->
       <span class="p-input-icon-right flex-grow-1 mx-1">
         <IconField>
-          <InputText
-            v-model="inputText"
-            placeholder="Type a message..."
-            class="w-full"
-            @keyup.enter="buttonAction"
-            :disabled="!hasHistory || isStreaming"
-          />
+          <InputText v-model="inputText" placeholder="Type a message..." class="w-full" @keyup.enter="buttonAction"
+            :disabled="!hasHistory || isStreaming" />
           <InputIcon :class="buttonIcon" @click="buttonAction" />
         </IconField>
       </span>
 
       <!-- Options Button -->
       <div class="relative">
-        <Button 
-          icon="pi pi-ellipsis-h" 
-          text 
-          rounded 
-          severity="secondary"
-          :disabled="!hasHistory"
-          @click="toggleMoreMenu"
-          aria-haspopup="true"
-          aria-controls="more_menu"
-        />
-        <Badge 
-          v-if="props.errors.length > 0" 
-          :value="props.errors.length" 
-          severity="danger" 
-          class="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2"
-        />
+        <Button icon="pi pi-ellipsis-h" text rounded severity="secondary" :disabled="!hasHistory"
+          @click="toggleMoreMenu" aria-haspopup="true" aria-controls="more_menu" />
+        <Badge v-if="props.errors.length > 0" :value="props.errors.length" severity="danger"
+          class="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2" />
       </div>
+
+      <!-- More Menu -->
+      <Menu ref="moreMenu" id="more_menu" :model="moreMenuItems" :popup="true" />
+      <!-- Tools Dialog -->
+      <AvailableToolsDialog :visible="showToolsDialog" :tools="availableTools"
+        @update:visible="showToolsDialog = $event" @tool-selected="selectTool" />
+
+      <!-- Tool Execution Dialog -->
+      <ToolExecutionDialog ref="toolExecutionDialogRef" :selected-tool="selectedTool"
+        @execute-tool="executeToolWithForm" />
     </div>
 
-    <!-- More Menu -->
-    <Menu 
-      ref="moreMenu" 
-      id="more_menu" 
-      :model="moreMenuItems" 
-      :popup="true"
-    />
 
     <!-- Error Dialog -->
-    <ErrorDialog
-      :visible="showErrorDialog"
-      :errors="props.errors"
-      @update:visible="showErrorDialog = $event"
-    />
+    <ErrorDialog :visible="showErrorDialog" :errors="props.errors" @update:visible="showErrorDialog = $event" />
 
-    <!-- Tools Dialog -->
-    <AvailableToolsDialog
-      :visible="showToolsDialog"
-      :tools="availableTools"
-      @update:visible="showToolsDialog = $event"
-      @tool-selected="selectTool"
-    />
 
-    <!-- Tool Execution Dialog -->
-    <ToolExecutionDialog
-      ref="toolExecutionDialogRef"
-      :selected-tool="selectedTool"
-      @execute-tool="executeToolWithForm"
-    />
   </div>
 </template>
 
@@ -915,7 +875,7 @@ defineExpose({
   display: flex;
   align-items: center;
   padding: 0.5rem;
-  
+
   background: var(--surface-section);
 }
 
@@ -948,7 +908,9 @@ defineExpose({
   background: var(--surface-50);
 }
 
-.llm-status, .tool-status, .streaming-status {
+.llm-status,
+.tool-status,
+.streaming-status {
   font-size: 0.875rem;
 }
 
@@ -977,7 +939,12 @@ defineExpose({
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
