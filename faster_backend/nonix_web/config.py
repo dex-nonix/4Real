@@ -1,3 +1,5 @@
+import os
+
 class Settings:
     APP_NAME: str = "NxWebServer"
     DEBUG: bool = False
@@ -10,8 +12,8 @@ class Settings:
     LOG_BACKUP_COUNT: int = 5
     WS_ENABLED=True
     WS_ALLOWED_ORIGINS="*"
-    HOST: str = "0.0.0.0"
-    PORT: int = 5000
+    HOST: str = os.getenv("BACKEND_HOST", "0.0.0.0")
+    PORT: int = int(os.getenv("BACKEND_PORT", "5000"))
     PLUGIN_SEARCH_PATH = [
         "plugins"
         # "./"

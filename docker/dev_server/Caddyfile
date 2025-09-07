@@ -1,21 +1,43 @@
 {
     admin 0.0.0.0:2019
+    auto_https off
+    http_port 8080
+    https_port 8443
 }
 
-dev.local {
-    # API routes go to backend (strip /api prefix)
-    handle_path /api/* {
-        uri strip_prefix /api
-        reverse_proxy host.docker.internal:5000
+dev.local:8080 {
+    header {
+        Permissions-Policy "microphone=(self)"
+    }
+    # API routes go to backend (keep /api prefix)
+    handle /api/* {
+        reverse_proxy localhost:5000
     }
 
-    # WebSocket routes go to backend (strip /socket.io prefix)
-    handle_path /socket.io/* {
-        uri strip_prefix /socket.io
-        reverse_proxy host.docker.internal:5000
+    # WebSocket routes go to backend (keep /socket.io prefix)
+    handle /socket.io/* {
+        reverse_proxy localhost:5000
     }
 
     # Everything else goes to frontend
-    reverse_proxy host.docker.internal:5173
+    reverse_proxy localhost:5173
+}
+
+dev.local:8443 {
+    header {
+        Permissions-Policy "microphone=(self)"
+    }
+    # API routes go to backend (keep /api prefix)
+    handle /api/* {
+        reverse_proxy localhost:5000
+    }
+
+    # WebSocket routes go to backend (keep /socket.io prefix)
+    handle /socket.io/* {
+        reverse_proxy localhost:5000
+    }
+
+    # Everything else goes to frontend
+    reverse_proxy localhost:5173
     tls /certs/dev.local.pem /certs/dev.local-key.pem
 }

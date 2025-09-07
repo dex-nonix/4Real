@@ -1,5 +1,6 @@
 import {ref} from 'vue'
 import {io} from 'socket.io-client'
+import { WS_BASE_URL } from '@/env.js'
 
 export default class WebSocketManager {
     constructor(app) {
@@ -12,8 +13,8 @@ export default class WebSocketManager {
     // Initialize WebSocket - simple and direct
     _initWebSocket() {
         try {
-            // Connect directly to backend
-            this.socket = io( "ws://0.0.0.0:5000",{
+            // Connect to backend using environment variable
+            this.socket = io(WS_BASE_URL,{
                 transports: ['websocket'],
                 autoConnect: true,
                 reconnection: true,

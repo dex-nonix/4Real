@@ -1,17 +1,7 @@
-version: "3.9"
-
 services:
   caddy:
     image: caddy:latest
-    ports:
-      - "80:80"
-      - "443:443"
-      - "2019:2019" # Caddy Admin API
-    environment:
-      - BACKEND_HOST=${BACKEND_HOST:-host.docker.internal}
-      - BACKEND_PORT=${BACKEND_PORT:-5000}
-      - FRONTEND_HOST=${FRONTEND_HOST:-host.docker.internal}
-      - FRONTEND_PORT=${FRONTEND_PORT:-5173}
+    network_mode: host
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - ./certs:/certs

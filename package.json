@@ -4,16 +4,14 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n api,ui -c blue,green \"npm:dev:api\" \"npm:dev:ui\"",
-    "dev:api": "./.venv/bin/python backend/cli.py run --host 0.0.0.0 --port 5000 --debug",
-    "dev:api:fast": "./.venv/bin/python faster_backend/main.py",
-    "dev:ui": "vite --host 0.0.0.0 --port 5173",
-    "start": "./.venv/bin/gunicorn -c backend/gunicorn.conf.py backend.wsgi:app",
-    "start:prod": "./.venv/bin/gunicorn -c backend/gunicorn.conf.py backend.wsgi:app --env FLASK_ENV=production --env FLASK_DEBUG=0 --env LOG_LEVEL=INFO --env SOCKETIO_LOGGER=false --env SOCKETIO_ENGINE_LOGGER=false",
-    "start:dev": "./.venv/bin/gunicorn -c backend/gunicorn.conf.py backend.wsgi:app --env FLASK_ENV=development --env FLASK_DEBUG=1 --env LOG_LEVEL=DEBUG --env SOCKETIO_LOGGER=true --env SOCKETIO_ENGINE_LOGGER=true",
-    "start:fast": "./.venv/bin/gunicorn faster_backend.main:app --bind 0.0.0.0:8000",
-    "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0 --port 5174"
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm:dev:api\" \"npm:dev:ui\"",
+    "dev:api": "./.venv/bin/python faster_backend/main.py",
+    "dev:ui": "vite --mode development --host 0.0.0.0 --port 5173",
+    "dev:proxy": "docker compose -f docker/dev_server/docker-compose.yml up -d",
+    "prod:build": "vite build --mode production",
+    "prod:serve": "npm run prod:build && vite preview --mode production --host 0.0.0.0 --port 5174",
+    "prod:proxy": "docker compose -f docker/dev_server/docker-compose.yml up -d",
+    "prod:full": "npm run prod:proxy && echo 'Access at: https://dev.local'"
   },
   "dependencies": {
     "@types/quill": "^2.0.14",

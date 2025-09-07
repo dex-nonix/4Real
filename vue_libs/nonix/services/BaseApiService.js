@@ -1,11 +1,10 @@
 // BaseApiService.js - minimal fetch-based HTTP layer with WebSocket support
 import { API_BASE_URL } from '@/env.js'
-import {inject} from "vue";
 
 export default class BaseApiService {
   constructor(app, options = {}) {
     const { defaultHeaders = {}, onRequest, onResponse, onError} = options
-    this.baseURL = "http://0.0.0.0:5000/api"//API_BASE_URL.replace(/\/$/, '')
+    this.baseURL = API_BASE_URL.replace(/\/$/, '')
     this.defaultHeaders = { 'Content-Type': 'application/json', ...defaultHeaders }
     this.onRequest = onRequest
     this.onResponse = onResponse
@@ -13,16 +12,6 @@ export default class BaseApiService {
     this.wsManager = app._context.provides['websocket-manager'];
   }
 
-  // Get WebSocket manager from Vue app context - PROPER dependency injection
-  // get wsManager() {
-  //   // Get from Vue app context if available
-  //   if (window.__vueApp && window.__vueApp._context && window.__vueApp._context.provides) {
-  //     return window.__vueApp._context.provides['websocket-manager']
-  //   }
-  //   return null
-  // }
-
-  // WebSocket Methods - now delegate to injected manager
 
   /**
    * Join a specific WebSocket room

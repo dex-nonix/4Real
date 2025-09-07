@@ -118,16 +118,45 @@ const checkBrowserSupport = () => {
 };
 
 // Permission Handling
+const getAnyMicStream = async () => {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const mics = devices.filter(d => d.kind === 'audioinput');
+  if (mics.length === 0) throw new Error('No audioinput devices');
+  const deviceId = mics[0].deviceId;
+  return navigator.mediaDevices.getUserMedia({ audio: { deviceId } });
+};
 const requestMicrophonePermission = async () => {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream.getTracks().forEach(track => track.stop()); // Stop immediately after permission granted
+    let stream = null;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+      if (e && (e.name === 'NotFoundError' || e.name === 'OverconstrainedError')) {
+        stream = await getAnyMicStream();
+      } else {
+        throw e;
+      }
+    }
+    stream.getTracks().forEach(track => track.stop());
     state.permissionGranted = true;
     emit('permission-granted', { timestamp: new Date() });
   } catch (error) {
     state.permissionGranted = false;
-    emit('permission-denied', { timestamp: new Date() });
-    handleError('permission-denied', 'Microphone permission denied');
+    const name = error && error.name ? error.name : 'Error';
+    if (name === 'NotAllowedError' || name === 'SecurityError') {
+      emit('permission-denied', { timestamp: new Date() });
+      handleError('permission-denied', error.message || 'Microphone permission denied');
+      return;
+    }
+    if (name === 'NotFoundError') {
+      handleError('device-not-found', error.message || 'No microphone device found');
+      return;
+    }
+    if (name === 'NotReadableError') {
+      handleError('not-readable', error.message || 'Microphone not readable');
+      return;
+    }
+    handleError('mic-error', error.message || String(error));
   }
 };
 
