@@ -1,7 +1,16 @@
 <template>
-  <!-- Overlay always present, just hidden/shown with CSS -->
-  <div class="custom-sidebar-overlay" :class="{ 'overlay-visible': shouldShowSidebar }" @click="handleOverlayClick">
-    <div class="custom-sidebar">
+  <!-- Resizable sidebar container -->
+  <div class="resizable-sidebar-container" v-show="shouldShowSidebar">
+    <!-- Draggable divider -->
+    <div class="sidebar-divider"
+         :class="{ dragging: isResizing }"
+         @mousedown="startResize"
+         @touchstart="startResize">
+      <div class="divider-handle"></div>
+    </div>
+
+    <!-- Sidebar content -->
+    <div class="custom-sidebar" :style="{ width: sidebarWidth + 'px' }">
       <Chat
         :menu-items="chatMenuItems"
         @menu-item-click="handleMenuItemClick"
@@ -11,41 +20,57 @@
 </template>
 
 <style scoped>
-.custom-sidebar-overlay {
+/* Resizable sidebar container */
+.resizable-sidebar-container {
   position: fixed;
   top: 0;
-  left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  z-index: 1000;
+  height: 100vh;
+  z-index: 999;
   display: flex;
-  justify-content: flex-end;
-  align-items: stretch;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
-.custom-sidebar-overlay.overlay-visible {
-  opacity: 1;
-  visibility: visible;
+/* Draggable divider */
+.sidebar-divider {
+  width: 8px;
+  background: transparent;
+  cursor: col-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
 }
 
+.sidebar-divider:hover,
+.sidebar-divider.dragging {
+  background: var(--primary-color);
+}
+
+.divider-handle {
+  width: 2px;
+  height: 24px;
+  background: var(--surface-border);
+  border-radius: 1px;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar-divider:hover .divider-handle,
+.sidebar-divider.dragging .divider-handle {
+  background: white;
+}
+
+/* Sidebar content */
 .custom-sidebar {
-  width: 450px;
   background: var(--surface-card);
   border-left: 1px solid var(--surface-border);
   box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transform: translateX(100%);
-  transition: transform 0.3s ease;
-}
-
-.overlay-visible .custom-sidebar {
-  transform: translateX(0);
+  min-width: 300px;
+  max-width: 800px;
+  transition: width 0.1s ease;
 }
 </style>
 
@@ -55,6 +80,12 @@ import { useAppShell } from './useAppShell.js'
 import Chat from '@nonix-chat/components/Chat.vue'
 
 const { state, togglePin } = useAppShell()
+
+// Resizable sidebar state
+const sidebarWidth = ref(450)
+const isResizing = ref(false)
+const startX = ref(0)
+const startWidth = ref(0)
 
 // Menu items for ChatHeader - defined externally and reactive
 const chatMenuItems = ref([
@@ -91,9 +122,12 @@ if (typeof window !== 'undefined') {
   window.addEventListener('resize', updateMobileState)
 }
 
-// Visibility logic: always respect open state (pin is just a flag)
+// Visibility logic: show when open OR when pinned on desktop
 const shouldShowSidebar = computed(() => {
-  return state.rightOpen
+  if (state.rightPinned && !isMobile.value) {
+    return true // Desktop pinned = always visible
+  }
+  return state.rightOpen // Mobile or unpinned = normal toggle
 })
 
 // Handle overlay click (dismiss sidebar)
@@ -109,6 +143,49 @@ const handleOverlayClick = (event) => {
 const handleMenuItemClick = (item) => {
   console.log('Menu item clicked:', item.label);
   // The item's command is already executed in ChatHeader, just log here
+}
+
+// Resize functionality
+const startResize = (event) => {
+  isResizing.value = true
+  startX.value = event.clientX || event.touches[0].clientX
+  startWidth.value = sidebarWidth.value
+
+  // Add event listeners
+  document.addEventListener('mousemove', handleResize)
+  document.addEventListener('touchmove', handleResize)
+  document.addEventListener('mouseup', stopResize)
+  document.addEventListener('touchend', stopResize)
+
+  // Prevent text selection during resize
+  document.body.style.userSelect = 'none'
+  document.body.style.cursor = 'col-resize'
+
+  event.preventDefault()
+}
+
+const handleResize = (event) => {
+  if (!isResizing.value) return
+
+  const clientX = event.clientX || event.touches[0].clientX
+  const deltaX = startX.value - clientX
+  const newWidth = Math.max(300, Math.min(800, startWidth.value + deltaX))
+
+  sidebarWidth.value = newWidth
+}
+
+const stopResize = () => {
+  isResizing.value = false
+
+  // Remove event listeners
+  document.removeEventListener('mousemove', handleResize)
+  document.removeEventListener('touchmove', handleResize)
+  document.removeEventListener('mouseup', stopResize)
+  document.removeEventListener('touchend', stopResize)
+
+  // Restore normal cursor and selection
+  document.body.style.userSelect = ''
+  document.body.style.cursor = ''
 }
 
 // Handle chat close through external menu system
