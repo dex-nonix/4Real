@@ -76,28 +76,6 @@ const isNavCollapsed = ref(false);
 const isFooterCollapsed = ref(false);
 const isTopBarCollapsed = ref(false); // Can be used if needed
 
-// Menu items for Chat component - PIN and FLOAT toggles only
-const chatMenuItems = ref([
-  {
-    label: 'Toggle Pin',
-    icon: 'pi pi-lock',
-    command: () => {
-      if (state.dockSide !== 'floating') {
-        togglePin();
-      }
-    }
-  },
-  {
-    label: 'Toggle Float',
-    icon: 'pi pi-window-maximize',
-    command: () => {
-      if (state.dockSide !== 'floating') {
-        undockPane();
-      }
-    }
-  }
-]);
-
 // --- DOM ELEMENT REFS ---
 const appContainer = ref(null);
 const windowPane = ref(null);
@@ -157,12 +135,39 @@ const toggleChatPane = () => state.isVisible = !state.isVisible;
 const togglePin = () => state.isPinned = !state.isPinned;
 const undockPane = () => state.dockSide = 'floating';
 
+// Menu items for Chat component - PIN and FLOAT toggles only
+const chatMenuItems = ref([
+  {
+    label: 'Toggle Pin',
+    icon: 'pi pi-lock',
+    command: () => setTimeout(() => togglePin(), 0)
+  },
+  {
+    label: 'Toggle Float',
+    icon: 'pi pi-window-maximize',
+    command: () => Promise.resolve().then(() => undockPane())
+  }
+]);
+
 // Click outside logic to close the pane if it's not pinned
 const handleClickOutside = (e) => {
   if (!state.isPinned && state.isVisible) {
     const clickedInsidePane = windowPane.value?.contains(e.target);
     const clickedOnOpenButton = toggleChatBtn.value?.contains(e.target);
-    if (!clickedInsidePane && !clickedOnOpenButton) {
+
+    // Check if clicked on any PrimeVue overlay - these are typically user-initiated
+    // and shouldn't cause the pane to close
+    const clickedOnOverlay = e.target.closest('.p-menu') !== null ||
+                            e.target.closest('.p-menuitem-link') !== null ||
+                            e.target.closest('.p-overlaypanel') !== null ||
+                            e.target.closest('.p-dialog') !== null ||
+                            e.target.closest('.p-dropdown-panel') !== null ||
+                            e.target.closest('.p-multiselect-panel') !== null ||
+                            e.target.closest('.p-overlay') !== null ||
+                            e.target.closest('.p-tooltip') !== null ||
+                            e.target.closest('.p-confirm-popup') !== null;
+
+    if (!clickedInsidePane && !clickedOnOpenButton && !clickedOnOverlay) {
       state.isVisible = false;
     }
   }

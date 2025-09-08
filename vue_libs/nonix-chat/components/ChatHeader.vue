@@ -256,7 +256,7 @@ const ellipsisMenuItems = computed(() => {
               :item="item"
               @close-menu="ellipsisMenu.hide()"
               :class="!isConfirmItem(item) ? 'p-menuitem-link' : ''"
-              @click="!isConfirmItem(item) ? item.command() : null"
+              @click.stop="!isConfirmItem(item) ? (item.command(), ellipsisMenu.hide()) : null"
             >
               <span v-if="!isConfirmItem(item)" :class="item.icon" class="p-menuitem-icon"></span>
               <span v-if="!isConfirmItem(item)" class="p-menuitem-text">{{ item.label }}</span>
