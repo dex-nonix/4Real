@@ -162,63 +162,61 @@ class ChatMessageService(BaseCrudService):
             self._logger.info(f"Selected AI model: {mapping.model_name} (provider: {mapping.provider_id})")
             return model_info
 
-    async def _validate_session_history(self, session_id: int, history_id: int = None):
+    async def _validate_session_history(self, db_session, session_id: int, history_id: int = None):
         """Validate session and history, return tuple (session, history)."""
         self._logger.debug(f"Validating session {session_id} with history {history_id}")
+        # Load session with persona relationship eagerly
+        session_result = await db_session.execute(
+            select(ChatSession).where(ChatSession.id == session_id, ChatSession.is_active == True)
+        )
+        session = session_result.scalar_one_or_none()
 
-        async with AsyncSessionLocal() as db_session:
-            # Load session with persona relationship eagerly
-            session_result = await db_session.execute(
-                select(ChatSession).where(ChatSession.id == session_id, ChatSession.is_active == True)
+        if not session:
+            self._logger.warning(f"Session {session_id} not found or inactive")
+            return None, None
+
+        # Load persona relationship eagerly to avoid detached instance errors
+        await db_session.refresh(session, ['persona'])
+
+        if history_id:
+            # Specific history requested
+            self._logger.debug(f"Querying history {history_id} for session {session_id}")
+
+            history_result = await db_session.execute(
+                select(ChatHistory).where(ChatHistory.id == history_id, ChatHistory.session_id == session_id)
             )
-            session = session_result.scalar_one_or_none()
+            history = history_result.scalar_one_or_none()
+            self._logger.debug(f"History query result: {history}")
 
-            if not session:
-                self._logger.warning(f"Session {session_id} not found or inactive")
-                return None, None
-
-            # Load persona relationship eagerly to avoid detached instance errors
-            await db_session.refresh(session, ['persona'])
-
-            if history_id:
-                # Specific history requested
-                self._logger.debug(f"Querying history {history_id} for session {session_id}")
-
-                history_result = await db_session.execute(
-                    select(ChatHistory).where(ChatHistory.id == history_id, ChatHistory.session_id == session_id)
+            if not history:
+                self._logger.warning(f"History {history_id} not found for session {session_id}")
+                return session, None
+        else:
+            # Use current history or create new one
+            if not session.current_history_id:
+                self._logger.info(f"Creating new history for session {session_id}")
+                history = ChatHistory(
+                    session_id=session_id,
+                    title='New Conversation',
+                    message_count=0
                 )
-                history = history_result.scalar_one_or_none()
-                self._logger.debug(f"History query result: {history}")
-
-                if not history:
-                    self._logger.warning(f"History {history_id} not found for session {session_id}")
-                    return session, None
+                db_session.add(history)
+                await db_session.commit()
+                await db_session.refresh(history)
+                session.current_history_id = history.id
+                await db_session.commit()
+                self._logger.info(f"New history {history.id} created for session {session_id}")
             else:
-                # Use current history or create new one
-                if not session.current_history_id:
-                    self._logger.info(f"Creating new history for session {session_id}")
-                    history = ChatHistory(
-                        session_id=session_id,
-                        title='New Conversation',
-                        message_count=0
-                    )
-                    db_session.add(history)
-                    await db_session.commit()
-                    await db_session.refresh(history)
-                    session.current_history_id = history.id
-                    await db_session.commit()
-                    self._logger.info(f"New history {history.id} created for session {session_id}")
-                else:
-                    self._logger.debug(f"Using existing history {session.current_history_id} for session {session_id}")
-                    history = await db_session.get(ChatHistory, session.current_history_id)
-                    if not history:
-                        self._logger.warning(
-                            f"Current history {session.current_history_id} not found for session {session_id}")
-                        return session, None
+                self._logger.debug(f"Using existing history {session.current_history_id} for session {session_id}")
+                history = await db_session.get(ChatHistory, session.current_history_id)
+                if not history:
+                    self._logger.warning(
+                        f"Current history {session.current_history_id} not found for session {session_id}")
+                    return session, None
 
-            self._logger.debug(
-                f"Session validation successful: session={session.id}, history={history.id if history else None}")
-            return session, history
+        self._logger.debug(
+            f"Session validation successful: session={session.id}, history={history.id if history else None}")
+        return session, history
 
     async def _create_user_message(self, history_id: int, content: Dict[str, Any]) -> ChatMessage:
         self._logger.debug(f"Creating user message for history {history_id}")
@@ -384,31 +382,32 @@ class ChatMessageService(BaseCrudService):
 
             self._logger.debug(f"Parameter conversion: session_id={session_id}, history_id={history_id}")
 
-            session, history = await self._validate_session_history(session_id, history_id)
-            if not session:
-                self._logger.warning(f"Session {session_id} not found")
-                raise ValueError('Session not found')
+            async with AsyncSessionLocal() as db_session:
+                session, history = await self._validate_session_history(db_session, session_id, history_id)
+                if not session:
+                    self._logger.warning(f"Session {session_id} not found")
+                    raise ValueError('Session not found')
 
-            persona = session.persona
-            if not persona:
-                self._logger.warning(f"Session {session_id} has no persona")
-                raise ValueError('Session has no persona')
-            if not persona.is_active:
-                self._logger.warning(f"Persona {persona.id} is not active")
-                raise ValueError('Persona is not active')
+                persona = session.persona
+                if not persona:
+                    self._logger.warning(f"Session {session_id} has no persona")
+                    raise ValueError('Session has no persona')
+                if not persona.is_active:
+                    self._logger.warning(f"Persona {persona.id} is not active")
+                    raise ValueError('Persona is not active')
 
-            if not history_id:
-                self._logger.debug(
-                    f"No history_id provided, using session.current_history_id: {session.current_history_id}")
-                history_id = session.current_history_id
                 if not history_id:
-                    self._logger.warning(f"No current history found for session {session_id}")
-                    raise ValueError('No current history')
+                    self._logger.debug(
+                        f"No history_id provided, using session.current_history_id: {session.current_history_id}")
+                    history_id = session.current_history_id
+                    if not history_id:
+                        self._logger.warning(f"No current history found for session {session_id}")
+                        raise ValueError('No current history')
 
-            # Validate provided history_id belongs to session
-            if not history or history.session_id != session_id:
-                self._logger.warning(f"History validation failed - history: {history}, session_id: {session_id}")
-                raise ValueError('History not found or invalid')
+                # Validate provided history_id belongs to session
+                if not history or history.session_id != session_id:
+                    self._logger.warning(f"History validation failed - history: {history}, session_id: {session_id}")
+                    raise ValueError('History not found or invalid')
 
             # Get user content (object)
             user_content = payload.content
@@ -836,12 +835,11 @@ class ChatMessageService(BaseCrudService):
     async def update_message_content(self, session_id: int, history_id: int, message_id: int, update_data):
         """Update a specific message content with session/history validation."""
         try:
-            # Validate session and history exist and match
-            session, history = await self._validate_session_history(session_id, history_id)
-            if not session or not history:
-                raise ValueError('Session or history not found')
-
             async with AsyncSessionLocal() as db_session:
+                # Validate session and history exist and match
+                session, history = await self._validate_session_history(db_session, session_id, history_id)
+                if not session or not history:
+                    raise ValueError('Session or history not found')
                 message = (await db_session.execute(
                     select(ChatMessage).where(ChatMessage.id == message_id, ChatMessage.history_id == history_id)
                 )).scalar_one_or_none()
@@ -870,10 +868,11 @@ class ChatMessageService(BaseCrudService):
     async def cancel_message_streaming(self, session_id: int, history_id: int, assistant_message_id: int):
         """Cancel streaming for a single assistant message."""
         try:
-            # Validate session and history exist and match
-            session, history = await self._validate_session_history(session_id, history_id)
-            if not session or not history:
-                raise ValueError('Session or history not found')
+            async with AsyncSessionLocal() as db_session:
+                # Validate session and history exist and match
+                session, history = await self._validate_session_history(db_session, session_id, history_id)
+                if not session or not history:
+                    raise ValueError('Session or history not found')
 
             # Find and cancel the task tagged with this assistant_message_id
             cancelled = False
@@ -901,10 +900,11 @@ class ChatMessageService(BaseCrudService):
     async def retry_last_message(self, session_id: int):
         """Retry the last user message in a session."""
         try:
-            # Validate session exists
-            session, history = await self._validate_session_history(session_id)
-            if not session:
-                raise ValueError('Session not found or inactive')
+            async with AsyncSessionLocal() as db_session:
+                # Validate session exists
+                session, history = await self._validate_session_history(db_session, session_id)
+                if not session:
+                    raise ValueError('Session not found or inactive')
 
             # Get the last user message
             last_user_msg = await self._get_last_user_message(session_id)
@@ -936,10 +936,11 @@ class ChatMessageService(BaseCrudService):
     async def get_last_user_message(self, session_id: int):
         """Get the last user message content for retry functionality."""
         try:
-            # Validate session exists
-            session, _ = await self._validate_session_history(session_id)
-            if not session:
-                raise ValueError('Session not found or inactive')
+            async with AsyncSessionLocal() as db_session:
+                # Validate session exists
+                session, _ = await self._validate_session_history(db_session, session_id)
+                if not session:
+                    raise ValueError('Session not found or inactive')
 
             # Get the last user message content
             last_message_content = await self._get_last_user_message_content(session_id)
