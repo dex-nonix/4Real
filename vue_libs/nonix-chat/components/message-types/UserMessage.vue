@@ -43,6 +43,12 @@ const handleCancelEdit = () => {
 
 const handleKeyDown = (event) => {};
 
+watch(() => props.editingMessageId, (newId) => {
+  if (newId && String(newId) === String(props.message.id)) {
+    editContent.value = messageContent.value;
+  }
+});
+
 onMounted(() => {
   emit('register-actions', messageActions);
 });

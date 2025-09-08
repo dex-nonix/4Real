@@ -34,6 +34,7 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue';
 import Textarea from 'primevue/textarea';
 import Button from 'primevue/button';
 
@@ -57,6 +58,12 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:modelValue', 'save', 'cancel', 'keydown', 'edit', 'cancel-edit']);
+
+onMounted(() => {
+  if (props.originalContent && !props.modelValue) {
+    emit('update:modelValue', props.originalContent);
+  }
+});
 
 const handleSave = () => {
   if (props.modelValue.trim() !== props.originalContent) {

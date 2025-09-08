@@ -31,6 +31,12 @@ const handleCancelEdit = () => {
 
 const handleKeyDown = (event) => {};
 
+watch(() => props.editingMessageId, (newId) => {
+  if (newId && String(newId) === String(props.message.id)) {
+    editContent.value = props.message?.content_json?.text || '';
+  }
+});
+
 const chatService = inject('chat-service');
 const { streamingContent, streamingStatus, isTyping, subscribe, unsubscribe, initFromProps } = useStreamingMessage(chatService, props.message, true);
 const typingDots = ref('...');
