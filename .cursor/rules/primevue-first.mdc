@@ -1,0 +1,194 @@
+---
+description: PrimeVue, PrimeFlex, and PrimeIcons must always be used first before any custom solutions
+alwaysApply: false
+---
+# 🎯 PRIMEVUE FIRST - ABSOLUTE PRIORITY RULE
+
+## 🚨 **MANDATORY: Always Use PrimeVue First!**
+
+### **1. COMPONENTS - PrimeVue Only**
+```vue
+<!-- ✅ ALWAYS use PrimeVue components first -->
+<Button label="Save" icon="pi pi-check" @click="save" />
+<InputText v-model="username" placeholder="Username" />
+<DataTable :value="items" />
+
+<!-- ❌ NEVER create custom components when PrimeVue has it -->
+<!-- Don't create <MyButton> when PrimeVue has <Button> -->
+```
+
+### **2. STYLING - PrimeFlex Only**
+```vue
+<!-- ✅ ALWAYS use PrimeFlex classes -->
+<div class="flex justify-content-between align-items-center p-3">
+  <div class="col-6">
+    <h3 class="mt-0 mb-2">Title</h3>
+  </div>
+  <div class="col-6 text-right">
+    <Button label="Action" />
+  </div>
+</div>
+
+<!-- ❌ NEVER use custom CSS classes -->
+<!-- Don't create .my-flex when PrimeFlex has .flex -->
+```
+
+### **3. ICONS - PrimeIcons Only**
+```vue
+<!-- ✅ ALWAYS use PrimeIcons -->
+<Button icon="pi pi-save" label="Save" />
+<i class="pi pi-user text-primary"></i>
+
+<!-- ❌ NEVER use other icon libraries -->
+<!-- Don't use <i class="fas fa-save"> when PrimeIcons has pi-save -->
+```
+
+## 🔄 **Decision Flow - Follow This EXACTLY:**
+
+### **Step 1: Check PrimeVue Documentation**
+- Search PrimeVue docs for the functionality you need
+- Look for existing components, props, and utilities
+
+### **Step 2: Use PrimeVue Native Features**
+```javascript
+// ✅ Use PrimeVue's built-in functionality
+<Textarea resize="vertical" :autoResize="true" />
+
+// ❌ Don't hack with CSS
+// Don't use: resize: vertical !important;
+```
+
+### **Step 3: Check Existing Custom Components**
+- Only if PrimeVue doesn't support it
+- Use our existing custom components that follow PrimeVue patterns
+- Examples: `MessageEditMode.vue`, `ChatMessageContainer.vue`
+
+### **Step 4: ASK Before Custom Solutions**
+- If PrimeVue doesn't fit AND we don't have a custom component
+- Ask the user before creating new custom components
+- Explain why PrimeVue doesn't work for this case
+
+## 📋 **Common PrimeVue Components to Use:**
+
+### **Form Components:**
+- `<InputText>`, `<InputNumber>`, `<InputMask>`
+- `<Textarea>` (with `resize`, `autoResize` props)
+- `<Dropdown>`, `<MultiSelect>`, `<Checkbox>`
+- `<Button>` (with `icon`, `severity`, `text` props)
+
+### **Layout Components:**
+- `<Card>`, `<Panel>`, `<Fieldset>`
+- `<TabView>`, `<Accordion>`, `<Splitter>`
+- `<Dialog>`, `<Sidebar>`, `<OverlayPanel>`
+
+### **Data Components:**
+- `<DataTable>`, `<DataView>`, `<Tree>`
+- `<Chart>` (various chart types)
+- `<Timeline>`, `<Gantt>`
+
+### **Utility Classes (PrimeFlex):**
+```vue
+<!-- Flexbox -->
+<div class="flex"> <div class="flex justify-content-center">
+
+<!-- Spacing -->
+<div class="p-3 m-2"> <div class="px-4 py-2">
+
+<!-- Grid -->
+<div class="col-12 md:col-6 lg:col-4">
+
+<!-- Colors -->
+<div class="bg-primary text-white">
+```
+
+## 🚫 **ABSOLUTELY FORBIDDEN:**
+
+### **❌ Don't Create Custom Components When PrimeVue Has It:**
+```javascript
+// DON'T do this:
+<template>
+  <button class="my-custom-button" @click="$emit('click')">
+    <slot />
+  </button>
+</template>
+
+// DO this:
+<Button label="Click Me" @click="handleClick" />
+```
+
+### **❌ Don't Use Custom CSS When PrimeFlex Has It:**
+```css
+/* DON'T do this: */
+.my-flex-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* DO this in template: */
+<div class="flex justify-content-between align-items-center">
+```
+
+### **❌ Don't Use Other Icon Libraries:**
+```vue
+<!-- DON'T do this: -->
+<i class="fas fa-save"></i>
+
+<!-- DO this: -->
+<i class="pi pi-save"></i>
+```
+
+## 🎯 **Exception Cases:**
+
+### **Only Create Custom Components When:**
+1. **PrimeVue doesn't support the functionality**
+2. **Complex business logic requires it**
+3. **Integration with external libraries needed**
+4. **Performance optimization required**
+
+### **Examples of Valid Custom Components:**
+- `MessageEditMode.vue` (handles edit state management)
+- `ChatMessageContainer.vue` (complex chat logic)
+- `UserAvatar.vue` (specific user display logic)
+
+## ⚡ **Quick Reference:**
+
+| Need | PrimeVue Solution | Avoid |
+|------|------------------|-------|
+| Button | `<Button>` | Custom button component |
+| Input | `<InputText>` | Custom input component |
+| Layout | PrimeFlex classes | Custom CSS classes |
+| Icons | `pi pi-*` classes | FontAwesome, Material Icons |
+| Modal | `<Dialog>` | Custom modal component |
+| Table | `<DataTable>` | Custom table component |
+
+## 🔧 **PrimeVue Best Practices:**
+
+### **Use All Available Props:**
+```vue
+<!-- ✅ Use all PrimeVue props -->
+<Button
+  label="Save"
+  icon="pi pi-save"
+  severity="success"
+  :loading="isSaving"
+  @click="save"
+/>
+
+<!-- ❌ Don't ignore PrimeVue features -->
+<Button @click="save">Save</Button>
+```
+
+### **Combine with PrimeFlex:**
+```vue
+<!-- ✅ PrimeVue + PrimeFlex -->
+<div class="flex gap-2">
+  <Button label="Cancel" severity="secondary" />
+  <Button label="Save" severity="success" />
+</div>
+```
+
+## 🎯 **REMEMBER:**
+**PRIMEVUE FIRST → EXISTING CUSTOM COMPONENTS → ASK USER**
+
+**Don't hack, don't reinvent - use the framework as intended!** 🚀
