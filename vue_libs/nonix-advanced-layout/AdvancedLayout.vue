@@ -44,13 +44,16 @@
           <button @click.stop="undockPane" :disabled="state.dockSide === 'floating'">Float</button>
         </div>
       </div>
-      <div class="window-pane-content">Pane Content</div>
+      <div class="window-pane-content">
+        <Chat />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
+import Chat from '@nonix-chat/components/Chat.vue';
 
 // --- STATE MANAGEMENT ---
 const state = reactive({
@@ -315,7 +318,7 @@ body {
 .window-pane-header.is-draggable { cursor: move; }
 .window-pane-content {
   flex-grow: 1;
-  padding: 1rem;
+  padding: 0rem;
   overflow-y: auto;
 }
 .window-pane.is-docked { border-radius: 0; box-shadow: -5px 0 15px rgba(0,0,0,0.2); }
