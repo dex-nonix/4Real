@@ -29,18 +29,18 @@
         :style="{ ...windowPaneStyles, ...dockedPaneSize }"
         ref="windowPane"
     >
+      <!-- Minimal floating drag header only when floating -->
       <div
-          class="window-pane-header"
-          :class="{ 'is-draggable': state.dockSide === 'floating' }"
+          v-if="state.dockSide === 'floating'"
+          class="floating-drag-header"
           @mousedown="handleMouseDown"
           ref="windowHeader"
       >
-        <span>Chat Pane</span>
-        <div>
-          <button @click.stop="togglePin" :disabled="state.dockSide === 'floating'">
-            {{ state.isPinned ? 'Unpin' : 'Pin' }}
+        <div class="drag-handle">
+          <span class="floating-title">Chat</span>
+          <button class="close-btn" @click.stop="state.isVisible = false" title="Close">
+            <i class="pi pi-times"></i>
           </button>
-          <button @click.stop="undockPane" :disabled="state.dockSide === 'floating'">Float</button>
         </div>
       </div>
       <div class="window-pane-content">
@@ -421,17 +421,56 @@ body {
   pointer-events: auto;
 }
 
-.window-pane-header {
-  padding: 8px 12px;
-  background: #f1f1f1;
-  border-bottom: 1px solid #ccc;
+/* Floating drag header - only shown when floating */
+.floating-drag-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  cursor: move;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  z-index: 1001;
+}
+
+.drag-handle {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
 }
 
-.window-pane-header.is-draggable {
-  cursor: move;
+.floating-title {
+  font-weight: 500;
+  color: #495057;
+  font-size: 14px;
+}
+
+.close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: #6c757d;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.close-btn:hover {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+}
+
+.close-btn i {
+  font-size: 12px;
 }
 
 .window-pane-content {
@@ -439,6 +478,8 @@ body {
   padding: 0rem;
   overflow-y: auto;
   min-height: 0; /* Allow flex item to shrink below its content size */
+  /* Add top padding for floating header */
+  padding-top: v-bind('state.dockSide === "floating" ? "32px" : "0px"');
 }
 
 .window-pane.is-docked {
