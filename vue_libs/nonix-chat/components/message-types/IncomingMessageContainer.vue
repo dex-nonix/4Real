@@ -33,7 +33,14 @@ const menuItems = computed(() => {
 const handleAction = (actionKey) => {
   switch (actionKey) {
     case 'copy':
-      emit('copy', props.message.id);
+      // Extract message content for copy
+      let content = '';
+      if (props.message.content_json?.text) {
+        content = props.message.content_json?.text;
+      } else if (props.message.content) {
+        content = props.message.content;
+      }
+      emit('copy', { messageId: props.message.id, content });
       break;
     case 'delete':
       emit('delete-message', { messageId: props.message.id });
@@ -57,7 +64,7 @@ const toggleMenu = (event) => {
     <!-- Actions Button -->
     <div v-if="Object.keys(messageActions).length > 0" class="message-actions">
       <Button
-        icon="pi pi-ellipsis-v"
+        icon="pi pi-ellipsis-h"
         text
         severity="secondary"
         size="small"

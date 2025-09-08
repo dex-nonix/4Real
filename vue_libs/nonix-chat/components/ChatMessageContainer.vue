@@ -595,6 +595,65 @@ const handleDeleteMessage = async (messageData) => {
   }
 };
 
+// Handle copy message action
+const handleCopy = async (messageData) => {
+  try {
+    let contentToCopy = '';
+
+    // Find the message in our data
+    const message = messages.value.find(msg => String(msg.id) === String(messageData.messageId));
+
+    if (message) {
+      // Extract content based on message type
+      if (message.content_json?.text) {
+        contentToCopy = message.content_json.text;
+      } else if (message.content) {
+        contentToCopy = message.content;
+      } else {
+        // Fallback: try to get streaming content
+        const streamingData = streamingMessages.get(message.id);
+        if (streamingData?.content) {
+          contentToCopy = streamingData.content;
+        }
+      }
+
+      // Copy to clipboard
+      if (contentToCopy && navigator.clipboard) {
+        await navigator.clipboard.writeText(contentToCopy);
+        console.log('Message copied to clipboard:', contentToCopy.substring(0, 50) + '...');
+
+        // Show success toast if available
+        const toast = inject('toast');
+        if (toast) {
+          toast.add({
+            severity: 'success',
+            summary: 'Copied',
+            detail: 'Message copied to clipboard',
+            life: 2000
+          });
+        }
+      } else {
+        console.warn('No content to copy or clipboard not available');
+      }
+    } else {
+      console.warn('Message not found for copy:', messageData.messageId);
+    }
+  } catch (error) {
+    console.error('Copy failed:', error);
+
+    // Show error toast if available
+    const toast = inject('toast');
+    if (toast) {
+      toast.add({
+        severity: 'error',
+        summary: 'Copy Failed',
+        detail: 'Could not copy message to clipboard',
+        life: 3000
+      });
+    }
+  }
+};
+
 
 
 
@@ -734,7 +793,7 @@ defineExpose({
             <template #item="{ item }">
               <component :is="item.role === 'user' ? OutgoingMessageContainer : IncomingMessageContainer"
                 :message="item" :component="getMessageComponent(item)" :current-user-id="currentUserId"
-                @delete-message="handleDeleteMessage" />
+                @delete-message="handleDeleteMessage" @copy="handleCopy" />
             </template>
           </TurnTimeline>
         </div>
