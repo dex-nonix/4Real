@@ -1,22 +1,11 @@
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, computed } from 'vue';
+import { reactive, onMounted, onUnmounted, computed } from 'vue';
 import Button from 'primevue/button';
 
 const props = defineProps({
-  // Core Configuration
   disabled: { type: Boolean, default: false },
-  language: { type: String, default: 'en-US' },
-  continuous: { type: Boolean, default: false },
-  interimResults: { type: Boolean, default: true },
-
-  // Visual Customization
-  size: { type: String, default: 'normal' }, // 'small', 'normal', 'large'
-  variant: { type: String, default: 'primary' }, // 'primary', 'secondary', 'danger'
-
-  // Advanced Options
-  maxAlternatives: { type: Number, default: 1 },
-  serviceURI: { type: String, default: null },
-  grammars: { type: Array, default: () => [] }
+  size: { type: String, default: 'normal' },
+  variant: { type: String, default: 'primary' }
 });
 
 const emit = defineEmits([
@@ -45,27 +34,21 @@ const emit = defineEmits([
   'not-supported',      // { browser: string, version: string }
 ]);
 
-// State Management
+// State Management - Simple reactive object
 const state = reactive({
   isRecording: false,
   isSupported: false,
-  isProcessing: false,
   recognition: null,
-  currentText: '',
   error: null,
   permissionGranted: false,
   recordingStartTime: null,
   browser: '',
-  version: '',
-  captureStream: null,
-  audioContext: null,
-  triedAudioCaptureRetry: false 
+  version: ''
 });
 
 // Computed Properties
 const buttonIcon = computed(() => {
   if (state.error) return 'pi pi-exclamation-triangle';
-  if (state.isProcessing) return 'pi pi-spin pi-spinner';
   if (state.isRecording) return 'pi pi-stop-circle';
   return 'pi pi-microphone';
 });
@@ -73,7 +56,6 @@ const buttonIcon = computed(() => {
 const buttonSeverity = computed(() => {
   if (state.error) return 'danger';
   if (state.isRecording) return 'danger';
-  if (state.isProcessing) return 'warning';
   return props.variant;
 });
 
@@ -86,14 +68,13 @@ const buttonSize = computed(() => {
 });
 
 const isButtonDisabled = computed(() => {
-  return props.disabled || !state.isSupported || state.isProcessing;
+  return props.disabled || !state.isSupported;
 });
 
 const buttonTooltip = computed(() => {
   if (!state.isSupported) return 'Voice input not supported in this browser';
   if (state.error) return `Error: ${state.error}`;
   if (state.isRecording) return 'Click to stop recording';
-  if (state.isProcessing) return 'Processing speech...';
   return 'Click to start voice input';
 });
 
@@ -120,98 +101,19 @@ const checkBrowserSupport = () => {
   return true;
 };
 
-// Permission Handling
-const getAnyMicStream = async () => {
-  const devices = await navigator.mediaDevices.enumerateDevices();
-  const mics = devices.filter(d => d.kind === 'audioinput');
-  if (mics.length === 0) throw new Error('No audioinput devices');
-  const deviceId = mics[0].deviceId;
-  return navigator.mediaDevices.getUserMedia({ audio: { deviceId } });
-};
-const requestMicrophonePermission = async () => {
-  try {
-    let stream = null;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (e) {
-      if (e && (e.name === 'NotFoundError' || e.name === 'OverconstrainedError')) {
-        stream = await getAnyMicStream();
-      } else {
-        throw e;
-      }
-    }
-    stream.getTracks().forEach(track => track.stop());
-    state.permissionGranted = true;
-    emit('permission-granted', { timestamp: new Date() });
-  } catch (error) {
-    state.permissionGranted = false;
-    const name = error && error.name ? error.name : 'Error';
-    if (name === 'NotAllowedError' || name === 'SecurityError') {
-      emit('permission-denied', { timestamp: new Date() });
-      handleError('permission-denied', error.message || 'Microphone permission denied');
-      return;
-    }
-    if (name === 'NotFoundError') {
-      handleError('device-not-found', error.message || 'No microphone device found');
-      return;
-    }
-    if (name === 'NotReadableError') {
-      handleError('not-readable', error.message || 'Microphone not readable');
-      return;
-    }
-    handleError('mic-error', error.message || String(error));
-  }
-};
-
-const ensureAudioReady = async () => {
-  if (!state.audioContext) {
-    const Ctx = window.AudioContext || window.webkitAudioContext;
-    if (Ctx) state.audioContext = new Ctx();
-  }
-  if (state.audioContext && state.audioContext.state === 'suspended') {
-    await state.audioContext.resume();
-  }
-};
-
-const primeAudioCapture = async () => {
-  if (state.captureStream) return;
-  state.captureStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-};
-
-const releaseAudioCapture = () => {
-  if (state.captureStream) {
-    try {
-      state.captureStream.getTracks().forEach(t => t.stop());
-    } catch (_) {}
-    state.captureStream = null;
-  }
-};
-
-// Speech Recognition Setup
+// Create Recognition - Match working React approach
 const createRecognition = () => {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = new SpeechRecognition();
 
-  // Configure recognition
-  recognition.lang = props.language;
-  recognition.continuous = props.continuous;
-  recognition.interimResults = props.interimResults;
-  recognition.maxAlternatives = props.maxAlternatives;
-
-  if (props.serviceURI) {
-    recognition.serviceURI = props.serviceURI;
-  }
-
-  if (props.grammars.length > 0) {
-    const grammarList = new (window.SpeechGrammarList || window.webkitSpeechGrammarList)();
-    props.grammars.forEach(grammar => grammarList.addFromString(grammar, 1));
-    recognition.grammars = grammarList;
-  }
+  // Match the working React settings
+  recognition.maxAlternatives = 10;
+  // Don't set continuous or interimResults - use defaults (false)
 
   return recognition;
 };
 
-// Event Handlers
+// Event Handlers - Complete set
 const handleStart = () => {
   state.recordingStartTime = new Date();
   state.isRecording = true;
@@ -225,12 +127,11 @@ const handleEnd = () => {
     endTime.getTime() - state.recordingStartTime.getTime() : 0;
 
   state.isRecording = false;
-  state.isProcessing = false;
   emit('recording-stop', {
     timestamp: endTime,
     duration: duration
   });
-  releaseAudioCapture();
+  state.recognition = null; // Clean up
 };
 
 const handleResult = (event) => {
@@ -259,29 +160,27 @@ const handleResult = (event) => {
       });
     }
   }
-
-  state.currentText = finalTranscript || interimTranscript;
 };
 
-const handleError = (errorCode, errorMessage) => {
-  state.error = errorMessage;
+const handleError = (event) => {
+  state.error = event.message || event.error;
   state.isRecording = false;
-  state.isProcessing = false;
 
   emit('recording-error', {
-    error: errorMessage,
-    code: errorCode,
+    error: event.message || event.error,
+    code: event.error,
     timestamp: new Date()
   });
+  state.recognition = null;
 };
 
+// Additional Event Handlers
 const handleAudioStart = () => {
   emit('audio-start', { timestamp: new Date() });
 };
 
 const handleAudioEnd = () => {
   emit('audio-end', { timestamp: new Date() });
-  releaseAudioCapture();
 };
 
 const handleSoundStart = () => {
@@ -308,43 +207,24 @@ const handleNoMatch = () => {
   emit('no-match', { timestamp: new Date() });
 };
 
-// Public Methods
-const startRecording = async () => {
+// Public Methods - Complete feature set
+const startRecording = () => {
   if (!state.isSupported) {
-    handleError('not-supported', 'Speech recognition not supported');
+    emit('recording-error', {
+      error: 'Speech recognition not supported',
+      code: 'NOT_SUPPORTED'
+    });
     return;
   }
 
-  if (!state.permissionGranted) {
-    await requestMicrophonePermission();
-    if (!state.permissionGranted) return;
-  }
-
   try {
-    state.isProcessing = true;
-    state.triedAudioCaptureRetry = false;
-    await ensureAudioReady();
-    await primeAudioCapture();
     state.recognition = createRecognition();
 
-    // Bind event handlers
+    // Bind all event handlers
     state.recognition.onstart = handleStart;
     state.recognition.onend = handleEnd;
     state.recognition.onresult = handleResult;
-    state.recognition.onerror = async (event) => {
-      if (event && event.error === 'audio-capture' && !state.triedAudioCaptureRetry) {
-        state.triedAudioCaptureRetry = true;
-        try {
-          releaseAudioCapture();
-          await ensureAudioReady();
-          await primeAudioCapture();
-          if (typeof state.recognition.abort === 'function') state.recognition.abort();
-          state.recognition.start();
-          return;
-        } catch (_) {}
-      }
-      handleError(event.error, event.message);
-    };
+    state.recognition.onerror = handleError;
     state.recognition.onaudiostart = handleAudioStart;
     state.recognition.onaudioend = handleAudioEnd;
     state.recognition.onsoundstart = handleSoundStart;
@@ -356,14 +236,26 @@ const startRecording = async () => {
 
     state.recognition.start();
   } catch (error) {
-    handleError('start-failed', `Failed to start recording: ${error.message}`);
+    state.isRecording = false;
+    state.recognition = null;
+    emit('recording-error', {
+      error: error.message || 'Failed to start recording',
+      code: 'START_ERROR',
+      timestamp: new Date()
+    });
   }
 };
 
 const stopRecording = () => {
   if (state.recognition) {
-    state.recognition.stop();
+    try {
+      state.recognition.stop();
+    } catch (error) {
+      // Ignore stop errors
+    }
+    state.recognition = null;
   }
+  state.isRecording = false;
 };
 
 const toggleRecording = () => {
@@ -378,13 +270,12 @@ const cleanup = () => {
   if (state.recognition) {
     try {
       state.recognition.stop();
-      state.recognition = null;
     } catch (error) {
       // Ignore cleanup errors
     }
+    state.recognition = null;
   }
   state.isRecording = false;
-  state.isProcessing = false;
   state.error = null;
 };
 
@@ -397,7 +288,7 @@ onUnmounted(() => {
   cleanup();
 });
 
-// Expose methods for parent components
+// Expose methods and computed properties
 defineExpose({
   startRecording,
   stopRecording,
@@ -415,7 +306,6 @@ defineExpose({
     :severity="buttonSeverity"
     :class="[buttonSize, 'voice-input-btn', {
       'recording': state.isRecording,
-      'processing': state.isProcessing,
       'error': !!state.error,
       'unsupported': !state.isSupported
     }]"
@@ -443,10 +333,6 @@ defineExpose({
 .voice-input-btn.recording {
   animation: pulse-red 1.5s infinite;
   box-shadow: 0 0 15px rgba(255, 59, 48, 0.6);
-}
-
-.voice-input-btn.processing {
-  animation: spin 1s linear infinite;
 }
 
 .voice-input-btn.error {
@@ -485,17 +371,6 @@ defineExpose({
   }
 }
 
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-2px); }
-  75% { transform: translateX(2px); }
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
   .voice-input-btn.recording {
@@ -522,5 +397,12 @@ defineExpose({
   .voice-input-btn.recording {
     border-color: #ff3b30;
   }
+}
+
+/* Additional animations */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
 }
 </style>
