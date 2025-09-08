@@ -252,7 +252,7 @@ class ChatRouter(NxWebServerRouter):
     async def update_message(self, req: Request, payload: ChatMessageUpdate, session_id: int, history_id: int, message_id: int):
         """Update a specific message."""
         return await self.service_call_and_respond(
-            self.message_service.update,
+            self.message_service.update_message_content,
             service_args=(message_id, payload)
         )
 

@@ -833,7 +833,8 @@ class ChatMessageService(BaseCrudService):
         except Exception as exc:
             raise exc
 
-    async def update(self, message_id: int, update_data):
+    async def update_message_content(self, message_id: int, update_data):
+        """Update a specific message content."""
         try:
             async with AsyncSessionLocal() as db_session:
                 message = (await db_session.execute(
@@ -848,21 +849,6 @@ class ChatMessageService(BaseCrudService):
                 if 'content_json' in update_dict:
                     message.content_json = update_dict['content_json']
 
-                if 'status' in update_dict:
-                    message.status = update_dict['status']
-
-                if 'seq' in update_dict:
-                    message.seq = update_dict['seq']
-
-                if 'turn_id' in update_dict:
-                    message.turn_id = update_dict['turn_id']
-
-                if 'run_id' in update_dict:
-                    message.run_id = update_dict['run_id']
-
-                if 'tool_run_id' in update_dict:
-                    message.tool_run_id = update_dict['tool_run_id']
-
                 message.updated_at = datetime.utcnow()
 
                 await db_session.commit()
@@ -871,16 +857,7 @@ class ChatMessageService(BaseCrudService):
                     'message': 'Message updated successfully',
                     'updated_message': {
                         'id': message.id,
-                        'history_id': message.history_id,
-                        'role': message.role,
-                        'message_type': message.message_type,
                         'content_json': message.content_json,
-                        'status': message.status,
-                        'seq': message.seq,
-                        'turn_id': message.turn_id,
-                        'run_id': message.run_id,
-                        'tool_run_id': message.tool_run_id,
-                        'created_at': message.created_at.isoformat(),
                         'updated_at': message.updated_at.isoformat()
                     }
                 }
