@@ -34,13 +34,11 @@
           :class="{ 'is-draggable': state.dockSide === 'floating' }"
           @mousedown="handleMouseDown"
           ref="windowHeader"
+          v-if="state.dockSide === 'floating'"
       >
         <span>Chat Pane</span>
         <div>
-          <button @click.stop="togglePin" :disabled="state.dockSide === 'floating'">
-            {{ state.isPinned ? 'Unpin' : 'Pin' }}
-          </button>
-          <button @click.stop="undockPane" :disabled="state.dockSide === 'floating'">Float</button>
+          <Button @click.stop="closePane" icon="pi pi-times" rounded text size="small" aria-label="Close" style="width: 22px; height: 22px; padding: 0;" />
         </div>
       </div>
       <div class="window-pane-content">
@@ -60,6 +58,7 @@
 import {computed, onMounted, onUnmounted, reactive, ref} from 'vue';
 import Chat from '@nonix-chat/components/Chat.vue';
 import LeftNavSidebar from "@nonix-advanced-layout/LeftNavSidebar.vue";
+import Button from 'primevue/button';
 
 // --- STATE MANAGEMENT ---
 const state = reactive({
@@ -134,6 +133,7 @@ const toggleFooter = () => isFooterCollapsed.value = !isFooterCollapsed.value;
 const toggleChatPane = () => state.isVisible = !state.isVisible;
 const togglePin = () => state.isPinned = !state.isPinned;
 const undockPane = () => state.dockSide = 'floating';
+const closePane = () => { state.isVisible = false; }
 
 // Menu items for Chat component - PIN and FLOAT toggles only
 const chatMenuItems = ref([
