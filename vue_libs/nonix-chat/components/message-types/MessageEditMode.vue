@@ -22,20 +22,19 @@
     </div>
 
     <Textarea
-      :model-value="modelValue"
+      v-model="localValue"
       class="edit-textarea-compact"
       :autoResize="true"
       rows="3"
       :placeholder="placeholder"
       resize="vertical"
-      @update:model-value="$emit('update:modelValue', $event)"
       @keydown="handleKeyDown"
     />
   </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { ref, watch } from 'vue';
 import Textarea from 'primevue/textarea';
 import Button from 'primevue/button';
 
@@ -60,25 +59,19 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'save', 'cancel', 'keydown', 'edit', 'cancel-edit']);
 
-onMounted(() => {
-  if (props.originalContent && !props.modelValue) {
-    emit('update:modelValue', props.originalContent);
-  }
+const localValue = ref(props.modelValue || '');
+
+watch(() => props.modelValue, (newValue) => {
+  localValue.value = newValue || '';
+});
+
+watch(localValue, (newValue) => {
+  emit('update:modelValue', newValue);
 });
 
 const handleSave = () => {
-  const trimmedContent = props.modelValue.trim();
-  console.info('📝 MessageEditMode: Processing save request', {
-    messageId: props.messageId,
-    hasContent: !!trimmedContent,
-    contentLength: trimmedContent.length
-  });
-
-  // Always save when save button is clicked - no content comparison
-  console.info('📝 MessageEditMode: Saving message', {
-    messageId: props.messageId,
-    contentLength: trimmedContent.length
-  });
+  const currentContent = localValue.value || '';
+  const trimmedContent = currentContent.trim();
 
   emit('edit', {
     messageId: props.messageId,
@@ -88,7 +81,7 @@ const handleSave = () => {
 };
 
 const handleCancel = () => {
-  emit('update:modelValue', props.originalContent);
+  localValue.value = props.originalContent || '';
   emit('cancel-edit');
 };
 

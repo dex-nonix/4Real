@@ -668,6 +668,11 @@ const handleCancelEdit = () => {
   editingMessageId.value = null;
 };
 
+// Handle successful edit (close edit mode)
+const handleEditSuccess = () => {
+  editingMessageId.value = null;
+};
+
 // Clear local messages (for when backend clears them)
 const clearLocalMessages = () => {
   console.log('Clearing all local messages and state');
@@ -806,7 +811,7 @@ defineExpose({
                 :message="item" :component="getMessageComponent(item)" :current-user-id="currentUserId"
                 :editing-message-id="editingMessageId"
                 :session-id="sessionId" :history-id="historyId"
-                @delete-message="handleDeleteMessage" @copy="handleCopy" @start-edit="handleStartEdit" @cancel-edit="handleCancelEdit" />
+                @delete-message="handleDeleteMessage" @copy="handleCopy" @start-edit="handleStartEdit" @cancel-edit="handleCancelEdit" @edit-success="handleEditSuccess" />
             </template>
           </TurnTimeline>
         </div>
