@@ -77,6 +77,7 @@ const isSimpleObject = (obj) => {
          Object.keys(obj).length > 0 && Object.keys(obj).length <= 10;
 };
 
+// Status helper functions
 const getStatusIcon = (status) => {
   switch (status) {
     case 'success': return 'pi pi-check-circle text-success';
@@ -98,55 +99,61 @@ const getStatusColor = (status) => {
 
 <template>
   <!-- Tool message content only - outer styling handled by MessageContainer -->
-  
-  <div class="mb-2">
-    <div class="flex align-items-center gap-2 mb-1">
-      <span class="text-xs text-500">Tool:</span>
-      <span class="text-sm font-mono font-semibold">{{ toolName }}</span>
-      <span class="text-xs text-400">({{ executedBy === 'user' ? 'Executed by User' : 'Executed by AI' }})</span>
-    </div>
-    <span class="text-xs text-500">Parameters:</span>
-    <div class="text-xs mt-1 p-2 surface-100 border-round">
-      {{ formattedParams }}
-    </div>
-  </div>
 
-  <div v-if="extractedResult" class="mb-2">
-    <span class="text-xs text-500">Result:</span>
-    <div class="text-sm mt-1 p-2 surface-100 border-round overflow-auto" style="max-height: 200px;">
-      <!-- Generic formatted display for objects -->
-      <div v-if="isSimpleObject(extractedResult)" style="display: flex; flex-direction: column; gap: 8px;">
-        <!-- Display each property in a nice format -->
-        <div v-for="(value, key) in extractedResult" :key="key" style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-weight: 500; color: var(--text-color-secondary); text-transform: capitalize; font-size: 0.875rem;">
-            {{ key.replace(/_/g, ' ') }}:
-          </span>
-          <span style="font-weight: 600; color: var(--text-color); font-size: 0.875rem;">
-            {{ formatValue(value, key) }}
-          </span>
+  <!-- Message Content -->
+  <div class="flex align-items-start justify-content-start">
+    <div class="flex-grow-1">
+      <div class="m-0 text-normal" style="hyphens: auto; word-break: break-word;">
+        <div class="mb-2">
+          <div class="flex align-items-center gap-2 mb-1">
+            <i class="pi pi-wrench text-primary text-sm"></i>
+            <span class="text-sm font-semibold">{{ toolName }}</span>
+            <span class="text-xs text-500">({{ executedBy === 'user' ? 'Executed by User' : 'Executed by AI' }})</span>
+          </div>
+
+          <div class="text-xs text-600 mb-1">
+            <strong>Parameters:</strong> {{ formattedParams }}
+          </div>
+
+          <div v-if="extractedResult" class="text-xs text-600">
+            <strong>Result:</strong>
+            <div class="mt-1 ml-2 text-sm">
+              <!-- Generic formatted display for objects -->
+              <div v-if="isSimpleObject(extractedResult)" class="flex flex-column gap-1">
+                <div v-for="(value, key) in extractedResult" :key="key" class="flex justify-content-between align-items-center">
+                  <span class="font-medium text-700 text-capitalize">
+                    {{ key.replace(/_/g, ' ') }}:
+                  </span>
+                  <span class="font-normal">
+                    {{ formatValue(value, key) }}
+                  </span>
+                </div>
+              </div>
+              <!-- Display arrays in a compact format -->
+              <div v-else-if="Array.isArray(extractedResult)">
+                <div class="font-medium text-700 mb-1">
+                  {{ extractedResult.length }} item{{ extractedResult.length !== 1 ? 's' : '' }}:
+                </div>
+                <div v-for="(item, index) in extractedResult" :key="index" class="ml-2 mb-1">
+                  <span class="text-600">{{ index + 1 }}.</span>
+                  <span class="ml-1">
+                    {{ typeof item === 'object' ? JSON.stringify(item) : item }}
+                  </span>
+                </div>
+              </div>
+              <!-- Fallback for complex objects or raw data -->
+              <div v-else class="font-mono text-xs overflow-auto" style="max-height: 150px;">
+                {{ typeof extractedResult === 'string' ? extractedResult : JSON.stringify(extractedResult, null, 2) }}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-      <!-- Display arrays in a compact format -->
-      <div v-else-if="Array.isArray(extractedResult)" style="font-size: 0.875rem;">
-        <div style="font-weight: 500; color: var(--text-color-secondary); margin-bottom: 4px;">
-          {{ extractedResult.length }} item{{ extractedResult.length !== 1 ? 's' : '' }}:
+
+        <div class="flex align-items-center justify-content-between text-xs text-500 mt-2">
+          <span>Status: <span :class="getStatusColor(executionStatus)">{{ executionStatus }}</span></span>
+          <span v-if="executionTime">{{ new Date(executionTime).toLocaleTimeString() }}</span>
         </div>
-        <div v-for="(item, index) in extractedResult" :key="index" style="margin-left: 8px; margin-bottom: 4px;">
-          <span style="color: var(--text-color-secondary);">{{ index + 1 }}.</span>
-          <span style="margin-left: 4px;">
-            {{ typeof item === 'object' ? JSON.stringify(item) : item }}
-          </span>
-        </div>
-      </div>
-      <!-- Fallback for complex objects or raw data -->
-      <div v-else class="font-mono text-xs">
-        {{ typeof extractedResult === 'string' ? extractedResult : JSON.stringify(extractedResult, null, 2) }}
       </div>
     </div>
-  </div>
-  
-  <div class="flex align-items-center justify-content-between text-xs text-500">
-    <span>Status: <span :class="getStatusColor(executionStatus)">{{ executionStatus }}</span></span>
-    <span v-if="executionTime">{{ new Date(executionTime).toLocaleTimeString() }}</span>
   </div>
 </template>
