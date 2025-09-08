@@ -263,18 +263,22 @@ body {
   margin: 0;
   font-family: sans-serif;
   background-color: #f4f4f4;
-  overflow: hidden;
+  overflow: auto; /* Allow natural scrolling on mobile */
+  min-height: 100vh;
+  min-height: 100dvh; /* Use dynamic viewport height for mobile browsers */
 }
 
 /* --- Master Container & Layout --- */
 .app-container {
   position: relative;
   width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  min-height: 100dvh; /* Use dynamic viewport height for mobile browsers */
+  overflow: visible; /* Allow content to flow naturally */
 }
 .layout-wrapper {
-  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh; /* Use dynamic viewport height for mobile browsers */
   display: flex;
   flex-direction: column;
   transition: margin var(--transition-speed);
@@ -322,12 +326,14 @@ body {
 .the-main-area {
   display: flex;
   flex-grow: 1;
-  overflow: hidden;
+  overflow: visible; /* Allow content to scroll naturally */
+  min-height: 0; /* Allow flex item to shrink below its content size */
 }
 .the-content-area {
   flex-grow: 1;
   padding: 1.5rem;
   overflow-y: auto;
+  min-height: 0; /* Allow flex item to shrink below its content size */
 }
 .left-navigation {
   width: var(--left-nav-width);
@@ -349,7 +355,9 @@ body {
   text-align: center;
   flex-shrink: 0;
   transition: all var(--transition-speed);
-  overflow: hidden;
+  overflow: visible; /* Allow footer content to be visible */
+  position: relative; /* Ensure footer stays in normal flow */
+  z-index: 5; /* Keep footer below interactive elements but above content */
 }
 .footer.collapsed {
   height: 0;
@@ -388,12 +396,39 @@ body {
   flex-grow: 1;
   padding: 0rem;
   overflow-y: auto;
+  min-height: 0; /* Allow flex item to shrink below its content size */
 }
 .window-pane.is-docked { border-radius: 0; box-shadow: -5px 0 15px rgba(0,0,0,0.2); }
-.window-pane.docked-right { top: 0; right: 0; height: 100vh; border-width: 0 0 0 1px; }
-.window-pane.docked-left { top: 0; left: 0; height: 100vh; border-width: 0 1px 0 0; }
-.window-pane.docked-top { top: 0; left: 0; width: 100vw; border-width: 0 0 1px 0; }
-.window-pane.docked-bottom { bottom: 0; left: 0; width: 100vw; border-width: 1px 0 0 0; }
+.window-pane.docked-right {
+  top: 0;
+  right: 0;
+  height: 100vh;
+  height: 100dvh; /* Use dynamic viewport height for mobile browsers */
+  border-width: 0 0 0 1px;
+}
+.window-pane.docked-left {
+  top: 0;
+  left: 0;
+  height: 100vh;
+  height: 100dvh; /* Use dynamic viewport height for mobile browsers */
+  border-width: 0 1px 0 0;
+}
+.window-pane.docked-top {
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh; /* Use dynamic viewport height for mobile browsers */
+  border-width: 0 0 1px 0;
+}
+.window-pane.docked-bottom {
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh; /* Use dynamic viewport height for mobile browsers */
+  border-width: 1px 0 0 0;
+}
 .window-pane.is-pinned { box-shadow: none !important; }
 
 /* Resize Handle */
@@ -437,6 +472,54 @@ body {
 
 .resize-handle:hover {
   background: rgba(0, 123, 255, 0.3);
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 768px) {
+  .the-top-bar {
+    padding: 0.75rem;
+    min-height: 48px; /* Slightly taller for touch targets */
+  }
+
+  .the-content-area {
+    padding: 1rem; /* Reduce padding on mobile */
+  }
+
+  .left-navigation {
+    width: var(--left-nav-width);
+    padding: 0.75rem;
+  }
+
+  .footer {
+    padding: 0.75rem;
+    font-size: 0.9rem; /* Slightly smaller text on mobile */
+  }
+
+  /* Make resize handles easier to grab on mobile */
+  .resize-left,
+  .resize-right {
+    width: 12px; /* Wider touch targets */
+    right: -6px;
+  }
+
+  .resize-top,
+  .resize-bottom {
+    height: 12px; /* Taller touch targets */
+    top: -6px;
+  }
+
+  .resize-left { right: -6px; }
+  .resize-right { left: -6px; }
+  .resize-top { bottom: -6px; }
+  .resize-bottom { top: -6px; }
+}
+
+/* Ensure footer visibility on all devices */
+@media (max-height: 600px) {
+  .footer {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
 }
 
 /* --- Docking Drop Zones --- */
