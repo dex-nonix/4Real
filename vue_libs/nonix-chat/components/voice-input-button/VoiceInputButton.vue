@@ -304,13 +304,12 @@ defineExpose({
   <Button
     :icon="buttonIcon"
     :severity="buttonSeverity"
-    :class="[buttonSize, 'voice-input-btn', {
+    :class="['voice-input-btn', buttonSize, {
       'recording': state.isRecording,
       'error': !!state.error,
       'unsupported': !state.isSupported
     }]"
     :disabled="isButtonDisabled"
-    :text="false"
     :rounded="true"
     @click="toggleRecording"
     v-tooltip="buttonTooltip"
@@ -319,90 +318,24 @@ defineExpose({
 </template>
 
 <style scoped>
-.voice-input-btn {
-  transition: all 0.2s ease;
-  position: relative;
-  min-width: 2.5rem;
-  height: 2.5rem;
-}
-
-.voice-input-btn:not(.p-disabled):hover {
-  transform: scale(1.05);
-}
+/* Minimal styling - let PrimeVue handle the rest */
 
 .voice-input-btn.recording {
-  animation: pulse-red 1.5s infinite;
-  box-shadow: 0 0 15px rgba(255, 59, 48, 0.6);
+  animation: pulse-red 0.6s ease-in-out infinite alternate;
 }
 
 .voice-input-btn.error {
   animation: shake 0.5s ease-in-out;
 }
 
-.voice-input-btn.unsupported {
-  opacity: 0.5;
-}
-
-.voice-input-btn.unsupported:not(.p-disabled):hover {
-  transform: none;
-  cursor: not-allowed;
-}
-
-/* Size variants */
-.voice-input-btn.p-button-sm {
-  min-width: 2rem;
-  height: 2rem;
-}
-
-.voice-input-btn.p-button-lg {
-  min-width: 3rem;
-  height: 3rem;
-}
-
-/* Animations */
 @keyframes pulse-red {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 10px rgba(255, 59, 48, 0.4);
-  }
-  50% {
-    transform: scale(1.08);
-    box-shadow: 0 0 20px rgba(255, 59, 48, 0.8);
-  }
+  from { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); }
+  to { box-shadow: 0 0 0 4px rgba(255, 59, 48, 0); }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .voice-input-btn.recording {
-    box-shadow: 0 0 15px rgba(255, 69, 58, 0.6);
-  }
-
-  .voice-input-btn.recording {
-    box-shadow: 0 0 20px rgba(255, 69, 58, 0.8);
-  }
-}
-
-/* Focus styles for accessibility */
-.voice-input-btn:focus {
-  outline: 2px solid var(--primary-color);
-  outline-offset: 2px;
-}
-
-/* High contrast mode */
-@media (prefers-contrast: high) {
-  .voice-input-btn {
-    border: 2px solid currentColor;
-  }
-
-  .voice-input-btn.recording {
-    border-color: #ff3b30;
-  }
-}
-
-/* Additional animations */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-2px); }
-  75% { transform: translateX(2px); }
+  25% { transform: translateX(-1px); }
+  75% { transform: translateX(1px); }
 }
 </style>

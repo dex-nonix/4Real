@@ -374,23 +374,23 @@ defineExpose({
 </script>
 
 <template>
-  <div class="input-area">
+  <div class="flex align-items-end px-3 py-2 surface-section gap-2">
     <!-- Voice Input Button -->
     <VoiceInputButton
       :disabled="!hasHistory || isStreaming"
       @text="handleVoiceText"
       @recording-error="handleRecordingError"
       size="small"
-      class="voice-input-spacing"
+      class="mx-1"
     />
 
     <!-- Input Field -->
-    <span class="p-input-icon-right flex-grow-1 mx-1">
+    <span class="p-input-icon-right flex-1 mx-1">
       <IconField>
         <Textarea
           v-model="inputText"
           placeholder="Type a message..."
-          class="w-full chat-textarea"
+          class="w-full"
           :autoResize="true"
           rows="1"
           :maxlength="5000"
@@ -425,87 +425,5 @@ defineExpose({
 </template>
 
 <style scoped>
-/* Input area - compact fixed position */
-.input-area {
-  display: flex;
-  align-items: flex-end;
-  padding: 0.5rem;
-  background: var(--surface-section);
-  gap: 0.25rem;
-}
-
-/* Button layout and spacing */
-.input-area .p-button {
-  flex-shrink: 0;
-}
-
-/* Voice input button spacing */
-.voice-input-spacing {
-  margin-left: 0.25rem;
-  margin-right: 0.25rem;
-}
-
-/* Textarea styling */
-.chat-textarea :deep(.p-inputtextarea) {
-  border: 1px solid var(--surface-border);
-  border-radius: 6px;
-  font-size: 0.875rem;
-  line-height: 1.4;
-  padding: 0.5rem 2.5rem 0.5rem 0.75rem;
-  resize: none;
-  min-height: 2.5rem;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.chat-textarea :deep(.p-inputtextarea:focus) {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 1px var(--primary-color);
-}
-
-/* Icon field wrapper for textarea */
-.input-area .p-input-icon-right {
-  position: relative;
-  width: 100%;
-}
-
-.input-area .p-input-icon-right .p-inputicon {
-  position: absolute;
-  right: 0.5rem;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-  color: var(--text-color-secondary);
-  z-index: 1;
-}
-
-.input-area .p-input-icon-right .p-inputicon:hover {
-  color: var(--primary-color);
-}
-
-/* Retry button styling */
-.input-area .p-button[severity="warning"] {
-  border-color: var(--warning-color);
-  color: var(--warning-color);
-}
-
-/* Stop button styling */
-.input-area .p-button[severity="danger"] {
-  border-color: var(--danger-color);
-  color: var(--danger-color);
-}
-
-/* Send button styling */
-.input-area .p-button[severity="primary"] {
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .chat-textarea :deep(.p-inputtextarea) {
-    font-size: 0.8125rem;
-    padding: 0.5rem 2.25rem 0.5rem 0.5rem;
-  }
-}
+/* Use PrimeFlex utility classes - no custom CSS needed */
 </style>
