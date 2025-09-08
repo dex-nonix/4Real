@@ -656,70 +656,6 @@ const handleCopy = async (messageData) => {
 
 
 
-// Handle edit message action
-const handleEdit = async (messageData) => {
-  console.info('📝 ChatMessageContainer: Processing edit request', {
-    messageId: messageData.messageId,
-    hasNewContent: !!messageData.newContent
-  });
-
-  try {
-    // Validation: Don't allow editing if message is currently streaming
-    if (isMessageStreaming(messageData.messageId)) {
-      toast.add({
-        severity: 'warn',
-        summary: 'Cannot Edit',
-        detail: 'Cannot edit message while it\'s still being generated',
-        life: 3000
-      });
-      return;
-    }
-
-    console.info('🔄 ChatMessageContainer: Making backend update call', {
-      sessionId: props.selectedSession.id,
-      historyId: props.historyId,
-      messageId: messageData.messageId,
-      contentLength: messageData.newContent?.length || 0
-    });
-
-    const updatedMessage = await chatService.updateMessage(
-      props.selectedSession.id,
-      props.historyId,
-      messageData.messageId,
-      { content_json: { text: messageData.newContent } }
-    );
-
-    console.info('✅ ChatMessageContainer: Backend update successful', {
-      messageId: updatedMessage?.id,
-      updatedAt: updatedMessage?.updated_at
-    });
-
-    // Update local state
-    const messageIndex = messages.value.findIndex(msg => String(msg.id) === String(messageData.messageId));
-    if (messageIndex !== -1) {
-      messages.value[messageIndex] = { ...messages.value[messageIndex], ...updatedMessage };
-    }
-
-    // Show success toast
-    toast.add({
-      severity: 'success',
-      summary: 'Updated',
-      detail: 'Message updated successfully',
-      life: 2000
-    });
-
-  } catch (error) {
-    console.error('Edit failed:', error);
-
-    // Show error toast
-    toast.add({
-      severity: 'error',
-      summary: 'Edit Failed',
-      detail: 'Could not update message',
-      life: 3000
-    });
-  }
-};
 
 // Handle start edit event
 const handleStartEdit = (messageId) => {
@@ -869,7 +805,8 @@ defineExpose({
               <component :is="item.role === 'user' ? OutgoingMessageContainer : IncomingMessageContainer"
                 :message="item" :component="getMessageComponent(item)" :current-user-id="currentUserId"
                 :editing-message-id="editingMessageId"
-                @delete-message="handleDeleteMessage" @copy="handleCopy" @edit="handleEdit" @start-edit="handleStartEdit" @cancel-edit="handleCancelEdit" />
+                :session-id="sessionId" :history-id="historyId"
+                @delete-message="handleDeleteMessage" @copy="handleCopy" @start-edit="handleStartEdit" @cancel-edit="handleCancelEdit" />
             </template>
           </TurnTimeline>
         </div>

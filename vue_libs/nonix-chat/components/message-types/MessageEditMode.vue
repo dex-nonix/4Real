@@ -71,25 +71,20 @@ const handleSave = () => {
   console.info('📝 MessageEditMode: Processing save request', {
     messageId: props.messageId,
     hasContent: !!trimmedContent,
-    hasChanges: trimmedContent !== props.originalContent
+    contentLength: trimmedContent.length
   });
 
-  if (trimmedContent && trimmedContent !== props.originalContent) {
-    console.info('📝 MessageEditMode: Saving message changes', {
-      messageId: props.messageId,
-      originalLength: props.originalContent?.length || 0,
-      newLength: trimmedContent.length
-    });
+  // Always save when save button is clicked - no content comparison
+  console.info('📝 MessageEditMode: Saving message', {
+    messageId: props.messageId,
+    contentLength: trimmedContent.length
+  });
 
-    emit('edit', {
-      messageId: props.messageId,
-      newContent: trimmedContent,
-      originalContent: props.originalContent
-    });
-  } else {
-    console.info('📝 MessageEditMode: No changes detected, canceling edit');
-    emit('cancel-edit');
-  }
+  emit('edit', {
+    messageId: props.messageId,
+    newContent: trimmedContent,
+    originalContent: props.originalContent
+  });
 };
 
 const handleCancel = () => {

@@ -7,10 +7,12 @@ const props = defineProps({
   message: { type: Object, required: true },
   component: { type: Object, required: true },
   currentUserId: { type: [String, Number], required: false },
-  editingMessageId: { type: [String, Number], default: null }
+  editingMessageId: { type: [String, Number], default: null },
+  sessionId: { type: [String, Number], required: true },
+  historyId: { type: [String, Number], required: true }
 })
 
-const emit = defineEmits(['delete-message', 'copy', 'stop', 'start-edit', 'cancel-edit'])
+const emit = defineEmits(['delete-message', 'copy', 'stop', 'start-edit', 'cancel-edit', 'edit-success'])
 
 // Simple menu system
 const messageActions = ref({});
@@ -85,7 +87,10 @@ const toggleMenu = (event) => {
         :message="message"
         :current-user-id="currentUserId"
         :editing-message-id="editingMessageId"
+        :session-id="sessionId"
+        :history-id="historyId"
         @register-actions="handleRegisterActions"
+        @edit-success="$emit('edit-success')"
         @cancel-edit="$emit('cancel-edit')"
       />
     </div>

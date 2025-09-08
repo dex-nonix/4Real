@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, inject, computed, watch } from 'vue';
 import { useStreamingMessage } from './useStreamingMessage.js';
 import ProgressSpinner from 'primevue/progressspinner';
 import MessageEditMode from './MessageEditMode.vue';
+import { useMessageEdit } from './useMessageEdit.js';
 
 const props = defineProps({
   message: {
@@ -16,13 +17,25 @@ const props = defineProps({
   editingMessageId: {
     type: [String, Number],
     default: null
+  },
+  sessionId: {
+    type: [String, Number],
+    required: true
+  },
+  historyId: {
+    type: [String, Number],
+    required: true
   }
 });
 
-const emit = defineEmits(['deleteMessage', 'register-actions', 'edit', 'cancel-edit']);
+const emit = defineEmits(['deleteMessage', 'register-actions', 'cancel-edit', 'edit-success']);
+
+const chatService = inject('chat-service');
+
+const { handleEdit: handleMessageEdit } = useMessageEdit(chatService);
 
 const handleEdit = (editData) => {
-  emit('edit', editData);
+  return handleMessageEdit(editData, props, emit, 'StreamingMessage');
 };
 
 const handleCancelEdit = () => {
@@ -37,7 +50,6 @@ watch(() => props.editingMessageId, (newId) => {
   }
 });
 
-const chatService = inject('chat-service');
 const { streamingContent, streamingStatus, isTyping, subscribe, unsubscribe, initFromProps } = useStreamingMessage(chatService, props.message, true);
 const typingDots = ref('...');
 

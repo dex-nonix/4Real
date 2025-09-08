@@ -1,6 +1,7 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch, inject } from 'vue';
 import MessageEditMode from './MessageEditMode.vue';
+import { useMessageEdit } from './useMessageEdit.js';
 
 const props = defineProps({
   message: {
@@ -14,13 +15,27 @@ const props = defineProps({
   editingMessageId: {
     type: [String, Number],
     default: null
+  },
+  sessionId: {
+    type: [String, Number],
+    required: true
+  },
+  historyId: {
+    type: [String, Number],
+    required: true
   }
 });
 
-const emit = defineEmits(['deleteMessage', 'register-actions', 'edit', 'cancel-edit']);
+const emit = defineEmits(['deleteMessage', 'register-actions', 'cancel-edit', 'edit-success']);
 
 const messageContent = computed(() => props.message?.content_json?.text || '');
 const isValid = computed(() => props.message.metadata?.isValid !== false);
+
+// Initialize services
+const chatService = inject('chat-service');
+
+// Use the reusable edit composable
+const { handleEdit: handleMessageEdit } = useMessageEdit(chatService);
 const editContent = ref('');
 
 const isEditing = computed(() => {
@@ -33,12 +48,9 @@ const messageActions = {
   delete: { label: 'Delete', icon: 'pi pi-trash' }
 };
 
+// Use the composable's handleEdit function
 const handleEdit = (editData) => {
-  console.info('📝 UserMessage: Forwarding edit request to parent', {
-    messageId: editData.messageId,
-    hasNewContent: !!editData.newContent
-  });
-  emit('edit', editData);
+  return handleMessageEdit(editData, props, emit, 'UserMessage');
 };
 
 const handleCancelEdit = () => {
