@@ -27,7 +27,7 @@
     <div
       class="window-pane"
       :class="windowPaneClasses"
-      :style="windowPaneStyles"
+      :style="{ ...windowPaneStyles, ...dockedPaneSize }"
       ref="windowPane"
     >
       <div
@@ -47,6 +47,12 @@
       <div class="window-pane-content">
         <Chat />
       </div>
+      <div 
+        class="resize-handle"
+        :class="`resize-${state.dockSide}`"
+        @mousedown="handleResizeMouseDown"
+        v-if="state.dockSide !== 'floating'"
+      ></div>
     </div>
   </div>
 </template>
@@ -62,6 +68,7 @@ const state = reactive({
   dockSide: 'right', // 'right', 'left', 'top', 'bottom', or 'floating'
   floatingPos: { x: 50, y: 50 },
   floatingSize: { width: 400, height: 500 },
+  dockedSize: 350, // Size when docked (width for left/right, height for top/bottom)
 });
 
 // UI Element Collapse States
@@ -108,6 +115,17 @@ const windowPaneStyles = computed(() => {
   return {};
 });
 
+// Computed property for docked pane size
+const dockedPaneSize = computed(() => {
+  if (state.dockSide === 'floating') return {};
+  
+  if (state.dockSide === 'left' || state.dockSide === 'right') {
+    return { width: `${state.dockedSize}px` };
+  } else {
+    return { height: `${state.dockedSize}px` };
+  }
+});
+
 
 // --- METHODS ---
 
@@ -131,6 +149,9 @@ const handleClickOutside = (e) => {
 
 // --- DRAG AND DOCK LOGIC ---
 let dragOffset = { x: 0, y: 0 };
+let isResizing = false;
+let resizeStartPos = { x: 0, y: 0 };
+let resizeStartSize = 0;
 
 const handleMouseDown = (e) => {
   if (state.dockSide !== 'floating') return;
@@ -148,14 +169,37 @@ const handleMouseDown = (e) => {
 };
 
 const handleMouseMove = (e) => {
-  state.floatingPos.x = e.clientX - dragOffset.x;
-  state.floatingPos.y = e.clientY - dragOffset.y;
+  if (isResizing) {
+    let delta;
+    if (state.dockSide === 'left' || state.dockSide === 'right') {
+      delta = e.clientX - resizeStartPos.x;
+      if (state.dockSide === 'right') {
+        delta = -delta; // Invert for right side
+      }
+    } else {
+      delta = e.clientY - resizeStartPos.y;
+      if (state.dockSide === 'bottom') {
+        delta = -delta; // Invert for bottom side
+      }
+    }
+    
+    const newSize = Math.max(200, Math.min(800, resizeStartSize + delta));
+    state.dockedSize = newSize;
+  } else {
+    state.floatingPos.x = e.clientX - dragOffset.x;
+    state.floatingPos.y = e.clientY - dragOffset.y;
+  }
 };
 
 const handleMouseUp = (e) => {
   windowPane.value.classList.remove('no-transition');
   document.querySelectorAll('.dock-zone').forEach(zone => zone.classList.remove('active'));
   document.removeEventListener('mousemove', handleMouseMove);
+
+  if (isResizing) {
+    isResizing = false;
+    return;
+  }
 
   let didDock = false;
   const dockZones = document.querySelectorAll('.dock-zone');
@@ -168,6 +212,22 @@ const handleMouseUp = (e) => {
       break;
     }
   }
+};
+
+// Resize handle mouse down
+const handleResizeMouseDown = (e) => {
+  if (state.dockSide === 'floating') return;
+  e.preventDefault();
+  e.stopPropagation();
+  
+  isResizing = true;
+  resizeStartPos.x = e.clientX;
+  resizeStartPos.y = e.clientY;
+  resizeStartSize = state.dockedSize;
+  
+  windowPane.value.classList.add('no-transition');
+  document.addEventListener('mousemove', handleMouseMove);
+  document.addEventListener('mouseup', handleMouseUp, { once: true });
 };
 
 
@@ -220,11 +280,19 @@ body {
   transition: margin var(--transition-speed);
 }
 
-/* PUSH LOGIC */
-.app-container.pane-is-pinned-and-visible.pushed-from-left .layout-wrapper { margin-left: var(--side-pane-dimension); }
-.app-container.pane-is-pinned-and-visible.pushed-from-right .layout-wrapper { margin-right: var(--side-pane-dimension); }
-.app-container.pane-is-pinned-and-visible.pushed-from-top .layout-wrapper { margin-top: var(--side-pane-dimension); }
-.app-container.pane-is-pinned-and-visible.pushed-from-bottom .layout-wrapper { margin-bottom: var(--side-pane-dimension); }
+/* PUSH LOGIC - Now uses dynamic sizing */
+.app-container.pane-is-pinned-and-visible.pushed-from-left .layout-wrapper { 
+  margin-left: v-bind('state.dockedSize + "px"'); 
+}
+.app-container.pane-is-pinned-and-visible.pushed-from-right .layout-wrapper { 
+  margin-right: v-bind('state.dockedSize + "px"'); 
+}
+.app-container.pane-is-pinned-and-visible.pushed-from-top .layout-wrapper { 
+  margin-top: v-bind('state.dockedSize + "px"'); 
+}
+.app-container.pane-is-pinned-and-visible.pushed-from-bottom .layout-wrapper { 
+  margin-bottom: v-bind('state.dockedSize + "px"'); 
+}
 
 /* Component Styles */
 .the-top-bar {
@@ -322,11 +390,54 @@ body {
   overflow-y: auto;
 }
 .window-pane.is-docked { border-radius: 0; box-shadow: -5px 0 15px rgba(0,0,0,0.2); }
-.window-pane.docked-right { top: 0; right: 0; width: var(--side-pane-dimension); height: 100vh; border-width: 0 0 0 1px; }
-.window-pane.docked-left { top: 0; left: 0; width: var(--side-pane-dimension); height: 100vh; border-width: 0 1px 0 0; }
-.window-pane.docked-top { top: 0; left: 0; width: 100vw; height: var(--side-pane-dimension); border-width: 0 0 1px 0; }
-.window-pane.docked-bottom { bottom: 0; left: 0; width: 100vw; height: var(--side-pane-dimension); border-width: 1px 0 0 0; }
+.window-pane.docked-right { top: 0; right: 0; height: 100vh; border-width: 0 0 0 1px; }
+.window-pane.docked-left { top: 0; left: 0; height: 100vh; border-width: 0 1px 0 0; }
+.window-pane.docked-top { top: 0; left: 0; width: 100vw; border-width: 0 0 1px 0; }
+.window-pane.docked-bottom { bottom: 0; left: 0; width: 100vw; border-width: 1px 0 0 0; }
 .window-pane.is-pinned { box-shadow: none !important; }
+
+/* Resize Handle */
+.resize-handle {
+  position: absolute;
+  background: transparent;
+  z-index: 1001;
+}
+
+.resize-left {
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: ew-resize;
+}
+
+.resize-right {
+  top: 0;
+  left: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: ew-resize;
+}
+
+.resize-top {
+  bottom: -3px;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  cursor: ns-resize;
+}
+
+.resize-bottom {
+  top: -3px;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  cursor: ns-resize;
+}
+
+.resize-handle:hover {
+  background: rgba(0, 123, 255, 0.3);
+}
 
 /* --- Docking Drop Zones --- */
 .dock-zone {
