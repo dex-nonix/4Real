@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, inject, watch } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, inject, watch, nextTick } from 'vue';
 import ErrorDialog from './ErrorDialog.vue';
 import chatMessageTypeManager from './ChatMessageTypeManager.js';
 import SystemMessage from './message-types/SystemMessage.vue';
@@ -221,8 +221,18 @@ const handleMessageReceived = (data) => {
     tool_run_id: incoming.tool_run_id,
     run_id: incoming.run_id
   };
-  if (idx !== -1) messages.value[idx] = Object.assign({}, messages.value[idx], msgObj);
-  else messages.value.push(msgObj);
+
+  console.log('WebSocket message_received:', incoming.message_id, incoming.role, incoming.message_type);
+
+  if (idx !== -1) {
+    // Update existing message - ensure reactivity by replacing the entire object
+    messages.value.splice(idx, 1, { ...messages.value[idx], ...msgObj });
+    console.log('Updated existing message at index:', idx);
+  } else {
+    // Add new message - ensure reactivity by using push
+    messages.value.push({ ...msgObj });
+    console.log('Added new message, total messages:', messages.value.length);
+  }
 
   if (incoming.turn_id && incoming.seq) {
     upsertTurnItem({
@@ -266,7 +276,10 @@ const handleAssistantStarted = (data) => {
 
   const existingIndex = messages.value.findIndex(m => m.id === message_id);
   if (existingIndex !== -1) {
-    messages.value[existingIndex].status = 'streaming';
+    // Update existing message reactively
+    const updatedMessage = { ...messages.value[existingIndex], status: 'streaming' };
+    messages.value.splice(existingIndex, 1, updatedMessage);
+    console.log('Updated existing streaming message at index:', existingIndex);
   } else {
     const assistantMessage = {
       id: message_id,
@@ -274,17 +287,30 @@ const handleAssistantStarted = (data) => {
       message_type: 'assistant',
       content_json: { text: '' },
       status: 'streaming',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      seq: metadata?.seq,
+      turn_id: metadata?.turn_id,
+      tool_run_id: metadata?.tool_run_id
     };
     messages.value.push(assistantMessage);
+    console.log('Added new streaming message to UI. Total messages:', messages.value.length);
   }
-  console.log('Added streaming message to UI. Total messages:', messages.value.length);
 
   // Track streaming state
   streamingMessages.set(message_id, { content: '', status: 'streaming', metadata });
   streamingStatus.set(message_id, 'streaming');
   if (metadata && metadata.turn_id && metadata.seq) {
-    upsertTurnItem({ id: message_id, role: 'assistant', message_type: 'assistant', seq: metadata.seq, turn_id: metadata.turn_id, created_at: new Date().toISOString(), status: 'streaming' });
+    upsertTurnItem({
+      id: message_id,
+      role: 'assistant',
+      message_type: 'assistant',
+      seq: metadata.seq,
+      turn_id: metadata.turn_id,
+      content_json: { text: '' },
+      status: 'streaming',
+      created_at: new Date().toISOString(),
+      tool_run_id: metadata.tool_run_id
+    });
   }
 };
 
@@ -300,9 +326,14 @@ const handleAssistantChunk = (data) => {
   if (messageIndex !== -1) {
     const currentText = messages.value[messageIndex].content_json?.text || '';
     const newText = currentText + chunk;
-    console.log('Updating message text from:', currentText, 'to:', newText);
+    console.log('Updating message text from:', currentText.length, 'chars to:', newText.length, 'chars');
 
-    messages.value[messageIndex].content_json = { text: newText };
+    // Update message reactively
+    const updatedMessage = {
+      ...messages.value[messageIndex],
+      content_json: { text: newText }
+    };
+    messages.value.splice(messageIndex, 1, updatedMessage);
 
     // Update streaming state
     const streamingData = streamingMessages.get(message_id);
@@ -312,13 +343,17 @@ const handleAssistantChunk = (data) => {
     }
   } else {
     // If start was missed, create the assistant message now
+    console.log('Chunk received but no existing message found, creating new one');
     const assistantMessage = {
       id: message_id,
       role: 'assistant',
       message_type: 'assistant',
       content_json: { text: chunk || '' },
       status: 'streaming',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      seq: metadata?.seq,
+      turn_id: metadata?.turn_id,
+      tool_run_id: metadata?.tool_run_id
     };
     messages.value.push(assistantMessage);
     streamingMessages.set(message_id, { content: chunk || '', status: 'streaming', metadata });
@@ -336,9 +371,13 @@ const handleAssistantComplete = (data) => {
   const { message_id, metadata } = data;
   const messageIndex = messages.value.findIndex(m => m.id === message_id);
   if (messageIndex !== -1) {
-    messages.value[messageIndex].status = 'complete';
+    // Update message reactively
+    const updatedMessage = { ...messages.value[messageIndex], status: 'complete' };
+    messages.value.splice(messageIndex, 1, updatedMessage);
+    console.log('Marked message as complete at index:', messageIndex);
   } else {
     // If no prior start/chunk, create a complete assistant message now
+    console.log('Complete event received but no existing message found, creating final message');
     const finalContent = (streamingMessages.get(message_id)?.content) || '';
     const assistantMessage = {
       id: message_id,
@@ -346,7 +385,10 @@ const handleAssistantComplete = (data) => {
       message_type: 'assistant',
       content_json: { text: finalContent },
       status: 'complete',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      seq: metadata?.seq,
+      turn_id: metadata?.turn_id,
+      tool_run_id: metadata?.tool_run_id
     };
     messages.value.push(assistantMessage);
   }
@@ -427,15 +469,57 @@ const loadMessages = async (historyId) => {
     // Force Vue to detect the change by creating a new array
     messages.value = [...messagesData];
 
-    console.log('Messages loaded successfully:', messages.value.length);
+    console.log('Messages loaded successfully:', messages.value.length, 'messages');
+    console.log('Message breakdown:', {
+      total: messages.value.length,
+      user: messages.value.filter(m => m.role === 'user').length,
+      assistant: messages.value.filter(m => m.role === 'assistant').length,
+      system: messages.value.filter(m => m.role === 'system').length,
+      tool: messages.value.filter(m => m.role === 'tool_result' || m.message_type === 'tool_result').length
+    });
 
-    // Rebuild turnsById from loaded messages
+    // Rebuild turnsById from loaded messages with better error handling
     turnsById.clear();
+    streamingMessages.clear();
+    streamingStatus.clear();
+
     for (const m of messages.value) {
+      console.log('Processing message:', m.id, m.role, m.message_type, 'turn_id:', m.turn_id, 'seq:', m.seq);
+
       if (m.turn_id && m.seq) {
-        upsertTurnItem({ id: m.id, role: m.role, message_type: m.message_type || (m.role === 'assistant' ? 'assistant' : m.role), seq: m.seq, turn_id: m.turn_id, status: m.status, content_json: m.content_json, tool_run_id: m.tool_run_id, tool_name: m.tool_name, tool_args: m.tool_args, execution_status: m.execution_status, result: m.result, executed_by: m.executed_by, execution_time: m.execution_time, execution_path: m.execution_path, created_at: m.created_at });
+        upsertTurnItem({
+          id: m.id,
+          role: m.role,
+          message_type: m.message_type || (m.role === 'assistant' ? 'assistant' : m.role),
+          seq: m.seq,
+          turn_id: m.turn_id,
+          status: m.status,
+          content_json: m.content_json,
+          tool_run_id: m.tool_run_id,
+          tool_name: m.tool_name,
+          tool_args: m.tool_args,
+          execution_status: m.execution_status,
+          result: m.result,
+          executed_by: m.executed_by,
+          execution_time: m.execution_time,
+          execution_path: m.execution_path,
+          created_at: m.created_at
+        });
+      }
+
+      // Ensure streaming state is properly initialized for any streaming messages
+      if (m.status === 'streaming') {
+        streamingMessages.set(m.id, {
+          content: m.content_json?.text || '',
+          status: 'streaming',
+          metadata: { turn_id: m.turn_id, seq: m.seq }
+        });
+        streamingStatus.set(m.id, 'streaming');
       }
     }
+
+    console.log('Turns rebuilt. Total turns:', turnsById.size);
+    console.log('Ordered turns:', orderedTurns.value.length);
 
   } catch (error) {
     console.error('Failed to load messages:', error);
@@ -450,16 +534,19 @@ const loadMessages = async (historyId) => {
   }
 };
 
-// Load messages when historyId changes
-watch(() => props.historyId, async (newHistoryId) => { if (newHistoryId) await loadMessages(newHistoryId); else messages.value = []; }, { immediate: true });
-
-// React to selectedSession changes
-watch(() => props.selectedSession, (newSession, oldSession) => {
-  if (newSession) {
-    // Load messages for the new session if we have a history
-    if (props.historyId) {
-      loadMessages(props.historyId);
+// Combined watcher for both historyId and selectedSession to prevent race conditions
+watch([() => props.historyId, () => props.selectedSession], async ([newHistoryId, newSession], [oldHistoryId, oldSession]) => {
+  // Only load messages if we have both a valid session and history
+  if (newSession && newHistoryId) {
+    // Avoid duplicate loading if session changed but history stayed the same
+    if (oldSession?.id !== newSession.id || oldHistoryId !== newHistoryId) {
+      console.log('Loading messages for session:', newSession.id, 'history:', newHistoryId);
+      await loadMessages(newHistoryId);
     }
+  } else {
+    // Clear messages if either session or history becomes invalid
+    messages.value = [];
+    turnsById.clear();
   }
 }, { immediate: true });
 
@@ -513,6 +600,7 @@ const handleDeleteMessage = async (messageData) => {
 
 // Clear local messages (for when backend clears them)
 const clearLocalMessages = () => {
+  console.log('Clearing all local messages and state');
   messages.value = [];
   try {
     if (turnsById && typeof turnsById.clear === 'function') {
@@ -524,7 +612,24 @@ const clearLocalMessages = () => {
     if (streamingStatus && typeof streamingStatus.clear === 'function') {
       streamingStatus.clear();
     }
-  } catch (_) { }
+    // Also clear real-time messages
+    realTimeMessages.value = [];
+  } catch (error) {
+    console.error('Error clearing local messages:', error);
+  }
+};
+
+// Force re-render messages (useful for debugging rendering issues)
+const forceReRender = () => {
+  console.log('Force re-rendering messages...');
+  // Trigger reactivity by temporarily clearing and re-setting
+  const currentMessages = [...messages.value];
+  messages.value = [];
+  // Use nextTick to ensure the clear is processed before re-setting
+  nextTick(() => {
+    messages.value = currentMessages;
+    console.log('Re-rendered messages. Total:', messages.value.length);
+  });
 };
 
 // Get the appropriate component for each message
@@ -557,12 +662,18 @@ defineExpose({
   clearLocalMessages,
   refreshMessages: () => loadMessages(props.historyId),
   triggerRefresh: () => loadMessages(props.historyId),
+  forceReRender,
 
   // Expose streaming methods
   isMessageStreaming,
   getStreamingContent,
   getStreamingStatus: () => Object.fromEntries(streamingStatus),
-  getStreamingMessages: () => Object.fromEntries(streamingMessages)
+  getStreamingMessages: () => Object.fromEntries(streamingMessages),
+
+  // Debug helpers
+  getMessageCount: () => messages.value.length,
+  getTurnCount: () => turnsById.size,
+  getStreamingCount: () => streamingStatus.size
 });
 </script>
 
