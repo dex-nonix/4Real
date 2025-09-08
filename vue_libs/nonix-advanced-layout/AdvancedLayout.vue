@@ -14,26 +14,26 @@
       </div>
       <div class="the-main-area">
         <div class="left-navigation" :class="{ collapsed: isNavCollapsed }">
-          <h3>Navigation</h3>
+          <LeftNavSidebar />
         </div>
         <div class="the-content-area">
-          <slot />
+          <slot/>
         </div>
       </div>
       <div class="footer" :class="{ collapsed: isFooterCollapsed }">Toggleable Footer</div>
     </div>
 
     <div
-      class="window-pane"
-      :class="windowPaneClasses"
-      :style="{ ...windowPaneStyles, ...dockedPaneSize }"
-      ref="windowPane"
+        class="window-pane"
+        :class="windowPaneClasses"
+        :style="{ ...windowPaneStyles, ...dockedPaneSize }"
+        ref="windowPane"
     >
       <div
-        class="window-pane-header"
-        :class="{ 'is-draggable': state.dockSide === 'floating' }"
-        @mousedown="handleMouseDown"
-        ref="windowHeader"
+          class="window-pane-header"
+          :class="{ 'is-draggable': state.dockSide === 'floating' }"
+          @mousedown="handleMouseDown"
+          ref="windowHeader"
       >
         <span>Chat Pane</span>
         <div>
@@ -44,29 +44,30 @@
         </div>
       </div>
       <div class="window-pane-content">
-        <Chat />
+        <Chat/>
       </div>
-      <div 
-        class="resize-handle"
-        :class="`resize-${state.dockSide}`"
-        @mousedown="handleResizeMouseDown"
-        v-if="state.dockSide !== 'floating'"
+      <div
+          class="resize-handle"
+          :class="`resize-${state.dockSide}`"
+          @mousedown="handleResizeMouseDown"
+          v-if="state.dockSide !== 'floating'"
       ></div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
+import {computed, onMounted, onUnmounted, reactive, ref} from 'vue';
 import Chat from '@nonix-chat/components/Chat.vue';
+import LeftNavSidebar from "@nonix-advanced-layout/LeftNavSidebar.vue";
 
 // --- STATE MANAGEMENT ---
 const state = reactive({
   isVisible: false,
   isPinned: false,
   dockSide: 'right', // 'right', 'left', 'top', 'bottom', or 'floating'
-  floatingPos: { x: 50, y: 50 },
-  floatingSize: { width: 400, height: 500 },
+  floatingPos: {x: 50, y: 50},
+  floatingSize: {width: 400, height: 500},
   dockedSize: 350, // Size when docked (width for left/right, height for top/bottom)
 });
 
@@ -117,11 +118,11 @@ const windowPaneStyles = computed(() => {
 // Computed property for docked pane size
 const dockedPaneSize = computed(() => {
   if (state.dockSide === 'floating') return {};
-  
+
   if (state.dockSide === 'left' || state.dockSide === 'right') {
-    return { width: `${state.dockedSize}px` };
+    return {width: `${state.dockedSize}px`};
   } else {
-    return { height: `${state.dockedSize}px` };
+    return {height: `${state.dockedSize}px`};
   }
 });
 
@@ -147,9 +148,9 @@ const handleClickOutside = (e) => {
 
 
 // --- DRAG AND DOCK LOGIC ---
-let dragOffset = { x: 0, y: 0 };
+let dragOffset = {x: 0, y: 0};
 let isResizing = false;
-let resizeStartPos = { x: 0, y: 0 };
+let resizeStartPos = {x: 0, y: 0};
 let resizeStartSize = 0;
 
 const handleMouseDown = (e) => {
@@ -164,7 +165,7 @@ const handleMouseDown = (e) => {
   document.querySelectorAll('.dock-zone').forEach(zone => zone.classList.add('active'));
 
   document.addEventListener('mousemove', handleMouseMove);
-  document.addEventListener('mouseup', handleMouseUp, { once: true });
+  document.addEventListener('mouseup', handleMouseUp, {once: true});
 };
 
 const handleMouseMove = (e) => {
@@ -181,9 +182,8 @@ const handleMouseMove = (e) => {
         delta = -delta; // Invert for bottom side
       }
     }
-    
-    const newSize = Math.max(200, Math.min(800, resizeStartSize + delta));
-    state.dockedSize = newSize;
+
+    state.dockedSize = Math.max(200, Math.min(800, resizeStartSize + delta));
   } else {
     state.floatingPos.x = e.clientX - dragOffset.x;
     state.floatingPos.y = e.clientY - dragOffset.y;
@@ -218,15 +218,15 @@ const handleResizeMouseDown = (e) => {
   if (state.dockSide === 'floating') return;
   e.preventDefault();
   e.stopPropagation();
-  
+
   isResizing = true;
   resizeStartPos.x = e.clientX;
   resizeStartPos.y = e.clientY;
   resizeStartSize = state.dockedSize;
-  
+
   windowPane.value.classList.add('no-transition');
   document.addEventListener('mousemove', handleMouseMove);
-  document.addEventListener('mouseup', handleMouseUp, { once: true });
+  document.addEventListener('mouseup', handleMouseUp, {once: true});
 };
 
 
@@ -275,6 +275,7 @@ body {
   min-height: 100dvh; /* Use dynamic viewport height for mobile browsers */
   overflow: visible; /* Allow content to flow naturally */
 }
+
 .layout-wrapper {
   min-height: 100vh;
   min-height: 100dvh; /* Use dynamic viewport height for mobile browsers */
@@ -284,17 +285,20 @@ body {
 }
 
 /* PUSH LOGIC - Now uses dynamic sizing */
-.app-container.pane-is-pinned-and-visible.pushed-from-left .layout-wrapper { 
-  margin-left: v-bind('state.dockedSize + "px"'); 
+.app-container.pane-is-pinned-and-visible.pushed-from-left .layout-wrapper {
+  margin-left: v-bind('state.dockedSize + "px"');
 }
-.app-container.pane-is-pinned-and-visible.pushed-from-right .layout-wrapper { 
-  margin-right: v-bind('state.dockedSize + "px"'); 
+
+.app-container.pane-is-pinned-and-visible.pushed-from-right .layout-wrapper {
+  margin-right: v-bind('state.dockedSize + "px"');
 }
-.app-container.pane-is-pinned-and-visible.pushed-from-top .layout-wrapper { 
-  margin-top: v-bind('state.dockedSize + "px"'); 
+
+.app-container.pane-is-pinned-and-visible.pushed-from-top .layout-wrapper {
+  margin-top: v-bind('state.dockedSize + "px"');
 }
-.app-container.pane-is-pinned-and-visible.pushed-from-bottom .layout-wrapper { 
-  margin-bottom: v-bind('state.dockedSize + "px"'); 
+
+.app-container.pane-is-pinned-and-visible.pushed-from-bottom .layout-wrapper {
+  margin-bottom: v-bind('state.dockedSize + "px"');
 }
 
 /* Component Styles */
@@ -312,28 +316,33 @@ body {
   min-height: 44px;
   position: relative;
 }
+
 .the-top-bar.collapsed {
   height: 0;
   padding-top: 0;
   padding-bottom: 0;
   border-width: 0;
 }
+
 .the-top-bar > button:last-of-type {
   margin-left: auto;
   float: none !important;
 }
+
 .the-main-area {
   display: flex;
   flex-grow: 1;
   overflow: visible; /* Allow content to scroll naturally */
   min-height: 0; /* Allow flex item to shrink below its content size */
 }
+
 .the-content-area {
   flex-grow: 1;
   padding: 1.5rem;
   overflow-y: auto;
   min-height: 0; /* Allow flex item to shrink below its content size */
 }
+
 .left-navigation {
   width: var(--left-nav-width);
   background: #f8f8f8;
@@ -343,10 +352,12 @@ body {
   flex-shrink: 0;
   transition: width var(--transition-speed), padding var(--transition-speed);
 }
+
 .left-navigation.collapsed {
   width: 0;
   padding: 0;
 }
+
 .footer {
   padding: 1rem;
   background: #fff;
@@ -358,6 +369,7 @@ body {
   position: relative; /* Ensure footer stays in normal flow */
   z-index: 5; /* Keep footer below interactive elements but above content */
 }
+
 .footer.collapsed {
   height: 0;
   padding-top: 0;
@@ -370,7 +382,7 @@ body {
   position: fixed;
   background: #fff;
   z-index: 1000;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -380,8 +392,17 @@ body {
   opacity: 0;
   pointer-events: none;
 }
-.window-pane.no-transition { transition: none; } /* Used during drag for responsiveness */
-.window-pane.is-visible { opacity: 1; pointer-events: auto; }
+
+.window-pane.no-transition {
+  transition: none;
+}
+
+/* Used during drag for responsiveness */
+.window-pane.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .window-pane-header {
   padding: 8px 12px;
   background: #f1f1f1;
@@ -390,14 +411,23 @@ body {
   align-items: center;
   justify-content: space-between;
 }
-.window-pane-header.is-draggable { cursor: move; }
+
+.window-pane-header.is-draggable {
+  cursor: move;
+}
+
 .window-pane-content {
   flex-grow: 1;
   padding: 0rem;
   overflow-y: auto;
   min-height: 0; /* Allow flex item to shrink below its content size */
 }
-.window-pane.is-docked { border-radius: 0; box-shadow: -5px 0 15px rgba(0,0,0,0.2); }
+
+.window-pane.is-docked {
+  border-radius: 0;
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+}
+
 .window-pane.docked-right {
   top: 0;
   right: 0;
@@ -405,6 +435,7 @@ body {
   height: 100dvh; /* Use dynamic viewport height for mobile browsers */
   border-width: 0 0 0 1px;
 }
+
 .window-pane.docked-left {
   top: 0;
   left: 0;
@@ -412,6 +443,7 @@ body {
   height: 100dvh; /* Use dynamic viewport height for mobile browsers */
   border-width: 0 1px 0 0;
 }
+
 .window-pane.docked-top {
   top: 0;
   left: 0;
@@ -420,6 +452,7 @@ body {
   height: 100dvh; /* Use dynamic viewport height for mobile browsers */
   border-width: 0 0 1px 0;
 }
+
 .window-pane.docked-bottom {
   bottom: 0;
   left: 0;
@@ -428,7 +461,10 @@ body {
   height: 100dvh; /* Use dynamic viewport height for mobile browsers */
   border-width: 1px 0 0 0;
 }
-.window-pane.is-pinned { box-shadow: none !important; }
+
+.window-pane.is-pinned {
+  box-shadow: none !important;
+}
 
 /* Resize Handle */
 .resize-handle {
@@ -507,10 +543,21 @@ body {
     top: -6px;
   }
 
-  .resize-left { right: -6px; }
-  .resize-right { left: -6px; }
-  .resize-top { bottom: -6px; }
-  .resize-bottom { top: -6px; }
+  .resize-left {
+    right: -6px;
+  }
+
+  .resize-right {
+    left: -6px;
+  }
+
+  .resize-top {
+    bottom: -6px;
+  }
+
+  .resize-bottom {
+    top: -6px;
+  }
 }
 
 /* Ensure footer visibility on all devices */
@@ -531,9 +578,36 @@ body {
   transition: opacity 0.2s;
   pointer-events: none;
 }
-.dock-zone.active { opacity: 1; }
-#dock-zone-top { top: 0; left: 0; right: 0; height: 15%; }
-#dock-zone-right { top: 0; right: 0; bottom: 0; width: 15%; }
-#dock-zone-bottom { bottom: 0; left: 0; right: 0; height: 15%; }
-#dock-zone-left { top: 0; left: 0; bottom: 0; width: 15%; }
+
+.dock-zone.active {
+  opacity: 1;
+}
+
+#dock-zone-top {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 15%;
+}
+
+#dock-zone-right {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 15%;
+}
+
+#dock-zone-bottom {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 15%;
+}
+
+#dock-zone-left {
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 15%;
+}
 </style>

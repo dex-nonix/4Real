@@ -19,8 +19,8 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import TopBar from './TopBar.vue'
-import LeftNavSidebar from './LeftNavSidebar.vue'
+import TopBar from '@nonix-advanced-layout/TopBar.vue'
+import LeftNavSidebar from '@nonix-advanced-layout/LeftNavSidebar.vue'
 import RightToolsSidebar from './RightToolsSidebar.vue'
 import { useAppShell } from './useAppShell.js'
 
