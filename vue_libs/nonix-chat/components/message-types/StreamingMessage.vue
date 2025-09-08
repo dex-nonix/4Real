@@ -145,8 +145,8 @@ watch(displayContent, (val) => {
 </script>
 
 <template>
-  <div class="flex align-items-start">
-    <div class="flex-grow-1">
+  <div class="flex align-items-start w-full">
+    <div class="flex-grow-1 w-full">
       <MessageEditMode
         v-if="isEditing"
         :model-value="editContent"
@@ -157,9 +157,10 @@ watch(displayContent, (val) => {
         @edit="handleEdit"
         @cancel-edit="handleCancelEdit"
         @keydown="handleKeyDown"
+        class="w-full"
       />
 
-      <div v-else class="display-mode">
+      <div v-else class="display-mode w-full">
         <div class="m-0 text-normal" style="hyphens: auto; word-break: break-word;">
           <div v-html="renderedHtml"></div>
           <span v-if="isStreaming && isTyping" class="typing-indicator">

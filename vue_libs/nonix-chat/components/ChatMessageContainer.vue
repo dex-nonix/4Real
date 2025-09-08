@@ -24,6 +24,7 @@ const emit = defineEmits(['sendMessage', 'regenerateResponse', 'showTools', 'del
 
 // Service injection
 const chatService = inject('chat-service');
+const toast = inject('toast');
 
 // Error management
 const showErrorDialog = ref(false);
@@ -561,15 +562,12 @@ const handleDeleteMessage = async (messageData) => {
 
   // Validation: Don't allow deleting if message is currently streaming
   if (isMessageStreaming(messageData.messageId)) {
-    const toast = inject('toast');
-    if (toast) {
-      toast.add({
-        severity: 'warn',
-        summary: 'Cannot Delete',
-        detail: 'Cannot delete message while it\'s still being generated',
-        life: 3000
-      });
-    }
+    toast.add({
+      severity: 'warn',
+      summary: 'Cannot Delete',
+      detail: 'Cannot delete message while it\'s still being generated',
+      life: 3000
+    });
     return;
   }
 
@@ -637,16 +635,13 @@ const handleCopy = async (messageData) => {
         await navigator.clipboard.writeText(contentToCopy);
         console.log('Message copied to clipboard:', contentToCopy.substring(0, 50) + '...');
 
-        // Show success toast if available
-        const toast = inject('toast');
-        if (toast) {
-          toast.add({
-            severity: 'success',
-            summary: 'Copied',
-            detail: 'Message copied to clipboard',
-            life: 2000
-          });
-        }
+        // Show success toast
+        toast.add({
+          severity: 'success',
+          summary: 'Copied',
+          detail: 'Message copied to clipboard',
+          life: 2000
+        });
       } else {
         console.warn('No content to copy or clipboard not available');
       }
@@ -656,16 +651,13 @@ const handleCopy = async (messageData) => {
   } catch (error) {
     console.error('Copy failed:', error);
 
-    // Show error toast if available
-    const toast = inject('toast');
-    if (toast) {
-      toast.add({
-        severity: 'error',
-        summary: 'Copy Failed',
-        detail: 'Could not copy message to clipboard',
-        life: 3000
-      });
-    }
+    // Show error toast
+    toast.add({
+      severity: 'error',
+      summary: 'Copy Failed',
+      detail: 'Could not copy message to clipboard',
+      life: 3000
+    });
   }
 };
 
@@ -677,15 +669,12 @@ const handleEdit = async (messageData) => {
   try {
     // Validation: Don't allow editing if message is currently streaming
     if (isMessageStreaming(messageData.messageId)) {
-      const toast = inject('toast');
-      if (toast) {
-        toast.add({
-          severity: 'warn',
-          summary: 'Cannot Edit',
-          detail: 'Cannot edit message while it\'s still being generated',
-          life: 3000
-        });
-      }
+      toast.add({
+        severity: 'warn',
+        summary: 'Cannot Edit',
+        detail: 'Cannot edit message while it\'s still being generated',
+        life: 3000
+      });
       return;
     }
 
@@ -703,29 +692,23 @@ const handleEdit = async (messageData) => {
     }
 
     // Show success toast
-    const toast = inject('toast');
-    if (toast) {
-      toast.add({
-        severity: 'success',
-        summary: 'Updated',
-        detail: 'Message updated successfully',
-        life: 2000
-      });
-    }
+    toast.add({
+      severity: 'success',
+      summary: 'Updated',
+      detail: 'Message updated successfully',
+      life: 2000
+    });
 
   } catch (error) {
     console.error('Edit failed:', error);
 
     // Show error toast
-    const toast = inject('toast');
-    if (toast) {
-      toast.add({
-        severity: 'error',
-        summary: 'Edit Failed',
-        detail: 'Could not update message',
-        life: 3000
-      });
-    }
+    toast.add({
+      severity: 'error',
+      summary: 'Edit Failed',
+      detail: 'Could not update message',
+      life: 3000
+    });
   }
 };
 

@@ -55,7 +55,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex align-items-start justify-content-start">
+  <div class="flex align-items-start justify-content-start w-full">
     <MessageEditMode
       v-if="isEditing"
       :model-value="editContent"
@@ -66,9 +66,10 @@ onMounted(() => {
       @edit="handleEdit"
       @cancel-edit="handleCancelEdit"
       @keydown="handleKeyDown"
+      class="w-full"
     />
 
-    <div v-else class="display-mode">
+    <div v-else class="display-mode w-full">
       <p class="m-0 text-normal" style="hyphens: auto; word-break: break-word;">{{ messageContent }}</p>
 
       <div v-if="props.message.senderId !== props.currentUserId && props.message.role !== props.currentUserId" class="ml-2">
