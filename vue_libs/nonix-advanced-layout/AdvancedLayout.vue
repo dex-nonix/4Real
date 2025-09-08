@@ -231,13 +231,22 @@ body {
   flex-shrink: 0;
   z-index: 10;
   transition: all var(--transition-speed);
-  overflow: hidden;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  position: relative;
 }
 .the-top-bar.collapsed {
   height: 0;
   padding-top: 0;
   padding-bottom: 0;
   border-width: 0;
+}
+.the-top-bar > button:last-of-type {
+  margin-left: auto;
+  float: none !important;
 }
 .the-main-area {
   display: flex;
