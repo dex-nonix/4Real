@@ -249,7 +249,7 @@ class ChatRouter(NxWebServerRouter):
         )
 
     @route('/sessions/{session_id}/histories/{history_id}/messages/{message_id}', methods=['PUT'])
-    async def update_message(self, req: Request, payload: "ChatMessageUpdate", session_id: int, history_id: int, message_id: int):
+    async def update_message(self, req: Request, payload: ChatMessageUpdate, session_id: int, history_id: int, message_id: int):
         """Update a specific message."""
         return await self.service_call_and_respond(
             self.message_service.update,
