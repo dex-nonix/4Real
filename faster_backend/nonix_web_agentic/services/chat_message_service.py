@@ -834,12 +834,12 @@ class ChatMessageService(BaseCrudService):
 
     async def update_message_content(self, session_id: int, history_id: int, message_id: int, update_data):
         """Update a specific message content with session/history validation."""
-        try:
-            async with AsyncSessionLocal() as db_session:
-                # Validate session and history exist and match
+        async with AsyncSessionLocal() as db_session:
+            try:
+                # Validate session and history
                 session, history = await self._validate_session_history(db_session, session_id, history_id)
-                if not session or not history:
-                    raise ValueError('Session or history not found')
+
+                # Find the message
                 message = (await db_session.execute(
                     select(ChatMessage).where(ChatMessage.id == message_id, ChatMessage.history_id == history_id)
                 )).scalar_one_or_none()
@@ -849,21 +849,24 @@ class ChatMessageService(BaseCrudService):
 
                 update_dict = update_data.model_dump(exclude_unset=True)
 
+                # Update provided fields (like working chat_session_service)
                 if 'content_json' in update_dict:
                     message.content_json = update_dict['content_json']
+                if 'role' in update_dict:
+                    message.role = update_dict['role']
+                if 'message_type' in update_dict:
+                    message.message_type = update_dict['message_type']
+                if 'status' in update_dict:
+                    message.status = update_dict['status']
 
                 message.updated_at = datetime.utcnow()
 
                 await db_session.commit()
+                return message
 
-                return {
-                    'message': 'Message updated successfully',
-                    'updated_message_id': message.id,
-                    'updated_at': message.updated_at.isoformat()
-                }
-
-        except Exception as exc:
-            raise exc
+            except Exception as exc:
+                await db_session.rollback()
+                raise exc
 
     async def cancel_message_streaming(self, session_id: int, history_id: int, assistant_message_id: int):
         """Cancel streaming for a single assistant message."""
