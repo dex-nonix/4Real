@@ -17,8 +17,7 @@
           <h3>Navigation</h3>
         </div>
         <div class="the-content-area">
-          <h1>Main Content</h1>
-          <p><b>Bug Fixes Implemented (in Vue):</b><br>1. The "click outside to close" feature now works correctly for both floating and docked (but unpinned) states.<br>2. The floating window no longer jumps when you start dragging it.</p>
+          <slot />
         </div>
       </div>
       <div class="footer" :class="{ collapsed: isFooterCollapsed }">Toggleable Footer</div>
