@@ -67,14 +67,29 @@ onMounted(() => {
 });
 
 const handleSave = () => {
-  if (props.modelValue.trim() !== props.originalContent) {
+  const trimmedContent = props.modelValue.trim();
+  console.info('📝 MessageEditMode: Processing save request', {
+    messageId: props.messageId,
+    hasContent: !!trimmedContent,
+    hasChanges: trimmedContent !== props.originalContent
+  });
+
+  if (trimmedContent && trimmedContent !== props.originalContent) {
+    console.info('📝 MessageEditMode: Saving message changes', {
+      messageId: props.messageId,
+      originalLength: props.originalContent?.length || 0,
+      newLength: trimmedContent.length
+    });
+
     emit('edit', {
       messageId: props.messageId,
-      newContent: props.modelValue.trim(),
+      newContent: trimmedContent,
       originalContent: props.originalContent
     });
+  } else {
+    console.info('📝 MessageEditMode: No changes detected, canceling edit');
+    emit('cancel-edit');
   }
-  emit('cancel-edit');
 };
 
 const handleCancel = () => {

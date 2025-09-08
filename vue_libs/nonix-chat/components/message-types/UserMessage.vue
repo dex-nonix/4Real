@@ -34,10 +34,15 @@ const messageActions = {
 };
 
 const handleEdit = (editData) => {
+  console.info('📝 UserMessage: Forwarding edit request to parent', {
+    messageId: editData.messageId,
+    hasNewContent: !!editData.newContent
+  });
   emit('edit', editData);
 };
 
 const handleCancelEdit = () => {
+  console.info('📝 UserMessage: Canceling edit mode');
   emit('cancel-edit');
 };
 

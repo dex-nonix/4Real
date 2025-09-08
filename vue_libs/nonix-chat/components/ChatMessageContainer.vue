@@ -620,7 +620,10 @@ const handleCopy = async (messageData) => {
       // Copy to clipboard
       if (contentToCopy && navigator.clipboard) {
         await navigator.clipboard.writeText(contentToCopy);
-        console.log('Message copied to clipboard:', contentToCopy.substring(0, 50) + '...');
+        console.info('📋 ChatMessageContainer: Message copied to clipboard', {
+          messageId: messageData.messageId,
+          contentLength: contentToCopy.length
+        });
 
         // Show success toast
         toast.add({
@@ -630,10 +633,12 @@ const handleCopy = async (messageData) => {
           life: 2000
         });
       } else {
-        console.warn('No content to copy or clipboard not available');
+        console.warn('⚠️ ChatMessageContainer: Cannot copy to clipboard - no content or clipboard unavailable');
       }
     } else {
-      console.warn('Message not found for copy:', messageData.messageId);
+      console.warn('⚠️ ChatMessageContainer: Message not found for copy operation', {
+        requestedMessageId: messageData.messageId
+      });
     }
   } catch (error) {
     console.error('Copy failed:', error);
@@ -653,6 +658,11 @@ const handleCopy = async (messageData) => {
 
 // Handle edit message action
 const handleEdit = async (messageData) => {
+  console.info('📝 ChatMessageContainer: Processing edit request', {
+    messageId: messageData.messageId,
+    hasNewContent: !!messageData.newContent
+  });
+
   try {
     // Validation: Don't allow editing if message is currently streaming
     if (isMessageStreaming(messageData.messageId)) {
@@ -665,12 +675,24 @@ const handleEdit = async (messageData) => {
       return;
     }
 
+    console.info('🔄 ChatMessageContainer: Making backend update call', {
+      sessionId: props.selectedSession.id,
+      historyId: props.historyId,
+      messageId: messageData.messageId,
+      contentLength: messageData.newContent?.length || 0
+    });
+
     const updatedMessage = await chatService.updateMessage(
       props.selectedSession.id,
       props.historyId,
       messageData.messageId,
       { content_json: { text: messageData.newContent } }
     );
+
+    console.info('✅ ChatMessageContainer: Backend update successful', {
+      messageId: updatedMessage?.id,
+      updatedAt: updatedMessage?.updated_at
+    });
 
     // Update local state
     const messageIndex = messages.value.findIndex(msg => String(msg.id) === String(messageData.messageId));
@@ -706,6 +728,7 @@ const handleStartEdit = (messageId) => {
 
 // Handle cancel edit (clear editing state)
 const handleCancelEdit = () => {
+  console.info('📝 ChatMessageContainer: Closing edit mode, clearing editing state');
   editingMessageId.value = null;
 };
 
