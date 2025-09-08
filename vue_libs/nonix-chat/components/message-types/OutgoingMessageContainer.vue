@@ -6,10 +6,11 @@ import Menu from 'primevue/menu';
 const props = defineProps({
   message: { type: Object, required: true },
   component: { type: Object, required: true },
-  currentUserId: { type: [String, Number], required: false }
+  currentUserId: { type: [String, Number], required: false },
+  editingMessageId: { type: [String, Number], default: null }
 })
 
-const emit = defineEmits(['delete-message', 'copy', 'retry', 'cancel'])
+const emit = defineEmits(['delete-message', 'copy', 'retry', 'cancel', 'start-edit', 'cancel-edit'])
 
 // Simple menu system
 const messageActions = ref({});
@@ -30,7 +31,7 @@ const menuItems = computed(() => {
 });
 
 // Handle action execution
-const handleAction = (actionKey) => {
+const handleAction = (actionKey, extraData = {}) => {
   switch (actionKey) {
     case 'copy':
       // Extract message content for copy
@@ -41,6 +42,9 @@ const handleAction = (actionKey) => {
         content = props.message.content;
       }
       emit('copy', { messageId: props.message.id, content });
+      break;
+    case 'edit':
+      emit('start-edit', props.message.id);
       break;
     case 'delete':
       emit('delete-message', { messageId: props.message.id });
@@ -83,7 +87,9 @@ const toggleMenu = (event) => {
         :is="component"
         :message="message"
         :current-user-id="currentUserId"
+        :editing-message-id="editingMessageId"
         @register-actions="handleRegisterActions"
+        @cancel-edit="$emit('cancel-edit')"
       />
     </div>
   </div>

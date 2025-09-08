@@ -75,7 +75,12 @@ export default class ChatService extends BaseApiService {
 
   async deleteMessage(sessionId, historyId, messageId) {
     const response = await this.delete(`/chat/sessions/${sessionId}/histories/${historyId}/messages/${messageId}`)
-    return response.data  
+    return response.data
+  }
+
+  async updateMessage(sessionId, historyId, messageId, data) {
+    const response = await this.put(`/chat/sessions/${sessionId}/histories/${historyId}/messages/${messageId}`, data)
+    return response.data
   }
 
   async sendMessage(sessionId, historyId, payload) {

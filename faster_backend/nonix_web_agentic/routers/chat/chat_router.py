@@ -5,7 +5,7 @@ from nonix_web.router.decorators import router, route
 from nonix_web.utils.di import Inject
 from nonix_web_agentic.schemas.chat_session_schemas import ChatSessionCreate
 from nonix_web_agentic.schemas.chat_history_schemas import ChatHistoryCreate, ChatHistoryUpdate
-from nonix_web_agentic.schemas.chat_message_schemas import SendMessageToHistoryRequest
+from nonix_web_agentic.schemas.chat_message_schemas import SendMessageToHistoryRequest, ChatMessageUpdate
 from ...services.chat_session_service import ChatSessionService
 from ...services.chat_message_service import ChatMessageService
 from ...services.chat_history_service import ChatHistoryService
@@ -246,6 +246,14 @@ class ChatRouter(NxWebServerRouter):
         return await self.service_call_and_respond(
             self.message_service.delete_message_with_validation,
             service_args=(session_id, history_id, message_id)
+        )
+
+    @route('/sessions/{session_id}/histories/{history_id}/messages/{message_id}', methods=['PUT'])
+    async def update_message(self, req: Request, payload: "ChatMessageUpdate", session_id: int, history_id: int, message_id: int):
+        """Update a specific message."""
+        return await self.service_call_and_respond(
+            self.message_service.update,
+            service_args=(message_id, payload)
         )
 
     @route('/sessions/{session_id}/histories/{history_id}/messages/{assistant_message_id}/cancel', methods=['POST'])

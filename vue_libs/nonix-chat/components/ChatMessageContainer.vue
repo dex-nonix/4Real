@@ -52,6 +52,7 @@ const moreMenuItems = computed(() => [
 // State management - session-specific
 const messages = ref([]);
 const loading = ref(false);
+const editingMessageId = ref(null);
 
 // NEW: Turns state
 const turnsById = reactive(new Map()); // turn_id -> { items: Map(seq->item), tools: Map(tool_run_id->{tool_name,status}) }
@@ -558,6 +559,20 @@ const handleDeleteMessage = async (messageData) => {
     return;
   }
 
+  // Validation: Don't allow deleting if message is currently streaming
+  if (isMessageStreaming(messageData.messageId)) {
+    const toast = inject('toast');
+    if (toast) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Cannot Delete',
+        detail: 'Cannot delete message while it\'s still being generated',
+        life: 3000
+      });
+    }
+    return;
+  }
+
   try {
     // Call the backend to delete the message
     const response = await chatService.deleteMessage(
@@ -656,6 +671,73 @@ const handleCopy = async (messageData) => {
 
 
 
+
+// Handle edit message action
+const handleEdit = async (messageData) => {
+  try {
+    // Validation: Don't allow editing if message is currently streaming
+    if (isMessageStreaming(messageData.messageId)) {
+      const toast = inject('toast');
+      if (toast) {
+        toast.add({
+          severity: 'warn',
+          summary: 'Cannot Edit',
+          detail: 'Cannot edit message while it\'s still being generated',
+          life: 3000
+        });
+      }
+      return;
+    }
+
+    const updatedMessage = await chatService.updateMessage(
+      props.selectedSession.id,
+      props.historyId,
+      messageData.messageId,
+      { content_json: { text: messageData.newContent } }
+    );
+
+    // Update local state
+    const messageIndex = messages.value.findIndex(msg => String(msg.id) === String(messageData.messageId));
+    if (messageIndex !== -1) {
+      messages.value[messageIndex] = { ...messages.value[messageIndex], ...updatedMessage };
+    }
+
+    // Show success toast
+    const toast = inject('toast');
+    if (toast) {
+      toast.add({
+        severity: 'success',
+        summary: 'Updated',
+        detail: 'Message updated successfully',
+        life: 2000
+      });
+    }
+
+  } catch (error) {
+    console.error('Edit failed:', error);
+
+    // Show error toast
+    const toast = inject('toast');
+    if (toast) {
+      toast.add({
+        severity: 'error',
+        summary: 'Edit Failed',
+        detail: 'Could not update message',
+        life: 3000
+      });
+    }
+  }
+};
+
+// Handle start edit event
+const handleStartEdit = (messageId) => {
+  editingMessageId.value = messageId;
+};
+
+// Handle cancel edit (clear editing state)
+const handleCancelEdit = () => {
+  editingMessageId.value = null;
+};
 
 // Clear local messages (for when backend clears them)
 const clearLocalMessages = () => {
@@ -793,7 +875,8 @@ defineExpose({
             <template #item="{ item }">
               <component :is="item.role === 'user' ? OutgoingMessageContainer : IncomingMessageContainer"
                 :message="item" :component="getMessageComponent(item)" :current-user-id="currentUserId"
-                @delete-message="handleDeleteMessage" @copy="handleCopy" />
+                :editing-message-id="editingMessageId"
+                @delete-message="handleDeleteMessage" @copy="handleCopy" @edit="handleEdit" @start-edit="handleStartEdit" @cancel-edit="handleCancelEdit" />
             </template>
           </TurnTimeline>
         </div>
