@@ -1,6 +1,6 @@
 <!-- ToolMessage.vue -->
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 
 const props = defineProps({
   message: {
@@ -14,7 +14,7 @@ const props = defineProps({
 });
 
 // Declare emits for Vue 3 event handling
-const emit = defineEmits(['deleteMessage']);
+const emit = defineEmits(['deleteMessage', 'register-actions']);
 
 // Our strict structure: tool fields are available directly on the message object (no fallbacks)
 const toolName = computed(() => props.message.tool_name || 'Unknown Tool');
@@ -76,6 +76,17 @@ const isSimpleObject = (obj) => {
   return obj && typeof obj === 'object' && !Array.isArray(obj) &&
          Object.keys(obj).length > 0 && Object.keys(obj).length <= 10;
 };
+
+// Define available actions for this message type
+const messageActions = {
+  copy: { label: 'Copy', icon: 'pi pi-copy' },
+  delete: { label: 'Delete', icon: 'pi pi-trash' }
+};
+
+onMounted(() => {
+  // Register available actions with parent container
+  emit('register-actions', messageActions);
+});
 
 // Status helper functions
 const getStatusIcon = (status) => {

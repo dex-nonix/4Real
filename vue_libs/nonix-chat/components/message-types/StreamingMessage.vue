@@ -17,23 +17,18 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['deleteMessage']);
+const emit = defineEmits(['deleteMessage', 'register-actions']);
 
 const chatService = inject('chat-service');
 const { streamingContent, streamingStatus, isTyping, subscribe, unsubscribe, initFromProps } = useStreamingMessage(chatService, props.message, true);
 const typingDots = ref('...');
-const menu = ref();
-const selectedMessage = ref(null);
-const showDeleteConfirm = ref(false);
-const isDeleting = ref(false);
 
-
-const menuItems = ref([
-    { label: 'Copy', icon: 'pi pi-copy', command: () => handleCopy() },
-    { label: 'Edit', icon: 'pi pi-pencil', command: () => handleEdit() },
-    { separator: true },
-    { label: 'Delete', icon: 'pi pi-trash', command: () => handleDelete() }
-]);
+// Define available actions for this message type
+const messageActions = {
+  copy: { label: 'Copy', icon: 'pi pi-copy' },
+  edit: { label: 'Edit', icon: 'pi pi-pencil' },
+  delete: { label: 'Delete', icon: 'pi pi-trash' }
+};
 
 let typingInterval;
 const startTypingAnimation = () => {
@@ -79,6 +74,9 @@ const handleStreamingError = (data) => {
 };
 
 onMounted(() => {
+  // Register available actions with parent container
+  emit('register-actions', messageActions);
+
   initFromProps();
   // If this message is already finalized, render from persisted content immediately
   if (props.message && props.message.status && props.message.status !== 'streaming') {
@@ -112,52 +110,7 @@ watch(() => props.message.status, (val) => {
   }
 });
 
-const toggleMenu = (event, message) => {
-    selectedMessage.value = message;
-    menu.value.toggle(event);
-};
-
-const handleCopy = () => {
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(streamingContent.value);
-    }
-    console.log('Copy:', selectedMessage.value);
-};
-
-const handleEdit = () => {
-    console.log('Edit:', selectedMessage.value);
-    // Emit edit event for parent component to handle
-};
-
-const handleDelete = () => {
-    selectedMessage.value = props.message;
-    showDeleteConfirm.value = true;
-    menu.value.hide();
-};
-
-const confirmDelete = async () => {
-    if (!selectedMessage.value) return;
-    
-    try {
-        isDeleting.value = true;
-        emit('deleteMessage', {
-            messageId: selectedMessage.value.id,
-            historyId: selectedMessage.value.history_id,
-            content: streamingContent.value
-        });
-        showDeleteConfirm.value = false;
-        selectedMessage.value = null;
-    } catch (error) {
-        console.error('Delete failed:', error);
-    } finally {
-        isDeleting.value = false;
-    }
-};
-
-const cancelDelete = () => {
-    showDeleteConfirm.value = false;
-    selectedMessage.value = null;
-};
+// Menu and action handling is now done by parent container
 
 const displayContent = computed(() => {
   if (streamingStatus.value !== 'streaming') {
@@ -223,40 +176,7 @@ watch(displayContent, (val) => {
         </div>
       </div>
     </div>
-    
-    <div v-if="showDeleteConfirm && selectedMessage?.id === message.id" class="flex align-items-center ml-2">
-      <span class="text-xs text-red-500 mr-2">Delete?</span>
-      <Button
-        icon="pi pi-check"
-        size="small"
-        severity="danger"
-        text
-        rounded
-        :loading="isDeleting"
-        @click="confirmDelete"
-        class="p-button-sm mr-1"
-      />
-      <Button
-        icon="pi pi-times"
-        size="small"
-        severity="secondary"
-        text
-        rounded
-        @click="cancelDelete"
-        class="p-button-sm"
-      />
-    </div>
-    
-    <Button
-      v-else
-      icon="pi pi-ellipsis-v"
-      text rounded severity="secondary"
-      class="p-button-sm ml-2 flex-shrink-0"
-      @click="toggleMenu($event, message)"
-    />
   </div>
-  
-  <Menu ref="menu" :model="menuItems" :popup="true" />
 </template>
 
 <style scoped>
@@ -264,10 +184,6 @@ watch(displayContent, (val) => {
   transition: all 0.2s ease;
 }
 
-.p-button-sm {
-  min-width: 2rem;
-  height: 1.5rem;
-}
 
 .typing-indicator {
   display: inline-block;

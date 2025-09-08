@@ -1,6 +1,6 @@
 <!-- UserMessage.vue -->
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 
 const props = defineProps({
   message: {
@@ -13,11 +13,22 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['deleteMessage']);
+const emit = defineEmits(['deleteMessage', 'register-actions']);
 
 // Single canonical source: message.content_json.text
 const messageContent = computed(() => props.message?.content_json?.text || '');
 const isValid = computed(() => props.message.metadata?.isValid !== false);
+
+// Define available actions for this message type
+const messageActions = {
+  copy: { label: 'Copy', icon: 'pi pi-copy' },
+  delete: { label: 'Delete', icon: 'pi pi-trash' }
+};
+
+onMounted(() => {
+  // Register available actions with parent container
+  emit('register-actions', messageActions);
+});
 </script>
 
 <template>

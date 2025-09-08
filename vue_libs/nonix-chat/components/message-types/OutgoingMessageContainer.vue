@@ -1,4 +1,8 @@
 <script setup>
+import { ref, computed } from 'vue';
+import Button from 'primevue/button';
+import Menu from 'primevue/menu';
+
 const props = defineProps({
   message: { type: Object, required: true },
   component: { type: Object, required: true },
@@ -6,61 +10,109 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['delete-message', 'copy', 'retry', 'cancel'])
+
+// Simple menu system
+const messageActions = ref({});
+const menu = ref();
+
+// Handle actions registration from child components
+const handleRegisterActions = (actions) => {
+  messageActions.value = actions;
+};
+
+// Create menu items from registered actions
+const menuItems = computed(() => {
+  return Object.entries(messageActions.value).map(([key, action]) => ({
+    label: action.label,
+    icon: action.icon,
+    command: () => handleAction(key)
+  }));
+});
+
+// Handle action execution
+const handleAction = (actionKey) => {
+  switch (actionKey) {
+    case 'copy':
+      emit('copy', props.message.id);
+      break;
+    case 'delete':
+      emit('delete-message', { messageId: props.message.id });
+      break;
+    case 'retry':
+      emit('retry', props.message.id);
+      break;
+    case 'cancel':
+      emit('cancel', props.message.id);
+      break;
+  }
+};
+
+// Simple menu toggle
+const toggleMenu = (event) => {
+  menu.value.toggle(event);
+};
 </script>
 
 <template>
-  <div class="flex flex-column gap-1">
-    <div class="flex align-items-center justify-content-end">
-      <div class="flex align-items-center gap-0 message-actions">
-        <button v-if="message.status==='sending'" class="p-button p-button-text p-button-rounded p-button-danger p-button-xs" @click="$emit('cancel', message.id)">
-          <i class="pi pi-times"></i>
-        </button>
-        <button v-if="message.status==='error'" class="p-button p-button-text p-button-rounded p-button-warning p-button-xs" @click="$emit('retry', message.id)">
-          <i class="pi pi-refresh"></i>
-        </button>
-        <button class="p-button p-button-text p-button-rounded p-button-xs" @click="$emit('copy', message.id)">
-          <i class="pi pi-copy"></i>
-        </button>
-        <button class="p-button p-button-text p-button-rounded p-button-xs" @click="$emit('delete-message', { messageId: message.id })">
-          <i class="pi pi-trash"></i>
-        </button>
-      </div>
+  <!-- User Message Container -->
+  <div class="message-container">
+
+    <!-- Actions Button -->
+    <div v-if="Object.keys(messageActions).length > 0" class="message-actions">
+      <Button
+        icon="pi pi-ellipsis-h"
+        text
+        severity="secondary"
+        size="small"
+        @click="toggleMenu"
+        class="action-button"
+      />
+      <Menu ref="menu" :model="menuItems" :popup="true" />
     </div>
-    <component :is="component" :message="message" :currentUserId="currentUserId" />
+
+    <!-- Message Content -->
+    <div class="flex align-items-start justify-content-start message-content-wrapper">
+      <component
+        :is="component"
+        :message="message"
+        :current-user-id="currentUserId"
+        @register-actions="handleRegisterActions"
+      />
+    </div>
   </div>
 </template>
 
 <style scoped>
-/* User Message Container */
-:deep(.flex.align-items-start.justify-content-start) {
-  background: var(--surface-ground) !important;
-  border: 2px solid var(--surface-border) !important;
-  border-left: 4px solid var(--primary-color) !important;
-  border-radius: 12px !important;
-  padding: 1rem !important;
-  transition: all 0.2s ease !important;
+/* Message Container */
+.message-container {
+  position: relative;
+  margin-bottom: 0.5rem;
 }
 
-/* User Message hover effects */
-:deep(.flex.align-items-start.justify-content-start:hover) {
-  box-shadow: 0 6px 20px rgba(13, 110, 253, 0.2) !important;
-  transform: translateY(-1px) !important;
+/* Message Content Wrapper */
+.message-content-wrapper {
+  background: var(--surface-ground);
+  border: 2px solid var(--surface-border);
+  border-left: 4px solid var(--primary-color);
+  border-radius: 12px;
+  padding: 1rem;
 }
 
-.message-actions .p-button {
+/* Actions */
+.message-actions {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  z-index: 10;
+}
+
+/* Action Button */
+.action-button {
   width: 20px !important;
   height: 20px !important;
-  padding: 0 !important;
-  font-size: 0.6rem !important;
-}
-
-.message-actions .p-button .pi {
-  font-size: 0.6rem !important;
-}
-
-.message-actions .p-button-xs {
-  width: 18px !important;
-  height: 18px !important;
+  padding: 2px !important;
+  background: transparent !important;
+  border: none !important;
 }
 </style>
 

@@ -1,5 +1,7 @@
 <script setup>
-import BackendMessage from './BackendMessage.vue'
+import { ref, computed } from 'vue';
+import Button from 'primevue/button';
+import Menu from 'primevue/menu';
 
 const props = defineProps({
   message: { type: Object, required: true },
@@ -8,29 +10,106 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['delete-message', 'copy', 'stop'])
+
+// Simple menu system
+const messageActions = ref({});
+const menu = ref();
+
+// Handle actions registration from child components
+const handleRegisterActions = (actions) => {
+  messageActions.value = actions;
+};
+
+// Create menu items from registered actions
+const menuItems = computed(() => {
+  return Object.entries(messageActions.value).map(([key, action]) => ({
+    label: action.label,
+    icon: action.icon,
+    command: () => handleAction(key)
+  }));
+});
+
+// Handle action execution
+const handleAction = (actionKey) => {
+  switch (actionKey) {
+    case 'copy':
+      emit('copy', props.message.id);
+      break;
+    case 'delete':
+      emit('delete-message', { messageId: props.message.id });
+      break;
+    case 'stop':
+      emit('stop', props.message.id);
+      break;
+  }
+};
+
+// Simple menu toggle
+const toggleMenu = (event) => {
+  menu.value.toggle(event);
+};
 </script>
 
 <template>
-  <BackendMessage :message="message" @delete="$emit('delete-message', { messageId: message.id })" @copy="$emit('copy', message.id)" @stop="$emit('stop', message.id)">
-    <component :is="component" :message="message" :currentUserId="currentUserId" />
-  </BackendMessage>
+  <!-- AI Message Container -->
+  <div class="message-container">
+
+    <!-- Actions Button -->
+    <div v-if="Object.keys(messageActions).length > 0" class="message-actions">
+      <Button
+        icon="pi pi-ellipsis-v"
+        text
+        severity="secondary"
+        size="small"
+        @click="toggleMenu"
+        class="action-button"
+      />
+      <Menu ref="menu" :model="menuItems" :popup="true" />
+    </div>
+
+    <!-- Message Content -->
+    <div class="flex align-items-start message-content-wrapper">
+      <component
+        :is="component"
+        :message="message"
+        :current-user-id="currentUserId"
+        @register-actions="handleRegisterActions"
+      />
+    </div>
+  </div>
 </template>
 
 <style scoped>
-/* AI Message Container */
-:deep(.flex.align-items-start) {
-  background: var(--surface-section) !important;
-  border: 2px solid var(--surface-border) !important;
-  border-left: 4px solid var(--blue-500) !important;
-  border-radius: 12px !important;
-  padding: 1rem !important;
-  transition: all 0.2s ease !important;
+/* Message Container */
+.message-container {
+  position: relative;
+  margin-bottom: 0.5rem;
 }
 
-/* AI Message hover effects */
-:deep(.flex.align-items-start:hover) {
-  box-shadow: 0 6px 20px rgba(0, 123, 255, 0.2) !important;
-  transform: translateY(-1px) !important;
+/* Message Content Wrapper */
+.message-content-wrapper {
+  background: var(--surface-section);
+  border: 2px solid var(--surface-border);
+  border-left: 4px solid var(--blue-500);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+/* Actions */
+.message-actions {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  z-index: 10;
+}
+
+/* Action Button */
+.action-button {
+  width: 20px !important;
+  height: 20px !important;
+  padding: 2px !important;
+  background: transparent !important;
+  border: none !important;
 }
 </style>
 
