@@ -10,6 +10,7 @@ export default defineConfig({
       '@nonix': resolve(__dirname, 'vue_libs/nonix'),
       '@nonix-chat': resolve(__dirname, 'vue_libs/nonix-chat'),
       '@nonix-master-layout': resolve(__dirname, 'vue_libs/nonix-master-layout'),
+      '@nonix-advanced-layout': resolve(__dirname, 'vue_libs/nonix-advanced-layout'),
     }
   },
   optimizeDeps: {

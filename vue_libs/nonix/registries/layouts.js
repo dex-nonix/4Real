@@ -3,16 +3,21 @@
 
 import MasterLayout from "@nonix-master-layout/MasterLayout.vue";
 import AltLayout from "@/layouts/AltLayout.vue";
+import AdvancedLayout from "@nonix-advanced-layout/AdvancedLayout.vue";
 
 export const LAYOUTS = {
-  master: {
-    component:MasterLayout,
-    defaultProps: {} // not implemented yet!
-  },
-  alt: {
-    component:AltLayout,
-    defaultProps: {} // not implemented yet!
-  }
+    master: {
+        component: MasterLayout,
+        defaultProps: {}
+    },
+    advanced: {
+        component: AdvancedLayout,
+        defaultProps: {}
+    },
+    alt: {
+        component: AltLayout,
+        defaultProps: {}
+    }
 }
 
 

@@ -26,6 +26,7 @@ import About from "@/views/About.vue";
 import DynamicFormExample from "@/views/DynamicFormExample.vue";
 import DynamicTableExample from "@/views/DynamicTableExample.vue";
 import Chat from "@/views/Chat.vue";
+import AdvancedLayout from "@nonix-advanced-layout/AdvancedLayout.vue";
 
 export const appConfig = {
 
@@ -35,7 +36,8 @@ export const appConfig = {
         {path: '/', name: 'home', component: Home},
         {path: '/about', name: 'about', component: About, meta: {layout: 'alt'}},
         {path: '/dynamic-form', name: 'dynamic-form', component: DynamicFormExample},
-        {path: '/dynamic-table', name: 'dynamic-table', component: DynamicTableExample},
+
+        {path: '/dynamic-table', name: 'dynamic-table', component: DynamicTableExample, meta: {layout: "advanced"}},
 
         // Dynamic route
         {type: "dynamic", path: '/dashboard', page: 'dashboard'},
