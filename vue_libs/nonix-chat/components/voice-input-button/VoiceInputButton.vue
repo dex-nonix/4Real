@@ -304,13 +304,14 @@ defineExpose({
   <Button
     :icon="buttonIcon"
     :severity="buttonSeverity"
-    :class="['voice-input-btn', buttonSize, {
+    :class="['voice-input-btn', {
       'recording': state.isRecording,
       'error': !!state.error,
       'unsupported': !state.isSupported
     }]"
     :disabled="isButtonDisabled"
     :rounded="true"
+    style="width: 24px; height: 24px;"
     @click="toggleRecording"
     v-tooltip="buttonTooltip"
     :aria-label="state.isRecording ? 'Stop voice recording' : 'Start voice recording'"

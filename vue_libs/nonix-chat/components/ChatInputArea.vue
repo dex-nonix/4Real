@@ -374,37 +374,47 @@ defineExpose({
 </script>
 
 <template>
-  <div class="flex align-items-end px-3 py-2 surface-section gap-2">
+  <div class="flex align-items-end px-2 py-1 pb-2 surface-section gap-2">
     <!-- Voice Input Button -->
-    <VoiceInputButton
-      :disabled="!hasHistory || isStreaming"
-      @text="handleVoiceText"
-      @recording-error="handleRecordingError"
-      size="small"
-      class="mx-1"
-    />
+    <div class="mb-2 ml-1">
+      <VoiceInputButton
+        :disabled="!hasHistory || isStreaming"
+        @text="handleVoiceText"
+        @recording-error="handleRecordingError"
+        size="small"
+      />
+    </div>
 
     <!-- Input Field -->
-    <span class="p-input-icon-right flex-1 mx-1">
+    <span class="p-input-icon-right flex-1 relative">
       <IconField>
         <Textarea
           v-model="inputText"
           placeholder="Type a message..."
-          class="w-full"
+          class="w-full compact-textarea"
           :autoResize="true"
           rows="1"
           :maxlength="5000"
           @keydown="handleKeyDown"
           :disabled="!hasHistory || isStreaming"
         />
-        <InputIcon :class="buttonIcon" @click="buttonAction" />
+        <InputIcon :class="buttonIcon + ' absolute bottom-0 right-0 mb-1 mr-1'" @click="buttonAction" />
       </IconField>
     </span>
 
     <!-- Options Button -->
-    <div class="relative">
-      <Button icon="pi pi-ellipsis-h" text rounded severity="secondary" :disabled="!hasHistory"
-        @click="toggleMoreMenu" aria-haspopup="true" aria-controls="more_menu" />
+    <div class="relative mb-2 mr-1">
+      <Button
+        icon="pi pi-ellipsis-h"
+        text
+        rounded
+        severity="secondary"
+        :disabled="!hasHistory"
+        style="width: 24px; height: 24px;"
+        @click="toggleMoreMenu"
+        aria-haspopup="true"
+        aria-controls="more_menu"
+      />
       <Badge v-if="totalNotifications > 0" :value="totalNotifications" severity="danger"
         class="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2" />
     </div>
@@ -425,5 +435,33 @@ defineExpose({
 </template>
 
 <style scoped>
-/* Use PrimeFlex utility classes - no custom CSS needed */
+/* Make textarea with comfortable padding for send button */
+.compact-textarea {
+  padding: 0.5rem 2.75rem 0.5rem 0.5rem !important;
+  min-height: 1.75rem !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25 !important;
+  border-radius: 4px !important;
+}
+
+/* Position send icon lower in the textarea */
+:deep(.p-input-icon) {
+  position: absolute !important;
+  top: 70% !important;
+  transform: translateY(-50%) !important;
+  right: 0.5rem !important;
+  bottom: auto !important;
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  border-radius: 50% !important;
+  transition: all 0.2s ease !important;
+}
+
+.compact-textarea :deep(.p-input-icon:hover) {
+  background-color: var(--surface-200);
+}
 </style>
