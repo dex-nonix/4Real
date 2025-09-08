@@ -96,7 +96,7 @@
 </style>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useAppShell } from './useAppShell.js'
 import Chat from '@nonix-chat/components/Chat.vue'
 
@@ -108,12 +108,16 @@ const isResizing = ref(false)
 const startX = ref(0)
 const startWidth = ref(0)
 
-// Menu items for ChatHeader - defined externally and reactive
-const chatMenuItems = ref([
+// Menu items for ChatHeader - properly reactive
+const chatMenuItems = computed(() => [
   {
-    label: 'Pin Chat',
+    label: state.rightPinned ? 'Unpin Chat' : 'Pin Chat',
     icon: state.rightPinned ? 'pi pi-lock' : 'pi pi-unlock',
-    command: () => togglePin()
+    command: () => {
+      console.log('Pin toggle clicked, current state:', state.rightPinned);
+      togglePin();
+      console.log('After toggle, new state:', state.rightPinned);
+    }
   },
   {
     label: 'Close Chat',
@@ -121,14 +125,6 @@ const chatMenuItems = ref([
     command: () => handleChatClose(true)
   }
 ])
-
-watch(() => state.rightPinned, (isPinned) => {
-  chatMenuItems.value[0] = {
-    ...chatMenuItems.value[0],
-    icon: isPinned ? 'pi pi-lock' : 'pi pi-unlock',
-    label: isPinned ? 'Unpin Chat' : 'Pin Chat'
-  }
-})
 
 
 // Mobile detection for pin behavior

@@ -4,7 +4,7 @@ import Avatar from 'primevue/avatar';
 import Button from 'primevue/button';
 import Menu from 'primevue/menu';
 import ConfirmMenuItem from './ConfirmMenuItem.vue';
-import { ref, inject, watch } from 'vue';
+import { ref, inject, watch, computed } from 'vue';
 
 const props = defineProps({
   persona: { type: Object, required: false, default: null },
@@ -43,7 +43,7 @@ watch(() => props.currentSession, async (newSession) => {
 
 const isEditingTitle = ref(false);
 const editedTitle = ref('');
-const deleteMenu = ref();
+const ellipsisMenu = ref();
 
 const startEditing = () => {
   if (!props.currentHistory) return;
@@ -61,12 +61,12 @@ const cancelEditing = () => {
   isEditingTitle.value = false;
 };
 
-const toggleDeleteMenu = (event) => {
-  console.log('Toggle menu clicked', event);
-  if (deleteMenu.value) {
-    deleteMenu.value.toggle(event);
+const toggleEllipsisMenu = (event) => {
+  console.log('Toggle ellipsis menu clicked', event);
+  if (ellipsisMenu.value) {
+    ellipsisMenu.value.toggle(event);
   } else {
-    console.error('deleteMenu ref is null');
+    console.error('ellipsisMenu ref is null');
   }
 };
 
@@ -129,8 +129,13 @@ const handleMenuItemClick = (item) => {
   emit('menuItemClick', item);
 };
 
-// Menu items for delete dropdown - FIXED, NEVER CHANGE
-const deleteMenuItems = [
+// Check if menu item needs confirmation dialog
+const isConfirmItem = (item) => {
+  return confirmMenuItems.some(confirmItem => confirmItem.label === item.label);
+};
+
+// Menu items that need confirmation dialogs
+const confirmMenuItems = [
   {
     label: 'Clear Messages',
     icon: 'pi pi-trash',
@@ -142,6 +147,53 @@ const deleteMenuItems = [
     command: handleDeleteSession
   }
 ];
+
+// Menu items that don't need confirmation
+const normalMenuItems = ref([
+  {
+    label: 'View History',
+    icon: 'pi pi-history',
+    command: () => emit('viewHistory')
+  }
+]);
+
+// Watch for external menu items and add them to normal items
+watch(() => props.menuItems, (newItems) => {
+  // Start with the core normal items
+  const coreItems = [
+    {
+      label: 'View History',
+      icon: 'pi pi-history',
+      command: () => emit('viewHistory')
+    }
+  ];
+
+  // Add external items if any
+  if (newItems && newItems.length > 0) {
+    // Add separator
+    coreItems.push({ separator: true });
+    // Add external items
+    newItems.forEach(item => {
+      coreItems.push({
+        label: item.label,
+        icon: item.icon,
+        command: () => handleMenuItemClick(item)
+      });
+    });
+  }
+
+  normalMenuItems.value = coreItems;
+}, { immediate: true });
+
+// Combined menu items for the dropdown
+const ellipsisMenuItems = computed(() => {
+  const items = [...normalMenuItems.value];
+  if (confirmMenuItems.length > 0) {
+    items.push({ separator: true });
+    items.push(...confirmMenuItems);
+  }
+  return items;
+});
 </script>
 
 <template>
@@ -179,42 +231,39 @@ const deleteMenuItems = [
     </div>
 
     <div class="flex align-items-center gap-1">
-      <!-- Built-in buttons first (left side) -->
-      <Button icon="pi pi-history" text rounded severity="secondary" @click="emit('viewHistory')" aria-label="View History" />
-      <div class="relative" ref="deleteButtonRef">
+      <!-- Single ellipsis menu button -->
+      <div class="relative">
         <Button
-          icon="pi pi-trash"
+          icon="pi pi-ellipsis-h"
           text
           rounded
-          severity="danger"
-          @click="(event) => { console.log('Button clicked'); toggleDeleteMenu(event); }"
-          aria-label="Delete Options"
+          severity="secondary"
+          @click="toggleEllipsisMenu"
+          aria-label="More Options"
           aria-haspopup="true"
-          aria-controls="delete_menu"
+          aria-controls="ellipsis_menu"
         />
         <Menu
-          ref="deleteMenu"
-          id="delete_menu"
-          :model="deleteMenuItems"
+          ref="ellipsisMenu"
+          id="ellipsis_menu"
+          :model="ellipsisMenuItems"
           :popup="true"
         >
           <template #item="{ item }">
-            <component :is="ConfirmMenuItem" :item="item" @close-menu="deleteMenu.hide()" />
+            <!-- Use ConfirmMenuItem for destructive actions -->
+            <component
+              :is="isConfirmItem(item) ? ConfirmMenuItem : 'div'"
+              :item="item"
+              @close-menu="ellipsisMenu.hide()"
+              :class="!isConfirmItem(item) ? 'p-menuitem-link' : ''"
+              @click="!isConfirmItem(item) ? item.command() : null"
+            >
+              <span v-if="!isConfirmItem(item)" :class="item.icon" class="p-menuitem-icon"></span>
+              <span v-if="!isConfirmItem(item)" class="p-menuitem-text">{{ item.label }}</span>
+            </component>
           </template>
         </Menu>
       </div>
-
-      <!-- External menu items (right side) -->
-      <Button
-        v-for="item in menuItems"
-        :key="item.label"
-        :icon="item.icon"
-        text
-        rounded
-        severity="secondary"
-        @click="handleMenuItemClick(item)"
-        :aria-label="item.label"
-      />
     </div>
   </header>
 </template>
