@@ -838,6 +838,12 @@ class ChatMessageService(BaseCrudService):
             try:
                 # Validate session and history
                 session, history = await self._validate_session_history(db_session, session_id, history_id)
+                if not session:
+                    self._logger.error(f"Session {session_id} not found")
+                    raise ValueError('Session not found')
+                if not history:
+                    self._logger.error(f"History {history_id} not found for session {session_id}")
+                    raise ValueError('History not found')
 
                 # Find the message
                 message = (await db_session.execute(
@@ -845,27 +851,29 @@ class ChatMessageService(BaseCrudService):
                 )).scalar_one_or_none()
 
                 if not message:
+                    self._logger.error(f"Message {message_id} not found in history {history_id}")
                     raise ValueError('Message not found')
 
-                update_dict = update_data.model_dump(exclude_unset=True)
-
                 # Update provided fields (like working chat_session_service)
-                if 'content_json' in update_dict:
-                    message.content_json = update_dict['content_json']
-                if 'role' in update_dict:
-                    message.role = update_dict['role']
-                if 'message_type' in update_dict:
-                    message.message_type = update_dict['message_type']
-                if 'status' in update_dict:
-                    message.status = update_dict['status']
+                if hasattr(update_data, 'content_json') and update_data.content_json is not None:
+                    self._logger.info(f"Updating content_json: {update_data.content_json}")
+                    message.content_json = update_data.content_json
+                if hasattr(update_data, 'role') and update_data.role is not None:
+                    message.role = update_data.role
+                if hasattr(update_data, 'message_type') and update_data.message_type is not None:
+                    message.message_type = update_data.message_type
+                if hasattr(update_data, 'status') and update_data.status is not None:
+                    message.status = update_data.status
 
                 message.updated_at = datetime.utcnow()
 
                 await db_session.commit()
+                self._logger.info(f"Message {message_id} updated successfully")
                 return message
 
             except Exception as exc:
                 await db_session.rollback()
+                self._logger.error(f"Failed to update message {message_id}: {exc}", exc_info=True)
                 raise exc
 
     async def cancel_message_streaming(self, session_id: int, history_id: int, assistant_message_id: int):
