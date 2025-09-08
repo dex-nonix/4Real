@@ -439,9 +439,37 @@ defineExpose({
 .compact-textarea {
   padding: 0.5rem 2.75rem 0.5rem 0.5rem !important;
   min-height: 1.75rem !important;
+  max-height: 8rem !important;
   font-size: 0.875rem !important;
   line-height: 1.25 !important;
   border-radius: 4px !important;
+  overflow-y: hidden !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--surface-border) transparent !important;
+}
+
+/* Show scrollbar only when content overflows */
+.compact-textarea:hover,
+.compact-textarea:focus {
+  overflow-y: auto !important;
+}
+
+/* Custom scrollbar styling for webkit browsers */
+.compact-textarea::-webkit-scrollbar {
+  width: 4px !important;
+}
+
+.compact-textarea::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.compact-textarea::-webkit-scrollbar-thumb {
+  background: var(--surface-border) !important;
+  border-radius: 2px !important;
+}
+
+.compact-textarea::-webkit-scrollbar-thumb:hover {
+  background: var(--text-color-secondary) !important;
 }
 
 /* Position send icon fixed at bottom of textarea */
