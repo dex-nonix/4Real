@@ -6,6 +6,11 @@ from pydantic import BaseModel, Field
 from nonix_web.router.base_db_model_mixin import BaseDbModelMixin, BaseUpdateModel
 
 
+class MessageTextOnlyUpdate(BaseModel):
+    """Strict schema for text-only updates - only accepts {"text": "..."}"""
+    text: str
+
+
 class ChatMessageBase(BaseModel):
     history_id: int = Field(..., gt=0)
     role: str = Field(..., max_length=50)

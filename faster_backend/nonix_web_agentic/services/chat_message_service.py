@@ -832,8 +832,8 @@ class ChatMessageService(BaseCrudService):
         except Exception as exc:
             raise exc
 
-    async def update_message_content(self, session_id: int, history_id: int, message_id: int, update_data):
-        """Update a specific message content with session/history validation."""
+    async def update_message_text(self, session_id: int, history_id: int, message_id: int, update_data):
+        """Update only the text content of a message in content_json."""
         async with AsyncSessionLocal() as db_session:
             try:
                 # Validate session and history
@@ -854,21 +854,11 @@ class ChatMessageService(BaseCrudService):
                     self._logger.error(f"Message {message_id} not found in history {history_id}")
                     raise ValueError('Message not found')
 
-                # Update provided fields (like working chat_session_service)
-                if hasattr(update_data, 'content_json') and update_data.content_json is not None:
-                    self._logger.info(f"Updating content_json: {update_data.content_json}")
-                    message.content_json = update_data.content_json
-                if hasattr(update_data, 'role') and update_data.role is not None:
-                    message.role = update_data.role
-                if hasattr(update_data, 'message_type') and update_data.message_type is not None:
-                    message.message_type = update_data.message_type
-                if hasattr(update_data, 'status') and update_data.status is not None:
-                    message.status = update_data.status
-
-                message.updated_at = datetime.utcnow()
+                # Update text in content_json - handle frontend payload {text: "..."}
+                message.content_json["text"] = update_data.text
 
                 await db_session.commit()
-                self._logger.info(f"Message {message_id} updated successfully")
+                self._logger.info(f"Message {message_id} text updated successfully")
                 return message
 
             except Exception as exc:

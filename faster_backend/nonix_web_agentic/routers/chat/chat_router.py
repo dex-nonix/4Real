@@ -3,9 +3,9 @@ from fastapi import Request
 from nonix_web.router.web_server_router import NxWebServerRouter
 from nonix_web.router.decorators import router, route
 from nonix_web.utils.di import Inject
-from nonix_web_agentic.schemas.chat_session_schemas import ChatSessionCreate
-from nonix_web_agentic.schemas.chat_history_schemas import ChatHistoryCreate, ChatHistoryUpdate
-from nonix_web_agentic.schemas.chat_message_schemas import SendMessageToHistoryRequest, ChatMessageUpdate
+from ...schemas.chat_session_schemas import ChatSessionCreate
+from ...schemas.chat_history_schemas import ChatHistoryCreate, ChatHistoryUpdate
+from ...schemas.chat_message_schemas import SendMessageToHistoryRequest, MessageTextOnlyUpdate
 from ...services.chat_session_service import ChatSessionService
 from ...services.chat_message_service import ChatMessageService
 from ...services.chat_history_service import ChatHistoryService
@@ -249,10 +249,10 @@ class ChatRouter(NxWebServerRouter):
         )
 
     @route('/sessions/{session_id}/histories/{history_id}/messages/{message_id}', methods=['PUT'])
-    async def update_message(self, req: Request, payload: ChatMessageUpdate, session_id: int, history_id: int, message_id: int):
+    async def update_message(self, req: Request, payload: MessageTextOnlyUpdate, session_id: int, history_id: int, message_id: int):
         """Update a specific message."""
         return await self.service_call_and_respond(
-            self.message_service.update_message_content,
+            self.message_service.update_message_text,
             service_args=(session_id, history_id, message_id, payload),
             response_converter=lambda r: {'data': r.to_dict()}
         )
