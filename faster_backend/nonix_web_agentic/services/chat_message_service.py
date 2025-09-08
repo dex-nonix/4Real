@@ -833,12 +833,17 @@ class ChatMessageService(BaseCrudService):
         except Exception as exc:
             raise exc
 
-    async def update_message_content(self, message_id: int, update_data):
-        """Update a specific message content."""
+    async def update_message_content(self, session_id: int, history_id: int, message_id: int, update_data):
+        """Update a specific message content with session/history validation."""
         try:
+            # Validate session and history exist and match
+            session, history = await self._validate_session_history(session_id, history_id)
+            if not session or not history:
+                raise ValueError('Session or history not found')
+
             async with AsyncSessionLocal() as db_session:
                 message = (await db_session.execute(
-                    select(ChatMessage).where(ChatMessage.id == message_id)
+                    select(ChatMessage).where(ChatMessage.id == message_id, ChatMessage.history_id == history_id)
                 )).scalar_one_or_none()
 
                 if not message:
@@ -855,11 +860,8 @@ class ChatMessageService(BaseCrudService):
 
                 return {
                     'message': 'Message updated successfully',
-                    'updated_message': {
-                        'id': message.id,
-                        'content_json': message.content_json,
-                        'updated_at': message.updated_at.isoformat()
-                    }
+                    'updated_message_id': message.id,
+                    'updated_at': message.updated_at.isoformat()
                 }
 
         except Exception as exc:

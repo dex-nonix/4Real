@@ -253,7 +253,7 @@ class ChatRouter(NxWebServerRouter):
         """Update a specific message."""
         return await self.service_call_and_respond(
             self.message_service.update_message_content,
-            service_args=(message_id, payload)
+            service_args=(session_id, history_id, message_id, payload)
         )
 
     @route('/sessions/{session_id}/histories/{history_id}/messages/{assistant_message_id}/cancel', methods=['POST'])
