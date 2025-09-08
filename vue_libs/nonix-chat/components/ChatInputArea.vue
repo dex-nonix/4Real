@@ -444,13 +444,13 @@ defineExpose({
   border-radius: 4px !important;
 }
 
-/* Position send icon lower in the textarea */
+/* Position send icon fixed at bottom of textarea */
 :deep(.p-input-icon) {
   position: absolute !important;
-  top: 70% !important;
-  transform: translateY(-50%) !important;
+  bottom: 0.375rem !important;
   right: 0.5rem !important;
-  bottom: auto !important;
+  top: auto !important;
+  transform: none !important;
   width: 1.25rem !important;
   height: 1.25rem !important;
   display: flex !important;
