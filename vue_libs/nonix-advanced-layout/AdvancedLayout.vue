@@ -14,10 +14,10 @@
       </div>
       <div class="the-main-area">
         <div class="left-navigation" :class="{ collapsed: isNavCollapsed }">
-          <LeftNavSidebar />
+<!--          <LeftNavSidebar />-->
         </div>
         <div class="the-content-area">
-          <slot/>
+<!--          <slot/>-->
         </div>
       </div>
       <div class="footer" :class="{ collapsed: isFooterCollapsed }">Toggleable Footer</div>
@@ -301,6 +301,27 @@ body {
   margin-bottom: v-bind('state.dockedSize + "px"');
 }
 
+/* RESET MARGINS WHEN PANE IS NOT ACTIVE */
+.app-container:not(.pane-is-pinned-and-visible) .layout-wrapper {
+  margin: 0 !important;
+}
+
+.app-container:not(.pane-is-pinned-and-visible).pushed-from-left .layout-wrapper {
+  margin-left: 0 !important;
+}
+
+.app-container:not(.pane-is-pinned-and-visible).pushed-from-right .layout-wrapper {
+  margin-right: 0 !important;
+}
+
+.app-container:not(.pane-is-pinned-and-visible).pushed-from-top .layout-wrapper {
+  margin-top: 0 !important;
+}
+
+.app-container:not(.pane-is-pinned-and-visible).pushed-from-bottom .layout-wrapper {
+  margin-bottom: 0 !important;
+}
+
 /* Component Styles */
 .the-top-bar {
   padding: 1rem;
@@ -371,10 +392,7 @@ body {
 }
 
 .footer.collapsed {
-  height: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  border-width: 0;
+  display: none !important; /* Completely remove from layout */
 }
 
 /* --- Independent Window Pane --- */
