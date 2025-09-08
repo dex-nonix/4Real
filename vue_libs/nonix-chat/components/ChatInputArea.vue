@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, inject, watch } from 'vue';
-import InputText from 'primevue/inputtext';
+import Textarea from 'primevue/textarea';
 import Button from 'primevue/button';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
@@ -320,6 +320,18 @@ const buttonAction = computed(() => {
   return onSend;
 });
 
+// Keyboard event handler for multi-line textarea
+const handleKeyDown = (event) => {
+  // Send message on Ctrl+Enter or Shift+Enter
+  if ((event.ctrlKey || event.shiftKey) && event.key === 'Enter') {
+    event.preventDefault();
+    if (inputText.value?.trim() && !isStreaming.value) {
+      buttonAction.value();
+    }
+  }
+  // Allow default behavior for Enter (new line) and other keys
+};
+
 // Voice input event handlers
 const handleVoiceText = ({ text, confidence, isFinal }) => {
   if (isFinal && text.trim()) {
@@ -375,8 +387,16 @@ defineExpose({
     <!-- Input Field -->
     <span class="p-input-icon-right flex-grow-1 mx-1">
       <IconField>
-        <InputText v-model="inputText" placeholder="Type a message..." class="w-full" @keyup.enter="buttonAction"
-          :disabled="!hasHistory || isStreaming" />
+        <Textarea
+          v-model="inputText"
+          placeholder="Type a message..."
+          class="w-full chat-textarea"
+          :autoResize="true"
+          rows="1"
+          :maxlength="5000"
+          @keydown="handleKeyDown"
+          :disabled="!hasHistory || isStreaming"
+        />
         <InputIcon :class="buttonIcon" @click="buttonAction" />
       </IconField>
     </span>
@@ -408,10 +428,10 @@ defineExpose({
 /* Input area - compact fixed position */
 .input-area {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   padding: 0.5rem;
-
   background: var(--surface-section);
+  gap: 0.25rem;
 }
 
 /* Button layout and spacing */
@@ -423,6 +443,44 @@ defineExpose({
 .voice-input-spacing {
   margin-left: 0.25rem;
   margin-right: 0.25rem;
+}
+
+/* Textarea styling */
+.chat-textarea :deep(.p-inputtextarea) {
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+  resize: none;
+  min-height: 2.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.chat-textarea :deep(.p-inputtextarea:focus) {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px var(--primary-color);
+}
+
+/* Icon field wrapper for textarea */
+.input-area .p-input-icon-right {
+  position: relative;
+  width: 100%;
+}
+
+.input-area .p-input-icon-right .p-inputicon {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: var(--text-color-secondary);
+  z-index: 1;
+}
+
+.input-area .p-input-icon-right .p-inputicon:hover {
+  color: var(--primary-color);
 }
 
 /* Retry button styling */
@@ -441,5 +499,13 @@ defineExpose({
 .input-area .p-button[severity="primary"] {
   border-color: var(--primary-color);
   color: var(--primary-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .chat-textarea :deep(.p-inputtextarea) {
+    font-size: 0.8125rem;
+    padding: 0.5rem 2.25rem 0.5rem 0.5rem;
+  }
 }
 </style>
