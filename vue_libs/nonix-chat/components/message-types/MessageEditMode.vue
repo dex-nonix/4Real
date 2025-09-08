@@ -24,9 +24,10 @@
     <Textarea
       :model-value="modelValue"
       class="edit-textarea-compact"
-      :autoResize="false"
-      rows="4"
+      :autoResize="true"
+      rows="3"
       :placeholder="placeholder"
+      resize="vertical"
       @update:model-value="$emit('update:modelValue', $event)"
       @keydown="handleKeyDown"
     />
@@ -142,31 +143,15 @@ const handleKeyDown = (event) => {
 
 .edit-textarea-compact {
   width: 100% !important;
-  max-width: 100% !important;
-  min-width: 100% !important;
-  flex: 1 !important;
-  box-sizing: border-box !important;
   font-family: inherit !important;
   font-size: 0.875rem !important;
-  line-height: 1.5 !important;
+  line-height: 1.4 !important;
   border: none !important;
   background: transparent !important;
   color: var(--text-color) !important;
-  padding: 0.75rem 0 !important;
-  margin: 0 !important;
-  resize: vertical !important;
+  padding: 0.25rem !important;
   outline: none !important;
   box-shadow: none !important;
-  min-height: 6rem !important;
-  max-height: 25rem !important;
-  height: auto !important;
-  display: block !important;
-  overflow-y: hidden !important;
-}
-
-.edit-textarea-compact:hover,
-.edit-textarea-compact:focus {
-  overflow-y: auto !important;
 }
 
 .edit-textarea-compact:focus {

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, inject, watch, nextTick } from 'vue';
+import { useToast } from 'primevue/usetoast';
 import ErrorDialog from './ErrorDialog.vue';
 import chatMessageTypeManager from './ChatMessageTypeManager.js';
 import SystemMessage from './message-types/SystemMessage.vue';
@@ -24,31 +25,17 @@ const emit = defineEmits(['sendMessage', 'regenerateResponse', 'showTools', 'del
 
 // Service injection
 const chatService = inject('chat-service');
-const toast = inject('toast');
+
+// Toast service
+const toast = useToast();
 
 // Error management
 const showErrorDialog = ref(false);
-const moreMenu = ref();
 
 // Show error dialog
 const showErrors = () => {
   showErrorDialog.value = true;
 };
-
-// Toggle more menu
-const toggleMoreMenu = (event) => {
-  moreMenu.value.toggle(event);
-};
-
-// Menu items
-const moreMenuItems = computed(() => [
-  {
-    label: 'Show Errors',
-    icon: 'pi pi-exclamation-triangle',
-    command: showErrors,
-    badge: props.errors.length > 0 ? props.errors.length : null
-  }
-]);
 
 // State management - session-specific
 const messages = ref([]);
