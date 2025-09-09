@@ -6,7 +6,7 @@
 
 <script setup>
 import { onMounted, onBeforeUnmount, watch, toRefs } from 'vue'
-import { useTopBar } from '@nonix-master-layout/useTopBar.js'
+import { useAdvancedLayout } from '@nonix-advanced-layout/useAdvancedLayout.js'
 
 const props = defineProps({
   title: { type: String, default: undefined },
@@ -16,17 +16,35 @@ const props = defineProps({
   onBack: { type: Function, default: undefined }
 })
 
-const { setHeader, resetHeader } = useTopBar()
+const { setTitle, clearActions, addAction, state } = useAdvancedLayout()
 const { title, back, actions, showRightToggle, onBack } = toRefs(props)
 
 function applyHeader() {
-  setHeader({
-    title: title.value,
-    back: back.value,
-    actions: actions.value,
-    showRightToggle: showRightToggle.value,
-    onBack: onBack.value
-  })
+  if (title.value) {
+    setTitle(title.value)
+  }
+  clearActions()
+  if (actions.value && actions.value.length > 0) {
+    actions.value.forEach(action => addAction(action))
+  }
+  // Update state for back, showRightToggle, onBack
+  if (back.value !== undefined) {
+    state.header.back = back.value
+  }
+  if (showRightToggle.value !== undefined) {
+    state.header.showRightToggle = showRightToggle.value
+  }
+  if (onBack.value !== undefined) {
+    state.header.onBack = onBack.value
+  }
+}
+
+function resetHeader() {
+  setTitle('')
+  clearActions()
+  state.header.back = false
+  state.header.showRightToggle = false
+  state.header.onBack = null
 }
 
 onMounted(applyHeader)

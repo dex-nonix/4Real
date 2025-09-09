@@ -12,7 +12,7 @@ import Toast from 'primevue/toast'
 import LayoutManager from "./widget-manager/LayoutManager.js";
 
 const route = useRoute()
-const computedLayoutName = computed(() => route.meta.layout || 'master')
+const computedLayoutName = computed(() => route.meta.layout || 'advanced')
 const layout = computed(() => LayoutManager.getWidget(computedLayoutName.value).component)
 </script>
 

@@ -128,7 +128,7 @@ const CrudPage = {
 }
 
 // Static helper to add CRUD routes for an entity key
-CrudPage.createRoutes = function createRoutes(entityKey, options = {}, meta = { layout: 'master' }) {
+CrudPage.createRoutes = function createRoutes(entityKey, options = {}, meta = { layout: 'advanced' }) {
   const { basePath: bp, displayMode: dm = 'inline', ...crud } = options || {}
   const basePath = bp || `/${entityKey}`
   const displayMode = dm || 'inline'
