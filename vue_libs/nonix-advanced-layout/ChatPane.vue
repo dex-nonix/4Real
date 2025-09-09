@@ -30,7 +30,7 @@
 </template>
 
 <script setup>
-import {computed, onMounted, onUnmounted, reactive, ref, watch} from 'vue';
+import {computed, onMounted, onUnmounted, reactive, ref, watch, nextTick} from 'vue';
 import Chat from '@nonix-chat/components/Chat.vue';
 import Button from 'primevue/button';
 
@@ -38,11 +38,78 @@ import Button from 'primevue/button';
 const state = reactive({
   isVisible: false,
   isPinned: false,
-  dockSide: 'right', // 'right', 'left', 'top', 'bottom', or 'floating'
+  dockSide: 'right',
   floatingPos: {x: 50, y: 50},
   floatingSize: {width: 400, height: 500},
-  dockedSize: 350, // Size when docked (width for left/right, height for top/bottom)
+  dockedSize: 350,
 });
+
+// --- LOCALSTORAGE PERSISTENCE ---
+const STORAGE_KEY = 'nonix-chat-pane-state-v1';
+
+// Debounce utility for localStorage writes
+let saveTimeout = null;
+const debounceSave = (fn, delay = 300) => {
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(fn, delay);
+};
+
+// Save state to localStorage
+const saveChatPaneState = () => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const dataToSave = {
+      isVisible: state.isVisible,
+      isPinned: state.isPinned,
+      dockSide: state.dockSide,
+      floatingPos: { ...state.floatingPos },
+      floatingSize: { ...state.floatingSize },
+      dockedSize: state.dockedSize,
+      timestamp: Date.now(),
+      version: '1.0'
+    };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+  } catch (error) {
+    console.warn('Failed to save ChatPane state:', error);
+  }
+};
+
+// Load state from localStorage
+const loadChatPaneState = () => {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return null;
+
+    const parsed = JSON.parse(saved);
+
+    // Validate version and basic structure
+    if (!parsed.version || typeof parsed.isVisible !== 'boolean') {
+      return null;
+    }
+
+    return parsed;
+  } catch (error) {
+    console.warn('Failed to load ChatPane state:', error);
+    return null;
+  }
+};
+
+// Validate and clamp floating position to viewport
+const validateFloatingPosition = (pos, size) => {
+  if (typeof window === 'undefined') return pos;
+
+  const maxX = Math.max(0, window.innerWidth - (size?.width || 400) - 20);
+  const maxY = Math.max(0, window.innerHeight - (size?.height || 500) - 20);
+
+  return {
+    x: Math.max(0, Math.min(pos.x, maxX)),
+    y: Math.max(0, Math.min(pos.y, maxY))
+  };
+};
 
 // --- DOM ELEMENT REFS ---
 const windowPane = ref(null);
@@ -82,6 +149,15 @@ const dockedPaneSize = computed(() => {
     return {height: `${state.dockedSize}px`};
   }
 });
+
+// Watch for state changes and save to localStorage (debounced)
+watch(
+  () => state,
+  () => {
+    debounceSave(saveChatPaneState);
+  },
+  { deep: true }
+);
 
 // --- METHODS ---
 
@@ -210,12 +286,41 @@ const handleResizeMouseDown = (e) => {
 };
 
 // --- LIFECYCLE HOOKS ---
-onMounted(() => {
+onMounted(async () => {
+  // Load saved state from localStorage
+  const savedState = loadChatPaneState();
+  if (savedState) {
+    try {
+      // Validate and apply saved position if it's reasonable
+      if (savedState.floatingPos && savedState.floatingSize) {
+        const validatedPos = validateFloatingPosition(
+          savedState.floatingPos,
+          savedState.floatingSize
+        );
+        state.floatingPos = validatedPos;
+      }
+
+      // Apply other saved state properties
+      state.isVisible = savedState.isVisible ?? false;
+      state.isPinned = savedState.isPinned ?? false;
+      state.dockSide = savedState.dockSide ?? 'right';
+      state.floatingSize = savedState.floatingSize ?? { width: 400, height: 500 };
+      state.dockedSize = savedState.dockedSize ?? 350;
+    } catch (error) {
+      console.warn('Failed to apply saved ChatPane state:', error);
+    }
+  }
+
   // Add global event listener for 'click outside'
   document.addEventListener('click', handleClickOutside);
 });
 
 onUnmounted(() => {
+  // Clear any pending save timeout
+  if (saveTimeout) {
+    clearTimeout(saveTimeout);
+  }
+
   // Clean up global event listener to prevent memory leaks
   document.removeEventListener('click', handleClickOutside);
   // Also remove mousemove in case it's still attached somehow
