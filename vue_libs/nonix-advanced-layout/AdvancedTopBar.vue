@@ -10,7 +10,7 @@
         rounded
         @click="$emit('toggle-nav')"
         class="p-2"
-        v-tooltip.top="'Toggle Navigation'"
+        v-tooltip.bottom="'Toggle Navigation'"
       />
 
       <div class="flex align-items-center gap-2">
@@ -36,7 +36,7 @@
             rounded
             @click="action.command"
             class="p-2"
-            :v-tooltip.top="action.tooltip"
+            :v-tooltip.bottom="action.tooltip"
           />
           <Button
             v-if="hasHiddenActions"
@@ -46,7 +46,7 @@
             rounded
             @click="showMenu = !showMenu"
             class="p-2"
-            v-tooltip.top="'More Options'"
+            v-tooltip.bottom="'More Options'"
           />
         </div>
 
@@ -59,7 +59,7 @@
           rounded
           @click="showMenu = !showMenu"
           class="p-2 md:hidden"
-          v-tooltip.top="'Menu'"
+          v-tooltip.bottom="'Menu'"
         />
       </div>
 
@@ -71,7 +71,7 @@
         rounded
         @click.stop="$emit('toggle-chat')"
         class="p-2"
-        v-tooltip.top="'Toggle Chat'"
+        v-tooltip.bottom="'Toggle Chat'"
       />
     </div>
 
