@@ -7,20 +7,12 @@
     <div class="dock-zone" id="dock-zone-left" data-dock="left"></div>
 
     <div class="layout-wrapper">
-      <div class="the-top-bar" :class="{ collapsed: isTopBarCollapsed }">
-        <div>
-          <button @click="toggleNav">LOGO here to toggle </button>
-          <span>Page Name (hide in mobile mode)</span>
-        </div>
-        <div>
-          expand widhth until  optional buttons
-        </div>
-        <div>
-          .. list of optional menu items(menuItem) that collapse to a elipsis menu when mobile...
-          controllabe from  pages so they cann ad own menu items
-        </div>
-        <button @click.stop="toggleChatPane" style="float: right;" ref="toggleChatBtn">Toggle Chat</button>
-      </div>
+      <AdvancedTopBar
+        :collapsed="isTopBarCollapsed"
+        @toggle-nav="toggleNav"
+        @toggle-right="toggleRightSidebar"
+        @toggle-chat="toggleChatPane"
+      />
       <div class="the-main-area">
         <div class="left-navigation" :class="{ collapsed: isNavCollapsed }">
           <LeftNavSidebar />
@@ -64,10 +56,12 @@
 </template>
 
 <script setup>
-import {computed, onMounted, onUnmounted, reactive, ref} from 'vue';
+import {computed, onMounted, onUnmounted, reactive, ref, watch} from 'vue';
 import Chat from '@nonix-chat/components/Chat.vue';
 import LeftNavSidebar from "@nonix-advanced-layout/LeftNavSidebar.vue";
+import AdvancedTopBar from "@nonix-advanced-layout/AdvancedTopBar.vue";
 import Button from 'primevue/button';
+import { useAdvancedLayout } from './useAdvancedLayout.js';
 
 // --- STATE MANAGEMENT ---
 const state = reactive({
@@ -80,9 +74,15 @@ const state = reactive({
 });
 
 // UI Element Collapse States
-const isNavCollapsed = ref(false);
+const isNavCollapsed = computed({
+  get: () => layoutState.leftCollapsed,
+  set: (value) => layoutState.leftCollapsed = value
+});
 const isFooterCollapsed = ref(false);
 const isTopBarCollapsed = ref(false); // Can be used if needed
+
+// Advanced Layout Composable
+const { state: layoutState } = useAdvancedLayout();
 
 // --- DOM ELEMENT REFS ---
 const appContainer = ref(null);
@@ -140,6 +140,7 @@ const dockedPaneSize = computed(() => {
 const toggleNav = () => isNavCollapsed.value = !isNavCollapsed.value;
 const toggleFooter = () => isFooterCollapsed.value = !isFooterCollapsed.value;
 const toggleChatPane = () => state.isVisible = !state.isVisible;
+const toggleRightSidebar = () => layoutState.rightOpen = !layoutState.rightOpen;
 const togglePin = () => state.isPinned = !state.isPinned;
 const undockPane = () => state.dockSide = 'floating';
 const closePane = () => { state.isVisible = false; }
