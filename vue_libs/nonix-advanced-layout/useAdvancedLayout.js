@@ -48,41 +48,28 @@ const useAdvancedLayout = () => {
     isDesktop,
     hasNotifications,
 
-    // Header methods
-    setHeader: (config) => {
-      if (config.title !== undefined) layoutState.header.title = config.title
-      if (config.subtitle !== undefined) layoutState.header.subtitle = config.subtitle
-      if (config.showTitle !== undefined) layoutState.header.showTitle = config.showTitle
-      if (config.back !== undefined) layoutState.header.back = config.back
-      if (config.actions !== undefined) layoutState.header.actions = config.actions
-      if (config.breadcrumbs !== undefined) layoutState.header.breadcrumbs = config.breadcrumbs
-      if (config.onBack !== undefined) layoutState.header.onBack = config.onBack
-    },
-
+    // Header methods - simplified for AdvancedTopBar
     setTitle: (title) => {
       layoutState.header.title = title
-    },
-
-    setSubtitle: (subtitle) => {
-      layoutState.header.subtitle = subtitle
     },
 
     addAction: (action) => {
       layoutState.header.actions.push(action)
     },
 
+    removeAction: (actionId) => {
+      const index = layoutState.header.actions.findIndex(a => a.id === actionId)
+      if (index > -1) {
+        layoutState.header.actions.splice(index, 1)
+      }
+    },
+
     clearActions: () => {
       layoutState.header.actions = []
     },
 
-    resetHeader: () => {
-      layoutState.header.title = 'Advanced Layout'
-      layoutState.header.subtitle = null
-      layoutState.header.showTitle = true
-      layoutState.header.back = false
-      layoutState.header.actions = []
-      layoutState.header.breadcrumbs = []
-      layoutState.header.onBack = null
+    getActions: () => {
+      return layoutState.header.actions
     },
 
     // Layout methods
@@ -94,29 +81,9 @@ const useAdvancedLayout = () => {
       layoutState.rightOpen = !layoutState.rightOpen
     },
 
-    toggleRightPin: () => {
-      layoutState.rightPinned = !layoutState.rightPinned
-    },
-
-    openLeft: () => {
-      layoutState.leftCollapsed = false
-    },
-
-    closeLeft: () => {
-      layoutState.leftCollapsed = true
-    },
-
-    openRight: () => {
-      layoutState.rightOpen = true
-    },
-
-    closeRight: () => {
-      layoutState.rightOpen = false
-    },
-
-    setSidebarWidth: (width) => {
-      layoutState.sidebarWidth = Math.max(300, Math.min(1200, width))
-    },
+    // Computed getters for template
+    title: computed(() => layoutState.header.title),
+    actions: computed(() => layoutState.header.actions),
 
     // UI methods
     setLoading: (loading) => {

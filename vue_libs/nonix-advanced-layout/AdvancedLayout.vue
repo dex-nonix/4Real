@@ -9,8 +9,9 @@
     <div class="layout-wrapper">
       <AdvancedTopBar
         :collapsed="isTopBarCollapsed"
+        :title="layoutState.header.title"
+        :actions="layoutState.header.actions"
         @toggle-nav="toggleNav"
-        @toggle-right="toggleRightSidebar"
         @toggle-chat="toggleChatPane"
       />
       <div class="the-main-area">
