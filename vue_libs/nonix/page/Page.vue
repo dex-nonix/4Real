@@ -6,7 +6,7 @@
 
 <script setup>
 import { onMounted, onBeforeUnmount, watch, toRefs } from 'vue'
-import { usePageHeader } from '@nonix-advanced-layout/usePageHeader.js'
+import { useTopBar } from '@nonix-master-layout/useTopBar.js'
 
 const props = defineProps({
   title: { type: String, default: undefined },
@@ -16,7 +16,7 @@ const props = defineProps({
   onBack: { type: Function, default: undefined }
 })
 
-const { setHeader, resetHeader } = usePageHeader()
+const { setHeader, resetHeader } = useTopBar()
 const { title, back, actions, showRightToggle, onBack } = toRefs(props)
 
 function applyHeader() {

@@ -23,10 +23,10 @@ import Button from 'primevue/button'
 import Menu from 'primevue/menu'
 import {ref} from 'vue'
 import {useAppShell} from '@nonix-master-layout/useAppShell.js'
-import {usePageHeader} from './usePageHeader.js'
+import {useTopBar} from './useTopBar.js'
 
 const {state, toggleLeft, toggleRight} = useAppShell();
-const {state: header} = usePageHeader();
+const {state: header} = useTopBar();
 
 const menu = ref();
 

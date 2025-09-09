@@ -1,5 +1,9 @@
 <template>
-  <PanelMenu :model="menuItems" :router="true" :exact="true" class="w-18rem p-1" :pt="ptOverrides"/>
+  <PanelMenu
+      :model="menuItems"
+      :router="true"
+      :exact="true"
+      class="w-full" :pt="ptOverrides"/>
 </template>
 
 <script setup>

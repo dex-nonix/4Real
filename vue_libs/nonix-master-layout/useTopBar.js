@@ -8,7 +8,7 @@ const headerState = reactive({
     onBack: undefined
 })
 
-export const usePageHeader = () => ({
+export const useTopBar = () => ({
     state: headerState,
     setHeader: (next = {}) => {
         headerState.title = next.title

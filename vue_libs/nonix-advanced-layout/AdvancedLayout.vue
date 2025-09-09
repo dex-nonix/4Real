@@ -8,16 +8,25 @@
 
     <div class="layout-wrapper">
       <div class="the-top-bar" :class="{ collapsed: isTopBarCollapsed }">
-        <button @click="toggleNav">Toggle Nav</button>
-        <button @click="toggleFooter">Toggle Footer</button>
+        <div>
+          <button @click="toggleNav">LOGO here to toggle </button>
+          <span>Page Name (hide in mobile mode)</span>
+        </div>
+        <div>
+          expand widhth until  optional buttons
+        </div>
+        <div>
+          .. list of optional menu items(menuItem) that collapse to a elipsis menu when mobile...
+          controllabe from  pages so they cann ad own menu items
+        </div>
         <button @click.stop="toggleChatPane" style="float: right;" ref="toggleChatBtn">Toggle Chat</button>
       </div>
       <div class="the-main-area">
         <div class="left-navigation" :class="{ collapsed: isNavCollapsed }">
-<!--          <LeftNavSidebar />-->
+          <LeftNavSidebar />
         </div>
         <div class="the-content-area">
-<!--          <slot/>-->
+          <slot/>
         </div>
       </div>
       <div class="footer" :class="{ collapsed: isFooterCollapsed }">Toggleable Footer</div>
