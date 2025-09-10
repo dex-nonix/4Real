@@ -1,14 +1,15 @@
+from pathlib import Path
 from typing import List, Tuple, Optional
+
+import aiofiles
+from aiopath import AsyncPath
 from jinja2 import TemplateNotFound
 from jinja2_async_environment import AsyncBaseLoader
-from aiopath import AsyncPath
-from pathlib import Path
 from sqlalchemy import select
-import aiofiles
 
 from nonix_web_db import AsyncSessionLocal
 from .template_exceptions import TemplateNotFoundError
-from nonix_template.models.template import Template as DbTemplate
+from ..models.template import Template as DbTemplate
 
 
 class DatabaseTemplateLoader(AsyncBaseLoader):
@@ -111,11 +112,9 @@ class DatabaseTemplateLoader(AsyncBaseLoader):
         # Clear filesystem cache when paths change
         # Keep database cache as it's still valid
         fs_keys = [k for k, (_, path, _) in self._cache.items()
-                  if str(path).startswith('/')]  # filesystem paths start with /
+                   if str(path).startswith('/')]  # filesystem paths start with /
         for key in fs_keys:
             del self._cache[key]
-
-
 
     async def _load_template_by_name(self, template_name: str):
         """Load template from database by name"""
@@ -152,14 +151,14 @@ class DatabaseTemplateLoader(AsyncBaseLoader):
     def clear_filesystem_cache(self):
         """Clear only filesystem template cache"""
         fs_keys = [k for k, (_, path, _) in self._cache.items()
-                  if str(path).startswith('/')]  # filesystem paths start with /
+                   if str(path).startswith('/')]  # filesystem paths start with /
         for key in fs_keys:
             del self._cache[key]
 
     def clear_database_cache(self):
         """Clear only database template cache"""
         db_keys = [k for k, (_, path, _) in self._cache.items()
-                  if not str(path).startswith('/')]  # database paths don't start with /
+                   if not str(path).startswith('/')]  # database paths don't start with /
         for key in db_keys:
             del self._cache[key]
 

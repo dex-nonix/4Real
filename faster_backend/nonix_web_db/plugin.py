@@ -1,9 +1,8 @@
 from typing import Dict, Any
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.pool.impl import NullPool
 
-from nonix_web.plugin.base_plugin import BasePlugin
+from nonix_plugin.base import BasePlugin
 from nonix_web.server import NxWebServer
 from .models import Base
 

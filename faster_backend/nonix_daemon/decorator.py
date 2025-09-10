@@ -1,10 +1,10 @@
-from nonix_web.plugin.base_plugin import add_configure_callback
+from nonix_plugin import add_configure_callback
 from nonix_di import di_resolve
 from .manager import NxDaemonManager
 
 
 def daemons(classes):
-    def _add_daemon(plugin, server, config):
+    def _add_daemon(plugin, config):
         dm: NxDaemonManager = di_resolve(NxDaemonManager)
         for service_class in classes:
             dm.add_daemon(service_class)

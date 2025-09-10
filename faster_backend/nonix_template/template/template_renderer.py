@@ -5,8 +5,8 @@ from sqlalchemy import select
 
 from nonix_web_db import AsyncSessionLocal
 from .database_template_loader import DatabaseTemplateLoader
-from nonix_template.models.template import Template
 from .template_exceptions import TemplateNotFoundError, TemplateRenderingError, InvalidContextError
+from ..models.template import Template
 
 
 class TemplateRenderer:

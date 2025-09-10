@@ -3,7 +3,7 @@ from sqlalchemy import select
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     BaseCrudService
 from nonix_web_db import AsyncSessionLocal
-from nonix_web_agentic.schemas.chat_history_schemas import ChatHistoryCreate, ChatHistoryUpdate, ChatHistoryInDbModel
+from ..schemas.chat_history_schemas import ChatHistoryCreate, ChatHistoryUpdate, ChatHistoryInDbModel
 from ..models.chat_history import ChatHistory
 from ..models.chat_session import ChatSession
 

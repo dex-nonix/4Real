@@ -3,14 +3,14 @@ from fastapi import Request
 from nonix_web.router.web_server_router import NxWebServerRouter
 from nonix_web.router.decorators import router, route
 from nonix_di import NxInject
-from ...schemas.chat_session_schemas import ChatSessionCreate
-from ...schemas.chat_history_schemas import ChatHistoryCreate, ChatHistoryUpdate
-from ...schemas.chat_message_schemas import SendMessageToHistoryRequest, MessageTextOnlyUpdate
-from ...services.chat_session_service import ChatSessionService
-from ...services.chat_message_service import ChatMessageService
-from ...services.chat_history_service import ChatHistoryService
-from ...services.persona_service import PersonaService
-from ...services.tool_execution_service import ToolExecutionService
+from nonix_web_agentic.schemas.chat_session_schemas import ChatSessionCreate
+from nonix_web_agentic.schemas.chat_history_schemas import ChatHistoryCreate, ChatHistoryUpdate
+from nonix_web_agentic.schemas.chat_message_schemas import SendMessageToHistoryRequest, MessageTextOnlyUpdate
+from nonix_web_agentic.services.chat_session_service import ChatSessionService
+from nonix_web_agentic.services.chat_message_service import ChatMessageService
+from nonix_web_agentic.services.chat_history_service import ChatHistoryService
+from nonix_web_agentic.services.persona_service import PersonaService
+from nonix_web_agentic.services.tool_execution_service import ToolExecutionService
 
 
 @router("/chat", tags=["Chat"])

@@ -1,6 +1,7 @@
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     BaseCrudService
-from nonix_web_agentic.schemas.persona_tool_access_schemas import PersonaToolAccessCreate, PersonaToolAccessUpdate, PersonaToolAccessInDbModel
+from ..schemas.persona_tool_access_schemas import PersonaToolAccessCreate, PersonaToolAccessUpdate, \
+    PersonaToolAccessInDbModel
 from ..models.persona_tool_access import PersonaToolAccess
 
 

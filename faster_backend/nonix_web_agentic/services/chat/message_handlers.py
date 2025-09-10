@@ -10,7 +10,7 @@ from ...models.chat_message import ChatMessage
 from ...sequence_utils import next_seq
 
 if TYPE_CHECKING:
-    from ...routers.chat.chat_router import ChatRouter
+    from ...routers.chat_router import ChatRouter
 
 
 class ChatMessageHandler(MessageTypeHandler):

@@ -25,8 +25,6 @@ import Home from "@/views/Home.vue";
 import About from "@/views/About.vue";
 import DynamicFormExample from "@/views/DynamicFormExample.vue";
 import DynamicTableExample from "@/views/DynamicTableExample.vue";
-import Chat from "@/views/Chat.vue";
-import AdvancedLayout from "@nonix-advanced-layout/AdvancedLayout.vue";
 
 export const appConfig = {
 
@@ -100,7 +98,7 @@ export const appConfig = {
     displayWidgets: {},
     editWidgets: {},
     dynamicWidgets: {},
-    packages: [ 
+    packages: [
         /*
         {
             service: [],

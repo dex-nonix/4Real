@@ -1,7 +1,7 @@
 from nonix_web.router.decorators import router, route
 from nonix_web_db.crud import NxWebServerCrudRouter
 from nonix_di import NxInject
-from nonix_web_music_artist.services.artist_service import ArtistService
+from ...services.artist_service import ArtistService
 
 
 @router("/artists", tags=["Artists"])

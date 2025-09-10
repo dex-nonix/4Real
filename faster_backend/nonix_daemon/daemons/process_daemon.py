@@ -1,6 +1,7 @@
-import asyncio
-import multiprocessing
+
 from abc import ABC, abstractmethod
+from asyncio import run
+from multiprocessing import Process
 
 from ..base import NxBaseDaemon
 
@@ -16,7 +17,7 @@ class NxProcessDaemon(NxBaseDaemon, ABC):
 
     async def _start(self):
         if not self._process:
-            self._process = multiprocessing.Process(target=lambda: asyncio.run(self._run()))
+            self._process = Process(target=lambda: run(self._run()))
             self._process.start()
 
     async def _stop(self):

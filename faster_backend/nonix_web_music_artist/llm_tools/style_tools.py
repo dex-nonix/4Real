@@ -7,7 +7,7 @@ from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, Validatio
 from ..models.associations import TrackStyle
 from ..models.style import Style
 from ..models.track import Track
-from nonix_web_music_artist.routers.style.style_schemas import StyleCreate, StyleUpdate
+from ..routers.style.style_schemas import StyleCreate, StyleUpdate
 
 
 class StyleToolService(AgenticCrudTools):

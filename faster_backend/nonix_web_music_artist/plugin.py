@@ -1,5 +1,7 @@
-from nonix_web.plugin.base_plugin import BasePlugin, routers, services
-from nonix_web_agentic.llm.llm_tools_decorator import llm_tools
+from nonix_di.decorator import injectables
+from nonix_plugin.base import BasePlugin
+from nonix_web.decorator import web_routers
+from nonix_web_agentic.llm.decorator import llm_tools
 from .llm_tools.album_tools import album_tool_service
 from .llm_tools.artist_tools import artist_tool_service
 from .llm_tools.lyric_tools import lyric_tool_service
@@ -17,7 +19,7 @@ from .services.style_service import StyleService
 from .services.track_service import TrackService
 
 
-@routers([
+@web_routers([
     AlbumRouter,
     ArtistRouter,
     RhymeTechniqueRouter,
@@ -32,13 +34,12 @@ from .services.track_service import TrackService
     style_tool_service,  # Style CRUD + track assignment
     lyric_tool_service,  # Lyrics management
 ])
-@services([
+@injectables([
     AlbumService,
     ArtistService,
     TrackService,
     StyleService,
     RhymeTechniqueService
-
 ])
 class NxWebMusicArtistPlugin(BasePlugin):
     pass

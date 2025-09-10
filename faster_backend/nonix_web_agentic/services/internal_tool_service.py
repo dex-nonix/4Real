@@ -1,6 +1,6 @@
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     BaseCrudService
-from nonix_web_agentic.schemas.internal_tool_schemas import InternalToolCreate, InternalToolUpdate, InternalToolInDbModel
+from ..schemas.internal_tool_schemas import InternalToolCreate, InternalToolUpdate, InternalToolInDbModel
 from ..models.internal_tool import InternalTool
 
 

@@ -2,14 +2,16 @@ from typing import Dict, Any
 
 from fastapi.staticfiles import StaticFiles
 
-from nonix_web.plugin.base_plugin import BasePlugin
+from nonix_di import NxInject
+from nonix_plugin.base import BasePlugin
 from nonix_web.server import NxWebServer
 
 
 class NxWebStaticFilesPlugin(BasePlugin):
+    web_server: NxWebServer = NxInject(NxWebServer)
 
-    def _configure(self, server: NxWebServer, config: Dict[str, Any]):
-        server.app.mount(
+    def _configure(self, config: Dict[str, Any]):
+        self.web_server.app.mount(
             config["path"],
             StaticFiles(
                 directory=config["directory"],

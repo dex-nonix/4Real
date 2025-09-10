@@ -1,6 +1,7 @@
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     BaseCrudService
-from nonix_web_agentic.schemas.ai_analysis_result_schemas import AIAnalysisResultCreate, AIAnalysisResultUpdate, AIAnalysisResultInDbModel
+from ..schemas.ai_analysis_result_schemas import AIAnalysisResultCreate, AIAnalysisResultUpdate, \
+    AIAnalysisResultInDbModel
 from ..models.ai_analysis_result import AIAnalysisResult
 
 

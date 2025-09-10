@@ -423,7 +423,7 @@ class InternalFileCategoryService:
 
 ```python
 # Import and register internal routers for dependency injection
-from nonix_di.di import di_register
+from nonix_di import di_register
 from .internal.file_service import InternalFileService
 from .internal.file_link_service import InternalFileLinkService
 from .internal.file_category_service import InternalFileCategoryService
@@ -730,7 +730,7 @@ class FileManagerService:
 
 ```python
 # Import and register internal routers for dependency injection
-from nonix_di.di import di_register
+from nonix_di import di_register
 from .internal.file_service import InternalFileService
 from .internal.file_link_service import InternalFileLinkService
 from .internal.file_category_service import InternalFileCategoryService

@@ -1,12 +1,13 @@
 from typing import final, Callable
 
-from nonix_di.di import BaseInject, T, NxInject
-from .plugin_manager import PluginManager
+from nonix_di import NxInject
+from nonix_di.base import T, NxBaseInject
+from .manager import NxPluginManager
 
 
 @final
-class InjectPlugin(BaseInject[T, str | Callable[[], str]]):
-    plugin_manager: PluginManager = NxInject(PluginManager)
+class NxInjectPlugin(NxBaseInject[T, str | Callable[[], str]]):
+    plugin_manager: NxPluginManager = NxInject(NxPluginManager)
 
     def _resolve(self) -> T | None:
         resolved_dependency = self.plugin_manager.get_plugin(self.dependency)

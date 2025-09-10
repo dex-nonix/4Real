@@ -11,12 +11,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from nonix_di import NxInject
-from nonix_web.plugin.descriptor import InjectPlugin
+from nonix_plugin.descriptor import NxInjectPlugin
+from nonix_web.web_socket_service import NxWebServerWebSocketService
 from nonix_web_db import AsyncSessionLocal
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     BaseCrudService
 from ..llm.agentic_tool_manager import AgenticToolManager
-from nonix_web.web_socket_service import WebSocketService
 from ..llm.llm_message_utils import LCAIMessage, LCToolMessage, iter_messages
 from ..models.ai_model_mapping import AIModelMapping
 from ..models.ai_provider import AIProvider
@@ -25,7 +25,8 @@ from ..models.chat_message import ChatMessage
 from ..models.chat_session import ChatSession
 from ..models.persona import Persona
 from ..models.tool_invocation_log import ToolInvocationLog
-from ..schemas.chat_message_schemas import ChatMessageCreate, ChatMessageUpdate, ChatMessageInDbModel, SendMessageToHistoryRequest
+from ..schemas.chat_message_schemas import ChatMessageCreate, ChatMessageUpdate, ChatMessageInDbModel, \
+    SendMessageToHistoryRequest
 from ..sequence_utils import next_seq
 from ..services.chat.message_handlers import ChatMessageHandler, ToolCallMessageHandler
 from ..services.chat.message_type_registry import message_type_registry
@@ -35,7 +36,6 @@ from ..services.chat.streaming_message_handler import StreamingMessageHandler
 from ..services.chat.task_manager import ChatTaskManager
 
 if TYPE_CHECKING:
-    from ..plugin import NxWebAgenticPlugin
     from nonix_template.plugin import NxWebTemplatePlugin
 
 
@@ -63,10 +63,10 @@ class ChatMessageService(BaseCrudService):
         )
     )
 
-    agentic_plugin: "NxWebAgenticPlugin" = InjectPlugin("agentic")
-    template_plugin: "NxWebTemplatePlugin" = InjectPlugin("template")
+    # agentic_plugin: "NxWebAgenticPlugin" = NxInjectPlugin("agentic")
+    template_plugin: "NxWebTemplatePlugin" = NxInjectPlugin("template")
     agentic_tool_manager: AgenticToolManager = NxInject(AgenticToolManager)
-    web_socket_service: WebSocketService = NxInject(WebSocketService)
+    web_socket_service: NxWebServerWebSocketService = NxInject(NxWebServerWebSocketService)
 
     def __init__(self):
         """Initialize message type handlers."""

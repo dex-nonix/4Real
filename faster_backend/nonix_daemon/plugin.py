@@ -1,21 +1,18 @@
-from typing import Dict, Any, TYPE_CHECKING
+from typing import Dict, Any
 
-from nonix_daemon.manager import NxDaemonManager
-from nonix_web.plugin.base_plugin import BasePlugin, services
-from nonix_di import NxInject
-
-if TYPE_CHECKING:
-    from nonix_web.server import NxWebServer
+from nonix_di import NxInject, injectables
+from nonix_plugin import BasePlugin
+from .manager import NxDaemonManager
 
 
-@services([
+@injectables([
     NxDaemonManager
 ])
 class NxDaemonPlugin(BasePlugin):
     daemon_manager: NxDaemonManager = NxInject(NxDaemonManager)
 
-    def _startup(self, server: "NxWebServer", config: Dict[str, Any]):
+    def _startup(self, config: Dict[str, Any]):
         self.daemon_manager.start_all()
 
-    def _shutdown(self, server: "NxWebServer", config: Dict[str, Any]):
+    def _shutdown(self, config: Dict[str, Any]):
         self.daemon_manager.stop_all()

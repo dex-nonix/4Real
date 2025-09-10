@@ -1,10 +1,11 @@
 import logging
 
 from socketio import AsyncServer
+
 from nonix_di import NxInject
 
 
-class WebSocketService:
+class NxWebServerWebSocketService:
     """
     WebSocket service that provides send_ws_message method.
     Injects the server to enable WebSocket functionality.

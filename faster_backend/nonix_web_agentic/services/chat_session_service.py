@@ -1,18 +1,18 @@
 from sqlalchemy import func, select
 
+from nonix_di import NxInject
+from nonix_web.web_socket_service import NxWebServerWebSocketService
+from nonix_web_db import AsyncSessionLocal
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     BaseCrudService
-from nonix_web_db import AsyncSessionLocal
-from nonix_web.web_socket_service import WebSocketService
-from nonix_di import NxInject
-from ..schemas.chat_session_schemas import ChatSessionCreate, ChatSessionUpdate, ChatSessionInDbModel
-from ..models.chat_session import ChatSession
 from ..models.chat_history import ChatHistory
+from ..models.chat_session import ChatSession
 from ..models.persona import Persona
+from ..schemas.chat_session_schemas import ChatSessionCreate, ChatSessionUpdate, ChatSessionInDbModel
 
 
 class ChatSessionService(BaseCrudService):
-    web_socket_service: WebSocketService = NxInject(WebSocketService)
+    web_socket_service: NxWebServerWebSocketService = NxInject(NxWebServerWebSocketService)
 
     config = CRUDConfig(
         model=ChatSession,
@@ -113,7 +113,6 @@ class ChatSessionService(BaseCrudService):
                 session.current_history_id = history.id
                 await db_session.commit()
 
-
                 return session
             except Exception as exc:
                 await db_session.rollback()
@@ -147,7 +146,8 @@ class ChatSessionService(BaseCrudService):
 
         return session_data
 
-    async def update_session(self, session_id: int, session_name: str = None, session_icon: str = None, is_active: bool = None):
+    async def update_session(self, session_id: int, session_name: str = None, session_icon: str = None,
+                             is_active: bool = None):
         """Update a chat session."""
         async with AsyncSessionLocal() as db_session:
             try:

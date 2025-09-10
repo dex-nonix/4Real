@@ -297,7 +297,7 @@ class FileManagerService:
 
 ```python
 # nonix_web_file_manager/routers/__init__.py
-from nonix_di.di import di_register
+from nonix_di import di_register
 from .internal.file_service import InternalFileService
 from .internal.file_link_service import InternalFileLinkService
 from .file_manager_service import FileManagerService

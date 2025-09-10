@@ -3,18 +3,14 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Union, List, Dict, Any, TYPE_CHECKING
+from typing import Union, List, Dict, Any
 
-from .base_plugin import BasePlugin
-
-if TYPE_CHECKING:
-    from ..server import NxWebServer
+from .base import BasePlugin
 
 
-class PluginManager:
-    def __init__(self, server: "NxWebServer", plugin_paths: Union[str, List[str]]):
+class NxPluginManager:
+    def __init__(self, plugin_paths: Union[str, List[str]]):
         self._logger = logging.getLogger(self.__class__.__name__)
-        self.server = server
         self.plugin_paths = [
             Path(p).resolve() for p in
             ([plugin_paths] if isinstance(plugin_paths, str) else plugin_paths)
@@ -155,7 +151,7 @@ class PluginManager:
             self.loaded_plugins[plugin_name] = plugin_instance
 
             self._logger.info(f"Configuring plugin: '{plugin_instance.name}' version {plugin_instance.version}")
-            plugin_instance.configure(self.server, plugin_instance.config)
+            plugin_instance.configure(plugin_instance.config)
 
 
         except (ImportError, AttributeError, Exception) as e:
@@ -172,13 +168,13 @@ class PluginManager:
             plugin_instance = self.loaded_plugins.get(plugin_name)
             if not plugin_instance:
                 continue
-            await plugin_instance.startup(self.server, plugin_instance.config)
+            await plugin_instance.startup(plugin_instance.config)
 
     async def shutdown_plugins(self):
         """Run shutdown for plugins in reverse order of loading."""
         self._logger.info("Starting plugin shutdown phase.")
         for plugin_name, plugin_instance in reversed(list(self.loaded_plugins.items())):
-            await plugin_instance.shutdown(self.server, plugin_instance.config)
+            await plugin_instance.shutdown(plugin_instance.config)
 
     def get_plugin(self, name):
         return self.loaded_plugins.get(name, None)

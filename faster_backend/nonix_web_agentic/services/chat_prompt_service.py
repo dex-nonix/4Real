@@ -1,6 +1,6 @@
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     BaseCrudService
-from nonix_web_agentic.schemas.chat_prompt_schemas import ChatPromptCreate, ChatPromptUpdate, ChatPromptInDbModel
+from ..schemas.chat_prompt_schemas import ChatPromptCreate, ChatPromptUpdate, ChatPromptInDbModel
 from ..models.chat_prompt import ChatPrompt
 
 

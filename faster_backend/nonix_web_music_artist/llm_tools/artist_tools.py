@@ -126,7 +126,7 @@ class ArtistToolService(AgenticCrudTools):
         for album in albums:
             if album.get("release_date"):
                 year = album["release_date"].year if hasattr(album["release_date"], "year") else album["release_date"][
-                                                                                                 :4]
+                    :4]
                 album_release_years[year] = album_release_years.get(year, 0) + 1
 
         # Track statistics

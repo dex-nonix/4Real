@@ -1,17 +1,18 @@
 from pathlib import Path
 from typing import Any, Dict
 
-from nonix_web.plugin.base_plugin import BasePlugin, services
-from nonix_web.plugin.base_plugin import routers
-from nonix_web.plugin.descriptor import InjectPlugin
+from nonix_di.decorator import injectables
+from nonix_plugin.base import BasePlugin
+from nonix_plugin.descriptor import NxInjectPlugin
+from nonix_web.decorator import web_routers
 from .llm.agentic_tool_manager import AgenticToolManager
 from .routers.ai_analysis_result_router import AIAnalysisResultRouter
 from .routers.ai_model_mapping_router import AIModelMappingRouter
 from .routers.ai_provider_router import AIProviderRouter
-from .routers.chat.chat_router import ChatRouter
 from .routers.chat_history_router import ChatHistoryRouter
 from .routers.chat_message_router import ChatMessageRouter
 from .routers.chat_prompt_router import ChatPromptRouter
+from .routers.chat_router import ChatRouter
 from .routers.chat_session_router import ChatSessionRouter
 from .routers.internal_tool_router import InternalToolRouter
 from .routers.mcp_server_router import MCPServerRouter
@@ -35,7 +36,7 @@ from .services.tool_execution_service import ToolExecutionService
 from .services.tool_invocation_log_service import ToolInvocationLogService
 
 
-@routers([
+@web_routers([
     AIAnalysisResultRouter,
     AIModelMappingRouter,
     AIProviderRouter,
@@ -51,7 +52,7 @@ from .services.tool_invocation_log_service import ToolInvocationLogService
     PersonaToolAccessRouter,
     ToolInvocationLogRouter
 ])
-@services([
+@injectables([
     AgenticToolManager,
     AIAnalysisResultService,
     AIModelMappingService,
@@ -69,8 +70,7 @@ from .services.tool_invocation_log_service import ToolInvocationLogService
     ToolExecutionService
 ])
 class NxWebAgenticPlugin(BasePlugin):
-    template_plugin = InjectPlugin("template")
+    template_plugin = NxInjectPlugin("template")
 
-    async def _startup(self, server: "NxWebServer", config: Dict[str, Any]):
+    async def _startup(self, config: Dict[str, Any]):
         self.template_plugin.add_search_path(str(Path(__file__).parent / "templates"))
-

@@ -66,11 +66,11 @@ settings.PLUGINS = [
 ### Basic Template Rendering
 
 ```python
-from nonix_di.di import InjectPlugin
+from nonix_di.register import NxInjectPlugin
 
 
 class MyPlugin(BasePlugin):
-    template_plugin: "NxWebTemplatePlugin" = InjectPlugin("template")
+    template_plugin: "NxWebTemplatePlugin" = NxInjectPlugin("template")
 
     async def generate_content(self):
         # Render template with context

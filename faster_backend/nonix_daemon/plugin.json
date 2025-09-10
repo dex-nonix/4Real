@@ -1,5 +1,5 @@
 {
-    "name": "cors",
+    "name": "daemon",
     "version": "0.5.0",
     "class": "NxDaemonPlugin",
     "config": {

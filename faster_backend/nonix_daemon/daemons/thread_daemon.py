@@ -1,6 +1,6 @@
 import asyncio
-import threading
 from abc import ABC, abstractmethod
+from threading import Thread, Event
 
 from ..base import NxBaseDaemon
 
@@ -13,12 +13,12 @@ class NxThreadDaemon(NxBaseDaemon, ABC):
     def __init__(self, name: str):
         super().__init__(name)
         self._thread = None
-        self._stop_event = threading.Event()
+        self._stop_event = Event()
 
     async def _start(self):
         if not self._thread:
             self._stop_event.clear()
-            self._thread = threading.Thread(target=lambda: asyncio.run(self._run()))
+            self._thread = Thread(target=lambda: asyncio.run(self._run()))
             self._thread.start()
 
     async def _stop(self):

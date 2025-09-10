@@ -6,9 +6,9 @@ from typing import Any, Optional, Callable, Awaitable
 from fastapi import APIRouter
 from starlette.responses import JSONResponse
 
+from nonix_di import NxInject
 from .decorators import _RoutedServiceDefinition, _RoutedServiceMethodDefinition
 from ..server import NxWebServer
-from nonix_di import NxInject
 
 
 def _get_routed_service_definition(cls) -> _RoutedServiceDefinition:

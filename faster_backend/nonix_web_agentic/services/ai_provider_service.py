@@ -1,6 +1,6 @@
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
     BaseCrudService
-from nonix_web_agentic.schemas.ai_provider_schemas import AIProviderCreate, AIProviderUpdate, AIProviderInDbModel
+from ..schemas.ai_provider_schemas import AIProviderCreate, AIProviderUpdate, AIProviderInDbModel
 from ..models.ai_provider import AIProvider
 
 

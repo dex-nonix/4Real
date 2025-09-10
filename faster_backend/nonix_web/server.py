@@ -7,16 +7,15 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from socketio import AsyncServer, ASGIApp
 
+from nonix_di import di_register
+from nonix_plugin.manager import NxPluginManager
 from .config import Settings
-from nonix_daemon import NxDaemonManager
-from .plugin.plugin_manager import PluginManager
-from nonix_di.di import di_register
-from .web_socket_service import WebSocketService
+from .web_socket_service import NxWebServerWebSocketService
 
 
 class NxWebServer:
     sio: AsyncServer = None
-    plugin_manager: PluginManager
+    plugin_manager: NxPluginManager
     app: FastAPI
 
     def __init__(self, settings: Settings):
@@ -36,8 +35,8 @@ class NxWebServer:
             self._enable_websocket()
         # self.daemon_manager = NxDaemonManager()
         # di_register(NxDaemonManager, instance=self.daemon_manager)
-        self.plugin_manager = PluginManager(self, self.settings.PLUGIN_SEARCH_PATH)
-        di_register(PluginManager, instance=self.plugin_manager)
+        self.plugin_manager = NxPluginManager(self, self.settings.PLUGIN_SEARCH_PATH)
+        di_register(NxPluginManager, instance=self.plugin_manager)
         self.__init__server()
         self.plugin_manager.discover_plugins()
         self.plugin_manager.configure_plugins(self.settings.PLUGINS)
@@ -95,7 +94,7 @@ class NxWebServer:
             cors_allowed_origins=self.settings.WS_ALLOWED_ORIGINS
         )
         di_register(AsyncServer, instance=sio)
-        di_register(WebSocketService)
+        di_register(NxWebServerWebSocketService)
 
         @sio.event
         async def connect(sid, environ):
