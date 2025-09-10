@@ -26,3 +26,4 @@ langgraph==0.6.5
 langgraph-checkpoint==2.1.1
 langgraph-prebuilt==0.6.4
 langgraph-sdk==0.2.2
+pyee==13.0.0
