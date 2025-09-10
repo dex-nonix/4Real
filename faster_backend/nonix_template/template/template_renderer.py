@@ -25,7 +25,6 @@ class TemplateRenderer:
     async def render_by_name(self, template_name: str, context: Optional[Dict[str, Any]] = None) -> str:
         """Render template by name with optional context"""
         try:
-            # Use AsyncEnvironment which will call our DatabaseTemplateLoader asynchronously
             jinja_template = await self.env.get_template(template_name)
             return await jinja_template.render_async(**context) if context else await jinja_template.render_async()
         except Exception as e:
@@ -36,12 +35,10 @@ class TemplateRenderer:
     async def render_by_id(self, template_id: int, context: Optional[Dict[str, Any]] = None) -> str:
         """Render template by ID with optional context"""
         try:
-            # First get the template name from database
             template = await self._get_template_by_id(template_id)
             if not template:
                 raise TemplateNotFoundError(f"id:{template_id}")
 
-            # Then use AsyncEnvironment with the template name
             jinja_template = await self.env.get_template(template.name)
             return await jinja_template.render_async(**context) if context else await jinja_template.render_async()
         except Exception as e:
@@ -104,13 +101,8 @@ class TemplateRenderer:
 
     async def _render_template(self, template, context: Optional[Dict[str, Any]] = None) -> str:
         """Render a template with context"""
-        # Merge contexts: template default context + user context
         merged_context = self._merge_contexts(template.context, context)
-
-        # Use the loader to get template (supports inheritance and async)
         jinja_template = await self.env.get_template(template.name)
-
-        # Render template
         try:
             rendered = await jinja_template.render_async(**merged_context)
             return rendered.strip()
@@ -121,14 +113,10 @@ class TemplateRenderer:
                         user_context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         """Merge template and user contexts with proper precedence"""
         merged = {}
-
-        # Start with template default context
         if template_context:
             if not isinstance(template_context, dict):
                 raise InvalidContextError("Template context must be a dictionary")
             merged.update(template_context)
-
-        # Override with user context
         if user_context:
             if not isinstance(user_context, dict):
                 raise InvalidContextError("User context must be a dictionary")

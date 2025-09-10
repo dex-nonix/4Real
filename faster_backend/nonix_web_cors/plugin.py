@@ -2,7 +2,7 @@ from typing import Dict, Any
 
 from fastapi.middleware.cors import CORSMiddleware
 
-from nonix_di import NxInject
+from nonix_di.resolve import NxInject
 from nonix_plugin.base import BasePlugin
 from nonix_web.server import NxWebServer
 

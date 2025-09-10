@@ -457,7 +457,7 @@ from . import services
 
 ```python
 from typing import List, Dict, Any, Optional
-from nonix_di import NxInject
+from nonix_di.resolve import NxInject
 from .internal.file_service import InternalFileService
 from .internal.file_link_service import InternalFileLinkService
 from .internal.file_category_service import InternalFileCategoryService
@@ -773,7 +773,7 @@ class AlbumRouter(NxWebServerCrudRouter):
 ```python
 
 from nonix_web.router.decorators import router
-from nonix_di import NxInject  # ← ADD THIS IMPORT
+from nonix_di.resolve import NxInject  # ← ADD THIS IMPORT
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig,
 
 NxWebServerCrudRouter

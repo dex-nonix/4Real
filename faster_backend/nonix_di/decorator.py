@@ -1,5 +1,5 @@
 from nonix_plugin import add_configure_callback
-from . import di_register
+from .register import di_register
 
 
 def injectables(classes):

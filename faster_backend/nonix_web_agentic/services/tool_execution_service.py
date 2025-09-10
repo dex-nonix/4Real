@@ -4,7 +4,7 @@ from sqlalchemy import select
 import logging
 
 from nonix_web_db import AsyncSessionLocal
-from nonix_di import NxInject
+from nonix_di.resolve import NxInject
 from ..models.mcp_server import MCPServer
 from ..models.persona import Persona
 from ..llm.agentic_tool_manager import AgenticToolManager

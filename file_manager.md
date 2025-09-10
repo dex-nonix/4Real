@@ -213,7 +213,7 @@ class InternalFileLinkService:
 ```python
 # nonix_web_file_manager/routers/file_manager_service.py
 from typing import List
-from nonix_di import NxInject
+from nonix_di.resolve import NxInject
 from .internal.file_service import InternalFileService
 from .internal.file_link_service import InternalFileLinkService
 
@@ -312,7 +312,7 @@ di_register(FileManagerService, singleton=True)
 
 ```python
 # In any other plugin service
-from nonix_di import NxInject
+from nonix_di.resolve import NxInject
 from nonix_web_file_manager.services.file_manager_service import FileManagerService
 
 

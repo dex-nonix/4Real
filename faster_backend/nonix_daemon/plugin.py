@@ -1,6 +1,6 @@
 from typing import Dict, Any
 
-from nonix_di import NxInject, injectables
+from nonix_di.resolve import NxInject, injectables
 from nonix_plugin import BasePlugin
 from .manager import NxDaemonManager
 

@@ -1,8 +1,8 @@
 from typing import final
 
-from nonix_di import InjectDependencyType
-from nonix_di.base import NxBaseInject, T
-from nonix_di.container import _container
+
+from .base import NxBaseInject, T
+from .container import _container, InjectDependencyType
 
 
 def di_resolve( dependency, required = True ):

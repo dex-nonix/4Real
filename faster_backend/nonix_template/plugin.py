@@ -29,7 +29,7 @@ class NxWebTemplatePlugin(BasePlugin):
         super().__init__(config)
         self._search_paths = []
 
-    def _configure(self, server: "NxWebServer", config: Dict[str, Any]):
+    def _configure(self, config: Dict[str, Any]):
         """Initialize template renderer and services during plugin configuration"""
         # Register services in DI system
         di_register(TemplateService)

@@ -1,4 +1,4 @@
-from nonix_di import di_resolve
+from nonix_di.resolve import di_resolve
 from nonix_plugin import add_configure_callback
 from .server import NxWebServer
 

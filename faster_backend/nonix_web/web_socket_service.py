@@ -2,7 +2,7 @@ import logging
 
 from socketio import AsyncServer
 
-from nonix_di import NxInject
+from nonix_di.resolve import NxInject
 
 
 class NxWebServerWebSocketService:

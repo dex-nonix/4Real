@@ -1,7 +1,8 @@
 from typing import final, Callable
 
-from nonix_di import NxInject
+
 from nonix_di.base import T, NxBaseInject
+from nonix_di.resolve import NxInject
 from .manager import NxPluginManager
 
 

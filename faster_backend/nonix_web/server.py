@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from socketio import AsyncServer, ASGIApp
 
-from nonix_di import di_register
+from nonix_di.register import di_register
 from nonix_plugin.manager import NxPluginManager
 from .config import Settings
 from .web_socket_service import NxWebServerWebSocketService
@@ -35,7 +35,7 @@ class NxWebServer:
             self._enable_websocket()
         # self.daemon_manager = NxDaemonManager()
         # di_register(NxDaemonManager, instance=self.daemon_manager)
-        self.plugin_manager = NxPluginManager(self, self.settings.PLUGIN_SEARCH_PATH)
+        self.plugin_manager = NxPluginManager(self.settings.PLUGIN_SEARCH_PATH)
         di_register(NxPluginManager, instance=self.plugin_manager)
         self.__init__server()
         self.plugin_manager.discover_plugins()

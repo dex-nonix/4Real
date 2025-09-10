@@ -6,7 +6,7 @@ from typing import Any, Optional, Callable, Awaitable
 from fastapi import APIRouter
 from starlette.responses import JSONResponse
 
-from nonix_di import NxInject
+from nonix_di.resolve import NxInject
 from .decorators import _RoutedServiceDefinition, _RoutedServiceMethodDefinition
 from ..server import NxWebServer
 

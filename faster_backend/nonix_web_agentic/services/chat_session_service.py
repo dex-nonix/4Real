@@ -1,6 +1,6 @@
 from sqlalchemy import func, select
 
-from nonix_di import NxInject
+from nonix_di.resolve import NxInject
 from nonix_web.web_socket_service import NxWebServerWebSocketService
 from nonix_web_db import AsyncSessionLocal
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \

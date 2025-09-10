@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, TYPE_CHECKING
 
-from nonix_di import NxInject
+from nonix_di.resolve import NxInject
 from nonix_web_db import AsyncSessionLocal
 from .message_type_registry import MessageTypeHandler
 from ...llm.agentic_tool_manager import AgenticToolManager

@@ -3,10 +3,10 @@ from typing import Dict, Any
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 
 from nonix_plugin.base import BasePlugin
-from nonix_web.server import NxWebServer
 from .models import Base
 
 _async_session_local = None
+
 
 async def get_db():
     async with AsyncSessionLocal() as session:
@@ -28,10 +28,10 @@ def AsyncSessionLocal() -> async_sessionmaker:
 class NxWebDbPlugin(BasePlugin):
     engine = None
 
-    def _configure(self, server: NxWebServer, config: Dict[str, Any]):
+    def _configure(self, config: Dict[str, Any]):
         pass
 
-    async def _startup(self, server: NxWebServer, config: Dict[str, Any]):
+    async def _startup(self, config: Dict[str, Any]):
         global _async_session_local
         options = config.get("options", {})
 
@@ -41,6 +41,6 @@ class NxWebDbPlugin(BasePlugin):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
-    async def _shutdown(self, server: NxWebServer, config: Dict[str, Any]):
+    async def _shutdown(self, config: Dict[str, Any]):
         if self.engine:
             await self.engine.dispose()
