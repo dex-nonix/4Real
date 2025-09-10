@@ -1,3 +1,13 @@
+"""
+Daemon Example with Abstract Base Classes
+
+This example demonstrates:
+1. Abstract daemon base classes (AsyncioDaemon, ThreadDaemon, ProcessDaemon)
+2. Concrete implementations that inherit from the abstract classes
+3. DaemonManager with its own event system
+4. Proper separation of daemon events vs manager events
+"""
+
 import asyncio
 import logging
 
@@ -6,6 +16,44 @@ from nonix_web.deamon import ProcessDaemon, ThreadDaemon, AsyncioDaemon, DaemonM
 
 # Basic logging setup
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+
+# Concrete implementations of abstract daemon classes
+class ExampleAsyncioDaemon(AsyncioDaemon):
+    """Concrete implementation of AsyncioDaemon."""
+
+    async def _run(self):
+        self.logger.info(f"ExampleAsyncioDaemon '{self.name}' started.")
+        try:
+            while True:
+                self.logger.info(f"ExampleAsyncioDaemon '{self.name}' is processing data...")
+                await asyncio.sleep(3)  # Process every 3 seconds
+        except asyncio.CancelledError:
+            self.logger.info(f"ExampleAsyncioDaemon '{self.name}' is stopping.")
+
+
+class ExampleThreadDaemon(ThreadDaemon):
+    """Concrete implementation of ThreadDaemon."""
+
+    async def _run(self):
+        self.logger.info(f"ExampleThreadDaemon '{self.name}' started.")
+        while not self._stop_event.is_set():
+            self.logger.info(f"ExampleThreadDaemon '{self.name}' is monitoring files...")
+            await asyncio.sleep(4)  # Monitor every 4 seconds
+        self.logger.info(f"ExampleThreadDaemon '{self.name}' stopped.")
+
+
+class ExampleProcessDaemon(ProcessDaemon):
+    """Concrete implementation of ProcessDaemon."""
+
+    async def _run(self):
+        self.logger.info(f"ExampleProcessDaemon '{self.name}' started.")
+        try:
+            while True:
+                self.logger.info(f"ExampleProcessDaemon '{self.name}' is computing heavy tasks...")
+                await asyncio.sleep(6)  # Heavy computation every 6 seconds
+        except (KeyboardInterrupt, SystemExit):
+            self.logger.info(f"ExampleProcessDaemon '{self.name}' is stopping.")
 
 if __name__ == '__main__':
     async def main():
@@ -33,9 +81,9 @@ if __name__ == '__main__':
             manager.emitter.on(event.value, log_manager_event(event.name))
 
         # --- Create and Add Daemons ---
-        async_daemon = AsyncioDaemon("async-worker-1")
-        thread_daemon = ThreadDaemon("thread-worker-1")
-        process_daemon = ProcessDaemon("process-worker-1")
+        async_daemon = ExampleAsyncioDaemon("async-data-processor")
+        thread_daemon = ExampleThreadDaemon("thread-file-monitor")
+        process_daemon = ExampleProcessDaemon("process-heavy-compute")
 
         manager.add_daemon(async_daemon)
         manager.add_daemon(thread_daemon)

@@ -1,12 +1,13 @@
 import asyncio
 import multiprocessing
+from abc import ABC, abstractmethod
 
 from .base_daemon import BaseDaemon
 
 
-class ProcessDaemon(BaseDaemon):
+class ProcessDaemon(BaseDaemon, ABC):
     """
-    A daemon that runs in a separate process.
+    Abstract base class for daemons that run in a separate process.
     """
 
     def __init__(self, name: str):
@@ -24,11 +25,9 @@ class ProcessDaemon(BaseDaemon):
             self._process.join()
             self._process = None
 
+    @abstractmethod
     async def _run(self):
-        self.logger.info(f"ProcessDaemon '{self.name}' started.")
-        try:
-            while True:
-                self.logger.info(f"ProcessDaemon '{self.name}' is running.")
-                await asyncio.sleep(5)
-        except (KeyboardInterrupt, SystemExit):
-            self.logger.info(f"ProcessDaemon '{self.name}' is stopping.")
+        """
+        Abstract method to be implemented by concrete subclasses.
+        """
+        pass

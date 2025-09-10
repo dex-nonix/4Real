@@ -1,11 +1,12 @@
 import asyncio
+from abc import ABC, abstractmethod
 
 from .base_daemon import BaseDaemon
 
 
-class AsyncioDaemon(BaseDaemon):
+class AsyncioDaemon(BaseDaemon, ABC):
     """
-    A daemon that runs as an asyncio task.
+    Abstract base class for daemons that run as asyncio tasks.
     """
 
     def __init__(self, name: str):
@@ -25,11 +26,9 @@ class AsyncioDaemon(BaseDaemon):
                 pass
             self._task = None
 
+    @abstractmethod
     async def _run(self):
-        self.logger.info(f"AsyncioDaemon '{self.name}' started.")
-        try:
-            while True:
-                self.logger.info(f"AsyncioDaemon '{self.name}' is running.")
-                await asyncio.sleep(5)
-        except asyncio.CancelledError:
-            self.logger.info(f"AsyncioDaemon '{self.name}' is stopping.")
+        """
+        Abstract method to be implemented by concrete subclasses.
+        """
+        pass

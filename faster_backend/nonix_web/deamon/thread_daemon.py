@@ -1,12 +1,13 @@
 import asyncio
 import threading
+from abc import ABC, abstractmethod
 
 from .base_daemon import BaseDaemon
 
 
-class ThreadDaemon(BaseDaemon):
+class ThreadDaemon(BaseDaemon, ABC):
     """
-    A daemon that runs in a separate thread.
+    Abstract base class for daemons that run in a separate thread.
     """
 
     def __init__(self, name: str):
@@ -26,9 +27,9 @@ class ThreadDaemon(BaseDaemon):
             self._thread.join()
             self._thread = None
 
+    @abstractmethod
     async def _run(self):
-        self.logger.info(f"ThreadDaemon '{self.name}' started.")
-        while not self._stop_event.is_set():
-            self.logger.info(f"ThreadDaemon '{self.name}' is running.")
-            await asyncio.sleep(5)
-        self.logger.info(f"ThreadDaemon '{self.name}' stopped.")
+        """
+        Abstract method to be implemented by concrete subclasses.
+        """
+        pass
