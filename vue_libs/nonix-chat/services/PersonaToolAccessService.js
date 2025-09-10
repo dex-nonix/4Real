@@ -1,4 +1,3 @@
-// src/services/PersonaToolAccessService.js
 import CrudService from '@/services/CrudService.js'
 
 export default class PersonaToolAccessService extends CrudService {

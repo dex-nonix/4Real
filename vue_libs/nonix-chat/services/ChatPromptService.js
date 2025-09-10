@@ -1,4 +1,3 @@
-// src/services/ChatPromptService.js
 import CrudService from '@/services/CrudService.js'
 
 export default class ChatPromptService extends CrudService {

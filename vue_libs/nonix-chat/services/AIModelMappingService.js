@@ -1,4 +1,3 @@
-// src/services/AIModelMappingService.js
 import CrudService from '@/services/CrudService.js'
 
 export default class AIModelMappingService extends CrudService {
