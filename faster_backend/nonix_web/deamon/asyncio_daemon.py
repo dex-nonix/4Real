@@ -1,10 +1,10 @@
 import asyncio
 from abc import ABC, abstractmethod
 
-from .base_daemon import BaseDaemon
+from .base_daemon import NxBaseDaemon
 
 
-class AsyncioDaemon(BaseDaemon, ABC):
+class NxAsyncioDaemon(NxBaseDaemon, ABC):
     """
     Abstract base class for daemons that run as asyncio tasks.
     """

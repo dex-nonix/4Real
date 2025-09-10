@@ -2,10 +2,10 @@ import asyncio
 import threading
 from abc import ABC, abstractmethod
 
-from .base_daemon import BaseDaemon
+from .base_daemon import NxBaseDaemon
 
 
-class ThreadDaemon(BaseDaemon, ABC):
+class NxThreadDaemon(NxBaseDaemon, ABC):
     """
     Abstract base class for daemons that run in a separate thread.
     """

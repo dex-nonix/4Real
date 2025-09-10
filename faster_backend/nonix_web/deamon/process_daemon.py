@@ -2,10 +2,10 @@ import asyncio
 import multiprocessing
 from abc import ABC, abstractmethod
 
-from .base_daemon import BaseDaemon
+from .base_daemon import NxBaseDaemon
 
 
-class ProcessDaemon(BaseDaemon, ABC):
+class NxProcessDaemon(NxBaseDaemon, ABC):
     """
     Abstract base class for daemons that run in a separate process.
     """

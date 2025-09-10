@@ -1,16 +1,16 @@
-from .daemon_events import DaemonEvents, DaemonManagerEvents
-from .base_daemon import BaseDaemon
-from .asyncio_daemon import AsyncioDaemon
-from .thread_daemon import ThreadDaemon
-from .process_daemon import ProcessDaemon
-from .daemon_manager import DaemonManager
+from .daemon_events import NxDaemonEvents, NxDaemonManagerEvents
+from .base_daemon import NxBaseDaemon
+from .asyncio_daemon import NxAsyncioDaemon
+from .thread_daemon import NxThreadDaemon
+from .process_daemon import NxProcessDaemon
+from .daemon_manager import NxDaemonManager
 
 __all__ = [
-    'DaemonEvents',
-    'DaemonManagerEvents',
-    'BaseDaemon',
-    'AsyncioDaemon',
-    'ThreadDaemon',
-    'ProcessDaemon',
-    'DaemonManager'
+    'NxDaemonEvents',
+    'NxDaemonManagerEvents',
+    'NxBaseDaemon',
+    'NxAsyncioDaemon',
+    'NxThreadDaemon',
+    'NxProcessDaemon',
+    'NxDaemonManager'
 ]

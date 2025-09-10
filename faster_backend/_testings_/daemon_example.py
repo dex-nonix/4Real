@@ -1,25 +1,25 @@
 """
-Daemon Example with Abstract Base Classes
+Nx Daemon Example with Abstract Base Classes
 
 This example demonstrates:
-1. Abstract daemon base classes (AsyncioDaemon, ThreadDaemon, ProcessDaemon)
-2. Concrete implementations that inherit from the abstract classes
-3. DaemonManager with its own event system
+1. Nx-prefixed abstract daemon base classes (NxAsyncioDaemon, NxThreadDaemon, NxProcessDaemon)
+2. Example-prefixed concrete implementations that inherit from the abstract classes
+3. NxDaemonManager with its own event system
 4. Proper separation of daemon events vs manager events
 """
 
 import asyncio
 import logging
 
-from nonix_web.deamon import ProcessDaemon, ThreadDaemon, AsyncioDaemon, DaemonManagerEvents, DaemonEvents, \
-    DaemonManager
+from nonix_web.deamon import NxProcessDaemon, NxThreadDaemon, NxAsyncioDaemon, NxDaemonManagerEvents, NxDaemonEvents, \
+    NxDaemonManager
 
 # Basic logging setup
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 # Concrete implementations of abstract daemon classes
-class ExampleAsyncioDaemon(AsyncioDaemon):
+class ExampleAsyncioDaemon(NxAsyncioDaemon):
     """Concrete implementation of AsyncioDaemon."""
 
     async def _run(self):
@@ -32,7 +32,7 @@ class ExampleAsyncioDaemon(AsyncioDaemon):
             self.logger.info(f"ExampleAsyncioDaemon '{self.name}' is stopping.")
 
 
-class ExampleThreadDaemon(ThreadDaemon):
+class ExampleThreadDaemon(NxThreadDaemon):
     """Concrete implementation of ThreadDaemon."""
 
     async def _run(self):
@@ -43,7 +43,7 @@ class ExampleThreadDaemon(ThreadDaemon):
         self.logger.info(f"ExampleThreadDaemon '{self.name}' stopped.")
 
 
-class ExampleProcessDaemon(ProcessDaemon):
+class ExampleProcessDaemon(NxProcessDaemon):
     """Concrete implementation of ProcessDaemon."""
 
     async def _run(self):
@@ -57,7 +57,7 @@ class ExampleProcessDaemon(ProcessDaemon):
 
 if __name__ == '__main__':
     async def main():
-        manager = DaemonManager()
+        manager = NxDaemonManager()
 
         # --- Event Listeners ---
         def log_daemon_event(name):
@@ -73,11 +73,11 @@ if __name__ == '__main__':
             return handler
 
         # Listen to daemon events (forwarded from individual daemons)
-        for event in DaemonEvents:
+        for event in NxDaemonEvents:
             manager.emitter.on(event.value, log_daemon_event(event.name))
 
         # Listen to manager-specific events
-        for event in DaemonManagerEvents:
+        for event in NxDaemonManagerEvents:
             manager.emitter.on(event.value, log_manager_event(event.name))
 
         # --- Create and Add Daemons ---

@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class DaemonEvents(Enum):
+class NxDaemonEvents(Enum):
     """
     Enumeration for daemon-related events.
     """
@@ -12,7 +12,7 @@ class DaemonEvents(Enum):
     ERROR = "error"
 
 
-class DaemonManagerEvents(Enum):
+class NxDaemonManagerEvents(Enum):
     """
     Enumeration for daemon manager-related events.
     """

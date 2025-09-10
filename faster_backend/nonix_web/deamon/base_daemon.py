@@ -2,10 +2,10 @@ import logging
 from abc import ABC, abstractmethod
 from pyee import asyncio as pyee_asyncio
 
-from .daemon_events import DaemonEvents
+from .daemon_events import NxDaemonEvents
 
 
-class BaseDaemon(ABC):
+class NxBaseDaemon(ABC):
     """
     An abstract base class for creating daemons.
 
@@ -26,9 +26,9 @@ class BaseDaemon(ABC):
         Starts the daemon, emitting before and after start events.
         """
         try:
-            self.emitter.emit(DaemonEvents.BEFORE_START.value, self)
+            self.emitter.emit(NxDaemonEvents.BEFORE_START.value, self)
             await self._start()
-            self.emitter.emit(DaemonEvents.AFTER_START.value, self)
+            self.emitter.emit(NxDaemonEvents.AFTER_START.value, self)
         except Exception as e:
             self.logger.error(f"Error starting daemon {self.name}: {e}")
             self.emitter.emit(DaemonEvents.ERROR.value, self, e)
@@ -38,12 +38,12 @@ class BaseDaemon(ABC):
         Stops the daemon, emitting before and after stop events.
         """
         try:
-            self.emitter.emit(DaemonEvents.BEFORE_STOP.value, self)
+            self.emitter.emit(NxDaemonEvents.BEFORE_STOP.value, self)
             await self._stop()
-            self.emitter.emit(DaemonEvents.AFTER_STOP.value, self)
+            self.emitter.emit(NxDaemonEvents.AFTER_STOP.value, self)
         except Exception as e:
             self.logger.error(f"Error stopping daemon {self.name}: {e}")
-            self.emitter.emit(DaemonEvents.ERROR.value, self, e)
+            self.emitter.emit(NxDaemonEvents.ERROR.value, self, e)
 
     @abstractmethod
     async def _start(self):
