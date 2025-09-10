@@ -29,3 +29,4 @@ langgraph-sdk==0.2.2
 aiosqlite==0.21.0
 pyee==13.0.0
 jinja2-async-environment==0.16.0
+aiopath==0.6.11
