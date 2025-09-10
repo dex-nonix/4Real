@@ -1,4 +1,3 @@
-// src/services/FileService.js
 import CrudService from '@/services/CrudService.js'
 
 export default class FileService extends CrudService {

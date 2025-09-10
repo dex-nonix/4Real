@@ -3,7 +3,7 @@ import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import { ref, inject, h } from 'vue'
 import CrudService from '@/services/CrudService.js'
-import FilePreview from '@nonix/file-manager/FilePreview.vue'
+import FilePreview from '../../nonix-file-manager/components/FilePreview.vue'
 import LlmTool from '@nonix/dynamic-form/widgets/LlmTool.vue'
 
 export const DISPLAY_WIDGETS = {

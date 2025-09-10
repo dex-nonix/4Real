@@ -11,7 +11,7 @@ import Textarea from 'primevue/textarea'
 import Button from 'primevue/button'
 import { ref, inject, h } from 'vue'
 import CrudService from '@/services/CrudService.js'
-import FileUploadField from '@nonix/file-manager/FileUploadField.vue'
+import FileUploadField from '../../nonix-file-manager/components/FileUploadField.vue'
 import LlmTool from '@nonix/dynamic-form/widgets/LlmTool.vue'
 
 export const EDIT_WIDGETS = {

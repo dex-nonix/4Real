@@ -17,14 +17,16 @@ import ChatHistoryService from '@/services/ChatHistoryService.js'
 import ChatMessageService from '@/services/ChatMessageService.js'
 import ChatPromptService from '@/services/ChatPromptService.js'
 import ToolInvocationLogService from '@/services/ToolInvocationLogService.js'
-import FileCategoryService from '@/services/FileCategoryService.js'
-import FileService from '@/services/FileService.js'
-import FileLinkService from '@/services/FileLinkService.js'
+
+import FileService from '@nonix-file-manager/services/FileService.js'
+import FileLinkService from '@nonix-file-manager/services/FileLinkService.js'
+import FileCategoryService from "@nonix-file-manager/services/FileCategoryService.js";
 import ChatService from '@nonix-chat/services/ChatService.js'
 import Home from "@/views/Home.vue";
 import About from "@/views/About.vue";
 import DynamicFormExample from "@/views/DynamicFormExample.vue";
 import DynamicTableExample from "@/views/DynamicTableExample.vue";
+
 
 export const appConfig = {
 
