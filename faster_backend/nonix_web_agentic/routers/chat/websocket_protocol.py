@@ -1,6 +1,6 @@
 from typing import Protocol, TYPE_CHECKING, Any, List, Dict, AsyncGenerator
 
-from nonix_web.utils.di import Inject
+from nonix_di.di import Inject
 from ...llm.agentic_tool_manager import AgenticToolManager
 
 if TYPE_CHECKING:

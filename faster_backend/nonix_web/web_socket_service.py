@@ -1,9 +1,7 @@
-from typing import Dict, Any
-from datetime import datetime
 import logging
 
 from socketio import AsyncServer
-from nonix_web.utils.di import Inject
+from nonix_di.di import Inject
 
 
 class WebSocketService:
@@ -12,7 +10,6 @@ class WebSocketService:
     Injects the server to enable WebSocket functionality.
     """
 
-    # Inject the Socket.IO server instance
     sio: AsyncServer = Inject(AsyncServer)
 
     def __init__(self):

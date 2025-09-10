@@ -1,6 +1,6 @@
 from nonix_web.router.decorators import router, route
 from nonix_web_db.crud import NxWebServerCrudRouter
-from nonix_web.utils.di import Inject
+from nonix_di.di import Inject
 from nonix_web_music_artist.services.artist_service import ArtistService
 
 

@@ -66,7 +66,8 @@ settings.PLUGINS = [
 ### Basic Template Rendering
 
 ```python
-from nonix_web.utils.di import InjectPlugin
+from nonix_di.di import InjectPlugin
+
 
 class MyPlugin(BasePlugin):
     template_plugin: "NxWebTemplatePlugin" = InjectPlugin("template")

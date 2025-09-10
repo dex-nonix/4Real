@@ -3,14 +3,15 @@ import logging.handlers
 import os
 from contextlib import asynccontextmanager
 
-from  socketio import AsyncServer, ASGIApp
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from socketio import AsyncServer, ASGIApp
 
 from .config import Settings
-from .web_socket_service import WebSocketService
-from .utils.di import di_register
+from nonix_daemon import NxDaemonManager
 from .plugin.plugin_manager import PluginManager
+from nonix_di.di import di_register
+from .web_socket_service import WebSocketService
 
 
 class NxWebServer:
@@ -33,12 +34,13 @@ class NxWebServer:
         di_register(FastAPI, instance=self.app)
         if settings.WS_ENABLED:
             self._enable_websocket()
+        # self.daemon_manager = NxDaemonManager()
+        # di_register(NxDaemonManager, instance=self.daemon_manager)
         self.plugin_manager = PluginManager(self, self.settings.PLUGIN_SEARCH_PATH)
         di_register(PluginManager, instance=self.plugin_manager)
         self.__init__server()
         self.plugin_manager.discover_plugins()
         self.plugin_manager.configure_plugins(self.settings.PLUGINS)
-
 
     async def _lifespan(self, _):
         await self._setup_server()
@@ -131,5 +133,3 @@ class NxWebServer:
             log_level=settings.LOG_LEVEL,
             factory=True
         )
-
-

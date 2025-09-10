@@ -2,7 +2,7 @@ import asyncio
 import threading
 from abc import ABC, abstractmethod
 
-from .base_daemon import NxBaseDaemon
+from nonix_daemon.base_daemon import NxBaseDaemon
 
 
 class NxThreadDaemon(NxBaseDaemon, ABC):

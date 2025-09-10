@@ -209,12 +209,14 @@ class InternalFileLinkService:
 ```
 
 ### **Phase 3: Create FileManagerService (2-3 hours)**
+
 ```python
 # nonix_web_file_manager/routers/file_manager_service.py
 from typing import List
-from nonix_web.utils.di import Inject
+from nonix_di.di import Inject
 from .internal.file_service import InternalFileService
 from .internal.file_link_service import InternalFileLinkService
+
 
 class FileManagerService:
     """High-level service for generic file management across plugins"""
@@ -223,11 +225,11 @@ class FileManagerService:
     file_link_service: InternalFileLinkService = Inject(InternalFileLinkService)
 
     async def attach_files_to_entity(
-        self,
-        entity_type: str,
-        entity_id: int,
-        file_ids: List[int],
-        status: str = "attached"
+            self,
+            entity_type: str,
+            entity_id: int,
+            file_ids: List[int],
+            status: str = "attached"
     ) -> List[int]:
         """Attach multiple files to any entity"""
         attached_ids = []
@@ -239,10 +241,10 @@ class FileManagerService:
         return attached_ids
 
     async def get_entity_files(
-        self,
-        entity_type: str,
-        entity_id: int,
-        status: str = None
+            self,
+            entity_type: str,
+            entity_id: int,
+            status: str = None
     ) -> List[dict]:
         """Get all files attached to an entity with file details"""
         links = await self.file_link_service.get_entity_files(
@@ -260,17 +262,17 @@ class FileManagerService:
         return files
 
     async def detach_files_from_entity(
-        self,
-        entity_type: str,
-        entity_id: int,
-        file_ids: List[int] = None
+            self,
+            entity_type: str,
+            entity_id: int,
+            file_ids: List[int] = None
     ) -> int:
         """Detach files from entity (all or specific)"""
         if file_ids:
             detached = 0
             for file_id in file_ids:
                 if await self.file_link_service.detach_file_from_entity(
-                    file_id, entity_type, entity_id
+                        file_id, entity_type, entity_id
                 ):
                     detached += 1
             return detached
@@ -281,9 +283,9 @@ class FileManagerService:
             )
 
     async def cleanup_orphaned_files(
-        self,
-        entity_type: str,
-        entity_id: int
+            self,
+            entity_type: str,
+            entity_id: int
     ) -> int:
         """Called when entity is deleted"""
         return await self.file_link_service.cleanup_entity_files(
@@ -292,9 +294,10 @@ class FileManagerService:
 ```
 
 ### **Phase 4: Register Internal Services (1 hour)**
+
 ```python
 # nonix_web_file_manager/routers/__init__.py
-from nonix_web.utils.di import di_register
+from nonix_di.di import di_register
 from .internal.file_service import InternalFileService
 from .internal.file_link_service import InternalFileLinkService
 from .file_manager_service import FileManagerService
@@ -306,10 +309,12 @@ di_register(FileManagerService, singleton=True)
 ```
 
 ### **Phase 5: Plugin Integration Example (1 hour)**
+
 ```python
 # In any other plugin service
-from nonix_web.utils.di import Inject
+from nonix_di.di import Inject
 from nonix_web_file_manager.services.file_manager_service import FileManagerService
+
 
 class AlbumRouter(NxWebServerCrudRouter):
     file_manager: FileManagerService = Inject(FileManagerService)

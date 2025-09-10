@@ -420,9 +420,10 @@ class InternalFileCategoryService:
 **File:** `/home/dex/Desktop/shadewalk/4Real/faster_backend/nonix_web_file_manager/services/__init__.py`
 
 **Content:**
+
 ```python
 # Import and register internal routers for dependency injection
-from nonix_web.utils.di import di_register
+from nonix_di.di import di_register
 from .internal.file_service import InternalFileService
 from .internal.file_link_service import InternalFileLinkService
 from .internal.file_category_service import InternalFileCategoryService
@@ -453,9 +454,10 @@ from . import services
 **File:** `/home/dex/Desktop/shadewalk/4Real/faster_backend/nonix_web_file_manager/services/file_manager_service.py`
 
 **Content:**
+
 ```python
 from typing import List, Dict, Any, Optional
-from nonix_web.utils.di import Inject
+from nonix_di.di import Inject
 from .internal.file_service import InternalFileService
 from .internal.file_link_service import InternalFileLinkService
 from .internal.file_category_service import InternalFileCategoryService
@@ -492,12 +494,12 @@ class FileManagerService:
     # === FILE ATTACHMENT OPERATIONS ===
 
     async def attach_files_to_entity(
-        self,
-        entity_type: str,
-        entity_id: int,
-        file_ids: List[int],
-        status: str = "attached",
-        comment: str = None
+            self,
+            entity_type: str,
+            entity_id: int,
+            file_ids: List[int],
+            status: str = "attached",
+            comment: str = None
     ) -> List[int]:
         """
         Attach multiple files to any entity.
@@ -509,12 +511,12 @@ class FileManagerService:
         return [link.id for link in links]
 
     async def attach_file_to_entity(
-        self,
-        entity_type: str,
-        entity_id: int,
-        file_id: int,
-        status: str = "attached",
-        comment: str = None
+            self,
+            entity_type: str,
+            entity_id: int,
+            file_id: int,
+            status: str = "attached",
+            comment: str = None
     ) -> int:
         """
         Attach a single file to any entity.
@@ -526,11 +528,11 @@ class FileManagerService:
         return link.id
 
     async def get_entity_files(
-        self,
-        entity_type: str,
-        entity_id: int,
-        status: str = None,
-        include_file_details: bool = True
+            self,
+            entity_type: str,
+            entity_id: int,
+            status: str = None,
+            include_file_details: bool = True
     ) -> List[Dict[str, Any]]:
         """
         Get all files attached to an entity.
@@ -554,10 +556,10 @@ class FileManagerService:
         return result
 
     async def get_entity_file_ids(
-        self,
-        entity_type: str,
-        entity_id: int,
-        status: str = None
+            self,
+            entity_type: str,
+            entity_id: int,
+            status: str = None
     ) -> List[int]:
         """Get just the file IDs attached to an entity"""
         return await self.file_link_service.get_entity_file_ids(
@@ -565,11 +567,11 @@ class FileManagerService:
         )
 
     async def detach_files_from_entity(
-        self,
-        entity_type: str,
-        entity_id: int,
-        file_ids: List[int] = None,
-        status: str = None
+            self,
+            entity_type: str,
+            entity_id: int,
+            file_ids: List[int] = None,
+            status: str = None
     ) -> int:
         """
         Detach files from entity.
@@ -594,10 +596,10 @@ class FileManagerService:
             )
 
     async def detach_file_from_entity(
-        self,
-        entity_type: str,
-        entity_id: int,
-        file_id: int
+            self,
+            entity_type: str,
+            entity_id: int,
+            file_id: int
     ) -> bool:
         """Detach a specific file from an entity"""
         return await self.file_link_service.detach_file_from_entity(
@@ -607,9 +609,9 @@ class FileManagerService:
     # === CLEANUP OPERATIONS ===
 
     async def cleanup_orphaned_files(
-        self,
-        entity_type: str,
-        entity_id: int
+            self,
+            entity_type: str,
+            entity_id: int
     ) -> int:
         """
         Remove all file links for an entity.
@@ -621,10 +623,10 @@ class FileManagerService:
         )
 
     async def cleanup_entity_and_files(
-        self,
-        entity_type: str,
-        entity_id: int,
-        delete_files: bool = False
+            self,
+            entity_type: str,
+            entity_id: int,
+            delete_files: bool = False
     ) -> Dict[str, int]:
         """
         Cleanup both entity links and optionally files themselves.
@@ -647,11 +649,11 @@ class FileManagerService:
     # === STATUS MANAGEMENT ===
 
     async def update_file_status(
-        self,
-        entity_type: str,
-        entity_id: int,
-        file_id: int,
-        status: str
+            self,
+            entity_type: str,
+            entity_id: int,
+            file_id: int,
+            status: str
     ) -> bool:
         """Update the status of a file attachment"""
         return await self.file_link_service.update_file_link_status(
@@ -659,10 +661,10 @@ class FileManagerService:
         )
 
     async def set_primary_file(
-        self,
-        entity_type: str,
-        entity_id: int,
-        file_id: int
+            self,
+            entity_type: str,
+            entity_id: int,
+            file_id: int
     ) -> bool:
         """Set a file as primary (status='primary') and others as 'attached'"""
         # First, set all files to 'attached'
@@ -692,29 +694,29 @@ class FileManagerService:
     # === UTILITY METHODS ===
 
     async def get_entity_file_count(
-        self,
-        entity_type: str,
-        entity_id: int,
-        status: str = None
+            self,
+            entity_type: str,
+            entity_id: int,
+            status: str = None
     ) -> int:
         """Get count of files attached to an entity"""
         file_ids = await self.get_entity_file_ids(entity_type, entity_id, status)
         return len(file_ids)
 
     async def entity_has_file(
-        self,
-        entity_type: str,
-        entity_id: int,
-        file_id: int
+            self,
+            entity_type: str,
+            entity_id: int,
+            file_id: int
     ) -> bool:
         """Check if entity has a specific file attached"""
         file_ids = await self.get_entity_file_ids(entity_type, entity_id)
         return file_id in file_ids
 
     async def get_entity_primary_file(
-        self,
-        entity_type: str,
-        entity_id: int
+            self,
+            entity_type: str,
+            entity_id: int
     ) -> Optional[Dict[str, Any]]:
         """Get the primary file for an entity (status='primary')"""
         files = await self.get_entity_files(entity_type, entity_id, status="primary")
@@ -728,7 +730,7 @@ class FileManagerService:
 
 ```python
 # Import and register internal routers for dependency injection
-from nonix_web.utils.di import di_register
+from nonix_di.di import di_register
 from .internal.file_service import InternalFileService
 from .internal.file_link_service import InternalFileLinkService
 from .internal.file_category_service import InternalFileCategoryService
@@ -771,7 +773,7 @@ class AlbumRouter(NxWebServerCrudRouter):
 ```python
 
 from nonix_web.router.decorators import router
-from nonix_web.utils.di import Inject  # ← ADD THIS IMPORT
+from nonix_di.di import Inject  # ← ADD THIS IMPORT
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig,
 
 NxWebServerCrudRouter
@@ -784,7 +786,7 @@ from nonix_web_file_manager.services.file_manager_service import FileManagerServ
 
 @router("/albums", tags=["Albums"])
 class AlbumRouter(NxWebServerCrudRouter):
-    # ADD THIS: Inject FileManagerService
+    
     file_manager: FileManagerService = Inject(FileManagerService)
 
     config = CRUDConfig(

@@ -2,7 +2,7 @@ from fastapi import Request
 
 from nonix_web.router.web_server_router import NxWebServerRouter
 from nonix_web.router.decorators import router, route
-from nonix_web.utils.di import Inject
+from nonix_di.di import Inject
 from ...schemas.chat_session_schemas import ChatSessionCreate
 from ...schemas.chat_history_schemas import ChatHistoryCreate, ChatHistoryUpdate
 from ...schemas.chat_message_schemas import SendMessageToHistoryRequest, MessageTextOnlyUpdate

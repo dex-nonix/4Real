@@ -11,7 +11,7 @@ This example demonstrates:
 import asyncio
 import logging
 
-from nonix_web.deamon import NxProcessDaemon, NxThreadDaemon, NxAsyncioDaemon, NxDaemonManagerEvents, NxDaemonEvents, \
+from nonix_daemon import NxProcessDaemon, NxThreadDaemon, NxAsyncioDaemon, NxDaemonManagerEvents, NxDaemonEvents, \
     NxDaemonManager
 
 # Basic logging setup

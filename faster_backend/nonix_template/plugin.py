@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Dict, Any, List, TYPE_CHECKING
 
 from nonix_web.plugin.base_plugin import BasePlugin, routers
-from nonix_web.utils.di import di_register
+from nonix_di.di import di_register
 from .router.template_router import TemplateRouter
 from .services.template_service import TemplateService
 from .template.template_renderer import TemplateRenderer

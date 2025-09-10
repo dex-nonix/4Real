@@ -3,7 +3,7 @@ from abc import ABC
 from functools import partial
 from typing import Dict, Any, TYPE_CHECKING, final, Type, List, Callable
 
-from ..utils.di import di_register
+from nonix_di.di import di_register
 
 if TYPE_CHECKING:
     from ..server import NxWebServer

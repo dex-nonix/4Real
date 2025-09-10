@@ -8,7 +8,7 @@ from starlette.responses import JSONResponse
 
 from .decorators import _RoutedServiceDefinition, _RoutedServiceMethodDefinition
 from ..server import NxWebServer
-from ..utils.di import Inject
+from nonix_di.di import Inject
 
 
 def _get_routed_service_definition(cls) -> _RoutedServiceDefinition:

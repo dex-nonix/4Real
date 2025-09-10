@@ -1,6 +1,6 @@
 from typing import final, Callable
 
-from nonix_web.utils.di import BaseInject, T, Inject
+from nonix_di.di import BaseInject, T, Inject
 from .plugin_manager import PluginManager
 
 

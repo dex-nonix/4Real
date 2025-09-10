@@ -1,10 +1,10 @@
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any
 from datetime import datetime
 from sqlalchemy import select
 import logging
 
 from nonix_web_db import AsyncSessionLocal
-from nonix_web.utils.di import Inject
+from nonix_di.di import Inject
 from ..models.mcp_server import MCPServer
 from ..models.persona import Persona
 from ..llm.agentic_tool_manager import AgenticToolManager

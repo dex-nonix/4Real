@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from nonix_web.plugin.base_plugin import add_configure_callback
 
-from nonix_web.utils.di import di_resolve
+from nonix_di.di import di_resolve
 from nonix_web_agentic.llm import AgenticToolManager
 from nonix_web_agentic.llm.agentic_tools import AgenticTools
 

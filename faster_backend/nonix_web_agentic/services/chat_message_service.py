@@ -10,7 +10,7 @@ from langgraph.prebuilt import create_react_agent
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from nonix_web.utils.di import Inject
+from nonix_di.di import Inject
 from nonix_web.plugin.descriptor import InjectPlugin
 from nonix_web_db import AsyncSessionLocal
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
