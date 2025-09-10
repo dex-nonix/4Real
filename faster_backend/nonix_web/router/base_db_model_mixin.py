@@ -15,8 +15,10 @@ class BaseUpdateModelMeta(ModelMetaclass):
     """Metaclass that converts all inherited fields to optional"""
 
     def __new__(cls, name, bases, namespace, base_model=None, **kwargs):
-        # Create the class normally first
+        # annotations = dict(namespace.get('__annotations__', {}))
         new_class = super().__new__(cls, name, bases, namespace, **kwargs)
+
+
 
         if base_model:
             # Get all fields from the base model
@@ -51,8 +53,8 @@ class BaseUpdateModelMeta(ModelMetaclass):
                 # Remove 'default' from kwargs if it exists (we set it separately)
                 field_kwargs.pop('default', None)
 
-                # Create new field
-                new_field = Field(default=field_default, **field_kwargs)
+
+                new_field = Field(default=None, **field_kwargs)
 
                 # Add to class
                 setattr(new_class, field_name, new_field)
@@ -61,6 +63,9 @@ class BaseUpdateModelMeta(ModelMetaclass):
                     new_class.__annotations__ = {}
                 new_class.__annotations__[field_name] = optional_type
 
+
+        # namespace['__annotations__'] = annotations
+        # new_class = super().__new__(cls, name, bases, namespace, **kwargs)
         return new_class
 
 
