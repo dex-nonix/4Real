@@ -1,18 +1,13 @@
-from typing import TYPE_CHECKING
-
-from nonix_plugin.callbacks import add_configure_callback
-
 from nonix_di.resolve import di_resolve
+from nonix_plugin.callbacks import add_configure_callback
 from nonix_web_agentic.llm import AgenticToolManager
 from nonix_web_agentic.llm.agentic_tools import AgenticTools
 
-if TYPE_CHECKING:
-    from nonix_web.server import NxWebServer
 
 def llm_tools(tools):
-    tool_manager:AgenticToolManager = None
+    tool_manager: AgenticToolManager = None
 
-    def _add_tools(plugin, server:"NxWebServer", config):
+    def _add_tools(plugin, config):
         nonlocal tool_manager
         if tool_manager is None:
             tool_manager = di_resolve(AgenticToolManager)
