@@ -1,4 +1,4 @@
-from .daemon_events import DaemonEvents
+from .daemon_events import DaemonEvents, DaemonManagerEvents
 from .base_daemon import BaseDaemon
 from .asyncio_daemon import AsyncioDaemon
 from .thread_daemon import ThreadDaemon
@@ -7,6 +7,7 @@ from .daemon_manager import DaemonManager
 
 __all__ = [
     'DaemonEvents',
+    'DaemonManagerEvents',
     'BaseDaemon',
     'AsyncioDaemon',
     'ThreadDaemon',

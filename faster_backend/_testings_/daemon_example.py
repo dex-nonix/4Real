@@ -1,11 +1,8 @@
 import asyncio
 import logging
 
-from .daemon_events import DaemonEvents
-from .daemon_manager import DaemonManager
-from .asyncio_daemon import AsyncioDaemon
-from .thread_daemon import ThreadDaemon
-from .process_daemon import ProcessDaemon
+from nonix_web.deamon import ProcessDaemon, ThreadDaemon, AsyncioDaemon, DaemonManagerEvents, DaemonEvents, \
+    DaemonManager
 
 # Basic logging setup
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -15,14 +12,25 @@ if __name__ == '__main__':
         manager = DaemonManager()
 
         # --- Event Listeners ---
-        def log_event(name):
+        def log_daemon_event(name):
             def handler(*args, **kwargs):
                 daemon_name = args[0].name if args else ''
-                logging.info(f"EVENT: {name} - Daemon: {daemon_name} - Args: {args} - Kwargs: {kwargs}")
+                logging.info(f"DAEMON EVENT: {name} - Daemon: {daemon_name} - Args: {args} - Kwargs: {kwargs}")
             return handler
 
+        def log_manager_event(name):
+            def handler(*args, **kwargs):
+                manager_name = args[0].__class__.__name__ if args else ''
+                logging.info(f"MANAGER EVENT: {name} - Manager: {manager_name} - Args: {args} - Kwargs: {kwargs}")
+            return handler
+
+        # Listen to daemon events (forwarded from individual daemons)
         for event in DaemonEvents:
-            manager.emitter.on(event.value, log_event(event.name))
+            manager.emitter.on(event.value, log_daemon_event(event.name))
+
+        # Listen to manager-specific events
+        for event in DaemonManagerEvents:
+            manager.emitter.on(event.value, log_manager_event(event.name))
 
         # --- Create and Add Daemons ---
         async_daemon = AsyncioDaemon("async-worker-1")
