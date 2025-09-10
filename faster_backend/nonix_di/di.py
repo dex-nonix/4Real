@@ -77,6 +77,6 @@ def di_resolve( dependency, required = True ):
     return resolved_dependency
 
 @final
-class Inject(BaseInject[T, InjectDependencyType]):
+class NxInject(BaseInject[T, InjectDependencyType]):
     def _resolve(self) -> T | None:
         return di_resolve(self.dependency)

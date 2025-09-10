@@ -1,12 +1,12 @@
 from nonix_web.router.decorators import router, route
 from nonix_web_db.crud import NxWebServerCrudRouter
-from nonix_di.di import Inject
+from nonix_di import NxInject
 from nonix_web_music_artist.services.artist_service import ArtistService
 
 
 @router("/artists", tags=["Artists"])
 class ArtistRouter(NxWebServerCrudRouter):
-    service: ArtistService = Inject(ArtistService)
+    service: ArtistService = NxInject(ArtistService)
 
     ############### EXAMPLE CUSTOM ROUTE ---------------------------
     @route("/{item_id}/persona_summary", methods=["GET"])

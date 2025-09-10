@@ -1,7 +1,7 @@
 import logging
 
 from socketio import AsyncServer
-from nonix_di.di import Inject
+from nonix_di import NxInject
 
 
 class WebSocketService:
@@ -10,7 +10,7 @@ class WebSocketService:
     Injects the server to enable WebSocket functionality.
     """
 
-    sio: AsyncServer = Inject(AsyncServer)
+    sio: AsyncServer = NxInject(AsyncServer)
 
     def __init__(self):
         self._logger = logging.getLogger(self.__class__.__name__)

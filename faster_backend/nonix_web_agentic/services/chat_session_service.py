@@ -4,7 +4,7 @@ from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, Validatio
     BaseCrudService
 from nonix_web_db import AsyncSessionLocal
 from nonix_web.web_socket_service import WebSocketService
-from nonix_di.di import Inject
+from nonix_di import NxInject
 from ..schemas.chat_session_schemas import ChatSessionCreate, ChatSessionUpdate, ChatSessionInDbModel
 from ..models.chat_session import ChatSession
 from ..models.chat_history import ChatHistory
@@ -12,7 +12,7 @@ from ..models.persona import Persona
 
 
 class ChatSessionService(BaseCrudService):
-    web_socket_service: WebSocketService = Inject(WebSocketService)
+    web_socket_service: WebSocketService = NxInject(WebSocketService)
 
     config = CRUDConfig(
         model=ChatSession,

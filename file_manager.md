@@ -213,7 +213,7 @@ class InternalFileLinkService:
 ```python
 # nonix_web_file_manager/routers/file_manager_service.py
 from typing import List
-from nonix_di.di import Inject
+from nonix_di import NxInject
 from .internal.file_service import InternalFileService
 from .internal.file_link_service import InternalFileLinkService
 
@@ -221,8 +221,8 @@ from .internal.file_link_service import InternalFileLinkService
 class FileManagerService:
     """High-level service for generic file management across plugins"""
 
-    file_service: InternalFileService = Inject(InternalFileService)
-    file_link_service: InternalFileLinkService = Inject(InternalFileLinkService)
+    file_service: InternalFileService = NxInject(InternalFileService)
+    file_link_service: InternalFileLinkService = NxInject(InternalFileLinkService)
 
     async def attach_files_to_entity(
             self,
@@ -312,12 +312,12 @@ di_register(FileManagerService, singleton=True)
 
 ```python
 # In any other plugin service
-from nonix_di.di import Inject
+from nonix_di import NxInject
 from nonix_web_file_manager.services.file_manager_service import FileManagerService
 
 
 class AlbumRouter(NxWebServerCrudRouter):
-    file_manager: FileManagerService = Inject(FileManagerService)
+    file_manager: FileManagerService = NxInject(FileManagerService)
 
     async def create_album_with_cover(self, album_data, cover_file_id=None):
         album = await self.create(album_data)

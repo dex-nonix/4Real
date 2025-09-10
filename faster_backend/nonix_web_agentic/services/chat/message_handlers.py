@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, TYPE_CHECKING
 
-from nonix_di.di import Inject
+from nonix_di import NxInject
 from nonix_web_db import AsyncSessionLocal
 from .message_type_registry import MessageTypeHandler
 from ...llm.agentic_tool_manager import AgenticToolManager
@@ -74,7 +74,7 @@ class ChatMessageHandler(MessageTypeHandler):
 
 class ToolCallMessageHandler(MessageTypeHandler):
     """Handle tool call messages - direct tool execution."""
-    agentic_tool_manager: AgenticToolManager = Inject(AgenticToolManager)
+    agentic_tool_manager: AgenticToolManager = NxInject(AgenticToolManager)
 
     async def handle(self, chat_service: "ChatRouter", session, persona, history_id: int, content: Dict[str, Any]) -> \
             Dict[str, Any]:

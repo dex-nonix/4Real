@@ -6,13 +6,13 @@ from fastapi import HTTPException, UploadFile, Form
 
 from nonix_web.router.decorators import router, route
 from nonix_web_db.crud import NxWebServerCrudRouter
-from nonix_di.di import Inject
+from nonix_di import NxInject
 from nonix_web_file_manager.services.file_service import FileService
 
 
 @router("/files", tags=["Files"])
 class FileRouter(NxWebServerCrudRouter):
-    service: FileService = Inject(FileService)  # ✅ Just inject!
+    service: FileService = NxInject(FileService)  # ✅ Just inject!
 
     @route('/upload', methods=['POST'])
     async def upload(self, file: UploadFile, title: str = Form(None), category_id: int = Form(None)) -> Any:

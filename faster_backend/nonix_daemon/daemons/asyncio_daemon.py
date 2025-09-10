@@ -1,7 +1,7 @@
 import asyncio
 from abc import ABC, abstractmethod
 
-from nonix_daemon.base_daemon import NxBaseDaemon
+from ..base import NxBaseDaemon
 
 
 class NxAsyncioDaemon(NxBaseDaemon, ABC):

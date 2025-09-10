@@ -1,6 +1,6 @@
 from nonix_web.plugin.base_plugin import add_configure_callback
-from nonix_di.di import di_resolve
-from .daemon_manager import NxDaemonManager
+from nonix_di import di_resolve
+from .manager import NxDaemonManager
 
 
 def daemons(classes):

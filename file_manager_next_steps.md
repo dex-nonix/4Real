@@ -457,7 +457,7 @@ from . import services
 
 ```python
 from typing import List, Dict, Any, Optional
-from nonix_di.di import Inject
+from nonix_di import NxInject
 from .internal.file_service import InternalFileService
 from .internal.file_link_service import InternalFileLinkService
 from .internal.file_category_service import InternalFileCategoryService
@@ -469,9 +469,9 @@ class FileManagerService:
     This service provides easy-to-use methods for other plugins to manage files.
     """
 
-    file_service: InternalFileService = Inject(InternalFileService)
-    file_link_service: InternalFileLinkService = Inject(InternalFileLinkService)
-    file_category_service: InternalFileCategoryService = Inject(InternalFileCategoryService)
+    file_service: InternalFileService = NxInject(InternalFileService)
+    file_link_service: InternalFileLinkService = NxInject(InternalFileLinkService)
+    file_category_service: InternalFileCategoryService = NxInject(InternalFileCategoryService)
 
     # === FILE OPERATIONS ===
 
@@ -773,7 +773,7 @@ class AlbumRouter(NxWebServerCrudRouter):
 ```python
 
 from nonix_web.router.decorators import router
-from nonix_di.di import Inject  # ← ADD THIS IMPORT
+from nonix_di import NxInject  # ← ADD THIS IMPORT
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig,
 
 NxWebServerCrudRouter
@@ -786,8 +786,7 @@ from nonix_web_file_manager.services.file_manager_service import FileManagerServ
 
 @router("/albums", tags=["Albums"])
 class AlbumRouter(NxWebServerCrudRouter):
-    
-    file_manager: FileManagerService = Inject(FileManagerService)
+    file_manager: FileManagerService = NxInject(FileManagerService)
 
     config = CRUDConfig(
         model=Album,

@@ -4,7 +4,7 @@ from sqlalchemy import select
 import logging
 
 from nonix_web_db import AsyncSessionLocal
-from nonix_di.di import Inject
+from nonix_di import NxInject
 from ..models.mcp_server import MCPServer
 from ..models.persona import Persona
 from ..llm.agentic_tool_manager import AgenticToolManager
@@ -13,7 +13,7 @@ from ..llm.agentic_tool_manager import AgenticToolManager
 class ToolExecutionService:
     """Service for tool execution and MCP operations."""
 
-    agentic_tool_manager: AgenticToolManager = Inject(AgenticToolManager)
+    agentic_tool_manager: AgenticToolManager = NxInject(AgenticToolManager)
 
     def __init__(self):
         self._logger = logging.getLogger(self.__class__.__name__)

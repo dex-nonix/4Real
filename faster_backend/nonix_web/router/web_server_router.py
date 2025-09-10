@@ -8,7 +8,7 @@ from starlette.responses import JSONResponse
 
 from .decorators import _RoutedServiceDefinition, _RoutedServiceMethodDefinition
 from ..server import NxWebServer
-from nonix_di.di import Inject
+from nonix_di import NxInject
 
 
 def _get_routed_service_definition(cls) -> _RoutedServiceDefinition:
@@ -20,7 +20,7 @@ def _get_route_info(cls) -> _RoutedServiceMethodDefinition:
 
 
 class NxWebServerRouter(ABC):
-    server: "NxWebServer" = Inject(NxWebServer)
+    server: "NxWebServer" = NxInject(NxWebServer)
     router: APIRouter
 
     def __init__(self, router: APIRouter):

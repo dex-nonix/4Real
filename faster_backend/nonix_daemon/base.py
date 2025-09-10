@@ -2,7 +2,7 @@ import logging
 from abc import ABC, abstractmethod
 from pyee import asyncio as pyee_asyncio
 
-from .daemon_events import NxDaemonEvents
+from .events import NxDaemonEvents
 
 
 class NxBaseDaemon(ABC):
@@ -31,7 +31,7 @@ class NxBaseDaemon(ABC):
             self.emitter.emit(NxDaemonEvents.AFTER_START.value, self)
         except Exception as e:
             self.logger.error(f"Error starting daemon {self.name}: {e}")
-            self.emitter.emit(DaemonEvents.ERROR.value, self, e)
+            self.emitter.emit(NxDaemonEvents.ERROR.value, self, e)
 
     async def stop(self):
         """

@@ -10,7 +10,7 @@ from langgraph.prebuilt import create_react_agent
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from nonix_di.di import Inject
+from nonix_di import NxInject
 from nonix_web.plugin.descriptor import InjectPlugin
 from nonix_web_db import AsyncSessionLocal
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
@@ -65,8 +65,8 @@ class ChatMessageService(BaseCrudService):
 
     agentic_plugin: "NxWebAgenticPlugin" = InjectPlugin("agentic")
     template_plugin: "NxWebTemplatePlugin" = InjectPlugin("template")
-    agentic_tool_manager: AgenticToolManager = Inject(AgenticToolManager)
-    web_socket_service: WebSocketService = Inject(WebSocketService)
+    agentic_tool_manager: AgenticToolManager = NxInject(AgenticToolManager)
+    web_socket_service: WebSocketService = NxInject(WebSocketService)
 
     def __init__(self):
         """Initialize message type handlers."""

@@ -2,8 +2,8 @@ import logging
 from typing import Dict
 from pyee import asyncio as pyee_asyncio
 
-from .base_daemon import NxBaseDaemon
-from .daemon_events import NxDaemonEvents, NxDaemonManagerEvents
+from .base import NxBaseDaemon
+from .events import NxDaemonEvents, NxDaemonManagerEvents
 
 
 class NxDaemonManager:

@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import select
 
 from nonix_web.router.decorators import route
-from nonix_di.di import Inject
+from nonix_di import NxInject
 from nonix_web_db import AsyncSessionLocal
 from .models_and_schemas import (
     PersonaToolsResponse,
@@ -22,7 +22,7 @@ from ....llm.agentic_tool_manager import AgenticToolManager
 class ToolExecutionMixin(WebSocketMixinProtocol):
     """Mixin for tool execution and MCP operations."""
 
-    agentic_tool_manager: AgenticToolManager = Inject(AgenticToolManager)
+    agentic_tool_manager: AgenticToolManager = NxInject(AgenticToolManager)
 
     @route(
         '/personas/{persona_id}/tools',

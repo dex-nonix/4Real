@@ -1,6 +1,6 @@
 from typing import Protocol, TYPE_CHECKING, Any, List, Dict, AsyncGenerator
 
-from nonix_di.di import Inject
+from nonix_di import NxInject
 from ...llm.agentic_tool_manager import AgenticToolManager
 
 if TYPE_CHECKING:
@@ -16,7 +16,7 @@ class WebSocketMixinProtocol(Protocol):
     _logger: "Logger"
     _task_manager: "ChatTaskManager"
     server: "NxWebServer"
-    agentic_tool_manager: AgenticToolManager = Inject(AgenticToolManager)
+    agentic_tool_manager: AgenticToolManager = NxInject(AgenticToolManager)
 
     async def submit_async_task(self, func, *args, **kwargs):
         ...

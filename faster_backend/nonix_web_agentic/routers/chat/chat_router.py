@@ -2,7 +2,7 @@ from fastapi import Request
 
 from nonix_web.router.web_server_router import NxWebServerRouter
 from nonix_web.router.decorators import router, route
-from nonix_di.di import Inject
+from nonix_di import NxInject
 from ...schemas.chat_session_schemas import ChatSessionCreate
 from ...schemas.chat_history_schemas import ChatHistoryCreate, ChatHistoryUpdate
 from ...schemas.chat_message_schemas import SendMessageToHistoryRequest, MessageTextOnlyUpdate
@@ -31,11 +31,11 @@ class ChatRouter(NxWebServerRouter):
     """
 
     # Dependency injection for all services
-    session_service: ChatSessionService = Inject(ChatSessionService)
-    message_service: ChatMessageService = Inject(ChatMessageService)
-    history_service: ChatHistoryService = Inject(ChatHistoryService)
-    persona_service: PersonaService = Inject(PersonaService)
-    tool_service: ToolExecutionService = Inject(ToolExecutionService)
+    session_service: ChatSessionService = NxInject(ChatSessionService)
+    message_service: ChatMessageService = NxInject(ChatMessageService)
+    history_service: ChatHistoryService = NxInject(ChatHistoryService)
+    persona_service: PersonaService = NxInject(PersonaService)
+    tool_service: ToolExecutionService = NxInject(ToolExecutionService)
 
     # ==========================================
     # SESSION ROUTES
