@@ -1,5 +1,4 @@
 from typing import Dict, Any, Optional, List
-from nonix_di.resolve import NxInject
 from ..controllers.lmstudio_controller import LMStudioController
 
 
@@ -9,7 +8,8 @@ class LMStudioService:
     Provides high-level API for other plugins and components.
     """
 
-    controller: LMStudioController = NxInject(LMStudioController)
+    def __init__(self):
+        self.controller = LMStudioController()
 
     async def initialize(self, config: Dict[str, Any]):
         """Initialize the service with configuration."""
