@@ -11,7 +11,7 @@
 </template>
 
 <script>
-import DynamicWidgetList from '@nonix/dynamic-widget/DynamicWidgetList.vue'
+import DynamicWidgetList from '@nonix-dynamic/widget/components/DynamicWidgetList.vue'
 import Page from '@nonix/page/Page.vue'
 import { useRoute } from 'vue-router'
 import { inject, computed } from 'vue'

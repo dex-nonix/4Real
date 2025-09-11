@@ -1,4 +1,3 @@
-<!-- Chat.vue -->
 <script setup>
 import { ref, computed, inject, defineEmits } from 'vue';
 import ChatHeader from './ChatHeader.vue';
@@ -6,34 +5,23 @@ import ChatSessionBar from './ChatSessionBar.vue';
 import ChatMessageContainer from './ChatMessageContainer.vue';
 import PersonaSelectionDialog from './PersonaSelectionDialog.vue';
 import HistoryManagementDialog from './HistoryManagementDialog.vue';
-import Button from 'primevue/button';
 import ProgressSpinner from 'primevue/progressspinner';
 import { useToast } from 'primevue/usetoast';
-import { nextTick } from 'vue';
 
 // Chat component accepts external menu items
 const props = defineProps({
   menuItems: { type: Array, required: false, default: () => [] }
 });
 
-// Chat component is now fully self-contained - no props needed
-// It manages its own session state and can be used multiple times
-
-// Service injection for session management
 const chatService = inject('chat-service');
 
-// Toast service - Toast component is already in root app
 const toast = useToast();
 
-// Define emitted events for Vue 3 composition API
 const emit = defineEmits(['viewHistory', 'renameHistory', 'clearMessages', 'deleteSession', 'menuItemClick']);
 
-// Ref to ChatMessageContainer for direct method calls
 const chatMessageContainerRef = ref(null);
 
 
-// FLAT STATE MANAGEMENT - NO NESTING, NO GLOBAL CACHE
-// SELECTED ITEMS (single objects, no nesting)
 const selectedSession = ref(null);
 const selectedHistory = ref(null);
 const selectedPersona = ref(null);
@@ -336,20 +324,16 @@ const handlePersonaSelected = async (persona) => {
     console.log('Persona chat started:', response);
     
     if (response) {
-      // Backend returns {data: {...}} - extract the actual session data
       const sessionData = response?.data || response;
       
       if (sessionData) {
         addSuccess(`Chat started with ${persona.name}`);
-        
-        // Close the persona dialog
+
         showPersonaDialog.value = false;
-        
-        // Set the new session as selected
+
         selectedSession.value = sessionData;
         currentSessionId.value = sessionData.id;
-        
-        // Auto-select the new session
+
         if (sessionData.id) {
           console.log('Auto-selecting newly created session:', sessionData.id);
           await handleSessionSelected(sessionData.id);
@@ -376,13 +360,11 @@ const handleViewHistory = async () => {
   }
   
   try {
-    // LAZY LOAD histories when dialog opens - NO GLOBAL CACHE!
     const historiesData = await chatService.getHistories(currentSessionId.value);
     console.log('Histories loaded for dialog:', historiesData);
     
     // Pass to dialog - NO global cache!
     showHistoryDialog.value = true;
-    // Dialog component receives historiesData and manages its own state
   } catch (error) {
     console.error('Failed to load histories', error);
     addError('Failed to load histories', error);
@@ -572,17 +554,14 @@ defineExpose({
         @session-added="handleSessionAdded"
         @error="(errorData) => addError(errorData.message, errorData.details)"
       />
-      
-      <!-- Tab-based architecture: One ChatMessageContainer per session -->
+
       <div class="flex-1 relative" style="height: 100%; min-height: 0;">
-        
-        <!-- Loading indicator -->
+
         <div v-if="isLoading" class="flex justify-content-center align-items-center p-4">
           <ProgressSpinner style="width: 50px; height: 50px" />
           <span class="ml-2">Loading...</span>
         </div>
-        
-        <!-- Chat Message Container - FLAT DATA -->
+
         <div v-if="currentSessionId && selectedSession" class="flex-1 d-flex flex-column" style="height: 100%; min-height: 0;">
           <ChatMessageContainer
             ref="chatMessageContainerRef"
@@ -600,22 +579,18 @@ defineExpose({
             @copy-error="copyError"
           />
         </div>
-        
-        <!-- Loading state when no session selected -->
+
         <div v-if="!currentSessionId || !selectedSession" class="flex flex-column flex-1 justify-content-center align-items-center p-4">
           <i class="pi pi-spin pi-spinner text-4xl text-500 mb-3"></i>
           <p class="text-500">Select a session to start chatting...</p>
         </div>
       </div>
     </div>
-    
-    <!-- Persona Selection Dialog - LAZY LOADING -->
     <PersonaSelectionDialog
       v-model:visible="showPersonaDialog"
       @persona-selected="handlePersonaSelected"
     />
-    
-    <!-- History Management Dialog - LAZY LOADING -->
+
     <HistoryManagementDialog
       v-model:visible="showHistoryDialog"
       :session-id="currentSessionId"
@@ -624,18 +599,3 @@ defineExpose({
     />
   </div>
 </template>
-
-<style scoped>
-.chat-message-container-tab {
-  flex-direction: column;
-  transition: opacity 0.2s ease;
-}
-
-.chat-message-container-tab.active-tab {
-  opacity: 1;
-}
-
-.chat-message-container-tab:not(.active-tab) {
-  opacity: 0;
-}
-</style>

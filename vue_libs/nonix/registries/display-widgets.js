@@ -4,7 +4,7 @@ import Avatar from 'primevue/avatar'
 import { ref, inject, h } from 'vue'
 import CrudService from '@/services/CrudService.js'
 import FilePreview from '../../nonix-file-manager/components/FilePreview.vue'
-import LlmTool from '@nonix/dynamic-form/widgets/LlmTool.vue'
+import LlmTool from '@nonix-dynamic/form/widgets/LlmTool.vue'
 
 export const DISPLAY_WIDGETS = {
   'text': { component: 'span', defaultProps: { class: 'text-sm' } },

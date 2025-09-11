@@ -9,10 +9,10 @@
 import {computed} from 'vue'
 import {useRoute} from 'vue-router'
 import Toast from 'primevue/toast'
-import LayoutManager from "./widget-manager/LayoutManager.js";
+import NxLayoutManager from "./widget-manager/NxLayoutManager.js";
 
 const route = useRoute()
 const computedLayoutName = computed(() => route.meta.layout || 'advanced')
-const layout = computed(() => LayoutManager.getWidget(computedLayoutName.value).component)
+const layout = computed(() => NxLayoutManager.getWidget(computedLayoutName.value).component)
 </script>
 

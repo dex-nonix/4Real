@@ -1,4 +1,4 @@
-import DynamicPage from "@nonix/page/DynamicPage.vue";
+import DynamicPage from "@nonix-dynamic/page/DynamicPage.vue";
 import CrudPage from "@nonix/page/CrudPage.vue";
 
 export const ROUTE_TYPES = {

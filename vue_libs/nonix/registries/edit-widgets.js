@@ -12,7 +12,7 @@ import Button from 'primevue/button'
 import { ref, inject, h } from 'vue'
 import CrudService from '@/services/CrudService.js'
 import FileUploadField from '../../nonix-file-manager/components/FileUploadField.vue'
-import LlmTool from '@nonix/dynamic-form/widgets/LlmTool.vue'
+import LlmTool from '@nonix-dynamic/form/widgets/LlmTool.vue'
 
 export const EDIT_WIDGETS = {
   'text': { component: InputText, defaultProps: { placeholder: 'Enter text', class: 'w-full' } },

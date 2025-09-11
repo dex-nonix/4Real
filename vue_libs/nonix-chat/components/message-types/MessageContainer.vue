@@ -1,4 +1,3 @@
-<!-- MessageContainer.vue -->
 <!-- Generic message wrapper that handles all outer styling and layout -->
 <script setup>
 import { computed } from 'vue';

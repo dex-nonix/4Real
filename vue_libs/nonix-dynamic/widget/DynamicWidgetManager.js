@@ -1,5 +1,5 @@
 import BaseWidgetManager from '@nonix/widget-manager/BaseWidgetManager.js'
-import {DYNAMIC_WIDGETS} from '@nonix/registries/dynamic-widgets.js'
+import {DYNAMIC_WIDGETS} from '@nonix-dynamic/widget/dynamic-widgets.js'
 
 class DynamicWidgetManager extends BaseWidgetManager {
     constructor() {

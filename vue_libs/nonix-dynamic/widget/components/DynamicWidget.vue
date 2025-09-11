@@ -3,7 +3,7 @@
   </template>
 
 <script>
-import DynamicWidgetManager from '@nonix/widget-manager/DynamicWidgetManager.js'
+import DynamicWidgetManager from '@nonix-dynamic/widget/DynamicWidgetManager.js'
 
 export default {
   name: 'DynamicWidget',

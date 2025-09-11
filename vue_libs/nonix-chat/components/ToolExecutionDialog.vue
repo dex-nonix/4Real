@@ -34,7 +34,7 @@
 import { ref, defineExpose, defineEmits, computed } from 'vue';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
-import DynamicForm from '@nonix/dynamic-form/DynamicForm.vue';
+import DynamicForm from '@nonix-dynamic/form/DynamicForm.vue';
 
 // Props
 const props = defineProps({
