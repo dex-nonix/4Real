@@ -2,7 +2,7 @@ import {ref} from 'vue'
 import {io} from 'socket.io-client'
 import { WS_BASE_URL } from '@/env.js'
 
-export default class WebSocketManager {
+export default class NxWebSocketService {
     constructor(app) {
         this.connectionState = ref('disconnected')
         this.socket = null

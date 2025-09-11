@@ -3,9 +3,9 @@
     <form @submit.stop.prevent="handleSubmit">
       <div class="form-fields formgrid grid gap-3" :class="fieldsLayout">
         <div
-          v-for="(item, idx) in effectiveItems"
-          :key="item.key ? item.key : `__ui_${idx}`"
-          class="form-field field col-12"
+            v-for="(item, idx) in effectiveItems"
+            :key="item.key ? item.key : `__ui_${idx}`"
+            class="form-field field col-12"
         >
           <!-- Field Label (always render to preserve spacing) -->
           <label :for="item.key || `__ui_${idx}`" class="field-label" :class="labelClasses">
@@ -15,27 +15,27 @@
 
           <!-- Dynamic Widget Rendering (edit vs display) -->
           <template v-if="(mode !== 'display') && !item.displayOnly">
-            <component 
-              v-if="item.key"
-              :is="resolveEditWidget(item.editWidget ?? item.type).component"
-              :id="item.key || `__ui_${idx}`"
-              v-bind="{ ...resolveEditWidget(item.editWidget ?? item.type).props, ...(item.editProps ?? item.props ?? {}) }"
-              :model-value="formData[item.key]"
-              @update:model-value="updateField(item.key, $event)"
-              :class="{ 'error': item.key && fieldErrors[item.key] }"
+            <component
+                v-if="item.key"
+                :is="resolveEditWidget(item.editWidget ?? item.type).component"
+                :id="item.key || `__ui_${idx}`"
+                v-bind="{ ...resolveEditWidget(item.editWidget ?? item.type).props, ...(item.editProps ?? item.props ?? {}) }"
+                :model-value="formData[item.key]"
+                @update:model-value="updateField(item.key, $event)"
+                :class="{ 'error': item.key && fieldErrors[item.key] }"
             />
             <component
-              v-else
-              :is="resolveEditWidget(item.editWidget ?? item.type).component"
-              :id="`__ui_${idx}`"
-              v-bind="{ ...resolveEditWidget(item.editWidget ?? item.type).props, ...(item.editProps ?? item.props ?? {}) }"
+                v-else
+                :is="resolveEditWidget(item.editWidget ?? item.type).component"
+                :id="`__ui_${idx}`"
+                v-bind="{ ...resolveEditWidget(item.editWidget ?? item.type).props, ...(item.editProps ?? item.props ?? {}) }"
             />
           </template>
           <component
-            v-else
-            :is="resolveDisplayWidget((item.displayWidget ?? item.editWidget ?? item.type)).component"
-            :id="item.key || `__ui_${idx}`"
-            v-bind="{ ...resolveDisplayWidget((item.displayWidget ?? item.editWidget ?? item.type)).props, ...(item.displayProps ?? item.editProps ?? item.props ?? {}) }"
+              v-else
+              :is="resolveDisplayWidget((item.displayWidget ?? item.editWidget ?? item.type)).component"
+              :id="item.key || `__ui_${idx}`"
+              v-bind="{ ...resolveDisplayWidget((item.displayWidget ?? item.editWidget ?? item.type)).props, ...(item.displayProps ?? item.editProps ?? item.props ?? {}) }"
           >
             {{ item.key ? formatDisplay(formData[item.key]) : '' }}
           </component>
@@ -46,7 +46,7 @@
           </small>
         </div>
       </div>
-      
+
       <!-- Form Actions (hidden for compact mode and display mode) -->
       <div v-if="!compact && mode !== 'display'" class="flex gap-3 justify-content-end mt-4">
         <Button type="submit" :loading="isSubmitting" :disabled="isSubmitting">
@@ -61,15 +61,15 @@
 </template>
 
 <script>
-import EditWidgetManager from '@nonix/widget-manager/NxEditWidgetManager.js'
-import DisplayWidgetManager from '@nonix/widget-manager/NxDisplayWidgetManager.js'
+import NxEditWidgetManager from '@nonix/widget-manager/NxEditWidgetManager.js'
+import NxDisplayWidgetManager from '@nonix/widget-manager/NxDisplayWidgetManager.js'
 import Button from 'primevue/button'
 
 export default {
   name: 'NxDynamicForm',
-  components: { Button },
+  components: {Button},
   emits: ['submit', 'cancel', 'field-change', 'dirty-change'],
-  
+
   props: {
     config: {
       type: Object,
@@ -97,7 +97,7 @@ export default {
       default: false
     }
   },
-  
+
   computed: {
     formClasses() {
       return {
@@ -105,14 +105,14 @@ export default {
         [`layout-${this.layout}`]: true
       }
     },
-    
+
     fieldsLayout() {
       return {
         'fields-vertical': this.layout === 'vertical',
         'fields-horizontal': this.layout === 'horizontal'
       }
     },
-    
+
     labelClasses() {
       return {
         'label-compact': this.compact,
@@ -123,26 +123,26 @@ export default {
       return this.computeEffectiveItems()
     }
   },
-  
+
   data() {
     return {
-      editManager: EditWidgetManager,
-      displayManager: DisplayWidgetManager,
-      formData: { ...this.initialData },
+      editManager: NxEditWidgetManager,
+      displayManager: NxDisplayWidgetManager,
+      formData: {...this.initialData},
       changedValues: {},
       isDirty: false,
       fieldErrors: {},
       isSubmitting: false
     }
   },
-  
+
   methods: {
     // Resolve widgets
     resolveEditWidget(widget) {
-      return typeof widget === 'string' ? this.editManager.getWidget(widget, {}) : { component: widget, props: {} }
+      return typeof widget === 'string' ? this.editManager.getWidget(widget, {}) : {component: widget, props: {}}
     },
     resolveDisplayWidget(widget) {
-      return typeof widget === 'string' ? this.displayManager.getWidget(widget, {}) : { component: widget, props: {} }
+      return typeof widget === 'string' ? this.displayManager.getWidget(widget, {}) : {component: widget, props: {}}
     },
     formatDisplay(value) {
       return value == null ? '' : String(value)
@@ -169,7 +169,7 @@ export default {
       }
       return false
     },
-    
+
     // Update field value
     updateField(key, value) {
       this.formData[key] = value
@@ -181,17 +181,17 @@ export default {
         this.changedValues[key] = value
       }
       this.isDirty = Object.keys(this.changedValues).length > 0
-      this.$emit('dirty-change', { isDirty: this.isDirty, changes: { ...this.changedValues } })
-      this.$emit('field-change', { key, value, formData: this.formData })
+      this.$emit('dirty-change', {isDirty: this.isDirty, changes: {...this.changedValues}})
+      this.$emit('field-change', {key, value, formData: this.formData})
     },
-    
+
     // Clear field error
     clearFieldError(key) {
       if (this.fieldErrors[key]) {
         delete this.fieldErrors[key]
       }
     },
-    
+
     // Build effective items from array-based config and check()
     computeEffectiveItems() {
       const fieldsArray = Array.isArray(this.config.fields) ? this.config.fields : []
@@ -237,21 +237,21 @@ export default {
           isValid = false
         }
       }
-      
+
       return isValid
     },
-    
+
     // Handle form submission
     async handleSubmit() {
       if (this.isSubmitting) return
       if (!this.validateForm()) {
         return
       }
-      
+
       this.isSubmitting = true
-      
+
       try {
-        await this.$emit('submit', { ...this.changedValues, __full: { ...this.formData } })
+        await this.$emit('submit', {...this.changedValues, __full: {...this.formData}})
       } catch (error) {
         console.error('Form submission error:', error)
       } finally {
@@ -259,29 +259,23 @@ export default {
       }
     }
   },
-  
+
   // Watch for initial data changes
   watch: {
     initialData: {
       handler(newData) {
-        this.formData = { ...newData }
+        this.formData = {...newData}
         this.changedValues = {}
         this.isDirty = false
-        this.$emit('dirty-change', { isDirty: false, changes: {} })
+        this.$emit('dirty-change', {isDirty: false, changes: {}})
       },
       deep: true
     }
-  },
+  }
 
-  /*computed: {
-    // Existing computed properties retained
-    effectiveItems() {
-      return this.computeEffectiveItems()
-    }
-  }*/
 }
 </script>
 
 <style scoped>
-/* Using PrimeFlex/PrimeVue for layout and spacing; no custom CSS needed here. */
+
 </style>

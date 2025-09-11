@@ -1,10 +1,10 @@
 <script setup>
-import { computed } from 'vue';
+import {computed} from 'vue';
 import NxChatToolRunBadge from './NxChatToolRunBadge.vue';
 
 const props = defineProps({
-  items: { type: Array, required: true }, // [{ seq, role, message_type, ... }]
-  toolsByRunId: { type: Object, required: false, default: () => ({}) }
+  items: {type: Array, required: true}, // [{ seq, role, message_type, ... }]
+  toolsByRunId: {type: Object, required: false, default: () => ({})}
 });
 
 const orderedItems = computed(() => {
@@ -16,18 +16,18 @@ const orderedItems = computed(() => {
   <div class="turn-timeline">
     <div class="mb-0">
       <NxChatToolRunBadge
-        v-for="(tool, runId) in toolsByRunId"
-        :key="runId"
-        :toolName="tool.tool_name || 'tool'"
-        :status="tool.status || 'started'"
-        :toolRunId="runId"
+          v-for="(tool, runId) in toolsByRunId"
+          :key="runId"
+          :toolName="tool.tool_name || 'tool'"
+          :status="tool.status || 'started'"
+          :toolRunId="runId"
       />
     </div>
     <div v-for="item in orderedItems" :key="item.id || item.seq" class="timeline-item py-0">
-      <slot name="item" :item="item" />
+      <slot name="item" :item="item"/>
     </div>
   </div>
-  <div class="mt-0" />
+  <div class="mt-0"/>
 </template>
 
 <style scoped>
@@ -35,9 +35,11 @@ const orderedItems = computed(() => {
   border-left: 1px solid var(--surface-border);
   padding-left: 0.25rem;
 }
+
 .timeline-item {
   position: relative;
 }
+
 .timeline-item::before {
   content: '';
   position: absolute;

@@ -5,96 +5,96 @@
 
       <div class="header-actions flex gap-3">
         <Button
-          v-if="showAddButton"
-          @click="onAddNew"
-          icon="pi pi-plus"
-          label="Add New"
+            v-if="showAddButton"
+            @click="onAddNew"
+            icon="pi pi-plus"
+            label="Add New"
         />
 
         <Button
-          v-if="exportEnabled"
-          @click="exportData"
-          icon="pi pi-download"
-          severity="secondary"
-          label="Export"
+            v-if="exportEnabled"
+            @click="exportData"
+            icon="pi pi-download"
+            severity="secondary"
+            label="Export"
         />
       </div>
     </div>
 
-    <DynamicTable
-      v-if="isListMode"
-      :config="tableConfig"
-      :data="entities"
-      :loading="loading"
-      @row-action="handleRowAction"
-      @bulk-action="handleBulkAction"
+    <NxDynamicTable
+        v-if="isListMode"
+        :config="tableConfig"
+        :data="entities"
+        :loading="loading"
+        @row-action="handleRowAction"
+        @bulk-action="handleBulkAction"
     />
 
     <!-- Inline create/edit form when displayMode is inline -->
     <div v-if="displayMode === 'inline' && (isCreateMode || isEditMode)" class="mt-3">
-      <DynamicForm
-        :config="formConfig"
-        :initial-data="isEditMode ? currentEntity : {}"
-        :submit-label="isEditMode ? 'Update' : 'Create'"
-        @submit="handleFormSubmit"
-        @cancel="handleInlineCancel"
+      <NxDynamicForm
+          :config="formConfig"
+          :initial-data="isEditMode ? currentEntity : {}"
+          :submit-label="isEditMode ? 'Update' : 'Create'"
+          @submit="handleFormSubmit"
+          @cancel="handleInlineCancel"
       />
     </div>
 
     <!-- Inline view panel when displayMode is inline -->
     <div v-if="displayMode === 'inline' && isViewMode" class="view-panel mt-3">
-      <DynamicForm
-        :config="formConfig"
-        :initial-data="currentEntity || {}"
-        mode="display"
+      <NxDynamicForm
+          :config="formConfig"
+          :initial-data="currentEntity || {}"
+          mode="display"
       />
     </div>
 
     <Dialog
-      v-if="displayMode === 'dialog'"
-      v-model:visible="formDialogVisible"
-      :header="dialogTitle"
-      :modal="true"
-      :closable="true"
-      :close-on-escape="true"
-      :style="{ width: '50vw' }"
+        v-if="displayMode === 'dialog'"
+        v-model:visible="formDialogVisible"
+        :header="dialogTitle"
+        :modal="true"
+        :closable="true"
+        :close-on-escape="true"
+        :style="{ width: '50vw' }"
     >
-      <DynamicForm
-        :config="formConfig"
-        :initial-data="editingEntity || {}"
-        :submit-label="editingEntity ? 'Update' : 'Create'"
-        @submit="handleFormSubmit"
-        @cancel="closeFormDialog"
+      <NxDynamicForm
+          :config="formConfig"
+          :initial-data="editingEntity || {}"
+          :submit-label="editingEntity ? 'Update' : 'Create'"
+          @submit="handleFormSubmit"
+          @cancel="closeFormDialog"
       />
     </Dialog>
 
     <Dialog
-      v-if="displayMode === 'dialog'"
-      v-model:visible="showViewDialog"
-      :header="`View ${entitySingular}`"
-      :modal="true"
-      :closable="true"
-      :close-on-escape="true"
-      :style="{ width: '40vw' }"
+        v-if="displayMode === 'dialog'"
+        v-model:visible="showViewDialog"
+        :header="`View ${entitySingular}`"
+        :modal="true"
+        :closable="true"
+        :close-on-escape="true"
+        :style="{ width: '40vw' }"
     >
       <div v-if="viewingEntity" class="view-details flex flex-column gap-3">
-        <DynamicForm
-          :config="formConfig"
-          :initial-data="viewingEntity || {}"
-          mode="display"
+        <NxDynamicForm
+            :config="formConfig"
+            :initial-data="viewingEntity || {}"
+            mode="display"
         />
       </div>
       <template #footer>
-        <Button label="Close" severity="secondary" @click="closeView" />
+        <Button label="Close" severity="secondary" @click="closeView"/>
       </template>
     </Dialog>
 
     <Dialog
-      v-model:visible="showDeleteConfirm"
-      header="Confirm Delete"
-      :modal="true"
-      :closable="true"
-      :style="{ width: '30vw' }"
+        v-model:visible="showDeleteConfirm"
+        header="Confirm Delete"
+        :modal="true"
+        :closable="true"
+        :style="{ width: '30vw' }"
     >
       <div class="delete-confirmation">
         <p>Are you sure you want to delete this {{ entitySingular }}?</p>
@@ -103,25 +103,25 @@
 
       <template #footer>
         <Button
-          @click="showDeleteConfirm = false"
-          label="Cancel"
-          severity="secondary"
+            @click="showDeleteConfirm = false"
+            label="Cancel"
+            severity="secondary"
         />
         <Button
-          @click="confirmDelete"
-          label="Delete"
-          severity="danger"
-          :loading="deleting"
+            @click="confirmDelete"
+            label="Delete"
+            severity="danger"
+            :loading="deleting"
         />
       </template>
     </Dialog>
 
     <Dialog
-      v-model:visible="showBulkDeleteConfirm"
-      header="Confirm Bulk Delete"
-      :modal="true"
-      :closable="true"
-      :style="{ width: '30vw' }"
+        v-model:visible="showBulkDeleteConfirm"
+        header="Confirm Bulk Delete"
+        :modal="true"
+        :closable="true"
+        :style="{ width: '30vw' }"
     >
       <div class="bulk-delete-confirmation">
         <p>Are you sure you want to delete {{ selectedEntities.length }} {{ entityPlural }}?</p>
@@ -130,20 +130,20 @@
 
       <template #footer>
         <Button
-          @click="showBulkDeleteConfirm = false"
-          label="Cancel"
-          severity="secondary"
+            @click="showBulkDeleteConfirm = false"
+            label="Cancel"
+            severity="secondary"
         />
         <Button
-          @click="confirmBulkDelete"
-          label="Delete All"
-          severity="danger"
-          :loading="bulkDeleting"
+            @click="confirmBulkDelete"
+            label="Delete All"
+            severity="danger"
+            :loading="bulkDeleting"
         />
       </template>
     </Dialog>
   </div>
-  </template>
+</template>
 
 <script>
 import Dialog from 'primevue/dialog'
@@ -152,21 +152,21 @@ import NxDynamicTable from '@nonix-dynamic/table/NxDynamicTable.vue'
 import NxDynamicForm from '@nonix-dynamic/form/NxDynamicForm.vue'
 
 export default {
-  name: 'CrudManager',
-  components: { Dialog, Button, DynamicTable: NxDynamicTable, DynamicForm: NxDynamicForm },
+  name: 'NxCrudManager',
+  components: {Dialog, Button, NxDynamicTable, NxDynamicForm},
 
   props: {
-    service: { type: Object, required: true },
-    title: { type: String, default: '' },
-    mode: { type: String, default: 'list' }, // 'list' | 'create' | 'view' | 'edit'
-    entityId: { type: [String, Number], default: null },
-    displayMode: { type: String, default: 'inline' }, // 'inline' | 'dialog'
-    showCreateButton: { type: Boolean, default: true },
-    tableConfigOverride: { type: Object, default: () => ({}) },
-    formConfigOverride: { type: Object, default: () => ({}) },
-    fixedFilters: { type: Object, default: () => ({}) },
-    refField: { type: String, default: '' },
-    refId: { type: [String, Number], default: null }
+    service: {type: Object, required: true},
+    title: {type: String, default: ''},
+    mode: {type: String, default: 'list'}, // 'list' | 'create' | 'view' | 'edit'
+    entityId: {type: [String, Number], default: null},
+    displayMode: {type: String, default: 'inline'}, // 'inline' | 'dialog'
+    showCreateButton: {type: Boolean, default: true},
+    tableConfigOverride: {type: Object, default: () => ({})},
+    formConfigOverride: {type: Object, default: () => ({})},
+    fixedFilters: {type: Object, default: () => ({})},
+    refField: {type: String, default: ''},
+    refId: {type: [String, Number], default: null}
   },
   watch: {
     entityId() {
@@ -209,12 +209,12 @@ export default {
       return this.service?.config || {}
     },
     tableConfig() {
-      return { ...(this.config.table || {}), ...(this.tableConfigOverride || {}) }
+      return {...(this.config.table || {}), ...(this.tableConfigOverride || {})}
     },
     formConfig() {
-      const base = this.config.form || { fields: [] }
+      const base = this.config.form || {fields: []}
       const override = this.formConfigOverride || {}
-      return { ...base, ...override, fields: override.fields || base.fields }
+      return {...base, ...override, fields: override.fields || base.fields}
     },
     exportEnabled() {
       return Boolean(this.config.exportEnabled)
@@ -257,12 +257,12 @@ export default {
       return value == null ? '' : String(value)
     },
     handleInlineCancel() {
-      this.$emit('row-action', { action: 'cancel' })
+      this.$emit('row-action', {action: 'cancel'})
     },
     async loadEntities() {
       this.loading = true
       try {
-        const query = { ...(this.fixedFilters || {}) }
+        const query = {...(this.fixedFilters || {})}
         if (this.refField && this.refId != null) {
           query[`filter_${this.refField}`] = `eq:${this.refId}`
         }
@@ -279,31 +279,31 @@ export default {
       }
     },
 
-    async handleRowAction({ action, rowData }) {
+    async handleRowAction({action, rowData}) {
       switch (action) {
         case 'view':
           if (this.displayMode === 'dialog') {
             this.openView(rowData)
           } else {
-            this.$emit('row-action', { action, rowData })
+            this.$emit('row-action', {action, rowData})
           }
           break
         case 'edit':
           if (this.displayMode === 'dialog') {
             this.editEntity(rowData)
           } else {
-            this.$emit('row-action', { action, rowData })
+            this.$emit('row-action', {action, rowData})
           }
           break
         case 'delete':
           this.deleteEntity(rowData)
           break
         default:
-          this.$emit('row-action', { action, rowData })
+          this.$emit('row-action', {action, rowData})
       }
     },
 
-    async handleBulkAction({ action, selectedRows }) {
+    async handleBulkAction({action, selectedRows}) {
       this.selectedEntities = selectedRows || []
       switch (action) {
         case 'delete':
@@ -313,12 +313,12 @@ export default {
           this.exportSelectedData(this.selectedEntities)
           break
         default:
-          this.$emit('bulk-action', { action, selectedRows: this.selectedEntities })
+          this.$emit('bulk-action', {action, selectedRows: this.selectedEntities})
       }
     },
 
     editEntity(entity) {
-      this.editingEntity = { ...entity }
+      this.editingEntity = {...entity}
       this.formDialogVisible = true
     },
 
@@ -354,7 +354,7 @@ export default {
         this.editingEntity = null
         this.formDialogVisible = true
       } else {
-        this.$emit('row-action', { action: 'create' })
+        this.$emit('row-action', {action: 'create'})
       }
     },
 
@@ -374,12 +374,12 @@ export default {
         await this.loadEntities()
         if (this.displayMode === 'inline') {
           // Return to list after a successful submit in inline mode
-          this.$emit('row-action', { action: 'cancel' })
+          this.$emit('row-action', {action: 'cancel'})
         }
       } catch (error) {
         const detail = (error && error.data && Array.isArray(error.data.errors) && error.data.errors[0])
-          || (error && error.message)
-          || 'Operation failed'
+            || (error && error.message)
+            || 'Operation failed'
         this.notifyError(detail)
         // eslint-disable-next-line no-console
         console.error('Form submission error:', error)
@@ -390,8 +390,8 @@ export default {
       const blocked = new Set(['id', 'created_at', 'updated_at', 'createdAt', 'updatedAt'])
       const fields = Array.isArray(this.formConfig?.fields) ? this.formConfig.fields : []
       const editableKeys = fields
-        .filter(f => f && f.key && !f.displayOnly)
-        .map(f => f.key)
+          .filter(f => f && f.key && !f.displayOnly)
+          .map(f => f.key)
       const payload = {}
       for (const key of editableKeys) {
         if (blocked.has(key)) continue
@@ -456,22 +456,22 @@ export default {
     },
 
     exportData() {
-      this.$emit('export-all', { data: this.entities })
+      this.$emit('export-all', {data: this.entities})
     },
 
     exportSelectedData(selectedRows) {
-      this.$emit('export-selected', { data: selectedRows })
+      this.$emit('export-selected', {data: selectedRows})
     },
 
     notifySuccess(detail) {
       if (this.$toast && typeof this.$toast.add === 'function') {
-        this.$toast.add({ severity: 'success', summary: 'Success', detail, life: 3000 })
+        this.$toast.add({severity: 'success', summary: 'Success', detail, life: 3000})
       }
     },
 
     notifyError(detail) {
       if (this.$toast && typeof this.$toast.add === 'function') {
-        this.$toast.add({ severity: 'error', summary: 'Error', detail, life: 3000 })
+        this.$toast.add({severity: 'error', summary: 'Error', detail, life: 3000})
       }
     },
 

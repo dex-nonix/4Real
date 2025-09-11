@@ -7,52 +7,52 @@
           <span class="text-sm text-500">{{ errors.length }} error(s)</span>
         </div>
         <div class="flex gap-2">
-          <Button 
-            label="Copy Selected" 
-            icon="pi pi-copy" 
-            size="small" 
-            :disabled="selectedErrors.length === 0"
-            @click="copySelected"
+          <Button
+              label="Copy Selected"
+              icon="pi pi-copy"
+              size="small"
+              :disabled="selectedErrors.length === 0"
+              @click="copySelected"
           />
-          <Button 
-            label="Clear All" 
-            icon="pi pi-trash" 
-            size="small" 
-            severity="danger" 
-            :disabled="errors.length === 0"
-            @click="clearAll"
+          <Button
+              label="Clear All"
+              icon="pi pi-trash"
+              size="small"
+              severity="danger"
+              :disabled="errors.length === 0"
+              @click="clearAll"
           />
         </div>
       </div>
 
       <!-- Error Table -->
-      <DataTable 
-        :value="errors" 
-        v-model:selection="selectedErrors"
-        selectionMode="multiple"
-        dataKey="id"
-        :paginator="true"
-        :rows="10"
-        :rowsPerPageOptions="[5, 10, 20]"
-        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} errors"
-        responsiveLayout="scroll"
-        class="p-datatable-sm"
+      <DataTable
+          :value="errors"
+          v-model:selection="selectedErrors"
+          selectionMode="multiple"
+          dataKey="id"
+          :paginator="true"
+          :rows="10"
+          :rowsPerPageOptions="[5, 10, 20]"
+          paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+          currentPageReportTemplate="Showing {first} to {last} of {totalRecords} errors"
+          responsiveLayout="scroll"
+          class="p-datatable-sm"
       >
         <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
-        
+
         <Column field="message" header="Error Message" sortable>
           <template #body="{ data }">
             <div class="font-semibold text-red-600">{{ data.message }}</div>
           </template>
         </Column>
-        
+
         <Column field="timestamp" header="Time" sortable style="width: 150px">
           <template #body="{ data }">
             <span class="text-sm text-500">{{ formatTime(data.timestamp) }}</span>
           </template>
         </Column>
-        
+
         <Column field="details" header="Details" style="width: 200px">
           <template #body="{ data }">
             <div v-if="data.details" class="text-xs text-600">
@@ -61,26 +61,26 @@
             <span v-else class="text-xs text-400">No details</span>
           </template>
         </Column>
-        
+
         <Column header="Actions" style="width: 120px">
           <template #body="{ data }">
             <div class="flex gap-1">
-              <Button 
-                icon="pi pi-copy" 
-                size="small" 
-                text 
-                rounded
-                @click="copyError(data)"
-                v-tooltip.left="'Copy Error'"
+              <Button
+                  icon="pi pi-copy"
+                  size="small"
+                  text
+                  rounded
+                  @click="copyError(data)"
+                  v-tooltip.left="'Copy Error'"
               />
-              <Button 
-                icon="pi pi-times" 
-                size="small" 
-                text 
-                rounded
-                severity="danger"
-                @click="deleteError(data.id)"
-                v-tooltip.left="'Delete Error'"
+              <Button
+                  icon="pi pi-times"
+                  size="small"
+                  text
+                  rounded
+                  severity="danger"
+                  @click="deleteError(data.id)"
+                  v-tooltip.left="'Delete Error'"
               />
             </div>
           </template>
@@ -89,13 +89,13 @@
     </div>
 
     <template #footer>
-      <Button label="Close" icon="pi pi-times" @click="closeDialog" class="p-button-text" />
+      <Button label="Close" icon="pi pi-times" @click="closeDialog" class="p-button-text"/>
     </template>
   </Dialog>
 </template>
 
 <script setup>
-import { ref, defineExpose } from 'vue';
+import {defineExpose, ref} from 'vue';
 import Dialog from 'primevue/dialog';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
@@ -103,7 +103,7 @@ import Button from 'primevue/button';
 
 // Props
 const props = defineProps({
-  errors: { type: Array, required: true }
+  errors: {type: Array, required: true}
 });
 
 // Reactive state for dialog visibility
@@ -147,11 +147,11 @@ const copyError = (error) => {
 
 const copySelected = () => {
   if (selectedErrors.value.length === 0) return;
-  
-  const errorTexts = selectedErrors.value.map(error => 
-    `Error: ${error.message}\nTime: ${formatTime(error.timestamp)}\nDetails: ${error.details || 'No details'}`
+
+  const errorTexts = selectedErrors.value.map(error =>
+      `Error: ${error.message}\nTime: ${formatTime(error.timestamp)}\nDetails: ${error.details || 'No details'}`
   ).join('\n\n');
-  
+
   navigator.clipboard.writeText(errorTexts);
 };
 

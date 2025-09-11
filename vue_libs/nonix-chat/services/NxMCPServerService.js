@@ -1,6 +1,6 @@
 import NxCrudService from '@nonix-crud/services/NxCrudService.js'
 
-export default class MCPServerService extends NxCrudService {
+export default class NxMCPServerService extends NxCrudService {
   constructor(app) {
     super(app,'mcp-servers', {
       table: {

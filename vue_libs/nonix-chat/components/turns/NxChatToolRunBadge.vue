@@ -1,8 +1,8 @@
 <script setup>
 const props = defineProps({
-  toolName: { type: String, required: true },
-  status: { type: String, required: true },
-  toolRunId: { type: String, required: true }
+  toolName: {type: String, required: true},
+  status: {type: String, required: true},
+  toolRunId: {type: String, required: true}
 });
 
 const iconClass = (s) => {
@@ -15,11 +15,11 @@ const iconClass = (s) => {
 
 <template>
   <span class="tool-run-badge inline-flex align-items-center gap-2 px-2 py-1 border-round surface-100">
-    <i :class="iconClass(status)" />
+    <i :class="iconClass(status)"/>
     <span class="font-medium">{{ toolName }}</span>
     <small class="text-color-secondary">{{ toolRunId }}</small>
   </span>
-  <span class="mx-1" />
+  <span class="mx-1"/>
 </template>
 
 <style scoped>

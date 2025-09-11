@@ -1,24 +1,24 @@
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, inject, watch, nextTick } from 'vue';
-import { useToast } from 'primevue/usetoast';
+import {computed, inject, nextTick, onMounted, onUnmounted, reactive, ref, watch} from 'vue';
+import {useToast} from 'primevue/usetoast';
 import NxChatErrorDialog from './NxChatErrorDialog.vue';
 import chatMessageTypeManager from './NxChatMessageTypeManager.js';
 import NxChatSystemMessage from './message-types/NxChatSystemMessage.vue';
 import NxChatToolMessage from './message-types/NxChatToolMessage.vue';
 import NxChatUserMessage from './message-types/NxChatUserMessage.vue';
-import { NxChatIncomingMessageContainer, NxChatOutgoingMessageContainer } from './message-types/index.js';
+import {NxChatIncomingMessageContainer, NxChatOutgoingMessageContainer} from './message-types/index.js';
 import NxChatStreamingMessage from './message-types/NxChatStreamingMessage.vue';
 import NxChatTurnHeader from './turns/NxChatTurnHeader.vue';
 import NxChatTurnTimeline from './turns/NxChatTurnTimeline.vue';
 import NxChatInputArea from './NxChatInputArea.vue';
 
 const props = defineProps({
-  sessionId: { type: [String, Number, null], required: true },
-  historyId: { type: [String, Number, null], required: false, default: null },
-  currentUserId: { type: [String, Number], required: true, default: 'user-self' },
-  selectedSession: { type: Object, required: false, default: null },
-  availableTools: { type: Array, default: () => [] },
-  errors: { type: Array, required: false, default: () => [] }
+  sessionId: {type: [String, Number, null], required: true},
+  historyId: {type: [String, Number, null], required: false, default: null},
+  currentUserId: {type: [String, Number], required: true, default: 'user-self'},
+  selectedSession: {type: Object, required: false, default: null},
+  availableTools: {type: Array, default: () => []},
+  errors: {type: Array, required: false, default: () => []}
 });
 
 const emit = defineEmits(['sendMessage', 'regenerateResponse', 'showTools', 'deleteMessage', 'error']);
@@ -50,7 +50,7 @@ const orderedTurns = computed(() => {
     const seqs = Array.from(obj.items.keys()).sort((a, b) => a - b);
     const firstSeq = seqs[0] || 0;
     const lastSeq = seqs[seqs.length - 1] || firstSeq;
-    arr.push({ turnId, firstSeq, lastSeq, obj });
+    arr.push({turnId, firstSeq, lastSeq, obj});
   }
   return arr.sort((a, b) => a.firstSeq - b.firstSeq);
 });
@@ -79,7 +79,6 @@ const streamingMessages = reactive(new Map()); // message_id -> { content, statu
 const streamingStatus = reactive(new Map());   // message_id -> 'streaming' | 'complete' | 'error'
 
 
-
 // Track active WebSocket unsubscribers to avoid duplicate handlers
 const wsUnsubs = ref([]);
 const wsEventHandlers = ref(new Map()); // Track registered handlers to prevent duplicates
@@ -88,7 +87,10 @@ const wsEventHandlers = ref(new Map()); // Track registered handlers to prevent 
 const registerWsHandler = (event, handler) => {
   if (wsEventHandlers.value.has(event)) {
     const existingUnsub = wsEventHandlers.value.get(event);
-    try { typeof existingUnsub === 'function' && existingUnsub(); } catch (_) { }
+    try {
+      typeof existingUnsub === 'function' && existingUnsub();
+    } catch (_) {
+    }
   }
   const unsub = chatService.onWebSocketEvent(event, handler);
   wsEventHandlers.value.set(event, unsub);
@@ -100,12 +102,20 @@ const cleanupWsListeners = () => {
   try {
     if (wsEventHandlers.value.size > 0) {
       wsEventHandlers.value.forEach((unsub) => {
-        try { typeof unsub === 'function' && unsub(); } catch (e) { }
+        try {
+          typeof unsub === 'function' && unsub();
+        } catch (e) {
+        }
       });
       wsEventHandlers.value.clear();
     }
     if (Array.isArray(wsUnsubs.value)) {
-      wsUnsubs.value.forEach(unsub => { try { typeof unsub === 'function' && unsub(); } catch (_) { } });
+      wsUnsubs.value.forEach(unsub => {
+        try {
+          typeof unsub === 'function' && unsub();
+        } catch (_) {
+        }
+      });
     }
   } finally {
     wsUnsubs.value = [];
@@ -135,13 +145,13 @@ onUnmounted(() => {
 const ensureTurn = (turnId) => {
   if (!turnId) return null;
   if (!turnsById.has(turnId)) {
-    turnsById.set(turnId, { items: new Map(), tools: new Map() });
+    turnsById.set(turnId, {items: new Map(), tools: new Map()});
   }
   return turnsById.get(turnId);
 };
 
 const upsertTurnItem = (payload) => {
-  const { turn_id, seq } = payload;
+  const {turn_id, seq} = payload;
   if (!turn_id || !seq) return;
   const turn = ensureTurn(turn_id);
   if (!turn) return;
@@ -150,33 +160,44 @@ const upsertTurnItem = (payload) => {
 };
 
 const upsertToolRun = (payload) => {
-  const { turn_id, tool_run_id, tool_name, status } = payload;
+  const {turn_id, tool_run_id, tool_name, status} = payload;
   if (!turn_id || !tool_run_id) return;
   const turn = ensureTurn(turn_id);
   if (!turn) return;
   const existing = turn.tools.get(tool_run_id) || {};
-  turn.tools.set(tool_run_id, Object.assign({}, existing, { tool_name, status }));
+  turn.tools.set(tool_run_id, Object.assign({}, existing, {tool_name, status}));
 };
 
 // WebSocket Event Handlers
 const handleLLMStatus = (data) => {
-  llmStatus.value = { stage: data.stage, message: data.message, timestamp: data.timestamp };
+  llmStatus.value = {stage: data.stage, message: data.message, timestamp: data.timestamp};
 };
 
 const handleToolStatus = (data) => {
-  toolStatus.value = { toolName: data.tool_name, status: data.status, result: data.result, error: data.error, timestamp: data.timestamp };
+  toolStatus.value = {
+    toolName: data.tool_name,
+    status: data.status,
+    result: data.result,
+    error: data.error,
+    timestamp: data.timestamp
+  };
   if (data.turn_id && data.tool_run_id) {
-    upsertToolRun({ turn_id: data.turn_id, tool_run_id: data.tool_run_id, tool_name: data.tool_name, status: data.status });
+    upsertToolRun({
+      turn_id: data.turn_id,
+      tool_run_id: data.tool_run_id,
+      tool_name: data.tool_name,
+      status: data.status
+    });
   }
 };
 
 const handleMessageReceived = (data) => {
   const incoming = Object.assign({}, data);
   const derivedType = incoming.message_type
-    || (incoming.role === 'assistant' ? 'assistant'
-      : incoming.role === 'user' ? 'user'
-        : incoming.role === 'system' ? 'system'
-          : 'tool_result');
+      || (incoming.role === 'assistant' ? 'assistant'
+          : incoming.role === 'user' ? 'user'
+              : incoming.role === 'system' ? 'system'
+                  : 'tool_result');
   incoming.message_type = derivedType;
 
   // Strict payload: require content_json for text roles
@@ -215,11 +236,11 @@ const handleMessageReceived = (data) => {
 
   if (idx !== -1) {
     // Update existing message - ensure reactivity by replacing the entire object
-    messages.value.splice(idx, 1, { ...messages.value[idx], ...msgObj });
+    messages.value.splice(idx, 1, {...messages.value[idx], ...msgObj});
     console.log('Updated existing message at index:', idx);
   } else {
     // Add new message - ensure reactivity by using push
-    messages.value.push({ ...msgObj });
+    messages.value.push({...msgObj});
     console.log('Added new message, total messages:', messages.value.length);
   }
 
@@ -244,13 +265,18 @@ const handleMessageReceived = (data) => {
   }
 
   if (incoming.tool_run_id && incoming.turn_id) {
-    upsertToolRun({ turn_id: incoming.turn_id, tool_run_id: incoming.tool_run_id, tool_name: incoming.tool_name, status: incoming.execution_status || incoming.status });
+    upsertToolRun({
+      turn_id: incoming.turn_id,
+      tool_run_id: incoming.tool_run_id,
+      tool_name: incoming.tool_name,
+      status: incoming.execution_status || incoming.status
+    });
   }
 };
 
 const handleMessageProcessed = (data) => {
   console.log('🎯 Message Processed event:', data);
-  const { message_id, status, timestamp } = data;
+  const {message_id, status, timestamp} = data;
   console.log('Message Processed:', message_id, status);
   // Update message status
   updateMessageStatus(message_id, status);
@@ -260,13 +286,13 @@ const handleMessageProcessed = (data) => {
 const handleAssistantStarted = (data) => {
   console.log('🎯 Assistant Message Started event:', data);
   // Create empty assistant message
-  const { message_id, status, metadata } = data;
+  const {message_id, status, metadata} = data;
   console.log('Creating streaming message with ID:', message_id);
 
   const existingIndex = messages.value.findIndex(m => m.id === message_id);
   if (existingIndex !== -1) {
     // Update existing message reactively
-    const updatedMessage = { ...messages.value[existingIndex], status: 'streaming' };
+    const updatedMessage = {...messages.value[existingIndex], status: 'streaming'};
     messages.value.splice(existingIndex, 1, updatedMessage);
     console.log('Updated existing streaming message at index:', existingIndex);
   } else {
@@ -274,7 +300,7 @@ const handleAssistantStarted = (data) => {
       id: message_id,
       role: 'assistant',
       message_type: 'assistant',
-      content_json: { text: '' },
+      content_json: {text: ''},
       status: 'streaming',
       created_at: new Date().toISOString(),
       seq: metadata?.seq,
@@ -286,7 +312,7 @@ const handleAssistantStarted = (data) => {
   }
 
   // Track streaming state
-  streamingMessages.set(message_id, { content: '', status: 'streaming', metadata });
+  streamingMessages.set(message_id, {content: '', status: 'streaming', metadata});
   streamingStatus.set(message_id, 'streaming');
   if (metadata && metadata.turn_id && metadata.seq) {
     upsertTurnItem({
@@ -295,7 +321,7 @@ const handleAssistantStarted = (data) => {
       message_type: 'assistant',
       seq: metadata.seq,
       turn_id: metadata.turn_id,
-      content_json: { text: '' },
+      content_json: {text: ''},
       status: 'streaming',
       created_at: new Date().toISOString(),
       tool_run_id: metadata.tool_run_id
@@ -306,7 +332,7 @@ const handleAssistantStarted = (data) => {
 const handleAssistantChunk = (data) => {
   console.log('🎯 Assistant Message Chunk event:', data);
   // Find existing assistant message and append chunk
-  const { message_id, chunk, metadata } = data;
+  const {message_id, chunk, metadata} = data;
   console.log('Looking for message with ID:', message_id, 'in', messages.value.length, 'messages');
 
   const messageIndex = messages.value.findIndex(m => m.id === message_id);
@@ -320,7 +346,7 @@ const handleAssistantChunk = (data) => {
     // Update message reactively
     const updatedMessage = {
       ...messages.value[messageIndex],
-      content_json: { text: newText }
+      content_json: {text: newText}
     };
     messages.value.splice(messageIndex, 1, updatedMessage);
 
@@ -337,7 +363,7 @@ const handleAssistantChunk = (data) => {
       id: message_id,
       role: 'assistant',
       message_type: 'assistant',
-      content_json: { text: chunk || '' },
+      content_json: {text: chunk || ''},
       status: 'streaming',
       created_at: new Date().toISOString(),
       seq: metadata?.seq,
@@ -345,23 +371,32 @@ const handleAssistantChunk = (data) => {
       tool_run_id: metadata?.tool_run_id
     };
     messages.value.push(assistantMessage);
-    streamingMessages.set(message_id, { content: chunk || '', status: 'streaming', metadata });
+    streamingMessages.set(message_id, {content: chunk || '', status: 'streaming', metadata});
     streamingStatus.set(message_id, 'streaming');
   }
   if (metadata && metadata.turn_id && metadata.seq) {
     const sd = streamingMessages.get(message_id);
     const text = sd && sd.content ? sd.content : (chunk || '');
-    upsertTurnItem({ id: message_id, role: 'assistant', message_type: 'assistant', seq: metadata.seq, turn_id: metadata.turn_id, content_json: { text }, status: 'streaming', created_at: new Date().toISOString() });
+    upsertTurnItem({
+      id: message_id,
+      role: 'assistant',
+      message_type: 'assistant',
+      seq: metadata.seq,
+      turn_id: metadata.turn_id,
+      content_json: {text},
+      status: 'streaming',
+      created_at: new Date().toISOString()
+    });
   }
 };
 
 const handleAssistantComplete = (data) => {
   console.log('🎯 Assistant Message Complete event:', data);
-  const { message_id, metadata } = data;
+  const {message_id, metadata} = data;
   const messageIndex = messages.value.findIndex(m => m.id === message_id);
   if (messageIndex !== -1) {
     // Update message reactively
-    const updatedMessage = { ...messages.value[messageIndex], status: 'complete' };
+    const updatedMessage = {...messages.value[messageIndex], status: 'complete'};
     messages.value.splice(messageIndex, 1, updatedMessage);
     console.log('Marked message as complete at index:', messageIndex);
   } else {
@@ -372,7 +407,7 @@ const handleAssistantComplete = (data) => {
       id: message_id,
       role: 'assistant',
       message_type: 'assistant',
-      content_json: { text: finalContent },
+      content_json: {text: finalContent},
       status: 'complete',
       created_at: new Date().toISOString(),
       seq: metadata?.seq,
@@ -392,13 +427,22 @@ const handleAssistantComplete = (data) => {
   if (metadata && metadata.turn_id && metadata.seq) {
     const sd = streamingMessages.get(message_id);
     const finalText = (sd && sd.content) ? sd.content : '';
-    upsertTurnItem({ id: message_id, role: 'assistant', message_type: 'assistant', seq: metadata.seq, turn_id: metadata.turn_id, content_json: { text: finalText }, status: 'complete', created_at: new Date().toISOString() });
+    upsertTurnItem({
+      id: message_id,
+      role: 'assistant',
+      message_type: 'assistant',
+      seq: metadata.seq,
+      turn_id: metadata.turn_id,
+      content_json: {text: finalText},
+      status: 'complete',
+      created_at: new Date().toISOString()
+    });
   }
 };
 
 const handleStreamingError = (data) => {
   console.log('🎯 Streaming Error event:', data);
-  const { message_id, error_message } = data || {};
+  const {message_id, error_message} = data || {};
   if (!message_id) return;
   // Update message status to error
   const messageIndex = messages.value.findIndex(m => m.id === message_id);
@@ -413,7 +457,12 @@ const handleStreamingError = (data) => {
 };
 
 // State Update Functions (inline in handlers, helpers not needed) — removed
-const updateMessageStatus = (messageId, status) => { const messageIndex = realTimeMessages.value.findIndex(m => m.message_id === messageId); if (messageIndex !== -1) { realTimeMessages.value[messageIndex].status = status; } };
+const updateMessageStatus = (messageId, status) => {
+  const messageIndex = realTimeMessages.value.findIndex(m => m.message_id === messageId);
+  if (messageIndex !== -1) {
+    realTimeMessages.value[messageIndex].status = status;
+  }
+};
 
 // Watch for session/history changes and rejoin WebSocket rooms
 watch([() => props.selectedSession, () => props.historyId], ([newSession, newHistoryId], [oldSession, oldHistoryId]) => {
@@ -434,7 +483,7 @@ watch([() => props.selectedSession, () => props.historyId], ([newSession, newHis
     registerWsHandler('assistant_message_complete', handleAssistantComplete);
     registerWsHandler('streaming_error', handleStreamingError);
   }
-}, { immediate: true });
+}, {immediate: true});
 
 // Load messages for specific history
 const loadMessages = async (historyId) => {
@@ -443,7 +492,7 @@ const loadMessages = async (historyId) => {
   try {
     loading.value = true;
 
-    // Use the new ChatService method that requires both sessionId and historyId
+    // Use the new NxChatService method that requires both sessionId and historyId
     if (!props.selectedSession?.id) {
       messages.value = [];
       return;
@@ -501,7 +550,7 @@ const loadMessages = async (historyId) => {
         streamingMessages.set(m.id, {
           content: m.content_json?.text || '',
           status: 'streaming',
-          metadata: { turn_id: m.turn_id, seq: m.seq }
+          metadata: {turn_id: m.turn_id, seq: m.seq}
         });
         streamingStatus.set(m.id, 'streaming');
       }
@@ -537,7 +586,7 @@ watch([() => props.historyId, () => props.selectedSession], async ([newHistoryId
     messages.value = [];
     turnsById.clear();
   }
-}, { immediate: true });
+}, {immediate: true});
 
 
 // Handle message deletion
@@ -561,9 +610,9 @@ const handleDeleteMessage = async (messageData) => {
   try {
     // Call the backend to delete the message
     const response = await chatService.deleteMessage(
-      props.selectedSession.id,
-      props.historyId,
-      messageData.messageId
+        props.selectedSession.id,
+        props.historyId,
+        messageData.messageId
     );
 
     if (response) {
@@ -583,15 +632,16 @@ const handleDeleteMessage = async (messageData) => {
             turnsById.delete(turnId);
           }
         }
-      } catch (_) { }
+      } catch (_) {
+      }
 
       // Emit success to parent for toast notification
-      emit('deleteMessage', { success: true, messageData, response });
+      emit('deleteMessage', {success: true, messageData, response});
     }
   } catch (error) {
     console.error('Failed to delete message:', error);
     // Emit error to parent for toast notification
-    emit('deleteMessage', { success: false, messageData, error });
+    emit('deleteMessage', {success: false, messageData, error});
   }
 };
 
@@ -652,9 +702,6 @@ const handleCopy = async (messageData) => {
     });
   }
 };
-
-
-
 
 
 // Handle start edit event
@@ -728,7 +775,14 @@ const getStreamingContent = (messageId) => {
 
 
 // Computed property for streaming status display
-const showStreamingStatus = computed(() => { try { if (!(streamingStatus instanceof Map)) return false; return Array.from(streamingStatus.values()).some(status => status === 'streaming'); } catch { return false; } });
+const showStreamingStatus = computed(() => {
+  try {
+    if (!(streamingStatus instanceof Map)) return false;
+    return Array.from(streamingStatus.values()).some(status => status === 'streaming');
+  } catch {
+    return false;
+  }
+});
 
 
 // Expose methods for parent component
@@ -803,15 +857,16 @@ defineExpose({
       <div v-else>
         <div v-for="turn in orderedTurns" :key="turn.turnId" class="mb-3">
           <NxChatTurnHeader :turn-id="turn.turnId" :first-seq="turn.firstSeq" :last-seq="turn.lastSeq"
-            :tools-count="turn.obj.tools.size" :status="computeTurnStatus(turn)" />
+                            :tools-count="turn.obj.tools.size" :status="computeTurnStatus(turn)"/>
           <NxChatTurnTimeline :items="Array.from(turn.obj.items.values())"
-            :tools-by-run-id="Object.fromEntries(turn.obj.tools)">
+                              :tools-by-run-id="Object.fromEntries(turn.obj.tools)">
             <template #item="{ item }">
               <component :is="item.role === 'user' ? NxChatOutgoingMessageContainer : NxChatIncomingMessageContainer"
-                :message="item" :component="getMessageComponent(item)" :current-user-id="currentUserId"
-                :editing-message-id="editingMessageId"
-                :session-id="sessionId" :history-id="historyId"
-                @delete-message="handleDeleteMessage" @copy="handleCopy" @start-edit="handleStartEdit" @cancel-edit="handleCancelEdit" @edit-success="handleEditSuccess" />
+                         :message="item" :component="getMessageComponent(item)" :current-user-id="currentUserId"
+                         :editing-message-id="editingMessageId"
+                         :session-id="sessionId" :history-id="historyId"
+                         @delete-message="handleDeleteMessage" @copy="handleCopy" @start-edit="handleStartEdit"
+                         @cancel-edit="handleCancelEdit" @edit-success="handleEditSuccess"/>
             </template>
           </NxChatTurnTimeline>
         </div>
@@ -820,20 +875,20 @@ defineExpose({
 
     <!-- Input Area Component -->
     <NxChatInputArea
-      :session-id="sessionId"
-      :history-id="historyId"
-      :selected-session="selectedSession"
-      :errors="errors"
-      :available-tools="availableTools"
-      :streaming-status="streamingStatus"
-      :streaming-messages="streamingMessages"
-      :messages="messages"
-      @send-message="$emit('sendMessage', $event)"
-      @error="$emit('error', $event)"
+        :session-id="sessionId"
+        :history-id="historyId"
+        :selected-session="selectedSession"
+        :errors="errors"
+        :available-tools="availableTools"
+        :streaming-status="streamingStatus"
+        :streaming-messages="streamingMessages"
+        :messages="messages"
+        @send-message="$emit('sendMessage', $event)"
+        @error="$emit('error', $event)"
     />
 
     <!-- Error Dialog -->
-    <NxChatErrorDialog :visible="showErrorDialog" :errors="props.errors" @update:visible="showErrorDialog = $event" />
+    <NxChatErrorDialog :visible="showErrorDialog" :errors="props.errors" @update:visible="showErrorDialog = $event"/>
 
 
   </div>

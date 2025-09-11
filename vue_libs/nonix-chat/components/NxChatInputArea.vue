@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, inject, watch } from 'vue';
+import {computed, inject, ref, watch} from 'vue';
 import Textarea from 'primevue/textarea';
 import Button from 'primevue/button';
 import IconField from 'primevue/iconfield';
@@ -9,26 +9,26 @@ import Badge from 'primevue/badge';
 import NxLlmAvailableToolsDialog from './NxLlmAvailableToolsDialog.vue';
 import NxLlmToolExecutionDialog from './NxLlmToolExecutionDialog.vue';
 import NxChatErrorDialog from './NxChatErrorDialog.vue';
-import { NxVoiceInputButton } from '../../nonix-voice-input/components/index.js';
+import {NxVoiceInputButton} from '@nonix-voice-input/components/index.js';
 
 const props = defineProps({
   // Session context
-  sessionId: { type: [String, Number, null], required: true },
-  historyId: { type: [String, Number, null], required: false, default: null },
-  selectedSession: { type: Object, required: false, default: null },
+  sessionId: {type: [String, Number, null], required: true},
+  historyId: {type: [String, Number, null], required: false, default: null},
+  selectedSession: {type: Object, required: false, default: null},
 
   // Error display
-  errors: { type: Array, default: () => [] },
+  errors: {type: Array, default: () => []},
 
   // Available tools from parent
-  availableTools: { type: Array, default: () => [] },
+  availableTools: {type: Array, default: () => []},
 
   // Streaming state
-  streamingStatus: { type: Map, required: true },
-  streamingMessages: { type: Map, required: true },
+  streamingStatus: {type: Map, required: true},
+  streamingMessages: {type: Map, required: true},
 
   // Messages for optimistic updates
-  messages: { type: Array, required: true }
+  messages: {type: Array, required: true}
 });
 
 const emit = defineEmits(['sendMessage', 'error']);
@@ -71,7 +71,7 @@ const moreMenuItems = computed(() => [
   },
 
   // Separator
-  { separator: true },
+  {separator: true},
 
   // Additional utilities
   {
@@ -148,15 +148,15 @@ const executeToolWithForm = async (formData) => {
 
   try {
     await chatService.sendMessage(
-      props.selectedSession.id,
-      props.historyId,
-      {
-        message_type: 'tool_call',
-        content: {
-          tool: selectedTool.value.name,
-          args: args
+        props.selectedSession.id,
+        props.historyId,
+        {
+          message_type: 'tool_call',
+          content: {
+            tool: selectedTool.value.name,
+            args: args
+          }
         }
-      }
     );
 
     // Backend returns: { tool_call_message_id, tool_result_message_id, status, result }
@@ -223,7 +223,7 @@ const onSend = async () => {
         id: tempId,
         message_type: 'user',
         role: 'user',
-        content_json: { text: messageData.content.text },
+        content_json: {text: messageData.content.text},
         status: 'sending',
         created_at: new Date().toISOString()
       };
@@ -299,13 +299,17 @@ const isStreaming = computed(() => {
   try {
     if (!(props.streamingStatus instanceof Map)) return false;
     return Array.from(props.streamingStatus.values()).some(status => status === 'streaming');
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 });
 const hasErrors = computed(() => {
   try {
     if (!(props.streamingStatus instanceof Map)) return false;
     return Array.from(props.streamingStatus.values()).some(status => status === 'error');
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 });
 const canRetry = computed(() => hasErrors.value && !isStreaming.value);
 
@@ -333,7 +337,7 @@ const handleKeyDown = (event) => {
 };
 
 // Voice input event handlers
-const handleVoiceText = ({ text, confidence, isFinal }) => {
+const handleVoiceText = ({text, confidence, isFinal}) => {
   if (isFinal && text.trim()) {
     // Append to current input or replace if empty
     if (inputText.value) {
@@ -344,11 +348,11 @@ const handleVoiceText = ({ text, confidence, isFinal }) => {
   }
 };
 
-const handleRecordingError = ({ error, code }) => {
+const handleRecordingError = ({error, code}) => {
   console.error('Voice recording error:', error, code);
   emit('error', {
     message: 'Voice input error',
-    details: { error, code }
+    details: {error, code}
   });
 };
 
@@ -365,7 +369,7 @@ watch(() => props.selectedSession, (newSession, oldSession) => {
       inputText.value = sessionInputTexts.value.get(newSession.id) || '';
     }
   }
-}, { immediate: true });
+}, {immediate: true});
 
 // Expose methods for parent component
 defineExpose({
@@ -378,10 +382,10 @@ defineExpose({
     <!-- Voice Input Button -->
     <div class="mb-2 ml-1">
       <NxVoiceInputButton
-        :disabled="!hasHistory || isStreaming"
-        @text="handleVoiceText"
-        @recording-error="handleRecordingError"
-        size="small"
+          :disabled="!hasHistory || isStreaming"
+          @text="handleVoiceText"
+          @recording-error="handleRecordingError"
+          size="small"
       />
     </div>
 
@@ -389,49 +393,49 @@ defineExpose({
     <span class="p-input-icon-right flex-1 relative">
       <IconField>
         <Textarea
-          v-model="inputText"
-          placeholder="Type a message..."
-          class="w-full compact-textarea"
-          :autoResize="true"
-          rows="1"
-          :maxlength="5000"
-          @keydown="handleKeyDown"
-          :disabled="!hasHistory || isStreaming"
+            v-model="inputText"
+            placeholder="Type a message..."
+            class="w-full compact-textarea"
+            :autoResize="true"
+            rows="1"
+            :maxlength="5000"
+            @keydown="handleKeyDown"
+            :disabled="!hasHistory || isStreaming"
         />
-        <InputIcon :class="buttonIcon + ' absolute bottom-0 right-0 mb-1 mr-1'" @click="buttonAction" />
+        <InputIcon :class="buttonIcon + ' absolute bottom-0 right-0 mb-1 mr-1'" @click="buttonAction"/>
       </IconField>
     </span>
 
     <!-- Options Button -->
     <div class="relative mb-2 mr-1">
       <Button
-        icon="pi pi-ellipsis-h"
-        text
-        rounded
-        severity="secondary"
-        :disabled="!hasHistory"
-        style="width: 24px; height: 24px;"
-        @click="toggleMoreMenu"
-        aria-haspopup="true"
-        aria-controls="more_menu"
+          icon="pi pi-ellipsis-h"
+          text
+          rounded
+          severity="secondary"
+          :disabled="!hasHistory"
+          style="width: 24px; height: 24px;"
+          @click="toggleMoreMenu"
+          aria-haspopup="true"
+          aria-controls="more_menu"
       />
       <Badge v-if="totalNotifications > 0" :value="totalNotifications" severity="danger"
-        class="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2" />
+             class="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2"/>
     </div>
 
     <!-- More Menu -->
-    <Menu ref="moreMenu" id="more_menu" :model="moreMenuItems" :popup="true" />
+    <Menu ref="moreMenu" id="more_menu" :model="moreMenuItems" :popup="true"/>
     <!-- Tools Dialog -->
     <NxLlmAvailableToolsDialog :visible="showToolsDialog" :tools="availableToolsLocal"
-      @update:visible="showToolsDialog = $event" @tool-selected="selectTool" />
+                               @update:visible="showToolsDialog = $event" @tool-selected="selectTool"/>
 
     <!-- Tool Execution Dialog -->
     <NxLlmToolExecutionDialog ref="toolExecutionDialogRef" :selected-tool="selectedTool"
-      @execute-tool="executeToolWithForm" />
+                              @execute-tool="executeToolWithForm"/>
   </div>
 
   <!-- Error Dialog -->
-  <NxChatErrorDialog :visible="showErrorDialog" :errors="props.errors" @update:visible="showErrorDialog = $event" />
+  <NxChatErrorDialog :visible="showErrorDialog" :errors="props.errors" @update:visible="showErrorDialog = $event"/>
 </template>
 
 <style scoped>

@@ -1,27 +1,27 @@
-import ArtistService from '@nonix-music-artist/services/ArtistService.js'
-import AlbumService from '@nonix-music-artist/services/AlbumService.js'
-import TrackService from '@nonix-music-artist/services/TrackService.js'
-import StyleService from '@nonix-music-artist/services/StyleService.js'
-import TemplateService from '@nonix-template/services/TemplateService.js'
-import RhymeTechniqueService from '@nonix-music-artist/services/RhymeTechniqueService.js'
-import AIProviderService from '@nonix-chat/services/AIProviderService.js'
-import AIModelMappingService from '@nonix-chat/services/AIModelMappingService.js'
-import AIAnalysisResultService from '@nonix-chat/services/AIAnalysisResultService.js'
-import PersonaService from '@nonix-chat/services/PersonaService.js'
-import InternalToolService from '@nonix-chat/services/InternalToolService.js'
-import PersonaToolAccessService from '@nonix-chat/services/PersonaToolAccessService.js'
-import MCPServerService from '@nonix-chat/services/MCPServerService.js'
-import PersonaMCPServerService from '@nonix-chat/services/PersonaMCPServerService.js'
-import ChatSessionService from '@nonix-chat/services/ChatSessionService.js'
-import ChatHistoryService from '@nonix-chat/services/ChatHistoryService.js'
-import ChatMessageService from '@nonix-chat/services/ChatMessageService.js'
-import ChatPromptService from '@nonix-chat/services/ChatPromptService.js'
-import ToolInvocationLogService from '@nonix-chat/services/ToolInvocationLogService.js'
+import NxArtistService from '@nonix-music-artist/services/NxArtistService.js'
+import NxAlbumService from '@nonix-music-artist/services/NxAlbumService.js'
+import NxTrackService from '@nonix-music-artist/services/NxTrackService.js'
+import NxStyleService from '@nonix-music-artist/services/NxStyleService.js'
+import NxTemplateService from '@nonix-template/services/NxTemplateService.js'
+import NxRhymeTechniqueService from '@nonix-music-artist/services/NxRhymeTechniqueService.js'
+import NxAIProviderService from '@nonix-chat/services/NxAIProviderService.js'
+import NxAIModelMappingService from '@nonix-chat/services/NxAIModelMappingService.js'
+import NxAIAnalysisResultService from '@nonix-chat/services/NxAIAnalysisResultService.js'
+import NxPersonaService from '@nonix-chat/services/NxPersonaService.js'
+import NxInternalToolService from '@nonix-chat/services/NxInternalToolService.js'
+import NxPersonaToolAccessService from '@nonix-chat/services/NxPersonaToolAccessService.js'
+import NxMCPServerService from '@nonix-chat/services/NxMCPServerService.js'
+import NxPersonaMCPServerService from '@nonix-chat/services/NxPersonaMCPServerService.js'
+import NxChatSessionService from '@nonix-chat/services/NxChatSessionService.js'
+import NxChatHistoryService from '@nonix-chat/services/NxChatHistoryService.js'
+import NxChatMessageService from '@nonix-chat/services/NxChatMessageService.js'
+import NxChatPromptService from '@nonix-chat/services/NxChatPromptService.js'
+import NxToolInvocationLogService from '@nonix-chat/services/NxToolInvocationLogService.js'
 
-import FileService from '@nonix-file-manager/services/FileService.js'
-import FileLinkService from '@nonix-file-manager/services/FileLinkService.js'
-import FileCategoryService from "@nonix-file-manager/services/FileCategoryService.js";
-import ChatService from '@nonix-chat/services/ChatService.js'
+import NxFileService from '@nonix-file-manager/services/NxFileService.js'
+import NxFileLinkService from '@nonix-file-manager/services/NxFileLinkService.js'
+import NxFileCategoryService from "@nonix-file-manager/services/NxFileCategoryService.js";
+import NxChatService from '@nonix-chat/services/NxChatService.js'
 import Home from "@/views/Home.vue";
 import About from "@/views/About.vue";
 import DynamicFormExample from "@/views/DynamicFormExample.vue";
@@ -70,29 +70,29 @@ export const appConfig = {
         //{path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound, meta: {layout: 'alt'}},
     ],
     service: {
-        "artists": (app) => new ArtistService(app),
-        "albums": (app) => new AlbumService(app),
-        "tracks": (app) => new TrackService(app),
-        "styles": (app) => new StyleService(app),
-        "templates": (app) => new TemplateService(app),
-        "rhyme-techniques": (app) => new RhymeTechniqueService(app),
-        "ai-providers": (app) => new AIProviderService(app),
-        "ai-model-mappings": (app) => new AIModelMappingService(app),
-        "ai-analysis-results": (app) => new AIAnalysisResultService(app),
-        "personas": (app) => new PersonaService(app),
-        "internal-tools": (app) => new InternalToolService(app),
-        "persona-tool-access": (app) => new PersonaToolAccessService(app),
-        "mcp-servers": (app) => new MCPServerService(app),
-        "persona-mcp-servers": (app) => new PersonaMCPServerService(app),
-        "chat-sessions": (app) => new ChatSessionService(app),
-        "chat-histories": (app) => new ChatHistoryService(app),
-        "chat-messages": (app) => new ChatMessageService(app),
-        "chat-prompts": (app) => new ChatPromptService(app),
-        "tool-invocation-logs": (app) => new ToolInvocationLogService(app),
-        "file-categories": (app) => new FileCategoryService(app),
-        "files": (app) => new FileService(app),
-        "file-links": (app) => new FileLinkService(app),
-        "chat-service": (app) => new ChatService(app),
+        "artists": (app) => new NxArtistService(app),
+        "albums": (app) => new NxAlbumService(app),
+        "tracks": (app) => new NxTrackService(app),
+        "styles": (app) => new NxStyleService(app),
+        "templates": (app) => new NxTemplateService(app),
+        "rhyme-techniques": (app) => new NxRhymeTechniqueService(app),
+        "ai-providers": (app) => new NxAIProviderService(app),
+        "ai-model-mappings": (app) => new NxAIModelMappingService(app),
+        "ai-analysis-results": (app) => new NxAIAnalysisResultService(app),
+        "personas": (app) => new NxPersonaService(app),
+        "internal-tools": (app) => new NxInternalToolService(app),
+        "persona-tool-access": (app) => new NxPersonaToolAccessService(app),
+        "mcp-servers": (app) => new NxMCPServerService(app),
+        "persona-mcp-servers": (app) => new NxPersonaMCPServerService(app),
+        "chat-sessions": (app) => new NxChatSessionService(app),
+        "chat-histories": (app) => new NxChatHistoryService(app),
+        "chat-messages": (app) => new NxChatMessageService(app),
+        "chat-prompts": (app) => new NxChatPromptService(app),
+        "tool-invocation-logs": (app) => new NxToolInvocationLogService(app),
+        "file-categories": (app) => new NxFileCategoryService(app),
+        "files": (app) => new NxFileService(app),
+        "file-links": (app) => new NxFileLinkService(app),
+        "chat-service": (app) => new NxChatService(app),
     },
     use: [],
     layouts: {},

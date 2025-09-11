@@ -8,15 +8,15 @@
 
     <div class="layout-wrapper">
       <NxAdvancedTopBar
-        :collapsed="isTopBarCollapsed"
-        :title="layoutState.header.title"
-        :actions="layoutState.header.actions"
-        @toggle-nav="toggleNav"
-        @toggle-chat="toggleChatPane"
+          :collapsed="isTopBarCollapsed"
+          :title="layoutState.header.title"
+          :actions="layoutState.header.actions"
+          @toggle-nav="toggleNav"
+          @toggle-chat="toggleChatPane"
       />
       <div class="the-main-area">
         <div class="left-navigation" :class="{ collapsed: isNavCollapsed }">
-          <NxAdvancedLeftSidebar />
+          <NxAdvancedLeftSidebar/>
         </div>
         <div class="the-content-area">
           <slot/>
@@ -25,7 +25,7 @@
       <div class="footer" :class="{ collapsed: isFooterCollapsed }">Toggleable Footer</div>
     </div>
 
-    <NxAdvancedRightPane ref="chatPaneRef" />
+    <NxAdvancedRightPane ref="chatPaneRef"/>
   </div>
 </template>
 
@@ -34,7 +34,7 @@ import {computed, ref} from 'vue';
 import NxAdvancedLeftSidebar from "@nonix-advanced-layout/NxAdvancedLeftSidebar.vue";
 import NxAdvancedTopBar from "@nonix-advanced-layout/NxAdvancedTopBar.vue";
 import NxAdvancedRightPane from "@nonix-advanced-layout/NxAdvancedRightPane.vue";
-import { useNxAdvancedLayout } from './useNxAdvancedLayout.js';
+import {useNxAdvancedLayout} from './useNxAdvancedLayout.js';
 
 
 // UI Element Collapse States
@@ -46,7 +46,7 @@ const isFooterCollapsed = ref(false);
 const isTopBarCollapsed = ref(false); // Can be used if needed
 
 // Advanced Layout Composable
-const { state: layoutState } = useNxAdvancedLayout();
+const {state: layoutState} = useNxAdvancedLayout();
 
 // --- DOM ELEMENT REFS ---
 const appContainer = ref(null);
@@ -82,13 +82,6 @@ const toggleNav = () => isNavCollapsed.value = !isNavCollapsed.value;
 const toggleFooter = () => isFooterCollapsed.value = !isFooterCollapsed.value;
 const toggleChatPane = () => chatPaneRef.value?.toggleChatPane();
 const toggleRightSidebar = () => layoutState.rightOpen = !layoutState.rightOpen;
-
-
-
-
-
-
-
 
 </script>
 

@@ -3,14 +3,14 @@
     <!-- Left Section - Navigation (optional) -->
     <div class="flex align-items-center gap-3">
       <Button
-        v-if="showNavToggle"
-        icon="pi pi-bars"
-        severity="secondary"
-        text
-        rounded
-        @click="$emit('toggle-nav')"
-        class="p-2"
-        v-tooltip.bottom="'Toggle Navigation'"
+          v-if="showNavToggle"
+          icon="pi pi-bars"
+          severity="secondary"
+          text
+          rounded
+          @click="$emit('toggle-nav')"
+          class="p-2"
+          v-tooltip.bottom="'Toggle Navigation'"
       />
 
       <div class="flex align-items-center gap-2">
@@ -28,50 +28,50 @@
         <!-- Desktop: Show all actions side by side -->
         <div class="hidden md:flex gap-1">
           <Button
-            v-for="action in visibleActions"
-            :key="action.id || action.label"
-            :icon="action.icon"
-            :severity="action.severity || 'secondary'"
-            text
-            rounded
-            @click="action.command"
-            class="p-2"
-            :v-tooltip.bottom="action.tooltip"
+              v-for="action in visibleActions"
+              :key="action.id || action.label"
+              :icon="action.icon"
+              :severity="action.severity || 'secondary'"
+              text
+              rounded
+              @click="action.command"
+              class="p-2"
+              :v-tooltip.bottom="action.tooltip"
           />
           <Button
-            v-if="hasHiddenActions"
-            icon="pi pi-ellipsis-h"
-            severity="secondary"
-            text
-            rounded
-            @click="showMenu = !showMenu"
-            class="p-2"
-            v-tooltip.bottom="'More Options'"
+              v-if="hasHiddenActions"
+              icon="pi pi-ellipsis-h"
+              severity="secondary"
+              text
+              rounded
+              @click="showMenu = !showMenu"
+              class="p-2"
+              v-tooltip.bottom="'More Options'"
           />
         </div>
 
         <!-- Mobile: Always show ellipsis for all actions -->
         <Button
-          v-if="isMobile"
-          icon="pi pi-ellipsis-h"
-          severity="secondary"
-          text
-          rounded
-          @click="showMenu = !showMenu"
-          class="p-2 md:hidden"
-          v-tooltip.bottom="'Menu'"
+            v-if="isMobile"
+            icon="pi pi-ellipsis-h"
+            severity="secondary"
+            text
+            rounded
+            @click="showMenu = !showMenu"
+            class="p-2 md:hidden"
+            v-tooltip.bottom="'Menu'"
         />
       </div>
 
       <!-- Permanent Chat Toggle (always visible) -->
       <Button
-        icon="pi pi-comments"
-        severity="info"
-        text
-        rounded
-        @click.stop="$emit('toggle-chat')"
-        class="p-2"
-        v-tooltip.bottom="'Toggle Chat'"
+          icon="pi pi-comments"
+          severity="info"
+          text
+          rounded
+          @click.stop="$emit('toggle-chat')"
+          class="p-2"
+          v-tooltip.bottom="'Toggle Chat'"
       />
     </div>
 
@@ -81,14 +81,14 @@
         <div class="flex flex-column gap-2 p-3">
           <h6 class="mt-0 mb-2">Menu</h6>
           <Button
-            v-for="action in actions"
-            :key="action.id || action.label"
-            :icon="action.icon"
-            :label="action.label"
-            :severity="action.severity || 'secondary'"
-            text
-            @click="handleAction(action)"
-            class="w-full justify-start"
+              v-for="action in actions"
+              :key="action.id || action.label"
+              :icon="action.icon"
+              :label="action.label"
+              :severity="action.severity || 'secondary'"
+              text
+              @click="handleAction(action)"
+              class="w-full justify-start"
           />
         </div>
       </div>
@@ -97,7 +97,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import {computed, ref} from 'vue'
 import Button from 'primevue/button'
 
 const props = defineProps({

@@ -2,17 +2,17 @@
   <div class="bulk-actions flex justify-content-between align-items-center">
     <span class="selected-count">{{ selectedCount }} items selected</span>
     <div class="action-buttons">
-      <Button 
-        v-for="action in actions" 
-        :key="action"
-        :label="isMobile ? undefined : action"
-        :icon="getActionIcon(action)"
-        :size="'small'"
-        :severity="getActionSeverity(action)"
-        @click="handleAction(action)"
-        class="bulk-btn"
-        :class="{ 'mobile': isMobile }"
-        :title="isMobile ? action : undefined"
+      <Button
+          v-for="action in actions"
+          :key="action"
+          :label="isMobile ? undefined : action"
+          :icon="getActionIcon(action)"
+          :size="'small'"
+          :severity="getActionSeverity(action)"
+          @click="handleAction(action)"
+          class="bulk-btn"
+          :class="{ 'mobile': isMobile }"
+          :title="isMobile ? action : undefined"
       />
     </div>
   </div>
@@ -20,12 +20,12 @@
 
 <script>
 import Button from 'primevue/button'
-import { ref, onMounted, onUnmounted } from 'vue'
+import {onMounted, onUnmounted, ref} from 'vue'
 
 export default {
-  name: 'BulkActions',
-  components: { Button },
-  
+  name: 'NxBulkActions',
+  components: {Button},
+
   props: {
     actions: {
       type: Array,
@@ -36,31 +36,31 @@ export default {
       required: true
     }
   },
-  
+
   setup() {
     const isMobile = ref(false)
-    
+
     const checkMobile = () => {
       isMobile.value = window.innerWidth < 768 // md breakpoint
     }
-    
+
     onMounted(() => {
       checkMobile()
       window.addEventListener('resize', checkMobile)
     })
-    
+
     onUnmounted(() => {
       window.removeEventListener('resize', checkMobile)
     })
-    
-    return { isMobile }
+
+    return {isMobile}
   },
-  
+
   methods: {
     handleAction(action) {
       this.$emit('action', action)
     },
-    
+
     getActionIcon(action) {
       const iconMap = {
         'delete': 'pi pi-trash',
@@ -76,7 +76,7 @@ export default {
       }
       return iconMap[action] || 'pi pi-circle'
     },
-    
+
     getActionSeverity(action) {
       const severityMap = {
         'delete': 'danger',

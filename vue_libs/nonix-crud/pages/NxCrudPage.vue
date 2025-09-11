@@ -1,44 +1,44 @@
 <template>
   <div class="crud-page">
     <NxDynamicWidgetList
-      v-if="viewBefore && viewBefore.length"
-      :items="viewBefore"
-      :context="widgetContextResolver"
-      class="mb-3"
+        v-if="viewBefore && viewBefore.length"
+        :items="viewBefore"
+        :context="widgetContextResolver"
+        class="mb-3"
     />
     <NxCrudManager
-      :service="service"
-      :mode="mode"
-      :entity-id="entityId"
-      :display-mode="displayMode"
-      :show-create-button="showCreateButton"
-      :fixed-filters="fixedFilters"
-      :ref-field="refField"
-      :ref-id="refId"
-      :table-config-override="tableConfigOverride"
-      :form-config-override="formConfigOverride"
-      @row-action="handleRowAction"
-      @success="handleSuccess"
-      @error="handleError"
+        :service="service"
+        :mode="mode"
+        :entity-id="entityId"
+        :display-mode="displayMode"
+        :show-create-button="showCreateButton"
+        :fixed-filters="fixedFilters"
+        :ref-field="refField"
+        :ref-id="refId"
+        :table-config-override="tableConfigOverride"
+        :form-config-override="formConfigOverride"
+        @row-action="handleRowAction"
+        @success="handleSuccess"
+        @error="handleError"
     />
     <NxDynamicWidgetList
-      v-if="viewAfter && viewAfter.length"
-      :items="viewAfter"
-      :context="widgetContextResolver"
-      class="mt-3"
+        v-if="viewAfter && viewAfter.length"
+        :items="viewAfter"
+        :context="widgetContextResolver"
+        class="mt-3"
     />
   </div>
-  </template>
+</template>
 
 <script>
-import { inject, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import {computed, inject} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
 import NxCrudManager from '@nonix-crud/components/NxCrudManager.vue'
 import NxDynamicWidgetList from '@nonix-dynamic/widget/components/NxDynamicWidgetList.vue'
 
 const CrudPage = {
-  name: 'CrudPage',
-  components: { NxCrudManager, NxDynamicWidgetList },
+  name: 'NxCrudPage',
+  components: {NxCrudManager, NxDynamicWidgetList},
   setup() {
     const route = useRoute()
     const router = useRouter()
@@ -65,13 +65,13 @@ const CrudPage = {
 
     const entitySingular = computed(() => service?.entity || 'entity')
     const entityPlural = computed(() =>
-      String(entitySingular.value).endsWith('s') ? String(entitySingular.value) : `${entitySingular.value}s`
+        String(entitySingular.value).endsWith('s') ? String(entitySingular.value) : `${entitySingular.value}s`
     )
 
     // Dynamic widgets: before/after lists from service config
     const viewBefore = computed(() => service?.config?.view?.before || [])
     const viewAfter = computed(() => service?.config?.view?.after || [])
-    
+
     // Dynamic widget context resolver (evaluated by the list)
     const widgetContextResolver = () => ({
       service,
@@ -82,7 +82,7 @@ const CrudPage = {
       entityPlural: entityPlural.value
     })
 
-    function handleRowAction({ action, rowData }) {
+    function handleRowAction({action, rowData}) {
       const id = rowData?.id
       const base = `/${entityPlural.value}`
       switch (action) {
@@ -103,8 +103,11 @@ const CrudPage = {
       }
     }
 
-    function handleSuccess() {}
-    function handleError() {}
+    function handleSuccess() {
+    }
+
+    function handleError() {
+    }
 
     return {
       service,
@@ -117,9 +120,9 @@ const CrudPage = {
       showCreateButton,
       tableConfigOverride,
       formConfigOverride,
-       viewBefore,
-       viewAfter,
-       widgetContextResolver,
+      viewBefore,
+      viewAfter,
+      widgetContextResolver,
       handleRowAction,
       handleSuccess,
       handleError,
@@ -128,16 +131,16 @@ const CrudPage = {
 }
 
 // Static helper to add CRUD routes for an entity key
-CrudPage.createRoutes = function createRoutes(entityKey, options = {}, meta = { layout: 'advanced' }) {
-  const { basePath: bp, displayMode: dm = 'inline', ...crud } = options || {}
+CrudPage.createRoutes = function createRoutes(entityKey, options = {}, meta = {layout: 'advanced'}) {
+  const {basePath: bp, displayMode: dm = 'inline', ...crud} = options || {}
   const basePath = bp || `/${entityKey}`
   const displayMode = dm || 'inline'
-  const metaBase = { ...meta, crud: { key: entityKey, displayMode, ...crud } }
+  const metaBase = {...meta, crud: {key: entityKey, displayMode, ...crud}}
   return [
-    { path: `${basePath}`, component: CrudPage, meta: metaBase },
-    { path: `${basePath}/new`, component: CrudPage, meta: metaBase },
-    { path: `${basePath}/:id`, component: CrudPage, meta: metaBase },
-    { path: `${basePath}/:id/edit`, component: CrudPage, meta: metaBase }
+    {path: `${basePath}`, component: CrudPage, meta: metaBase},
+    {path: `${basePath}/new`, component: CrudPage, meta: metaBase},
+    {path: `${basePath}/:id`, component: CrudPage, meta: metaBase},
+    {path: `${basePath}/:id/edit`, component: CrudPage, meta: metaBase}
   ]
 }
 
@@ -145,7 +148,9 @@ export default CrudPage
 </script>
 
 <style scoped>
-.crud-page { width: 100%; }
+.crud-page {
+  width: 100%;
+}
 </style>
 
 

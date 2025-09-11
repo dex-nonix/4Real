@@ -1,16 +1,15 @@
-<!-- NxChatHeader.vue -->
 <script setup>
 import Avatar from 'primevue/avatar';
 import Button from 'primevue/button';
 import Menu from 'primevue/menu';
 import NxConfirmMenuItem from '@nonix-menu-item/components/NxConfirmMenuItem.vue';
-import { ref, inject, watch, computed } from 'vue';
+import {computed, inject, ref, watch} from 'vue';
 
 const props = defineProps({
-  persona: { type: Object, required: false, default: null },
-  currentSession: { type: Object, required: false, default: null },
-  currentHistory: { type: Object, required: false, default: null },
-  menuItems: { type: Array, required: false, default: () => [] }
+  persona: {type: Object, required: false, default: null},
+  currentSession: {type: Object, required: false, default: null},
+  currentHistory: {type: Object, required: false, default: null},
+  menuItems: {type: Array, required: false, default: () => []}
 });
 
 const emit = defineEmits(['viewHistory', 'renameHistory', 'clearMessages', 'deleteSession', 'menuItemClick']);
@@ -39,7 +38,7 @@ watch(() => props.currentSession, async (newSession) => {
   } else {
     localPersona.value = null;
   }
-}, { immediate: true });
+}, {immediate: true});
 
 const isEditingTitle = ref(false);
 const editedTitle = ref('');
@@ -81,28 +80,28 @@ const handleDeleteSession = async () => {
     console.log('Deleting session:', props.currentSession.id);
     const response = await chatService.deleteSession(props.currentSession.id);
     console.log('Session deletion response:', response);
-    
+
     if (response && response.message) {
       // Simple success event - let parent handle UI updates
-      emit('deleteSession', { 
-        success: true, 
-        sessionId: props.currentSession.id 
+      emit('deleteSession', {
+        success: true,
+        sessionId: props.currentSession.id
       });
     } else {
       // Simple error event
-      emit('deleteSession', { 
-        success: false, 
-        sessionId: props.currentSession.id, 
-        error: 'Failed to delete session' 
+      emit('deleteSession', {
+        success: false,
+        sessionId: props.currentSession.id,
+        error: 'Failed to delete session'
       });
     }
   } catch (error) {
     console.error('Failed to delete session:', error);
     // Simple error event
-    emit('deleteSession', { 
-      success: false, 
-      sessionId: props.currentSession.id, 
-      error 
+    emit('deleteSession', {
+      success: false,
+      sessionId: props.currentSession.id,
+      error
     });
   }
 };
@@ -110,15 +109,15 @@ const handleDeleteSession = async () => {
 // Avatar fallback logic with null safety
 const getAvatarDisplay = () => {
   if (!localPersona.value) {
-    return { image: null, fallback: '??' };
+    return {image: null, fallback: '??'};
   }
-  
+
   if (localPersona.value.avatar_url) {
-    return { image: localPersona.value.avatar_url, fallback: null };
+    return {image: localPersona.value.avatar_url, fallback: null};
   }
   // Use first 2 characters of persona name
   const initials = localPersona.value.name?.substring(0, 2).toUpperCase() || '??';
-  return { image: null, fallback: initials };
+  return {image: null, fallback: initials};
 };
 
 // Handle external menu item clicks
@@ -171,7 +170,7 @@ watch(() => props.menuItems, (newItems) => {
   // Add external items if any
   if (newItems && newItems.length > 0) {
     // Add separator
-    coreItems.push({ separator: true });
+    coreItems.push({separator: true});
     // Add external items
     newItems.forEach(item => {
       coreItems.push({
@@ -183,13 +182,13 @@ watch(() => props.menuItems, (newItems) => {
   }
 
   normalMenuItems.value = coreItems;
-}, { immediate: true });
+}, {immediate: true});
 
 // Combined menu items for the dropdown
 const ellipsisMenuItems = computed(() => {
   const items = [...normalMenuItems.value];
   if (confirmMenuItems.length > 0) {
-    items.push({ separator: true });
+    items.push({separator: true});
     items.push(...confirmMenuItems);
   }
   return items;
@@ -197,35 +196,38 @@ const ellipsisMenuItems = computed(() => {
 </script>
 
 <template>
-  <header class="flex justify-content-between align-items-center surface-section border-bottom-1 surface-border flex-shrink-0" style="height: 60px;">
+  <header
+      class="flex justify-content-between align-items-center surface-section border-bottom-1 surface-border flex-shrink-0"
+      style="height: 60px;">
     <div class="flex align-items-center gap-3">
-      <Avatar 
-        class="m-2" 
-        :image="getAvatarDisplay().image" 
-        :label="getAvatarDisplay().fallback"
-        size="large" 
-        shape="circle" 
+      <Avatar
+          class="m-2"
+          :image="getAvatarDisplay().image"
+          :label="getAvatarDisplay().fallback"
+          size="large"
+          shape="circle"
       />
       <div class="flex flex-column">
         <span class="font-bold text-900">{{ localPersona?.name || 'No Persona Selected' }}</span>
-        <div v-if="!isEditingTitle && currentHistory" class="text-sm text-500 cursor-pointer hover:text-700" @click="startEditing">
+        <div v-if="!isEditingTitle && currentHistory" class="text-sm text-500 cursor-pointer hover:text-700"
+             @click="startEditing">
           {{ currentHistory.title }}
         </div>
         <div v-else-if="!currentHistory" class="text-sm text-500">
           No history selected
         </div>
         <div v-else class="flex align-items-center gap-2">
-          <input 
-            v-model="editedTitle" 
-            @keyup.enter="saveTitle"
-            @keyup.esc="cancelEditing"
-            class="p-inputtext p-inputtext-sm"
-            style="width: 100%; max-width: 200px;"
-            ref="titleInput"
-            @mounted="titleInput?.focus()"
+          <input
+              v-model="editedTitle"
+              @keyup.enter="saveTitle"
+              @keyup.esc="cancelEditing"
+              class="p-inputtext p-inputtext-sm"
+              style="width: 100%; max-width: 200px;"
+              ref="titleInput"
+              @mounted="titleInput?.focus()"
           />
-          <Button icon="pi pi-check" size="small" @click="saveTitle" />
-          <Button icon="pi pi-times" size="small" severity="secondary" @click="cancelEditing" />
+          <Button icon="pi pi-check" size="small" @click="saveTitle"/>
+          <Button icon="pi pi-times" size="small" severity="secondary" @click="cancelEditing"/>
         </div>
       </div>
     </div>
@@ -234,29 +236,29 @@ const ellipsisMenuItems = computed(() => {
       <!-- Single ellipsis menu button -->
       <div class="relative">
         <Button
-          icon="pi pi-ellipsis-h"
-          text
-          rounded
-          severity="secondary"
-          @click="toggleEllipsisMenu"
-          aria-label="More Options"
-          aria-haspopup="true"
-          aria-controls="ellipsis_menu"
+            icon="pi pi-ellipsis-h"
+            text
+            rounded
+            severity="secondary"
+            @click="toggleEllipsisMenu"
+            aria-label="More Options"
+            aria-haspopup="true"
+            aria-controls="ellipsis_menu"
         />
         <Menu
-          ref="ellipsisMenu"
-          id="ellipsis_menu"
-          :model="ellipsisMenuItems"
-          :popup="true"
+            ref="ellipsisMenu"
+            id="ellipsis_menu"
+            :model="ellipsisMenuItems"
+            :popup="true"
         >
           <template #item="{ item }">
             <!-- Use NxConfirmMenuItem for destructive actions -->
             <component
-              :is="isConfirmItem(item) ? NxConfirmMenuItem : 'div'"
-              :item="item"
-              @close-menu="ellipsisMenu.hide()"
-              :class="!isConfirmItem(item) ? 'p-menuitem-link' : ''"
-              @click.stop="!isConfirmItem(item) ? (item.command(), ellipsisMenu.hide()) : null"
+                :is="isConfirmItem(item) ? NxConfirmMenuItem : 'div'"
+                :item="item"
+                @close-menu="ellipsisMenu.hide()"
+                :class="!isConfirmItem(item) ? 'p-menuitem-link' : ''"
+                @click.stop="!isConfirmItem(item) ? (item.command(), ellipsisMenu.hide()) : null"
             >
               <span v-if="!isConfirmItem(item)" :class="item.icon" class="p-menuitem-icon"></span>
               <span v-if="!isConfirmItem(item)" class="p-menuitem-text">{{ item.label }}</span>

@@ -1,11 +1,10 @@
-<!-- NxChatSessionBar.vue -->
 <script setup>
-import { ref, onMounted, inject, watch } from 'vue';
+import {inject, onMounted, ref, watch} from 'vue';
 import Button from 'primevue/button';
 import Avatar from 'primevue/avatar';
 
 const props = defineProps({
-  currentSessionId: { type: [String, Number, null], required: false, default: null }
+  currentSessionId: {type: [String, Number, null], required: false, default: null}
 });
 
 const emit = defineEmits(['session-selected', 'session-added', 'session-removed', 'sessions-loaded', 'error', 'add-session']);
@@ -29,7 +28,7 @@ watch(() => props.currentSessionId, async (newId, oldId) => {
     console.log('Session cleared, refreshing session list...');
     await loadSessions();
   }
-}, { immediate: false });
+}, {immediate: false});
 
 // Load all sessions
 const loadSessions = async () => {
@@ -37,21 +36,21 @@ const loadSessions = async () => {
     loading.value = true;
     const response = await chatService.getSessions();
     console.log('Raw sessions response:', response);
-    
+
     // Backend returns {data: [...], total: X} - extract just the data array
     const sessionsData = response?.data || [];
     sessions.value = sessionsData;
     console.log('Processed sessions in ChatSessionBar:', sessionsData);
-    
+
     // Emit sessions loaded event for tab-based architecture - send the FULL response
     emit('sessions-loaded', response);
-    
+
     // Don't auto-select here - let parent handle it
   } catch (error) {
     console.error('Failed to load sessions:', error);
     sessions.value = [];
     // Emit empty response structure even on error
-    emit('sessions-loaded', { data: [], total: 0 });
+    emit('sessions-loaded', {data: [], total: 0});
     // Emit error for parent component
     emit('error', {
       message: 'Failed to load sessions',
@@ -67,16 +66,16 @@ const createSession = async (personaId, sessionName) => {
   try {
     const response = await chatService.createSession(personaId, sessionName);
     const newSession = response;
-    
+
     // Add to local sessions
     sessions.value.push(newSession);
-    
+
     // Emit session added event
     emit('session-added', newSession);
-    
+
     // Select the new session
     emit('session-selected', newSession.id);
-    
+
     return newSession;
   } catch (error) {
     console.error('Failed to create session:', error);
@@ -93,13 +92,13 @@ const updateSession = async (sessionId, data) => {
   try {
     const response = await chatService.updateSession(sessionId, data);
     const updatedSession = response;
-    
+
     // Update local session
     const index = sessions.value.findIndex(s => s.id === sessionId);
     if (index !== -1) {
       sessions.value[index] = updatedSession;
     }
-    
+
     return updatedSession;
   } catch (error) {
     console.error('Failed to update session:', error);
@@ -112,16 +111,16 @@ const updateSession = async (sessionId, data) => {
 };
 
 const getAvatarDisplay = (session) => {
-  if (!session) return { image: null, fallback: '??' };
-  
+  if (!session) return {image: null, fallback: '??'};
+
   if (session.avatar_url) {
-    return { image: session.avatar_url, fallback: null };
+    return {image: session.avatar_url, fallback: null};
   }
-  
+
   // Use session name for initials since we have flat sessions
   const name = session.session_name || '??';
   const initials = name.substring(0, 2).toUpperCase();
-  return { image: null, fallback: initials };
+  return {image: null, fallback: initials};
 };
 
 // Handle session selection
@@ -154,31 +153,31 @@ defineExpose({
           <span class="text-500 text-sm">No sessions available</span>
         </div>
         <div
-          v-for="session in sessions"
-          :key="session.id"
-          class="session-item cursor-pointer p-1 hover:surface-200"
-          :class="{ 'selected-session': currentSessionId === session.id }"
-          @click="handleSessionSelected(session.id)"
+            v-for="session in sessions"
+            :key="session.id"
+            class="session-item cursor-pointer p-1 hover:surface-200"
+            :class="{ 'selected-session': currentSessionId === session.id }"
+            @click="handleSessionSelected(session.id)"
         >
           <Avatar
-            :image="getAvatarDisplay(session).image"
-            :label="getAvatarDisplay(session).fallback"
-            size="normal"
-            shape="circle"
+              :image="getAvatarDisplay(session).image"
+              :label="getAvatarDisplay(session).fallback"
+              size="normal"
+              shape="circle"
           />
         </div>
       </div>
 
       <div class="mt-auto flex-shrink-0">
-        
+
         <div class="px-0 py-2 flex justify-content-center">
           <Button
-            icon="pi pi-plus"
-            rounded
-            severity="secondary"
-            style="width: 24px; height: 24px;"
-            @click="handleAddSession"
-            v-tooltip.bottom="'Add New Session'"
+              icon="pi pi-plus"
+              rounded
+              severity="secondary"
+              style="width: 24px; height: 24px;"
+              @click="handleAddSession"
+              v-tooltip.bottom="'Add New Session'"
           />
         </div>
       </div>

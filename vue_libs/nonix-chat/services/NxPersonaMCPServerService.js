@@ -1,6 +1,6 @@
 import NxCrudService from '@nonix-crud/services/NxCrudService.js'
 
-export default class PersonaMCPServerService extends NxCrudService {
+export default class NxPersonaMCPServerService extends NxCrudService {
   constructor(app) {
     super(app,'persona-mcp-servers', {
       table: {

@@ -20,7 +20,7 @@
 import FileUpload from 'primevue/fileupload'
 
 export default {
-  name: 'FileUploadField',
+  name: 'NxFileUploadField',
   components: { FileUpload },
   props: {
     modelValue: { type: [Number, String, Object], default: null },

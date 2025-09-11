@@ -18,6 +18,7 @@ export default defineConfig({
       '@nonix-voice-input': resolve(__dirname, 'vue_libs/nonix-voice-input'),
       '@nonix-crud': resolve(__dirname, 'vue_libs/nonix-crud'),
       '@nonix-api': resolve(__dirname, 'vue_libs/nonix-api'),
+      '@nonix-ws': resolve(__dirname, 'vue_libs/nonix-ws'),
     }
   },
   optimizeDeps: {

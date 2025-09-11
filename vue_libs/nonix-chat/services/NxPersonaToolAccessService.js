@@ -1,6 +1,6 @@
 import NxCrudService from '@nonix-crud/services/NxCrudService.js'
 
-export default class PersonaToolAccessService extends NxCrudService {
+export default class NxPersonaToolAccessService extends NxCrudService {
   constructor(app) {
     super(app,'persona-tool-access', {
       table: {

@@ -1,9 +1,9 @@
 import NxBaseWidgetManager from '@nonix/widget-manager/NxBaseWidgetManager.js'
-import {DYNAMIC_WIDGETS} from '@nonix-dynamic/widget/dynamic-widgets.js'
+import {NX_DYNAMIC_WIDGETS} from '@nonix-dynamic/widget/dynamic-widgets.js'
 
-class DynamicWidgetManager extends NxBaseWidgetManager {
+class NxDynamicWidgetManager extends NxBaseWidgetManager {
     constructor() {
-        super(DYNAMIC_WIDGETS)
+        super(NX_DYNAMIC_WIDGETS)
     }
 
     getDefaultWidget() {
@@ -11,6 +11,6 @@ class DynamicWidgetManager extends NxBaseWidgetManager {
     }
 }
 
-export default new DynamicWidgetManager()
+export default new NxDynamicWidgetManager()
 
 

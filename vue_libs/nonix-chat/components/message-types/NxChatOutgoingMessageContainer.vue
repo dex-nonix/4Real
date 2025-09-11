@@ -1,15 +1,15 @@
 <script setup>
-import { ref, computed } from 'vue';
+import {computed, ref} from 'vue';
 import Button from 'primevue/button';
 import Menu from 'primevue/menu';
 
 const props = defineProps({
-  message: { type: Object, required: true },
-  component: { type: Object, required: true },
-  currentUserId: { type: [String, Number], required: false },
-  editingMessageId: { type: [String, Number], default: null },
-  sessionId: { type: [String, Number], required: true },
-  historyId: { type: [String, Number], required: true }
+  message: {type: Object, required: true},
+  component: {type: Object, required: true},
+  currentUserId: {type: [String, Number], required: false},
+  editingMessageId: {type: [String, Number], default: null},
+  sessionId: {type: [String, Number], required: true},
+  historyId: {type: [String, Number], required: true}
 })
 
 const emit = defineEmits(['delete-message', 'copy', 'retry', 'cancel', 'start-edit', 'cancel-edit', 'edit-success'])
@@ -43,13 +43,13 @@ const handleAction = (actionKey, extraData = {}) => {
       } else if (props.message.content) {
         content = props.message.content;
       }
-      emit('copy', { messageId: props.message.id, content });
+      emit('copy', {messageId: props.message.id, content});
       break;
     case 'edit':
       emit('start-edit', props.message.id);
       break;
     case 'delete':
-      emit('delete-message', { messageId: props.message.id });
+      emit('delete-message', {messageId: props.message.id});
       break;
     case 'retry':
       emit('retry', props.message.id);
@@ -73,28 +73,28 @@ const toggleMenu = (event) => {
     <!-- Actions Button -->
     <div v-if="Object.keys(messageActions).length > 0" class="message-actions">
       <Button
-        icon="pi pi-ellipsis-h"
-        text
-        severity="secondary"
-        size="small"
-        @click="toggleMenu"
-        class="action-button"
+          icon="pi pi-ellipsis-h"
+          text
+          severity="secondary"
+          size="small"
+          @click="toggleMenu"
+          class="action-button"
       />
-      <Menu ref="menu" :model="menuItems" :popup="true" />
+      <Menu ref="menu" :model="menuItems" :popup="true"/>
     </div>
 
     <!-- Message Content -->
     <div class="flex align-items-start justify-content-start message-content-wrapper">
       <component
-        :is="component"
-        :message="message"
-        :current-user-id="currentUserId"
-        :editing-message-id="editingMessageId"
-        :session-id="sessionId"
-        :history-id="historyId"
-        @register-actions="handleRegisterActions"
-        @edit-success="$emit('edit-success')"
-        @cancel-edit="$emit('cancel-edit')"
+          :is="component"
+          :message="message"
+          :current-user-id="currentUserId"
+          :editing-message-id="editingMessageId"
+          :session-id="sessionId"
+          :history-id="historyId"
+          @register-actions="handleRegisterActions"
+          @edit-success="$emit('edit-success')"
+          @cancel-edit="$emit('cancel-edit')"
       />
     </div>
   </div>

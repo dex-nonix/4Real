@@ -1,6 +1,6 @@
 import NxCrudService from '@nonix-crud/services/NxCrudService.js'
 
-export default class AIModelMappingService extends NxCrudService {
+export default class NxAIModelMappingService extends NxCrudService {
   constructor(app) {
     super(app,'ai-model-mappings', {
       table: {

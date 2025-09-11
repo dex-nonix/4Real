@@ -1,6 +1,6 @@
 import NxCrudService from '@nonix-crud/services/NxCrudService.js'
 
-export default class AIProviderService extends NxCrudService {
+export default class NxAIProviderService extends NxCrudService {
   constructor(app) {
     super(app,'ai-providers', {
       table: {

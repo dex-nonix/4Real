@@ -12,7 +12,7 @@ import Button from 'primevue/button'
 import { ref, inject, h } from 'vue'
 import NxCrudService from '@nonix-crud/services/NxCrudService.js'
 import NxFileUploadField from '@nonix-file-manager/components/NxFileUploadField.vue'
-import NxLlmTool from '@nonix-dynamic/form/widgets/NxLlmTool.vue'
+import NxLlmTool from '@nonix-chat/widgets/NxLlmTool.vue'
 
 export const NX_EDIT_WIDGETS = {
   'text': { component: InputText, defaultProps: { placeholder: 'Enter text', class: 'w-full' } },

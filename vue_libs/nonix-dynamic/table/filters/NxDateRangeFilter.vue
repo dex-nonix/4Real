@@ -15,7 +15,7 @@
 import Calendar from 'primevue/calendar'
 
 export default {
-  name: 'DateRangeFilter',
+  name: 'NxDateRangeFilter',
   components: { Calendar },
   
   props: {

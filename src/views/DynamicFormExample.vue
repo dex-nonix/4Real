@@ -1,7 +1,7 @@
 <template>
   <section>
-    <h1>DynamicForm Example</h1>
-    <p>This page demonstrates the DynamicForm component with the widget manager system.</p>
+    <h1>NxDynamicForm Example</h1>
+    <p>This page demonstrates the NxDynamicForm component with the widget manager system.</p>
     
     <!-- Example Form Configuration -->
     <div class="example-section">

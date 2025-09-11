@@ -1,4 +1,3 @@
-<!-- NxLlmToolExecutionDialog.vue -->
 <template>
   <Dialog 
     v-model:visible="dialogVisible" 
@@ -8,10 +7,8 @@
     class="p-dialog-sm"
   >
     <div v-if="selectedTool" class="tool-form">
-      <!-- Tool Description -->
       <p class="text-600 mb-3 text-sm">{{ selectedTool.description }}</p>
 
-      <!-- Dynamic Form for Parameters -->
       <NxDynamicForm
         v-if="selectedTool.parameters && selectedTool.parameters.length > 0"
         :config="formConfig"
@@ -21,7 +18,6 @@
         @cancel="closeDialog"
       />
       
-      <!-- No Parameters -->
       <div v-else class="text-center p-3">
         <i class="pi pi-check-circle text-2xl text-500"></i>
         <p class="text-500 text-sm mt-2">No parameters needed</p>

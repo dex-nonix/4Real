@@ -1,20 +1,21 @@
 import {createApp, h} from 'vue'
-import NxApp from '@nonix/NxApp.vue'
-import {createRouter} from '@nonix/router'
-
+import Tooltip from "primevue/tooltip";
 import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
 import 'primeicons/primeicons.css'
 import 'primevue/resources/themes/lara-light-blue/theme.css'
 import 'primeflex/primeflex.css'
-import LayoutManager from "@nonix/widget-manager/NxLayoutManager.js";
-import PageManager from "@nonix/widget-manager/NxPageManager.js";
-import DisplayWidgetManager from "@nonix/widget-manager/NxDisplayWidgetManager.js";
-import EditWidgetManager from "@nonix/widget-manager/NxEditWidgetManager.js";
-import DynamicWidgetManager from "@nonix-dynamic/widget/DynamicWidgetManager.js";
+
+import NxApp from '@nonix/NxApp.vue'
+import {createRouter} from '@nonix/router'
+import NxLayoutManager from "@nonix/widget-manager/NxLayoutManager.js";
+import NxPageManager from "@nonix/widget-manager/NxPageManager.js";
+import NxDisplayWidgetManager from "@nonix/widget-manager/NxDisplayWidgetManager.js";
+import NxEditWidgetManager from "@nonix/widget-manager/NxEditWidgetManager.js";
+import NxDynamicWidgetManager from "@nonix-dynamic/widget/NxDynamicWidgetManager.js";
+import NxWebSocketService from "@nonix-ws/services/NxWebSocketService.js";
+
 import NotFound from "@/views/NotFound.vue";
-import Tooltip from "primevue/tooltip";
-import WebSocketManager from "@/services/WebSocketManager.js";
 
 
 const ensureCallback = callback => {
@@ -43,11 +44,11 @@ const iterObject = (obj, callback) => {
 const loadConfigObject = (app, config) => {
     iterArray(config.use, [app, "use"])
     iterObject(config.service, (key, value) => app.provide(key, value(app)));
-    iterObject(config.layouts, (key, item) => LayoutManager.registerWidget(key, item.component, item.defaultProps));
-    iterObject(config.pages, (key, item) => PageManager.registerWidget(key, item.component, item.defaultProps));
-    iterObject(config.displayWidgets, (key, item) => DisplayWidgetManager.registerWidget(key, item.component, item.defaultProps));
-    iterObject(config.editWidgets, (key, item) => EditWidgetManager.registerWidget(key, item.component, item.defaultProps));
-    iterObject(config.dynamicWidgets, (key, item) => DynamicWidgetManager.registerWidget(key, item.component, item.defaultProps));
+    iterObject(config.layouts, (key, item) => NxLayoutManager.registerWidget(key, item.component, item.defaultProps));
+    iterObject(config.pages, (key, item) => NxPageManager.registerWidget(key, item.component, item.defaultProps));
+    iterObject(config.displayWidgets, (key, item) => NxDisplayWidgetManager.registerWidget(key, item.component, item.defaultProps));
+    iterObject(config.editWidgets, (key, item) => NxEditWidgetManager.registerWidget(key, item.component, item.defaultProps));
+    iterObject(config.dynamicWidgets, (key, item) => NxDynamicWidgetManager.registerWidget(key, item.component, item.defaultProps));
 };
 
 export const mountNxApp = (target, config = {}) => {
@@ -57,10 +58,10 @@ export const mountNxApp = (target, config = {}) => {
     app.use(PrimeVue);
     app.use(ToastService);
     app.directive('tooltip', Tooltip);
-    app.websocketManager = new WebSocketManager();
+    app.websocketManager = new NxWebSocketService();
     app.provide('websocket-manager', app.websocketManager);
 
     loadConfigObject(app, config);
-    iterObject( config.packages, (packageConfig)=> loadConfigObject(app, packageConfig));
+    iterObject(config.packages, (packageConfig) => loadConfigObject(app, packageConfig));
     app.mount(target);
 };

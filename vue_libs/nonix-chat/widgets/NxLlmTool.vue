@@ -18,7 +18,7 @@
 import AutoComplete from 'primevue/autocomplete'
 
 export default {
-  name: 'LlmTool',
+  name: 'NxLlmTool',
   components: { AutoComplete },
   props: {
     modelValue: { type: String, default: '' },

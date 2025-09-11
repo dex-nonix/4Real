@@ -20,7 +20,7 @@ import Button from 'primevue/button'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 
 export default {
-  name: 'ActionButtons',
+  name: 'NxActionButtons',
   components: { Button },
   
   props: {

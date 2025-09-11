@@ -1,19 +1,19 @@
 <template>
   <Dialog
-    :visible="visible"
-    header="Available Tools"
-    modal
-    :style="{ width: '90vw', maxWidth: '700px' }"
-    class="p-dialog-sm"
-    @update:visible="$emit('update:visible', $event)"
+      :visible="visible"
+      header="Available Tools"
+      modal
+      :style="{ width: '90vw', maxWidth: '700px' }"
+      class="p-dialog-sm"
+      @update:visible="$emit('update:visible', $event)"
   >
     <div v-if="tools.length > 0">
       <DataTable
-        :value="tools"
-        class="p-datatable-sm"
-        :showGridlines="true"
-        stripedRows
-        responsiveLayout="scroll"
+          :value="tools"
+          class="p-datatable-sm"
+          :showGridlines="true"
+          stripedRows
+          responsiveLayout="scroll"
       >
         <Column field="name" header="Tool" style="width: 40%">
           <template #body="{ data }">
@@ -30,13 +30,13 @@
         <Column header="Action" style="width: 15%">
           <template #body="{ data }">
             <Button
-              icon="pi pi-play"
-              size="small"
-              @click="$emit('tool-selected', data)"
-              severity="primary"
-              class="p-button-sm"
-              text
-              rounded
+                icon="pi pi-play"
+                size="small"
+                @click="$emit('tool-selected', data)"
+                severity="primary"
+                class="p-button-sm"
+                text
+                rounded
             />
           </template>
         </Column>

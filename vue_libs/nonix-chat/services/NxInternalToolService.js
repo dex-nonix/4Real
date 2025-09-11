@@ -1,6 +1,6 @@
 import NxCrudService from '@nonix-crud/services/NxCrudService.js'
 
-export default class InternalToolService extends NxCrudService {
+export default class NxInternalToolService extends NxCrudService {
   constructor(app) {
     super(app,'internal-tools', {
       table: {

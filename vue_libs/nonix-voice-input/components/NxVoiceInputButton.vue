@@ -1,11 +1,11 @@
 <script setup>
-import { reactive, onMounted, onUnmounted, computed } from 'vue';
+import {computed, onMounted, onUnmounted, reactive} from 'vue';
 import Button from 'primevue/button';
 
 const props = defineProps({
-  disabled: { type: Boolean, default: false },
-  size: { type: String, default: 'normal' },
-  variant: { type: String, default: 'primary' }
+  disabled: {type: Boolean, default: false},
+  size: {type: String, default: 'normal'},
+  variant: {type: String, default: 'primary'}
 });
 
 const emit = defineEmits([
@@ -61,9 +61,12 @@ const buttonSeverity = computed(() => {
 
 const buttonSize = computed(() => {
   switch (props.size) {
-    case 'small': return 'p-button-sm';
-    case 'large': return 'p-button-lg';
-    default: return '';
+    case 'small':
+      return 'p-button-sm';
+    case 'large':
+      return 'p-button-lg';
+    default:
+      return '';
   }
 });
 
@@ -118,13 +121,13 @@ const handleStart = () => {
   state.recordingStartTime = new Date();
   state.isRecording = true;
   state.error = null;
-  emit('recording-start', { timestamp: state.recordingStartTime });
+  emit('recording-start', {timestamp: state.recordingStartTime});
 };
 
 const handleEnd = () => {
   const endTime = new Date();
   const duration = state.recordingStartTime ?
-    endTime.getTime() - state.recordingStartTime.getTime() : 0;
+      endTime.getTime() - state.recordingStartTime.getTime() : 0;
 
   state.isRecording = false;
   emit('recording-stop', {
@@ -176,35 +179,35 @@ const handleError = (event) => {
 
 // Additional Event Handlers
 const handleAudioStart = () => {
-  emit('audio-start', { timestamp: new Date() });
+  emit('audio-start', {timestamp: new Date()});
 };
 
 const handleAudioEnd = () => {
-  emit('audio-end', { timestamp: new Date() });
+  emit('audio-end', {timestamp: new Date()});
 };
 
 const handleSoundStart = () => {
-  emit('sound-start', { timestamp: new Date() });
+  emit('sound-start', {timestamp: new Date()});
 };
 
 const handleSoundEnd = () => {
-  emit('sound-end', { timestamp: new Date() });
+  emit('sound-end', {timestamp: new Date()});
 };
 
 const handleSpeechStart = () => {
-  emit('speech-start', { timestamp: new Date() });
+  emit('speech-start', {timestamp: new Date()});
 };
 
 const handleSpeechEnd = () => {
-  emit('speech-end', { timestamp: new Date() });
+  emit('speech-end', {timestamp: new Date()});
 };
 
 const handleNoSpeech = () => {
-  emit('no-speech', { timestamp: new Date() });
+  emit('no-speech', {timestamp: new Date()});
 };
 
 const handleNoMatch = () => {
-  emit('no-match', { timestamp: new Date() });
+  emit('no-match', {timestamp: new Date()});
 };
 
 // Public Methods - Complete feature set
@@ -302,19 +305,19 @@ defineExpose({
 
 <template>
   <Button
-    :icon="buttonIcon"
-    :severity="buttonSeverity"
-    :class="['voice-input-btn', {
+      :icon="buttonIcon"
+      :severity="buttonSeverity"
+      :class="['voice-input-btn', {
       'recording': state.isRecording,
       'error': !!state.error,
       'unsupported': !state.isSupported
     }]"
-    :disabled="isButtonDisabled"
-    :rounded="true"
-    style="width: 24px; height: 24px;"
-    @click="toggleRecording"
-    v-tooltip="buttonTooltip"
-    :aria-label="state.isRecording ? 'Stop voice recording' : 'Start voice recording'"
+      :disabled="isButtonDisabled"
+      :rounded="true"
+      style="width: 24px; height: 24px;"
+      @click="toggleRecording"
+      v-tooltip="buttonTooltip"
+      :aria-label="state.isRecording ? 'Stop voice recording' : 'Start voice recording'"
   />
 </template>
 
@@ -330,13 +333,23 @@ defineExpose({
 }
 
 @keyframes pulse-red {
-  from { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); }
-  to { box-shadow: 0 0 0 4px rgba(255, 59, 48, 0); }
+  from {
+    box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7);
+  }
+  to {
+    box-shadow: 0 0 0 4px rgba(255, 59, 48, 0);
+  }
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-1px); }
-  75% { transform: translateX(1px); }
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-1px);
+  }
+  75% {
+    transform: translateX(1px);
+  }
 }
 </style>

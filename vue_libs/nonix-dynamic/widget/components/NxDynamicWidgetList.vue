@@ -1,26 +1,32 @@
 <template>
   <div :class="listClass">
     <div v-for="(item, idx) in effectiveItems" :key="idx" :class="itemClass(item)">
-      <DynamicWidget :widget="item" :context="resolvedContext" />
+      <DynamicWidget :widget="item" :context="resolvedContext"/>
     </div>
   </div>
-  </template>
+</template>
 
 <script>
-import DynamicWidget from '@nonix-dynamic/widget/components/DynamicWidget.vue'
+import NxDynamicWidget from '@nonix-dynamic/widget/components/NxDynamicWidget.vue'
 
 export default {
-  name: 'DynamicWidgetList',
-  components: { DynamicWidget },
+  name: 'NxDynamicWidgetList',
+  components: {DynamicWidget: NxDynamicWidget},
   props: {
-    items: { type: Array, default: () => [] },
-    context: { type: [Object, Function], default: () => ({}) },
-    rowClass: { type: String, default: 'grid' },
-    gap: { type: String, default: 'gap-3' }
+    items: {type: Array, default: () => []},
+    context: {type: [Object, Function], default: () => ({})},
+    rowClass: {type: String, default: 'grid'},
+    gap: {type: String, default: 'gap-3'}
   },
   computed: {
     listClass() {
       return `${this.rowClass} ${this.gap}`.trim()
+    },
+    effectiveItems() {
+      return this._eff // computed async via created/mounted
+    },
+    resolvedContext() {
+      return this._lastResolvedContext || (typeof this.context === 'object' ? this.context : {})
     }
   },
   methods: {
@@ -35,7 +41,9 @@ export default {
           return typeof out?.then === 'function' ? await out : out
         }
         return this.context || {}
-      } catch (e) { return {} }
+      } catch (e) {
+        return {}
+      }
     },
     async computeEffective(items) {
       const ctx = await this.resolveContext()
@@ -49,7 +57,10 @@ export default {
           let r = setup(ctx)
           r = (r && typeof r.then === 'function') ? await r : r
           if (r === false) continue
-          if (Array.isArray(r)) { out.push(...r); continue }
+          if (Array.isArray(r)) {
+            out.push(...r);
+            continue
+          }
           if (r && typeof r === 'object') {
             Object.assign(def, r)
           }
@@ -66,7 +77,7 @@ export default {
           continue
         }
         if (typeof decision === 'object') {
-          out.push({ ...def, ...decision })
+          out.push({...def, ...decision})
           continue
         }
         out.push(def)
@@ -75,16 +86,8 @@ export default {
       return out
     }
   },
-  computed: {
-    effectiveItems() {
-      return this._eff // computed async via created/mounted
-    },
-    resolvedContext() {
-      return this._lastResolvedContext || (typeof this.context === 'object' ? this.context : {})
-    }
-  },
   data() {
-    return { _eff: [], _lastResolvedContext: null }
+    return {_eff: [], _lastResolvedContext: null}
   },
   async created() {
     this._eff = await this.computeEffective(this.items)
@@ -92,11 +95,15 @@ export default {
   watch: {
     items: {
       deep: true,
-      async handler() { this._eff = await this.computeEffective(this.items) }
+      async handler() {
+        this._eff = await this.computeEffective(this.items)
+      }
     },
     context: {
       deep: false,
-      async handler() { this._eff = await this.computeEffective(this.items) }
+      async handler() {
+        this._eff = await this.computeEffective(this.items)
+      }
     }
   }
 }

@@ -1,6 +1,6 @@
 import NxCrudService from '@nonix-crud/services/NxCrudService.js'
 
-export default class ChatMessageService extends NxCrudService {
+export default class NxChatMessageService extends NxCrudService {
   constructor(app) {
     super(app,'chat-messages', {
       table: {

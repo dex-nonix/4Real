@@ -2,39 +2,39 @@
   <div class="edit-mode-compact">
     <div class="edit-actions-overlay">
       <Button
-        icon="pi pi-times"
-        text
-        severity="secondary"
-        size="small"
-        @click="handleCancel"
-        class="edit-action-btn"
-        v-tooltip="'Cancel (Esc)'"
+          icon="pi pi-times"
+          text
+          severity="secondary"
+          size="small"
+          @click="handleCancel"
+          class="edit-action-btn"
+          v-tooltip="'Cancel (Esc)'"
       />
       <Button
-        icon="pi pi-check"
-        text
-        severity="success"
-        size="small"
-        @click="handleSave"
-        class="edit-action-btn"
-        v-tooltip="'Save (Enter)'"
+          icon="pi pi-check"
+          text
+          severity="success"
+          size="small"
+          @click="handleSave"
+          class="edit-action-btn"
+          v-tooltip="'Save (Enter)'"
       />
     </div>
 
     <Textarea
-      v-model="localValue"
-      class="edit-textarea-compact"
-      :autoResize="true"
-      rows="3"
-      :placeholder="placeholder"
-      resize="vertical"
-      @keydown="handleKeyDown"
+        v-model="localValue"
+        class="edit-textarea-compact"
+        :autoResize="true"
+        rows="3"
+        :placeholder="placeholder"
+        resize="vertical"
+        @keydown="handleKeyDown"
     />
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import {ref, watch} from 'vue';
 import Textarea from 'primevue/textarea';
 import Button from 'primevue/button';
 

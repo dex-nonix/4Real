@@ -1,7 +1,7 @@
 <template>
   <div class="flex align-items-center gap-2">
     <template v-if="isImage">
-      <img :src="effectiveUrl" :alt="altText" style="max-width: 64px; max-height: 64px; object-fit: cover;" />
+      <img :src="effectiveUrl" :alt="altText" style="max-width: 64px; max-height: 64px; object-fit: cover;"/>
     </template>
     <template v-else-if="isAudio">
       <audio :src="effectiveUrl" controls style="height: 28px"></audio>
@@ -11,18 +11,18 @@
     </template>
     <span class="text-sm">{{ titleOrName }}</span>
   </div>
-  </template>
+</template>
 
 <script>
 export default {
-  name: 'FilePreview',
+  name: 'NxFilePreview',
   props: {
-    value: { type: [String, Object], default: null },
-    url: { type: String, default: '' },
-    mime: { type: String, default: '' },
-    title: { type: String, default: '' },
-    filename: { type: String, default: '' },
-    urlField: { type: String, default: 'storage_url' }
+    value: {type: [String, Object], default: null},
+    url: {type: String, default: ''},
+    mime: {type: String, default: ''},
+    title: {type: String, default: ''},
+    filename: {type: String, default: ''},
+    urlField: {type: String, default: 'storage_url'}
   },
   computed: {
     effectiveUrl() {
@@ -33,10 +33,18 @@ export default {
       }
       return ''
     },
-    isImage() { return (this.mime || '').startsWith('image/') || (this.effectiveUrl && this.effectiveUrl.match(/\.(png|jpe?g|gif|webp|svg)$/i)) },
-    isAudio() { return (this.mime || '').startsWith('audio/') || (this.effectiveUrl && this.effectiveUrl.match(/\.(mp3|wav|aac|ogg)$/i)) },
-    altText() { return this.title || this.filename || 'media' },
-    titleOrName() { return this.title || this.filename || this.effectiveUrl || '' }
+    isImage() {
+      return (this.mime || '').startsWith('image/') || (this.effectiveUrl && this.effectiveUrl.match(/\.(png|jpe?g|gif|webp|svg)$/i))
+    },
+    isAudio() {
+      return (this.mime || '').startsWith('audio/') || (this.effectiveUrl && this.effectiveUrl.match(/\.(mp3|wav|aac|ogg)$/i))
+    },
+    altText() {
+      return this.title || this.filename || 'media'
+    },
+    titleOrName() {
+      return this.title || this.filename || this.effectiveUrl || ''
+    }
   }
 }
 </script>

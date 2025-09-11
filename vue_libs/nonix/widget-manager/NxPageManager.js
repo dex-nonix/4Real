@@ -7,7 +7,7 @@ class NxPageManager extends NxBaseWidgetManager {
     }
 
     getDefaultWidget() {
-        return {component: {header: {title: 'Page'}, widgets: []}, props: {}}
+        return {component: {header: {title: 'NxPage'}, widgets: []}, props: {}}
     }
 }
 

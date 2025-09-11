@@ -4,7 +4,7 @@ import Avatar from 'primevue/avatar'
 import { ref, inject, h } from 'vue'
 import NxCrudService from '@nonix-crud/services/NxCrudService.js'
 import NxFilePreview from '@nonix-file-manager/components/NxFilePreview.vue'
-import NxLlmTool from '@nonix-dynamic/form/widgets/NxLlmTool.vue'
+import NxLlmTool from '@nonix-chat/widgets/NxLlmTool.vue'
 
 export const NX_DISPLAY_WIDGETS = {
   'text': { component: 'span', defaultProps: { class: 'text-sm' } },

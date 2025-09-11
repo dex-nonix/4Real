@@ -49,7 +49,7 @@ export default {
       loading.value = true
       try {
         if (chatService) {
-          // Use the existing ChatService method
+          // Use the existing NxChatService method
           const toolsData = await chatService.personaTools(props.personaId)
           tools.value = Array.isArray(toolsData) ? toolsData : []
         } else {

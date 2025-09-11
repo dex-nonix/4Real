@@ -3,11 +3,11 @@ import Badge from 'primevue/badge';
 import Button from 'primevue/button';
 
 const props = defineProps({
-  turnId: { type: String, required: true },
-  firstSeq: { type: Number, required: true },
-  lastSeq: { type: Number, required: true },
-  toolsCount: { type: Number, required: false, default: 0 },
-  status: { type: String, required: false, default: 'in_progress' }
+  turnId: {type: String, required: true},
+  firstSeq: {type: Number, required: true},
+  lastSeq: {type: Number, required: true},
+  toolsCount: {type: Number, required: false, default: 0},
+  status: {type: String, required: false, default: 'in_progress'}
 });
 </script>
 
@@ -15,15 +15,15 @@ const props = defineProps({
   <div class="turn-header flex align-items-center justify-content-between py-0 px-0">
     <span class="text-xs text-color-secondary">Turn {{ firstSeq }}</span>
     <div class="flex align-items-center gap-0">
-      <Badge v-if="toolsCount > 0" :value="toolsCount" severity="info" size="small" />
+      <Badge v-if="toolsCount > 0" :value="toolsCount" severity="info" size="small"/>
       <Button
-        icon="pi pi-info-circle"
-        text
-        rounded
-        size="small"
-        severity="secondary"
-        class="info-btn"
-        v-tooltip.bottom="`Turn ID: ${turnId}\nSequence: ${firstSeq} - ${lastSeq}\nStatus: ${status}\nTools: ${toolsCount}`"
+          icon="pi pi-info-circle"
+          text
+          rounded
+          size="small"
+          severity="secondary"
+          class="info-btn"
+          v-tooltip.bottom="`Turn ID: ${turnId}\nSequence: ${firstSeq} - ${lastSeq}\nStatus: ${status}\nTools: ${toolsCount}`"
       />
     </div>
   </div>

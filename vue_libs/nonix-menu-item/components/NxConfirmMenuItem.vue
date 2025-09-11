@@ -5,25 +5,25 @@
       <i :class="item.icon"></i>
       <span>{{ item.label }}</span>
     </div>
-    
+
     <!-- Confirmation state -->
     <div v-else class="flex align-items-center gap-2">
       <span class="text-sm text-red-500 mr-2">{{ item.label }}?</span>
-      <Button 
-        icon="pi pi-check" 
-        severity="danger" 
-        text 
-        rounded
-        @click.stop="confirm"
-        class="tiny-button"
+      <Button
+          icon="pi pi-check"
+          severity="danger"
+          text
+          rounded
+          @click.stop="confirm"
+          class="tiny-button"
       />
-      <Button 
-        icon="pi pi-times" 
-        severity="secondary" 
-        text 
-        rounded
-        @click.stop="cancel"
-        class="tiny-button"
+      <Button
+          icon="pi pi-times"
+          severity="secondary"
+          text
+          rounded
+          @click.stop="cancel"
+          class="tiny-button"
       />
     </div>
   </div>
@@ -31,10 +31,10 @@
 
 <script setup>
 import Button from 'primevue/button';
-import { ref } from 'vue';
+import {ref} from 'vue';
 
 const props = defineProps({
-  item: { type: Object, required: true }
+  item: {type: Object, required: true}
 });
 
 const emit = defineEmits(['close-menu']);

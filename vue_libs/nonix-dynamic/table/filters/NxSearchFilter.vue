@@ -1,10 +1,10 @@
 <template>
   <div class="search-filter flex align-items-center">
-    <InputText 
-      v-model="searchValue"
-      :placeholder="placeholder"
-      @input="handleInput"
-      class="w-12rem"
+    <InputText
+        v-model="searchValue"
+        :placeholder="placeholder"
+        @input="handleInput"
+        class="w-12rem"
     />
   </div>
 </template>
@@ -13,9 +13,9 @@
 import InputText from 'primevue/inputtext'
 
 export default {
-  name: 'SearchFilter',
-  components: { InputText },
-  
+  name: 'NxSearchFilter',
+  components: {InputText},
+
   props: {
     modelValue: {
       type: String,
@@ -26,19 +26,19 @@ export default {
       default: 'Search...'
     }
   },
-  
+
   data() {
     return {
       searchValue: this.modelValue
     }
   },
-  
+
   watch: {
     modelValue(newValue) {
       this.searchValue = newValue
     }
   },
-  
+
   methods: {
     handleInput() {
       this.$emit('update:modelValue', this.searchValue)

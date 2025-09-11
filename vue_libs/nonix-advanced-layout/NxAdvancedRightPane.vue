@@ -14,7 +14,8 @@
     >
       <span>Chat Pane</span>
       <div>
-        <Button @click.stop="closePane" icon="pi pi-times" rounded text size="small" aria-label="Close" style="width: 22px; height: 22px; padding: 0;" />
+        <Button @click.stop="closePane" icon="pi pi-times" rounded text size="small" aria-label="Close"
+                style="width: 22px; height: 22px; padding: 0;"/>
       </div>
     </div>
     <div class="window-pane-content">
@@ -30,7 +31,7 @@
 </template>
 
 <script setup>
-import {computed, onMounted, onUnmounted, reactive, ref, watch, nextTick} from 'vue';
+import {computed, onMounted, onUnmounted, reactive, ref, watch} from 'vue';
 import NxChat from '@nonix-chat/components/NxChat.vue';
 import Button from 'primevue/button';
 
@@ -63,8 +64,8 @@ const saveChatPaneState = () => {
       isVisible: state.isVisible,
       isPinned: state.isPinned,
       dockSide: state.dockSide,
-      floatingPos: { ...state.floatingPos },
-      floatingSize: { ...state.floatingSize },
+      floatingPos: {...state.floatingPos},
+      floatingSize: {...state.floatingSize},
       dockedSize: state.dockedSize,
       timestamp: Date.now(),
       version: '1.0'
@@ -152,11 +153,11 @@ const dockedPaneSize = computed(() => {
 
 // Watch for state changes and save to localStorage (debounced)
 watch(
-  () => state,
-  () => {
-    debounceSave(saveChatPaneState);
-  },
-  { deep: true }
+    () => state,
+    () => {
+      debounceSave(saveChatPaneState);
+    },
+    {deep: true}
 );
 
 // --- METHODS ---
@@ -164,7 +165,9 @@ watch(
 const toggleChatPane = () => state.isVisible = !state.isVisible;
 const togglePin = () => state.isPinned = !state.isPinned;
 const undockPane = () => state.dockSide = 'floating';
-const closePane = () => { state.isVisible = false; }
+const closePane = () => {
+  state.isVisible = false;
+}
 
 // Menu items for Chat component - PIN and FLOAT toggles only
 const chatMenuItems = ref([
@@ -188,14 +191,14 @@ const handleClickOutside = (e) => {
     // Check if clicked on any PrimeVue overlay - these are typically user-initiated
     // and shouldn't cause the pane to close
     const clickedOnOverlay = e.target.closest('.p-menu') !== null ||
-                            e.target.closest('.p-menuitem-link') !== null ||
-                            e.target.closest('.p-overlaypanel') !== null ||
-                            e.target.closest('.p-dialog') !== null ||
-                            e.target.closest('.p-dropdown-panel') !== null ||
-                            e.target.closest('.p-multiselect-panel') !== null ||
-                            e.target.closest('.p-overlay') !== null ||
-                            e.target.closest('.p-tooltip') !== null ||
-                            e.target.closest('.p-confirm-popup') !== null;
+        e.target.closest('.p-menuitem-link') !== null ||
+        e.target.closest('.p-overlaypanel') !== null ||
+        e.target.closest('.p-dialog') !== null ||
+        e.target.closest('.p-dropdown-panel') !== null ||
+        e.target.closest('.p-multiselect-panel') !== null ||
+        e.target.closest('.p-overlay') !== null ||
+        e.target.closest('.p-tooltip') !== null ||
+        e.target.closest('.p-confirm-popup') !== null;
 
     if (!clickedInsidePane && !clickedOnOverlay) {
       state.isVisible = false;
@@ -294,8 +297,8 @@ onMounted(async () => {
       // Validate and apply saved position if it's reasonable
       if (savedState.floatingPos && savedState.floatingSize) {
         const validatedPos = validateFloatingPosition(
-          savedState.floatingPos,
-          savedState.floatingSize
+            savedState.floatingPos,
+            savedState.floatingSize
         );
         state.floatingPos = validatedPos;
       }
@@ -304,7 +307,7 @@ onMounted(async () => {
       state.isVisible = savedState.isVisible ?? false;
       state.isPinned = savedState.isPinned ?? false;
       state.dockSide = savedState.dockSide ?? 'right';
-      state.floatingSize = savedState.floatingSize ?? { width: 400, height: 500 };
+      state.floatingSize = savedState.floatingSize ?? {width: 400, height: 500};
       state.dockedSize = savedState.dockedSize ?? 350;
     } catch (error) {
       console.warn('Failed to apply saved NxAdvancedRightPane state:', error);

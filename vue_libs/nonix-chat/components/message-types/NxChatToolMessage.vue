@@ -1,4 +1,3 @@
-<!-- ToolMessage.vue -->
 <script setup>
 import { computed, onMounted } from 'vue';
 

@@ -1,6 +1,6 @@
 import NxCrudService from '@nonix-crud/services/NxCrudService.js'
 
-export default class ToolInvocationLogService extends NxCrudService {
+export default class NxToolInvocationLogService extends NxCrudService {
   constructor(app) {
     super(app,'tool-invocation-logs', {
       table: {

@@ -1,7 +1,7 @@
 <template>
   <section>
-    <h1>DynamicTable Example</h1>
-    <p>This page demonstrates the DynamicTable component with the widget manager system.</p>
+    <h1>NxDynamicTable Example</h1>
+    <p>This page demonstrates the NxDynamicTable component with the widget manager system.</p>
     
     <!-- CRUD Table Example -->
     <div class="example-section">

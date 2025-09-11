@@ -1,7 +1,7 @@
 <script setup>
-import { computed, onMounted, ref, watch, inject } from 'vue';
+import {computed, inject, onMounted, ref, watch} from 'vue';
 import NxChatMessageEditMode from './NxChatMessageEditMode.vue';
-import { useNxChatMessageEdit } from './useNxChatMessageEdit.js';
+import {useNxChatMessageEdit} from './useNxChatMessageEdit.js';
 
 const props = defineProps({
   message: {
@@ -35,7 +35,7 @@ const isValid = computed(() => props.message.metadata?.isValid !== false);
 const chatService = inject('chat-service');
 
 // Use the reusable edit composable
-const { handleEdit: handleMessageEdit } = useNxChatMessageEdit(chatService);
+const {handleEdit: handleMessageEdit} = useNxChatMessageEdit(chatService);
 const editContent = ref('');
 
 const isEditing = computed(() => {
@@ -43,9 +43,9 @@ const isEditing = computed(() => {
 });
 
 const messageActions = {
-  copy: { label: 'Copy', icon: 'pi pi-copy' },
-  edit: { label: 'Edit', icon: 'pi pi-pencil' },
-  delete: { label: 'Delete', icon: 'pi pi-trash' }
+  copy: {label: 'Copy', icon: 'pi pi-copy'},
+  edit: {label: 'Edit', icon: 'pi pi-pencil'},
+  delete: {label: 'Delete', icon: 'pi pi-trash'}
 };
 
 // Use the composable's handleEdit function
@@ -58,7 +58,8 @@ const handleCancelEdit = () => {
   emit('cancel-edit');
 };
 
-const handleKeyDown = (event) => {};
+const handleKeyDown = (event) => {
+};
 
 watch(() => props.editingMessageId, (newId) => {
   if (newId && String(newId) === String(props.message.id)) {
@@ -74,22 +75,23 @@ onMounted(() => {
 <template>
   <div class="flex align-items-start justify-content-start w-full">
     <NxChatMessageEditMode
-      v-if="isEditing"
-      :model-value="editContent"
-      :placeholder="'Edit your message...'"
-      :message-id="props.message.id"
-      :original-content="messageContent"
-      @update:model-value="editContent = $event"
-      @edit="handleEdit"
-      @cancel-edit="handleCancelEdit"
-      @keydown="handleKeyDown"
-      class="w-full"
+        v-if="isEditing"
+        :model-value="editContent"
+        :placeholder="'Edit your message...'"
+        :message-id="props.message.id"
+        :original-content="messageContent"
+        @update:model-value="editContent = $event"
+        @edit="handleEdit"
+        @cancel-edit="handleCancelEdit"
+        @keydown="handleKeyDown"
+        class="w-full"
     />
 
     <div v-else class="display-mode w-full">
       <p class="m-0 text-normal" style="hyphens: auto; word-break: break-word;">{{ messageContent }}</p>
 
-      <div v-if="props.message.senderId !== props.currentUserId && props.message.role !== props.currentUserId" class="ml-2">
+      <div v-if="props.message.senderId !== props.currentUserId && props.message.role !== props.currentUserId"
+           class="ml-2">
         <i v-if="isValid" class="pi pi-check-circle text-success text-sm"></i>
         <i v-else class="pi pi-exclamation-triangle text-warning text-sm"></i>
       </div>

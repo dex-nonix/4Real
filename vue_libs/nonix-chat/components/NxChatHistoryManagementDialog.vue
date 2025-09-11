@@ -1,25 +1,24 @@
-<!-- HistoryManagementPanel.vue -->
 <template>
-  <Dialog 
-    :visible="visible" 
-    @update:visible="updateVisible"
-    modal 
-    header="Chat History"
-    :style="{ width: '600px' }"
+  <Dialog
+      :visible="visible"
+      @update:visible="updateVisible"
+      modal
+      header="Chat History"
+      :style="{ width: '600px' }"
   >
     <div v-if="loading" class="flex justify-content-center p-4">
-      <ProgressSpinner />
+      <ProgressSpinner/>
     </div>
-    
+
     <div v-else class="history-panel">
       <div class="flex justify-content-between align-items-center mb-3">
         <h3 class="m-0">Conversation History</h3>
-        <Button 
-          icon="pi pi-plus" 
-          size="small" 
-          @click="createNewHistory"
-          label="New Chat"
-          :disabled="!sessionId"
+        <Button
+            icon="pi pi-plus"
+            size="small"
+            @click="createNewHistory"
+            label="New Chat"
+            :disabled="!sessionId"
         />
       </div>
 
@@ -32,32 +31,32 @@
       </div>
 
       <div v-else class="histories-list">
-        <div 
-          v-for="historyItem in histories" 
-          :key="historyItem.id"
-          class="history-item cursor-pointer p-2 border-round hover:surface-100"
-          :class="{ 'surface-100 border-left-2 border-blue-500': currentHistoryId === historyItem.id }"
-          @click="selectHistory(historyItem.id)"
+        <div
+            v-for="historyItem in histories"
+            :key="historyItem.id"
+            class="history-item cursor-pointer p-2 border-round hover:surface-100"
+            :class="{ 'surface-100 border-left-2 border-blue-500': currentHistoryId === historyItem.id }"
+            @click="selectHistory(historyItem.id)"
         >
           <div class="flex justify-content-between align-items-center">
             <span class="font-medium">{{ historyItem.title }}</span>
             <span class="text-xs text-500">{{ historyItem.message_count }} messages</span>
           </div>
           <div class="flex gap-2 mt-2">
-            <Button 
-              icon="pi pi-pencil" 
-              size="small" 
-              text 
-              @click.stop="editHistory(historyItem)"
-              v-tooltip.bottom="'Rename History'"
+            <Button
+                icon="pi pi-pencil"
+                size="small"
+                text
+                @click.stop="editHistory(historyItem)"
+                v-tooltip.bottom="'Rename History'"
             />
-            <Button 
-              icon="pi pi-trash" 
-              size="small" 
-              text 
-              severity="danger"
-              @click.stop="deleteHistory(historyItem.id)"
-              v-tooltip.bottom="'Delete History'"
+            <Button
+                icon="pi pi-trash"
+                size="small"
+                text
+                severity="danger"
+                @click.stop="deleteHistory(historyItem.id)"
+                v-tooltip.bottom="'Delete History'"
             />
           </div>
         </div>
@@ -65,46 +64,46 @@
     </div>
 
     <!-- New History Dialog -->
-    <Dialog 
-      v-model:visible="showNewHistoryDialog" 
-      modal 
-      header="Create New Conversation"
-      :style="{ width: '400px' }"
+    <Dialog
+        v-model:visible="showNewHistoryDialog"
+        modal
+        header="Create New Conversation"
+        :style="{ width: '400px' }"
     >
       <div class="flex flex-column gap-3">
         <label for="historyTitle" class="font-medium">Conversation Title</label>
-        <InputText 
-          id="historyTitle"
-          v-model="newHistoryTitle" 
-          placeholder="e.g., Album Discussion, Music Chat"
-          class="w-full"
+        <InputText
+            id="historyTitle"
+            v-model="newHistoryTitle"
+            placeholder="e.g., Album Discussion, Music Chat"
+            class="w-full"
         />
       </div>
       <template #footer>
-        <Button label="Cancel" text @click="showNewHistoryDialog = false" />
-        <Button label="Create" @click="confirmCreateHistory" />
+        <Button label="Cancel" text @click="showNewHistoryDialog = false"/>
+        <Button label="Create" @click="confirmCreateHistory"/>
       </template>
     </Dialog>
 
     <!-- Edit History Dialog -->
-    <Dialog 
-      v-model:visible="showEditHistoryDialog" 
-      modal 
-      header="Rename Conversation"
-      :style="{ width: '400px' }"
+    <Dialog
+        v-model:visible="showEditHistoryDialog"
+        modal
+        header="Rename Conversation"
+        :style="{ width: '400px' }"
     >
       <div class="flex flex-column gap-3">
         <label for="editHistoryTitle" class="font-medium">New Title</label>
-        <InputText 
-          id="editHistoryTitle"
-          v-model="editHistoryTitle" 
-          placeholder="Enter new title"
-          class="w-full"
+        <InputText
+            id="editHistoryTitle"
+            v-model="editHistoryTitle"
+            placeholder="Enter new title"
+            class="w-full"
         />
       </div>
       <template #footer>
-        <Button label="Cancel" text @click="showEditHistoryDialog = false" />
-        <Button label="Save" @click="confirmEditHistory" />
+        <Button label="Cancel" text @click="showEditHistoryDialog = false"/>
+        <Button label="Save" @click="confirmEditHistory"/>
       </template>
     </Dialog>
   </Dialog>
@@ -115,11 +114,11 @@ import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import ProgressSpinner from 'primevue/progressspinner';
-import { ref, watch, inject } from 'vue';
+import {inject, ref, watch} from 'vue';
 
 const props = defineProps({
-  visible: { type: Boolean, required: true },
-  sessionId: { type: [String, Number, null], required: false, default: null }
+  visible: {type: Boolean, required: true},
+  sessionId: {type: [String, Number, null], required: false, default: null}
 });
 
 const emit = defineEmits(['update:visible', 'historySelected', 'createHistory', 'updateHistory', 'deleteHistory']);
@@ -146,11 +145,11 @@ const loadHistories = async () => {
     histories.value = [];
     return;
   }
-  
+
   try {
     loading.value = true;
     const response = await chatService.getHistories(props.sessionId);
-    
+
     histories.value = response || [];
   } catch (error) {
     console.error('Failed to load histories:', error);
@@ -197,9 +196,9 @@ const confirmCreateHistory = async () => {
     console.warn('Cannot create history: no session ID');
     return;
   }
-  
+
   if (!newHistoryTitle.value.trim()) return;
-  
+
   try {
     await chatService.createHistory(props.sessionId, newHistoryTitle.value.trim());
     newHistoryTitle.value = '';
@@ -215,7 +214,7 @@ const editHistory = (history) => {
     console.error('History object missing ID:', history);
     return;
   }
-  
+
   editingHistory.value = history;
   editHistoryTitle.value = history.title;
   showEditHistoryDialog.value = true;
@@ -225,12 +224,12 @@ const confirmEditHistory = async () => {
   if (!editHistoryTitle.value.trim() || !editingHistory.value) {
     return;
   }
-  
+
   if (!editingHistory.value.id) {
     console.error('History object missing ID:', editingHistory.value);
     return;
   }
-  
+
   try {
     await chatService.updateHistory(props.sessionId, editingHistory.value.id, {
       title: editHistoryTitle.value.trim()

@@ -1,13 +1,11 @@
-// src/services/FileCategoryService.js
 import NxCrudService from '@nonix-crud/services/NxCrudService.js'
 
-export default class FileCategoryService extends NxCrudService {
+export default class NxStyleService extends NxCrudService {
   constructor(app) {
-    super(app,'file-categories', {
+    super(app,'styles', {
       table: {
         columns: [
           { field: 'name', header: 'Name', type: 'text', sortable: true },
-          { field: 'slug', header: 'Slug', type: 'text', sortable: true },
           { field: 'description', header: 'Description', type: 'text' }
         ],
         actions: ['view', 'edit', 'delete'],
@@ -22,14 +20,12 @@ export default class FileCategoryService extends NxCrudService {
       },
       form: {
         fields: [
-          { key: 'name', type: 'text', label: 'Name', required: true },
-          { key: 'slug', type: 'text', label: 'Slug' },
+          { key: 'name', type: 'text', label: 'Name', required: true, props: { placeholder: 'Enter style name' } },
           { key: 'description', type: 'text', label: 'Description' }
         ]
       }
     })
   }
 }
-
 
 
