@@ -1,6 +1,6 @@
-export { default as SystemMessage } from './SystemMessage.vue';
-export { default as ToolMessage } from './ToolMessage.vue';
-export { default as UserMessage } from './UserMessage.vue';
-export { default as StreamingMessage } from './StreamingMessage.vue';
-export { default as IncomingMessageContainer } from './IncomingMessageContainer.vue';
-export { default as OutgoingMessageContainer } from './OutgoingMessageContainer.vue';
+export { default as NxChatSystemMessage } from './NxChatSystemMessage.vue';
+export { default as NxChatToolMessage } from './NxChatToolMessage.vue';
+export { default as NxChatUserMessage } from './NxChatUserMessage.vue';
+export { default as NxChatStreamingMessage } from './NxChatStreamingMessage.vue';
+export { default as NxChatIncomingMessageContainer } from './NxChatIncomingMessageContainer.vue';
+export { default as NxChatOutgoingMessageContainer } from './NxChatOutgoingMessageContainer.vue';

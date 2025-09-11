@@ -1,4 +1,3 @@
-<!-- ConfirmMenuItem.vue -->
 <template>
   <div class="flex align-items-center gap-2 p-2 ml-2">
     <!-- Normal state -->

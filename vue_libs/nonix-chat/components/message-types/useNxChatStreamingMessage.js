@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 
-export function useStreamingMessage(chatService, message, enableStreaming = true) {
+export function useNxChatStreamingMessage(chatService, message, enableStreaming = true) {
   const streamingContent = ref('')
   const streamingStatus = ref('streaming')
   const isTyping = ref(false)

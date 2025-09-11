@@ -1,4 +1,3 @@
-<!-- PersonaSelectionDialog.vue -->
 <template>
   <Dialog 
     :visible="visible" 

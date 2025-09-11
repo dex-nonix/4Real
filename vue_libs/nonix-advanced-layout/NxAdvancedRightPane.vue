@@ -18,7 +18,7 @@
       </div>
     </div>
     <div class="window-pane-content">
-      <Chat :menuItems="chatMenuItems"/>
+      <NxChat :menuItems="chatMenuItems"/>
     </div>
     <div
         class="resize-handle"
@@ -31,7 +31,7 @@
 
 <script setup>
 import {computed, onMounted, onUnmounted, reactive, ref, watch, nextTick} from 'vue';
-import Chat from '@nonix-chat/components/Chat.vue';
+import NxChat from '@nonix-chat/components/NxChat.vue';
 import Button from 'primevue/button';
 
 // --- STATE MANAGEMENT ---

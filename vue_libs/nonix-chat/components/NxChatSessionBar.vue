@@ -1,4 +1,4 @@
-<!-- ChatSessionBar.vue -->
+<!-- NxChatSessionBar.vue -->
 <script setup>
 import { ref, onMounted, inject, watch } from 'vue';
 import Button from 'primevue/button';

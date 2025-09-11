@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch, inject } from 'vue';
-import MessageEditMode from './MessageEditMode.vue';
-import { useMessageEdit } from './useMessageEdit.js';
+import NxChatMessageEditMode from './NxChatMessageEditMode.vue';
+import { useNxChatMessageEdit } from './useNxChatMessageEdit.js';
 
 const props = defineProps({
   message: {
@@ -35,7 +35,7 @@ const isValid = computed(() => props.message.metadata?.isValid !== false);
 const chatService = inject('chat-service');
 
 // Use the reusable edit composable
-const { handleEdit: handleMessageEdit } = useMessageEdit(chatService);
+const { handleEdit: handleMessageEdit } = useNxChatMessageEdit(chatService);
 const editContent = ref('');
 
 const isEditing = computed(() => {
@@ -50,11 +50,11 @@ const messageActions = {
 
 // Use the composable's handleEdit function
 const handleEdit = (editData) => {
-  return handleMessageEdit(editData, props, emit, 'UserMessage');
+  return handleMessageEdit(editData, props, emit, 'NxChatUserMessage');
 };
 
 const handleCancelEdit = () => {
-  console.info('📝 UserMessage: Canceling edit mode');
+  console.info('📝 NxChatUserMessage: Canceling edit mode');
   emit('cancel-edit');
 };
 
@@ -73,7 +73,7 @@ onMounted(() => {
 
 <template>
   <div class="flex align-items-start justify-content-start w-full">
-    <MessageEditMode
+    <NxChatMessageEditMode
       v-if="isEditing"
       :model-value="editContent"
       :placeholder="'Edit your message...'"

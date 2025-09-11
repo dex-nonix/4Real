@@ -6,12 +6,12 @@ import { useToast } from 'primevue/usetoast';
  *
  * @param {Object} chatService - The injected chat service instance
  */
-export function useMessageEdit(chatService) {
+export function useNxChatMessageEdit(chatService) {
   const toast = useToast();
 
   /**
    * Handle message editing with backend call, validation, and UI feedback
-   * @param {Object} editData - The edit data from MessageEditMode
+   * @param {Object} editData - The edit data from NxChatMessageEditMode
    * @param {Object} props - Component props containing sessionId, historyId
    * @param {Function} emit - Vue emit function
    * @param {string} componentName - Name of the component for logging

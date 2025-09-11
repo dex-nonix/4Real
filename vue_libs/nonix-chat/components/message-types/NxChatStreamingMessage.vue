@@ -1,9 +1,9 @@
 <script setup>
-import { ref, onMounted, onUnmounted, inject, computed, watch } from 'vue';
-import { useStreamingMessage } from './useStreamingMessage.js';
+import {computed, inject, onMounted, onUnmounted, ref, watch} from 'vue';
+import {useNxChatStreamingMessage} from './useNxChatStreamingMessage.js';
 import ProgressSpinner from 'primevue/progressspinner';
-import MessageEditMode from './MessageEditMode.vue';
-import { useMessageEdit } from './useMessageEdit.js';
+import NxChatMessageEditMode from './NxChatMessageEditMode.vue';
+import {useNxChatMessageEdit} from './useNxChatMessageEdit.js';
 
 const props = defineProps({
   message: {
@@ -32,17 +32,18 @@ const emit = defineEmits(['deleteMessage', 'register-actions', 'cancel-edit', 'e
 
 const chatService = inject('chat-service');
 
-const { handleEdit: handleMessageEdit } = useMessageEdit(chatService);
+const {handleEdit: handleMessageEdit} = useNxChatMessageEdit(chatService);
 
 const handleEdit = (editData) => {
-  return handleMessageEdit(editData, props, emit, 'StreamingMessage');
+  return handleMessageEdit(editData, props, emit, 'NxChatStreamingMessage');
 };
 
 const handleCancelEdit = () => {
   emit('cancel-edit');
 };
 
-const handleKeyDown = (event) => {};
+const handleKeyDown = (event) => {
+};
 
 watch(() => props.editingMessageId, (newId) => {
   if (newId && String(newId) === String(props.message.id)) {
@@ -50,13 +51,20 @@ watch(() => props.editingMessageId, (newId) => {
   }
 });
 
-const { streamingContent, streamingStatus, isTyping, subscribe, unsubscribe, initFromProps } = useStreamingMessage(chatService, props.message, true);
+const {
+  streamingContent,
+  streamingStatus,
+  isTyping,
+  subscribe,
+  unsubscribe,
+  initFromProps
+} = useNxChatStreamingMessage(chatService, props.message, true);
 const typingDots = ref('...');
 
 const messageActions = {
-  copy: { label: 'Copy', icon: 'pi pi-copy' },
-  edit: { label: 'Edit', icon: 'pi pi-pencil' },
-  delete: { label: 'Delete', icon: 'pi pi-trash' }
+  copy: {label: 'Copy', icon: 'pi pi-copy'},
+  edit: {label: 'Edit', icon: 'pi pi-pencil'},
+  delete: {label: 'Delete', icon: 'pi pi-trash'}
 };
 
 const editContent = ref('');
@@ -153,23 +161,23 @@ const renderMarkdown = async (text) => {
 
 watch(displayContent, (val) => {
   renderMarkdown(val);
-}, { immediate: true });
+}, {immediate: true});
 </script>
 
 <template>
   <div class="flex align-items-start w-full">
     <div class="flex-grow-1 w-full">
-      <MessageEditMode
-        v-if="isEditing"
-        :model-value="editContent"
-        :placeholder="'Edit message content...'"
-        :message-id="props.message.id"
-        :original-content="props.message?.content_json?.text || ''"
-        @update:model-value="editContent = $event"
-        @edit="handleEdit"
-        @cancel-edit="handleCancelEdit"
-        @keydown="handleKeyDown"
-        class="w-full"
+      <NxChatMessageEditMode
+          v-if="isEditing"
+          :model-value="editContent"
+          :placeholder="'Edit message content...'"
+          :message-id="props.message.id"
+          :original-content="props.message?.content_json?.text || ''"
+          @update:model-value="editContent = $event"
+          @edit="handleEdit"
+          @cancel-edit="handleCancelEdit"
+          @keydown="handleKeyDown"
+          class="w-full"
       />
 
       <div v-else class="display-mode w-full">
@@ -182,7 +190,7 @@ watch(displayContent, (val) => {
 
         <div v-if="isStreaming" class="streaming-status mt-2">
           <div class="flex align-items-center gap-2">
-            <ProgressSpinner style="width: 16px; height: 16px;" />
+            <ProgressSpinner style="width: 16px; height: 16px;"/>
             <span class="text-xs text-warning">AI is typing{{ typingDots }}</span>
           </div>
         </div>

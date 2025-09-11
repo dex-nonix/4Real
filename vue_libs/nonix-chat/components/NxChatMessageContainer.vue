@@ -1,16 +1,16 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, inject, watch, nextTick } from 'vue';
 import { useToast } from 'primevue/usetoast';
-import ErrorDialog from './ErrorDialog.vue';
-import chatMessageTypeManager from './ChatMessageTypeManager.js';
-import SystemMessage from './message-types/SystemMessage.vue';
-import ToolMessage from './message-types/ToolMessage.vue';
-import UserMessage from './message-types/UserMessage.vue';
-import { IncomingMessageContainer, OutgoingMessageContainer } from './message-types/index.js';
-import StreamingMessage from './message-types/StreamingMessage.vue';
-import TurnHeader from './turns/TurnHeader.vue';
-import TurnTimeline from './turns/TurnTimeline.vue';
-import ChatInputArea from './ChatInputArea.vue';
+import NxChatErrorDialog from './NxChatErrorDialog.vue';
+import chatMessageTypeManager from './NxChatMessageTypeManager.js';
+import NxChatSystemMessage from './message-types/NxChatSystemMessage.vue';
+import NxChatToolMessage from './message-types/NxChatToolMessage.vue';
+import NxChatUserMessage from './message-types/NxChatUserMessage.vue';
+import { NxChatIncomingMessageContainer, NxChatOutgoingMessageContainer } from './message-types/index.js';
+import NxChatStreamingMessage from './message-types/NxChatStreamingMessage.vue';
+import NxChatTurnHeader from './turns/NxChatTurnHeader.vue';
+import NxChatTurnTimeline from './turns/NxChatTurnTimeline.vue';
+import NxChatInputArea from './NxChatInputArea.vue';
 
 const props = defineProps({
   sessionId: { type: [String, Number, null], required: true },
@@ -115,11 +115,11 @@ const cleanupWsListeners = () => {
 // Register all message types with the manager
 onMounted(() => {
   chatMessageTypeManager.clearMessageTypes();
-  chatMessageTypeManager.registerMessageType('user', UserMessage);
-  chatMessageTypeManager.registerMessageType('assistant', StreamingMessage);
-  chatMessageTypeManager.registerMessageType('system', SystemMessage);
-  chatMessageTypeManager.registerMessageType('tool_result', ToolMessage);
-  chatMessageTypeManager.registerMessageType('tool_call', ToolMessage);
+  chatMessageTypeManager.registerMessageType('user', NxChatUserMessage);
+  chatMessageTypeManager.registerMessageType('assistant', NxChatStreamingMessage);
+  chatMessageTypeManager.registerMessageType('system', NxChatSystemMessage);
+  chatMessageTypeManager.registerMessageType('tool_result', NxChatToolMessage);
+  chatMessageTypeManager.registerMessageType('tool_call', NxChatToolMessage);
 });
 
 // Cleanup WebSocket resources on unmount
@@ -620,7 +620,7 @@ const handleCopy = async (messageData) => {
       // Copy to clipboard
       if (contentToCopy && navigator.clipboard) {
         await navigator.clipboard.writeText(contentToCopy);
-        console.info('📋 ChatMessageContainer: Message copied to clipboard', {
+        console.info('📋 NxChatMessageContainer: Message copied to clipboard', {
           messageId: messageData.messageId,
           contentLength: contentToCopy.length
         });
@@ -633,10 +633,10 @@ const handleCopy = async (messageData) => {
           life: 2000
         });
       } else {
-        console.warn('⚠️ ChatMessageContainer: Cannot copy to clipboard - no content or clipboard unavailable');
+        console.warn('⚠️ NxChatMessageContainer: Cannot copy to clipboard - no content or clipboard unavailable');
       }
     } else {
-      console.warn('⚠️ ChatMessageContainer: Message not found for copy operation', {
+      console.warn('⚠️ NxChatMessageContainer: Message not found for copy operation', {
         requestedMessageId: messageData.messageId
       });
     }
@@ -664,7 +664,7 @@ const handleStartEdit = (messageId) => {
 
 // Handle cancel edit (clear editing state)
 const handleCancelEdit = () => {
-  console.info('📝 ChatMessageContainer: Closing edit mode, clearing editing state');
+  console.info('📝 NxChatMessageContainer: Closing edit mode, clearing editing state');
   editingMessageId.value = null;
 };
 
@@ -802,24 +802,24 @@ defineExpose({
 
       <div v-else>
         <div v-for="turn in orderedTurns" :key="turn.turnId" class="mb-3">
-          <TurnHeader :turn-id="turn.turnId" :first-seq="turn.firstSeq" :last-seq="turn.lastSeq"
+          <NxChatTurnHeader :turn-id="turn.turnId" :first-seq="turn.firstSeq" :last-seq="turn.lastSeq"
             :tools-count="turn.obj.tools.size" :status="computeTurnStatus(turn)" />
-          <TurnTimeline :items="Array.from(turn.obj.items.values())"
+          <NxChatTurnTimeline :items="Array.from(turn.obj.items.values())"
             :tools-by-run-id="Object.fromEntries(turn.obj.tools)">
             <template #item="{ item }">
-              <component :is="item.role === 'user' ? OutgoingMessageContainer : IncomingMessageContainer"
+              <component :is="item.role === 'user' ? NxChatOutgoingMessageContainer : NxChatIncomingMessageContainer"
                 :message="item" :component="getMessageComponent(item)" :current-user-id="currentUserId"
                 :editing-message-id="editingMessageId"
                 :session-id="sessionId" :history-id="historyId"
                 @delete-message="handleDeleteMessage" @copy="handleCopy" @start-edit="handleStartEdit" @cancel-edit="handleCancelEdit" @edit-success="handleEditSuccess" />
             </template>
-          </TurnTimeline>
+          </NxChatTurnTimeline>
         </div>
       </div>
     </div>
 
     <!-- Input Area Component -->
-    <ChatInputArea
+    <NxChatInputArea
       :session-id="sessionId"
       :history-id="historyId"
       :selected-session="selectedSession"
@@ -833,7 +833,7 @@ defineExpose({
     />
 
     <!-- Error Dialog -->
-    <ErrorDialog :visible="showErrorDialog" :errors="props.errors" @update:visible="showErrorDialog = $event" />
+    <NxChatErrorDialog :visible="showErrorDialog" :errors="props.errors" @update:visible="showErrorDialog = $event" />
 
 
   </div>

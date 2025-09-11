@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import ToolRunBadge from './ToolRunBadge.vue';
+import NxChatToolRunBadge from './NxChatToolRunBadge.vue';
 
 const props = defineProps({
   items: { type: Array, required: true }, // [{ seq, role, message_type, ... }]
@@ -15,7 +15,7 @@ const orderedItems = computed(() => {
 <template>
   <div class="turn-timeline">
     <div class="mb-0">
-      <ToolRunBadge
+      <NxChatToolRunBadge
         v-for="(tool, runId) in toolsByRunId"
         :key="runId"
         :toolName="tool.tool_name || 'tool'"

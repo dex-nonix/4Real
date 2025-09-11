@@ -1,4 +1,4 @@
-<!-- ToolExecutionDialog.vue -->
+<!-- NxLlmToolExecutionDialog.vue -->
 <template>
   <Dialog 
     v-model:visible="dialogVisible" 

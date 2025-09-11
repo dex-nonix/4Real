@@ -1,10 +1,10 @@
 <script setup>
 import { ref, computed, inject, defineEmits } from 'vue';
-import ChatHeader from './ChatHeader.vue';
-import ChatSessionBar from './ChatSessionBar.vue';
-import ChatMessageContainer from './ChatMessageContainer.vue';
-import PersonaSelectionDialog from './PersonaSelectionDialog.vue';
-import HistoryManagementDialog from './HistoryManagementDialog.vue';
+import NxChatHeader from './NxChatHeader.vue';
+import NxChatSessionBar from './NxChatSessionBar.vue';
+import NxChatMessageContainer from './NxChatMessageContainer.vue';
+import NxChatPersonaSelectionDialog from './NxChatPersonaSelectionDialog.vue';
+import NxChatHistoryManagementDialog from './NxChatHistoryManagementDialog.vue';
 import ProgressSpinner from 'primevue/progressspinner';
 import { useToast } from 'primevue/usetoast';
 
@@ -120,12 +120,12 @@ const refreshMessages = async () => {
       addWarning('Could not refresh messages display');
     }
   } else {
-    console.error('ChatMessageContainer ref not available or loadMessages method missing');
+    console.error('NxChatMessageContainer ref not available or loadMessages method missing');
     addError('Cannot refresh messages - component not ready');
   }
 };
 
-// Handle session selection from ChatSessionBar - FLAT DATA LOADING
+// Handle session selection from NxChatSessionBar - FLAT DATA LOADING
 const handleSessionSelected = async (sessionId) => {
   console.log('Session selected:', sessionId);
   
@@ -213,7 +213,7 @@ const handleSessionSelected = async (sessionId) => {
   }
 };
 
-// Handle sessions loaded from ChatSessionBar - NO GLOBAL CACHE
+// Handle sessions loaded from NxChatSessionBar - NO GLOBAL CACHE
 const handleSessionsLoaded = (sessionsList) => {
   console.log('Sessions loaded:', sessionsList);
   
@@ -256,7 +256,7 @@ const handleSessionsLoaded = (sessionsList) => {
   }
 };
 
-// Handle session added from ChatSessionBar
+// Handle session added from NxChatSessionBar
 const handleSessionAdded = (newSession) => {
   console.log('Session added:', newSession);
   addSuccess(`New session "${newSession.session_name || 'Unnamed'}" created successfully`);
@@ -371,7 +371,7 @@ const handleViewHistory = async () => {
   }
 };
 
-// Handle menu item clicks from ChatHeader
+// Handle menu item clicks from NxChatHeader
 const handleMenuItemClick = (item) => {
   console.log('Menu item clicked:', item.label);
   emit('menuItemClick', item);
@@ -400,7 +400,7 @@ const handleRenameHistory = async (historyId, newTitle) => {
   }
 };
 
-// Handle history selection from HistoryManagementDialog - FLAT DATA
+// Handle history selection from NxChatHistoryManagementDialog - FLAT DATA
 const handleHistorySelected = async (historyId) => {
   try {
     if (!currentSessionId.value) {
@@ -470,7 +470,7 @@ const handleDeleteMessage = async (deleteResult) => {
   }
 };
 
-// Handle session deletion from ChatHeader
+// Handle session deletion from NxChatHeader
 const handleDeleteSession = async (deleteResult) => {
   if (deleteResult.success) {
     addSuccess('Session deleted successfully');
@@ -481,7 +481,7 @@ const handleDeleteSession = async (deleteResult) => {
     currentSessionId.value = null;
     currentHistoryId.value = null;
     
-    // ChatSessionBar will auto-refresh when it detects the change
+    // NxChatSessionBar will auto-refresh when it detects the change
     addInfo('Session state cleared, sidebar will update automatically');
     
   } else {
@@ -532,7 +532,7 @@ defineExpose({
 
 <template>
   <div class="flex flex-column overflow-hidden h-full w-full">
-    <ChatHeader
+    <NxChatHeader
       :persona="currentPersona"
       :current-session="currentSession"
       :current-history="currentHistory"
@@ -546,7 +546,7 @@ defineExpose({
     />
 
     <div class="flex flex-row flex-1" style="min-height: 0; height: 100%;">
-      <ChatSessionBar
+      <NxChatSessionBar
         :current-session-id="currentSessionId"
         @session-selected="handleSessionSelected"
         @add-session="handleAddPersona"
@@ -563,7 +563,7 @@ defineExpose({
         </div>
 
         <div v-if="currentSessionId && selectedSession" class="flex-1 d-flex flex-column" style="height: 100%; min-height: 0;">
-          <ChatMessageContainer
+          <NxChatMessageContainer
             ref="chatMessageContainerRef"
             :session-id="currentSessionId"
             :history-id="currentHistoryId"
@@ -586,12 +586,12 @@ defineExpose({
         </div>
       </div>
     </div>
-    <PersonaSelectionDialog
+    <NxChatPersonaSelectionDialog
       v-model:visible="showPersonaDialog"
       @persona-selected="handlePersonaSelected"
     />
 
-    <HistoryManagementDialog
+    <NxChatHistoryManagementDialog
       v-model:visible="showHistoryDialog"
       :session-id="currentSessionId"
       :current-history-id="currentHistoryId"

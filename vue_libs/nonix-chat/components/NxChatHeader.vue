@@ -1,9 +1,9 @@
-<!-- ChatHeader.vue -->
+<!-- NxChatHeader.vue -->
 <script setup>
 import Avatar from 'primevue/avatar';
 import Button from 'primevue/button';
 import Menu from 'primevue/menu';
-import ConfirmMenuItem from './ConfirmMenuItem.vue';
+import NxConfirmMenuItem from '@nonix-menu-item/components/NxConfirmMenuItem.vue';
 import { ref, inject, watch, computed } from 'vue';
 
 const props = defineProps({
@@ -70,7 +70,7 @@ const toggleEllipsisMenu = (event) => {
   }
 };
 
-// Handle session deletion directly in ChatHeader
+// Handle session deletion directly in NxChatHeader
 const handleDeleteSession = async () => {
   if (!props.currentSession?.id) {
     console.error('No session to delete');
@@ -250,9 +250,9 @@ const ellipsisMenuItems = computed(() => {
           :popup="true"
         >
           <template #item="{ item }">
-            <!-- Use ConfirmMenuItem for destructive actions -->
+            <!-- Use NxConfirmMenuItem for destructive actions -->
             <component
-              :is="isConfirmItem(item) ? ConfirmMenuItem : 'div'"
+              :is="isConfirmItem(item) ? NxConfirmMenuItem : 'div'"
               :item="item"
               @close-menu="ellipsisMenu.hide()"
               :class="!isConfirmItem(item) ? 'p-menuitem-link' : ''"

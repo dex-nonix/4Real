@@ -14,6 +14,9 @@ export default defineConfig({
       '@nonix-music-artist': resolve(__dirname, 'vue_libs/nonix-music-artist'),
       '@nonix-template': resolve(__dirname, 'vue_libs/nonix-template'),
       '@nonix-dynamic': resolve(__dirname, 'vue_libs/nonix-dynamic'),
+      '@nonix-menu-item': resolve(__dirname, 'vue_libs/nonix-menu-item'),
+      '@nonix-voice-input': resolve(__dirname, 'vue_libs/nonix-voice-input'),
+      '@nonix-crud': resolve(__dirname, 'vue_libs/nonix-crud'),
     }
   },
   optimizeDeps: {

@@ -6,10 +6,10 @@ import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import Menu from 'primevue/menu';
 import Badge from 'primevue/badge';
-import AvailableToolsDialog from './AvailableToolsDialog.vue';
-import ToolExecutionDialog from './ToolExecutionDialog.vue';
-import ErrorDialog from './ErrorDialog.vue';
-import { VoiceInputButton } from './voice-input-button/index.js';
+import NxLlmAvailableToolsDialog from './NxLlmAvailableToolsDialog.vue';
+import NxLlmToolExecutionDialog from './NxLlmToolExecutionDialog.vue';
+import NxChatErrorDialog from './NxChatErrorDialog.vue';
+import { NxVoiceInputButton } from '../../nonix-voice-input/components/index.js';
 
 const props = defineProps({
   // Session context
@@ -377,7 +377,7 @@ defineExpose({
   <div class="flex align-items-end px-2 py-1 pb-2 surface-section gap-2">
     <!-- Voice Input Button -->
     <div class="mb-2 ml-1">
-      <VoiceInputButton
+      <NxVoiceInputButton
         :disabled="!hasHistory || isStreaming"
         @text="handleVoiceText"
         @recording-error="handleRecordingError"
@@ -422,16 +422,16 @@ defineExpose({
     <!-- More Menu -->
     <Menu ref="moreMenu" id="more_menu" :model="moreMenuItems" :popup="true" />
     <!-- Tools Dialog -->
-    <AvailableToolsDialog :visible="showToolsDialog" :tools="availableToolsLocal"
+    <NxLlmAvailableToolsDialog :visible="showToolsDialog" :tools="availableToolsLocal"
       @update:visible="showToolsDialog = $event" @tool-selected="selectTool" />
 
     <!-- Tool Execution Dialog -->
-    <ToolExecutionDialog ref="toolExecutionDialogRef" :selected-tool="selectedTool"
+    <NxLlmToolExecutionDialog ref="toolExecutionDialogRef" :selected-tool="selectedTool"
       @execute-tool="executeToolWithForm" />
   </div>
 
   <!-- Error Dialog -->
-  <ErrorDialog :visible="showErrorDialog" :errors="props.errors" @update:visible="showErrorDialog = $event" />
+  <NxChatErrorDialog :visible="showErrorDialog" :errors="props.errors" @update:visible="showErrorDialog = $event" />
 </template>
 
 <style scoped>

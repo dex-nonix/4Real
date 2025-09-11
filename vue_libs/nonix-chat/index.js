@@ -1,4 +1,4 @@
-export { default as Chat } from './components/Chat.vue'
-export { default as SystemMessage } from './components/message-types/SystemMessage.vue'
-export { default as ToolMessage } from './components/message-types/ToolMessage.vue'
-export { default as UserMessage } from './components/message-types/UserMessage.vue'
+export { default as NxChat } from './components/NxChat.vue'
+export { default as NxChatSystemMessage } from './components/message-types/NxChatSystemMessage.vue'
+export { default as NxChatToolMessage } from './components/message-types/NxChatToolMessage.vue'
+export { default as NxChatUserMessage } from './components/message-types/NxChatUserMessage.vue'
