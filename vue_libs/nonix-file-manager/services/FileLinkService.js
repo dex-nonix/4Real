@@ -1,5 +1,5 @@
 // src/services/FileLinkService.js
-import NxCrudService from '@/services/NxCrudService.js'
+import NxCrudService from '@nonix-crud/services/NxCrudService.js'
 
 export default class FileLinkService extends NxCrudService {
   constructor(app) {

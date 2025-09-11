@@ -1,5 +1,5 @@
 // src/services/TemplateService.js
-import NxCrudService from '@/services/NxCrudService.js'
+import NxCrudService from '@nonix-crud/services/NxCrudService.js'
 
 export default class TemplateService extends NxCrudService {
   constructor(app) {

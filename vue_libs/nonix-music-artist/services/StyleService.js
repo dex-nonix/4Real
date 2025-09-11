@@ -1,5 +1,5 @@
 // src/services/StyleService.js
-import NxCrudService from '@/services/NxCrudService.js'
+import NxCrudService from '@nonix-crud/services/NxCrudService.js'
 
 export default class StyleService extends NxCrudService {
   constructor(app) {

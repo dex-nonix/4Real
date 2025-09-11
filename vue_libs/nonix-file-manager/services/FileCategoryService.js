@@ -1,5 +1,5 @@
 // src/services/FileCategoryService.js
-import NxCrudService from '@/services/NxCrudService.js'
+import NxCrudService from '@nonix-crud/services/NxCrudService.js'
 
 export default class FileCategoryService extends NxCrudService {
   constructor(app) {

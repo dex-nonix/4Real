@@ -2,7 +2,7 @@ import Tag from 'primevue/tag'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import { ref, inject, h } from 'vue'
-import NxCrudService from '@/services/NxCrudService.js'
+import NxCrudService from '@nonix-crud/services/NxCrudService.js'
 import NxFilePreview from '@nonix-file-manager/components/NxFilePreview.vue'
 import NxLlmTool from '@nonix-dynamic/form/widgets/NxLlmTool.vue'
 
