@@ -1,5 +1,5 @@
 import NxDynamicPage from "@nonix-dynamic/page/NxDynamicPage.vue";
-import NxCrudPage from "@nonix/page/NxCrudPage.vue";
+import NxCrudPage from "@nonix-crud/pages/NxCrudPage.vue";
 
 export const NX_ROUTE_TYPES = {
     dynamic: function (definition) {

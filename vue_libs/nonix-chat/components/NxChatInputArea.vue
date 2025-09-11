@@ -143,7 +143,7 @@ const executeToolWithForm = async (formData) => {
     return;
   }
 
-  // Extract the actual form data from DynamicForm's submit event
+  // Extract the actual form data from NxDynamicForm's submit event
   const args = formData.__full || formData.args || {};
 
   try {

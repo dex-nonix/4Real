@@ -1,4 +1,3 @@
-// NxBaseApiService.js - minimal fetch-based HTTP layer with WebSocket support
 import { API_BASE_URL } from '@/env.js'
 
 export default class NxBaseApiService {

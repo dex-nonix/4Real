@@ -12,7 +12,7 @@
       <p class="text-600 mb-3 text-sm">{{ selectedTool.description }}</p>
 
       <!-- Dynamic Form for Parameters -->
-      <DynamicForm
+      <NxDynamicForm
         v-if="selectedTool.parameters && selectedTool.parameters.length > 0"
         :config="formConfig"
         :initial-data="toolFormData"
@@ -34,7 +34,7 @@
 import { ref, defineExpose, defineEmits, computed } from 'vue';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
-import DynamicForm from '@nonix-dynamic/form/DynamicForm.vue';
+import NxDynamicForm from '@nonix-dynamic/form/NxDynamicForm.vue';
 
 // Props
 const props = defineProps({

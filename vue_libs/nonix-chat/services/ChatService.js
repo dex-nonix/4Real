@@ -1,4 +1,4 @@
-import NxBaseApiService from '@nonix/services/NxBaseApiService.js'
+import NxBaseApiService from '@nonix-api/services/NxBaseApiService.js'
 
 export default class ChatService extends NxBaseApiService {
   

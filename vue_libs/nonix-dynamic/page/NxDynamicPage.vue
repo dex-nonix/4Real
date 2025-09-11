@@ -11,15 +11,15 @@
 </template>
 
 <script>
-import DynamicWidgetList from '@nonix-dynamic/widget/components/DynamicWidgetList.vue'
+import NxDynamicWidgetList from '@nonix-dynamic/widget/components/NxDynamicWidgetList.vue'
 import NxPage from '@nonix/page/NxPage.vue'
 import { useRoute } from 'vue-router'
 import { inject, computed } from 'vue'
 import PageManager from '@nonix/widget-manager/NxPageManager.js'
 
-const DynamicPage = {
-  name: 'DynamicPage',
-  components: { DynamicWidgetList, Page: NxPage },
+const NxDynamicPage = {
+  name: 'NxDynamicPage',
+  components: { DynamicWidgetList: NxDynamicWidgetList, Page: NxPage },
 
   setup() {
     const route = useRoute()
@@ -42,8 +42,8 @@ const DynamicPage = {
 }
 
 // Static helper on component object
-DynamicPage.createRoute = function(path, page, meta = {}) {
-  return { path, component: DynamicPage, meta: { page, ...meta } }
+NxDynamicPage.createRoute = function(path, page, meta = {}) {
+  return { path, component: NxDynamicPage, meta: { page, ...meta } }
 }
 
 // Route meta resolver: returns a config object
@@ -57,7 +57,7 @@ export function resolveRoutePageConfig(route) {
   return src || { header: { title: '' }, widgets: [] }
 }
 
-export default DynamicPage
+export default NxDynamicPage
 </script>
 
 <style scoped>

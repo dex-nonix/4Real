@@ -1,12 +1,12 @@
 <template>
   <div class="crud-page">
-    <DynamicWidgetList
+    <NxDynamicWidgetList
       v-if="viewBefore && viewBefore.length"
       :items="viewBefore"
       :context="widgetContextResolver"
       class="mb-3"
     />
-    <CrudManager
+    <NxCrudManager
       :service="service"
       :mode="mode"
       :entity-id="entityId"
@@ -21,7 +21,7 @@
       @success="handleSuccess"
       @error="handleError"
     />
-    <DynamicWidgetList
+    <NxDynamicWidgetList
       v-if="viewAfter && viewAfter.length"
       :items="viewAfter"
       :context="widgetContextResolver"
@@ -33,12 +33,12 @@
 <script>
 import { inject, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import NxCrudManager from '@nonix/crud/NxCrudManager.vue'
-import DynamicWidgetList from '@nonix-dynamic/widget/components/DynamicWidgetList.vue'
+import NxCrudManager from '@nonix-crud/components/NxCrudManager.vue'
+import NxDynamicWidgetList from '@nonix-dynamic/widget/components/NxDynamicWidgetList.vue'
 
 const CrudPage = {
   name: 'CrudPage',
-  components: { CrudManager: NxCrudManager, DynamicWidgetList },
+  components: { NxCrudManager, NxDynamicWidgetList },
   setup() {
     const route = useRoute()
     const router = useRouter()

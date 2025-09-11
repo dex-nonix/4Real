@@ -6,7 +6,7 @@
     <!-- Example Form Configuration -->
     <div class="example-section">
       <h2>Artist Form Example</h2>
-      <DynamicForm 
+      <NxDynamicForm
         :config="artistFormConfig"
         :initial-data="artistData"
         submit-label="Save Artist"
@@ -24,7 +24,7 @@
     <!-- Filter Form Example -->
     <div class="example-section">
       <h2>Artist Filter Example</h2>
-      <DynamicForm 
+      <NxDynamicForm
         :config="filterConfig"
         layout="horizontal"
         :compact="true"
@@ -36,7 +36,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import DynamicForm from '@nonix-dynamic/form/DynamicForm.vue'
+import NxDynamicForm from '@nonix-dynamic/form/NxDynamicForm.vue'
 
 // Form data
 const formData = ref({

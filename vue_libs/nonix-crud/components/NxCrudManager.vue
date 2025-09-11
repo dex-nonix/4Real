@@ -148,12 +148,12 @@
 <script>
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
-import DynamicTable from '@nonix-dynamic/table/DynamicTable.vue'
-import DynamicForm from '@nonix-dynamic/form/DynamicForm.vue'
+import NxDynamicTable from '@nonix-dynamic/table/NxDynamicTable.vue'
+import NxDynamicForm from '@nonix-dynamic/form/NxDynamicForm.vue'
 
 export default {
   name: 'CrudManager',
-  components: { Dialog, Button, DynamicTable, DynamicForm },
+  components: { Dialog, Button, DynamicTable: NxDynamicTable, DynamicForm: NxDynamicForm },
 
   props: {
     service: { type: Object, required: true },

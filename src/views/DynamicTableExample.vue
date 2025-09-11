@@ -6,7 +6,7 @@
     <!-- CRUD Table Example -->
     <div class="example-section">
       <h2>Artists CRUD Table (Vertical, Full Features)</h2>
-      <DynamicTable 
+      <NxDynamicTable
         :config="artistCrudConfig"
         :data="artists"
         :loading="loading"
@@ -24,7 +24,7 @@
     <!-- Dashboard Widget Example -->
     <div class="example-section">
       <h2>Recent Artists Dashboard (Horizontal, Compact, Minimal)</h2>
-      <DynamicTable 
+      <NxDynamicTable
         :config="dashboardConfig"
         :data="recentArtists"
         layout="horizontal"
@@ -39,7 +39,7 @@
     <!-- Inline Table Example -->
     <div class="example-section">
       <h2>Related Albums Inline (Compact, Dense, Minimal)</h2>
-      <DynamicTable 
+      <NxDynamicTable
         :config="inlineConfig"
         :data="relatedAlbums"
         layout="vertical"
@@ -54,7 +54,7 @@
     <!-- Icons Only Example -->
     <div class="example-section">
       <h2>Icons Only Actions (Compact, Minimal)</h2>
-      <DynamicTable 
+      <NxDynamicTable
         :config="iconsOnlyConfig"
         :data="iconsOnlyData"
         layout="vertical"
@@ -69,7 +69,7 @@
     <!-- Text Only Example -->
     <div class="example-section">
       <h2>Text Only Actions (Compact, Minimal)</h2>
-      <DynamicTable 
+      <NxDynamicTable
         :config="textOnlyConfig"
         :data="textOnlyData"
         layout="vertical"
@@ -84,7 +84,7 @@
     <!-- Both Icons and Text Example -->
     <div class="example-section">
       <h2>Both Icons and Text Actions (Compact, Minimal)</h2>
-      <DynamicTable 
+      <NxDynamicTable
         :config="bothConfig"
         :data="bothData"
         layout="vertical"
@@ -106,7 +106,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import DynamicTable from '@nonix-dynamic/table/DynamicTable.vue'
+import NxDynamicTable from '@nonix-dynamic/table/NxDynamicTable.vue'
 
 // Loading state
 const loading = ref(false)

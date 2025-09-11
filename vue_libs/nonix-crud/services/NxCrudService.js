@@ -1,5 +1,4 @@
-// NxCrudService.js - generic CRUD service extending NxBaseApiService
-import NxBaseApiService from '@nonix/services/NxBaseApiService.js'
+import NxBaseApiService from '@nonix-api/services/NxBaseApiService.js'
 
 export default class NxCrudService extends NxBaseApiService {
   constructor(app, entity, uiConfig) {

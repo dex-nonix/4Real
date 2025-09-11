@@ -66,7 +66,7 @@ import DisplayWidgetManager from '@nonix/widget-manager/NxDisplayWidgetManager.j
 import Button from 'primevue/button'
 
 export default {
-  name: 'DynamicForm',
+  name: 'NxDynamicForm',
   components: { Button },
   emits: ['submit', 'cancel', 'field-change', 'dirty-change'],
   
