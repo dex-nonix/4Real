@@ -1,0 +1,22 @@
+{
+    "name": "lmstudio",
+    "version": "0.1.0",
+    "class": "NxLMStudioPlugin",
+    "dependencies": ["daemon"],
+    "config": {
+        "lmstudio_path": null,
+        "api_base_url": "http://localhost:1234",
+        "auto_detect": true,
+        "fallback_paths": [
+            "/Applications/LM Studio.app",
+            "/Applications/LMStudio.app",
+            "/usr/local/bin/lmstudio",
+            "/opt/lmstudio",
+            "~/LMStudio",
+            "C:\\Program Files\\LM Studio",
+            "C:\\Program Files (x86)\\LM Studio"
+        ],
+        "api_timeout": 30,
+        "model_load_timeout": 60
+    }
+}
