@@ -1,6 +1,6 @@
-import CrudService from '@/services/CrudService.js'
+import NxCrudService from '@/services/NxCrudService.js'
 
-export default class ToolInvocationLogService extends CrudService {
+export default class ToolInvocationLogService extends NxCrudService {
   constructor(app) {
     super(app,'tool-invocation-logs', {
       table: {

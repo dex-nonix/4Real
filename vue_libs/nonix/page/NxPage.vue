@@ -6,7 +6,7 @@
 
 <script setup>
 import { onMounted, onBeforeUnmount, watch, toRefs } from 'vue'
-import { useAdvancedLayout } from '@nonix-advanced-layout/useAdvancedLayout.js'
+import { useNxAdvancedLayout } from '@nonix-advanced-layout/useNxAdvancedLayout.js'
 
 const props = defineProps({
   title: { type: String, default: undefined },
@@ -16,7 +16,7 @@ const props = defineProps({
   onBack: { type: Function, default: undefined }
 })
 
-const { setTitle, clearActions, addAction, state } = useAdvancedLayout()
+const { setTitle, clearActions, addAction, state } = useNxAdvancedLayout()
 const { title, back, actions, showRightToggle, onBack } = toRefs(props)
 
 function applyHeader() {

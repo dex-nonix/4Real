@@ -1,5 +1,5 @@
 <template>
-  <Page
+  <NxPage
     title="Home"
     :back="false"
     :actions="[]"
@@ -24,12 +24,12 @@
       </div>
 
     </section>
-  </Page>
+  </NxPage>
 </template>
 
 <script setup>
 import Button from 'primevue/button'
-import Page from '@nonix/page/Page.vue'
+import NxPage from '@nonix/page/NxPage.vue'
 </script>
 
 <style scoped>

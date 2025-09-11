@@ -1,7 +1,4 @@
-// Registry of dynamic pages. Shape matches other registries:
-// name -> { component: pageConfigObject, defaultProps: {} }
-
-export const PAGES = {
+export const NX_PAGES = {
   dashboard: {
     component: {
       header: { title: 'Dashboard' },

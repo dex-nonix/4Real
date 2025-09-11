@@ -10,11 +10,11 @@ import Editor from 'primevue/editor'
 import Textarea from 'primevue/textarea'
 import Button from 'primevue/button'
 import { ref, inject, h } from 'vue'
-import CrudService from '@/services/CrudService.js'
-import FileUploadField from '../../nonix-file-manager/components/FileUploadField.vue'
-import LlmTool from '@nonix-dynamic/form/widgets/LlmTool.vue'
+import NxCrudService from '@/services/NxCrudService.js'
+import NxFileUploadField from '@nonix-file-manager/components/NxFileUploadField.vue'
+import NxLlmTool from '@nonix-dynamic/form/widgets/NxLlmTool.vue'
 
-export const EDIT_WIDGETS = {
+export const NX_EDIT_WIDGETS = {
   'text': { component: InputText, defaultProps: { placeholder: 'Enter text', class: 'w-full' } },
   'textarea': { component: Textarea, defaultProps: { autoResize: true, class: 'w-full', rows: 5 } },
   'select': { component: Dropdown, defaultProps: { placeholder: 'Select option', class: 'w-full' } },
@@ -95,7 +95,7 @@ function createFkSelect() {
     emits: ['update:modelValue'],
     setup(props, { emit }) {
       const injected = inject(props.entity)
-      const service = injected || new CrudService(props.entity)
+      const service = injected || new NxCrudService(props.entity)
       const options = ref([])
       const selected = ref(props.modelValue)
       let timer = null
@@ -157,14 +157,14 @@ function createFkSelect() {
   }
 }
 
-export const FK_SELECT = createFkSelect()
-export const FK_MULTI_SELECT = createFkSelect()
+export const NX_FK_SELECT = createFkSelect()
+export const NX_FK_MULTI_SELECT = createFkSelect()
 
 // Register FK widgets
-EDIT_WIDGETS['fk_select'] = { component: FK_SELECT, defaultProps: {} }
-EDIT_WIDGETS['fk_autocomplete'] = { component: FK_SELECT, defaultProps: { search: true } }
-EDIT_WIDGETS['fk_multi_select'] = { component: FK_MULTI_SELECT, defaultProps: { multiple: true } }
-EDIT_WIDGETS['file_upload'] = { component: FileUploadField, defaultProps: { buttonLabel: 'Choose File' } }
-EDIT_WIDGETS['llm_tool'] = { component: LlmTool, defaultProps: { allowWildcards: true, placeholder: 'Select or type a tool' } }
+NX_EDIT_WIDGETS['fk_select'] = { component: NX_FK_SELECT, defaultProps: {} }
+NX_EDIT_WIDGETS['fk_autocomplete'] = { component: NX_FK_SELECT, defaultProps: { search: true } }
+NX_EDIT_WIDGETS['fk_multi_select'] = { component: NX_FK_MULTI_SELECT, defaultProps: { multiple: true } }
+NX_EDIT_WIDGETS['file_upload'] = { component: NxFileUploadField, defaultProps: { buttonLabel: 'Choose File' } }
+NX_EDIT_WIDGETS['llm_tool'] = { component: NxLlmTool, defaultProps: { allowWildcards: true, placeholder: 'Select or type a tool' } }
 
 

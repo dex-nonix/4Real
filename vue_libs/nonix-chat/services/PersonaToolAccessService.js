@@ -1,6 +1,6 @@
-import CrudService from '@/services/CrudService.js'
+import NxCrudService from '@/services/NxCrudService.js'
 
-export default class PersonaToolAccessService extends CrudService {
+export default class PersonaToolAccessService extends NxCrudService {
   constructor(app) {
     super(app,'persona-tool-access', {
       table: {

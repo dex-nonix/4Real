@@ -1,6 +1,6 @@
-import CrudService from '@/services/CrudService.js'
+import NxCrudService from '@/services/NxCrudService.js'
 
-export default class ChatPromptService extends CrudService {
+export default class ChatPromptService extends NxCrudService {
   constructor(app) {
     super(app,'chat-prompts', {
       table: {

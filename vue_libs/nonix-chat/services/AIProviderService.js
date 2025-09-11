@@ -1,6 +1,6 @@
-import CrudService from '@/services/CrudService.js'
+import NxCrudService from '@/services/NxCrudService.js'
 
-export default class AIProviderService extends CrudService {
+export default class AIProviderService extends NxCrudService {
   constructor(app) {
     super(app,'ai-providers', {
       table: {

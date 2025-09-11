@@ -1,11 +1,11 @@
-import DynamicPage from "@nonix-dynamic/page/DynamicPage.vue";
-import CrudPage from "@nonix/page/CrudPage.vue";
+import NxDynamicPage from "@nonix-dynamic/page/NxDynamicPage.vue";
+import NxCrudPage from "@nonix/page/NxCrudPage.vue";
 
-export const ROUTE_TYPES = {
+export const NX_ROUTE_TYPES = {
     dynamic: function (definition) {
-        return DynamicPage.createRoute(definition.path, definition.page, definition.meta);
+        return NxDynamicPage.createRoute(definition.path, definition.page, definition.meta);
     },
     crud: function (definition) {
-        return CrudPage.createRoutes(definition.entity, definition.options, definition.meta);
+        return NxCrudPage.createRoutes(definition.entity, definition.options, definition.meta);
     },
 }

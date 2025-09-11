@@ -1,6 +1,6 @@
-import CrudService from '@/services/CrudService.js'
+import NxCrudService from '@/services/NxCrudService.js'
 
-export default class PersonaMCPServerService extends CrudService {
+export default class PersonaMCPServerService extends NxCrudService {
   constructor(app) {
     super(app,'persona-mcp-servers', {
       table: {

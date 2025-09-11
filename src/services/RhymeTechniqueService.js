@@ -1,7 +1,7 @@
 // src/services/RhymeTechniqueService.js
-import CrudService from '@/services/CrudService.js'
+import NxCrudService from '@/services/NxCrudService.js'
 
-export default class RhymeTechniqueService extends CrudService {
+export default class RhymeTechniqueService extends NxCrudService {
   constructor(app) {
     super(app,'rhyme-techniques', {
       table: {

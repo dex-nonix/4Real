@@ -41,7 +41,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('resize', updateMobileState)
 }
 
-const useAdvancedLayout = () => {
+const useNxAdvancedLayout = () => {
   return {
     // State access
     state: layoutState,
@@ -100,4 +100,4 @@ const useAdvancedLayout = () => {
   }
 }
 
-export { useAdvancedLayout }
+export { useNxAdvancedLayout }

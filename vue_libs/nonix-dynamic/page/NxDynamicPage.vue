@@ -12,14 +12,14 @@
 
 <script>
 import DynamicWidgetList from '@nonix-dynamic/widget/components/DynamicWidgetList.vue'
-import Page from '@nonix/page/Page.vue'
+import NxPage from '@nonix/page/NxPage.vue'
 import { useRoute } from 'vue-router'
 import { inject, computed } from 'vue'
-import PageManager from '@nonix/widget-manager/PageManager.js'
+import PageManager from '@nonix/widget-manager/NxPageManager.js'
 
 const DynamicPage = {
   name: 'DynamicPage',
-  components: { DynamicWidgetList, Page },
+  components: { DynamicWidgetList, Page: NxPage },
 
   setup() {
     const route = useRoute()

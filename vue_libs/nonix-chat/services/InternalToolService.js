@@ -1,6 +1,6 @@
-import CrudService from '@/services/CrudService.js'
+import NxCrudService from '@/services/NxCrudService.js'
 
-export default class InternalToolService extends CrudService {
+export default class InternalToolService extends NxCrudService {
   constructor(app) {
     super(app,'internal-tools', {
       table: {

@@ -1,16 +1,13 @@
-// Registry of dynamic pages. Shape matches other registries:
-// name -> { component: pageConfigObject, defaultProps: {} }
-
-import AdvancedLayout from "@nonix-advanced-layout/AdvancedLayout.vue";
+import NxAdvancedLayout from "@nonix-advanced-layout/NxAdvancedLayout.vue";
 import AltLayout from "@/layouts/AltLayout.vue";
 
-export const LAYOUTS = {
+export const NX_LAYOUTS = {
     master: {
-        component: AdvancedLayout,
+        component: NxAdvancedLayout,
         defaultProps: {}
     },
     advanced: {
-        component: AdvancedLayout,
+        component: NxAdvancedLayout,
         defaultProps: {}
     },
     alt: {

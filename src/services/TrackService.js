@@ -1,7 +1,7 @@
 // src/services/TrackService.js
-import CrudService from '@/services/CrudService.js'
+import NxCrudService from '@/services/NxCrudService.js'
 
-export default class TrackService extends CrudService {
+export default class TrackService extends NxCrudService {
   constructor(app) {
     super(app,'tracks', {
       table: {

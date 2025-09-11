@@ -1,7 +1,7 @@
 // src/services/ArtistService.js
-import CrudService from '@/services/CrudService.js'
+import NxCrudService from '@/services/NxCrudService.js'
 
-export default class ArtistService extends CrudService {
+export default class ArtistService extends NxCrudService {
   constructor(app) {
     super(app,'artists', {
       table: {

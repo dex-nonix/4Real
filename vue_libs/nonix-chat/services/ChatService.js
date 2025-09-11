@@ -1,6 +1,6 @@
-import BaseApiService from '@nonix/services/BaseApiService.js'
+import NxBaseApiService from '@nonix/services/NxBaseApiService.js'
 
-export default class ChatService extends BaseApiService {
+export default class ChatService extends NxBaseApiService {
   
   async getSessions() {
     

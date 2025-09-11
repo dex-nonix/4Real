@@ -1,6 +1,6 @@
-import CrudService from '@/services/CrudService.js'
+import NxCrudService from '@/services/NxCrudService.js'
 
-export default class PersonaService extends CrudService {
+export default class PersonaService extends NxCrudService {
   constructor(app) {
     super(app,'personas', {
       table: {

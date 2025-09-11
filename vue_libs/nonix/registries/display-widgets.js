@@ -2,11 +2,11 @@ import Tag from 'primevue/tag'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import { ref, inject, h } from 'vue'
-import CrudService from '@/services/CrudService.js'
-import FilePreview from '../../nonix-file-manager/components/FilePreview.vue'
-import LlmTool from '@nonix-dynamic/form/widgets/LlmTool.vue'
+import NxCrudService from '@/services/NxCrudService.js'
+import NxFilePreview from '@nonix-file-manager/components/NxFilePreview.vue'
+import NxLlmTool from '@nonix-dynamic/form/widgets/NxLlmTool.vue'
 
-export const DISPLAY_WIDGETS = {
+export const NX_DISPLAY_WIDGETS = {
   'text': { component: 'span', defaultProps: { class: 'text-sm' } },
   'number': { component: 'span', defaultProps: { class: 'text-sm font-mono' } },
   'date': { component: 'span', defaultProps: { class: 'text-sm text-gray-600' } },
@@ -20,7 +20,7 @@ export const DISPLAY_WIDGETS = {
       return h('i', { class: `pi ${truthy ? 'pi-check text-green-500' : 'pi-times text-red-500'}`, style: 'font-size: 1.2rem;' })
     }
   }, defaultProps: {} },
-  'file_preview': { component: FilePreview, defaultProps: { } },
+  'file_preview': { component: NxFilePreview, defaultProps: { } },
   'json': { component: {
     props: { value: [Object, Array, String, null] },
     render() {
@@ -36,7 +36,7 @@ export const DISPLAY_WIDGETS = {
     props: { value: [Number, String], entity: { type: String, default: 'files' }, labelKey: { type: String, default: 'label' } },
     setup(props) {
       const injected = inject(props.entity)
-      const service = injected || new CrudService(props.entity)
+      const service = injected || new NxCrudService(props.entity)
       const data = ref(null)
       const load = async (id) => {
         try {
@@ -50,14 +50,14 @@ export const DISPLAY_WIDGETS = {
     },
     render() {
       const file = this.data || {}
-      return h(FilePreview, { value: file, url: file.storage_url, mime: file.mime_type, title: file.title, filename: file.original_filename })
+      return h(NxFilePreview, { value: file, url: file.storage_url, mime: file.mime_type, title: file.title, filename: file.original_filename })
     }
   }, defaultProps: {} },
   'fk_display': { component: {
     props: { value: [Number, String, Array], entity: { type: String, required: true }, labelKey: { type: String, default: 'label' } },
     setup(props) {
       const injected = inject(props.entity)
-      const service = injected || new CrudService(props.entity)
+      const service = injected || new NxCrudService(props.entity)
       const label = ref('')
       const resolve = async (id) => {
         try {
@@ -76,7 +76,7 @@ export const DISPLAY_WIDGETS = {
     render() { return h('span', this.label) }
   }, defaultProps: {} }
   ,
-  'llm_tool': { component: LlmTool, defaultProps: { mode: 'display' } }
+  'llm_tool': { component: NxLlmTool, defaultProps: { mode: 'display' } }
 }
 
 

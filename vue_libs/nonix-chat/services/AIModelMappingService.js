@@ -1,6 +1,6 @@
-import CrudService from '@/services/CrudService.js'
+import NxCrudService from '@/services/NxCrudService.js'
 
-export default class AIModelMappingService extends CrudService {
+export default class AIModelMappingService extends NxCrudService {
   constructor(app) {
     super(app,'ai-model-mappings', {
       table: {

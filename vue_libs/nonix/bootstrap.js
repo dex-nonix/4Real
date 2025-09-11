@@ -8,9 +8,9 @@ import 'primeicons/primeicons.css'
 import 'primevue/resources/themes/lara-light-blue/theme.css'
 import 'primeflex/primeflex.css'
 import LayoutManager from "@nonix/widget-manager/NxLayoutManager.js";
-import PageManager from "@nonix/widget-manager/PageManager.js";
-import DisplayWidgetManager from "@nonix/widget-manager/DisplayWidgetManager.js";
-import EditWidgetManager from "@nonix/widget-manager/EditWidgetManager.js";
+import PageManager from "@nonix/widget-manager/NxPageManager.js";
+import DisplayWidgetManager from "@nonix/widget-manager/NxDisplayWidgetManager.js";
+import EditWidgetManager from "@nonix/widget-manager/NxEditWidgetManager.js";
 import DynamicWidgetManager from "@nonix-dynamic/widget/DynamicWidgetManager.js";
 import NotFound from "@/views/NotFound.vue";
 import Tooltip from "primevue/tooltip";

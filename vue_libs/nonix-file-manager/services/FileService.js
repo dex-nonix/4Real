@@ -1,6 +1,6 @@
-import CrudService from '@/services/CrudService.js'
+import NxCrudService from '@/services/NxCrudService.js'
 
-export default class FileService extends CrudService {
+export default class FileService extends NxCrudService {
   constructor(app) {
     super(app,'files', {
       table: {

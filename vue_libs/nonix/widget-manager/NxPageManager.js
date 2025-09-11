@@ -1,9 +1,9 @@
 import NxBaseWidgetManager from './NxBaseWidgetManager.js'
-import {PAGES} from '@nonix/registries/pages.js'
+import {NX_PAGES} from '@nonix/registries/pages.js'
 
-class PageManager extends NxBaseWidgetManager {
+class NxPageManager extends NxBaseWidgetManager {
     constructor() {
-        super(PAGES)
+        super(NX_PAGES)
     }
 
     getDefaultWidget() {
@@ -11,4 +11,4 @@ class PageManager extends NxBaseWidgetManager {
     }
 }
 
-export default new PageManager()
+export default new NxPageManager()

@@ -1,11 +1,11 @@
 import {createRouter as createVueRouter, createWebHistory} from 'vue-router'
-import {ROUTE_TYPES} from "./routeTypes.js";
+import {NX_ROUTE_TYPES} from "./routeTypes.js";
 
 function vueRouterBuilder(routes) {
     return routes.map(route => {
         const routeType = route.type;
         if (routeType) {
-            const routeBuilder = ROUTE_TYPES[route.type]
+            const routeBuilder = NX_ROUTE_TYPES[route.type]
             if (routeBuilder) {
                 return routeBuilder(route)
             }

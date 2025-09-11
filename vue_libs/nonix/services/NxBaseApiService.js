@@ -1,7 +1,7 @@
-// BaseApiService.js - minimal fetch-based HTTP layer with WebSocket support
+// NxBaseApiService.js - minimal fetch-based HTTP layer with WebSocket support
 import { API_BASE_URL } from '@/env.js'
 
-export default class BaseApiService {
+export default class NxBaseApiService {
   constructor(app, options = {}) {
     const { defaultHeaders = {}, onRequest, onResponse, onError} = options
     this.baseURL = API_BASE_URL.replace(/\/$/, '')

@@ -1,7 +1,7 @@
 // src/services/FileLinkService.js
-import CrudService from '@/services/CrudService.js'
+import NxCrudService from '@/services/NxCrudService.js'
 
-export default class FileLinkService extends CrudService {
+export default class FileLinkService extends NxCrudService {
   constructor(app) {
     super(app,'file-links', {
       table: {

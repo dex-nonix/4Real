@@ -1,7 +1,7 @@
 // src/services/FileCategoryService.js
-import CrudService from '@/services/CrudService.js'
+import NxCrudService from '@/services/NxCrudService.js'
 
-export default class FileCategoryService extends CrudService {
+export default class FileCategoryService extends NxCrudService {
   constructor(app) {
     super(app,'file-categories', {
       table: {

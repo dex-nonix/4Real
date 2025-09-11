@@ -1,6 +1,6 @@
-import CrudService from '@/services/CrudService.js'
+import NxCrudService from '@/services/NxCrudService.js'
 
-export default class MCPServerService extends CrudService {
+export default class MCPServerService extends NxCrudService {
   constructor(app) {
     super(app,'mcp-servers', {
       table: {

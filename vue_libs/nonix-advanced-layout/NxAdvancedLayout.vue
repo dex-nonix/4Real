@@ -34,7 +34,7 @@ import {computed, ref} from 'vue';
 import LeftNavSidebar from "@nonix-advanced-layout/LeftNavSidebar.vue";
 import AdvancedTopBar from "@nonix-advanced-layout/AdvancedTopBar.vue";
 import ChatPane from "@nonix-advanced-layout/ChatPane.vue";
-import { useAdvancedLayout } from './useAdvancedLayout.js';
+import { useNxAdvancedLayout } from './useNxAdvancedLayout.js';
 
 
 // UI Element Collapse States
@@ -46,7 +46,7 @@ const isFooterCollapsed = ref(false);
 const isTopBarCollapsed = ref(false); // Can be used if needed
 
 // Advanced Layout Composable
-const { state: layoutState } = useAdvancedLayout();
+const { state: layoutState } = useNxAdvancedLayout();
 
 // --- DOM ELEMENT REFS ---
 const appContainer = ref(null);

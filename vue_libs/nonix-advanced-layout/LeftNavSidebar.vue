@@ -10,12 +10,12 @@
 import PanelMenu from 'primevue/panelmenu'
 import {computed, nextTick} from 'vue'
 import {useRouter} from 'vue-router'
-import {useAdvancedLayout} from './useAdvancedLayout.js'
+import {useNxAdvancedLayout} from './useNxAdvancedLayout.js'
 import {leftNavItems} from './NavItems.js'
 
 const props = defineProps({pinned: {type: Boolean, default: false}});
 
-const {state} = useAdvancedLayout();
+const {state} = useNxAdvancedLayout();
 const router = useRouter();
 
 function enhance(items) {

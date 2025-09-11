@@ -1,13 +1,13 @@
-// CrudService.js - generic CRUD service extending BaseApiService
-import BaseApiService from '@nonix/services/BaseApiService.js'
+// NxCrudService.js - generic CRUD service extending NxBaseApiService
+import NxBaseApiService from '@nonix/services/NxBaseApiService.js'
 
-export default class CrudService extends BaseApiService {
+export default class NxCrudService extends NxBaseApiService {
   constructor(app, entity, uiConfig) {
     if (!entity) {
-      throw new Error('CrudService requires an entity string')
+      throw new Error('NxCrudService requires an entity string')
     }
     if (!uiConfig) {
-      throw new Error('CrudService requires an uiConfig ')
+      throw new Error('NxCrudService requires an uiConfig ')
     }
     super(app)
     this.entity = entity
