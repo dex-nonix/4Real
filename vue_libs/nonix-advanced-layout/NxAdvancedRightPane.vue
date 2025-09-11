@@ -72,7 +72,7 @@ const saveChatPaneState = () => {
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
   } catch (error) {
-    console.warn('Failed to save ChatPane state:', error);
+    console.warn('Failed to save NxAdvancedRightPane state:', error);
   }
 };
 
@@ -93,7 +93,7 @@ const loadChatPaneState = () => {
 
     return parsed;
   } catch (error) {
-    console.warn('Failed to load ChatPane state:', error);
+    console.warn('Failed to load NxAdvancedRightPane state:', error);
     return null;
   }
 };
@@ -307,7 +307,7 @@ onMounted(async () => {
       state.floatingSize = savedState.floatingSize ?? { width: 400, height: 500 };
       state.dockedSize = savedState.dockedSize ?? 350;
     } catch (error) {
-      console.warn('Failed to apply saved ChatPane state:', error);
+      console.warn('Failed to apply saved NxAdvancedRightPane state:', error);
     }
   }
 

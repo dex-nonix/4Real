@@ -48,7 +48,7 @@ const useNxAdvancedLayout = () => {
     isDesktop,
     hasNotifications,
 
-    // Header methods - simplified for AdvancedTopBar
+    // Header methods - simplified for NxAdvancedTopBar
     setTitle: (title) => {
       layoutState.header.title = title
     },

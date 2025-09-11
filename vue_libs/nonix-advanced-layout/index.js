@@ -3,5 +3,5 @@ export { useNxAdvancedLayout } from './useNxAdvancedLayout.js'
 
 // Export components
 export { default as NxAdvancedLayout } from './NxAdvancedLayout.vue'
-export { default as AdvancedTopBar } from './AdvancedTopBar.vue'
-export { default as LeftNavSidebar } from './LeftNavSidebar.vue'
+export { default as NxAdvancedTopBar } from './NxAdvancedTopBar.vue'
+export { default as NxAdvancedLeftSidebar } from './NxAdvancedLeftSidebar.vue'

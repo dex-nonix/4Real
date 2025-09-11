@@ -7,7 +7,7 @@
     <div class="dock-zone" id="dock-zone-left" data-dock="left"></div>
 
     <div class="layout-wrapper">
-      <AdvancedTopBar
+      <NxAdvancedTopBar
         :collapsed="isTopBarCollapsed"
         :title="layoutState.header.title"
         :actions="layoutState.header.actions"
@@ -16,7 +16,7 @@
       />
       <div class="the-main-area">
         <div class="left-navigation" :class="{ collapsed: isNavCollapsed }">
-          <LeftNavSidebar />
+          <NxAdvancedLeftSidebar />
         </div>
         <div class="the-content-area">
           <slot/>
@@ -25,15 +25,15 @@
       <div class="footer" :class="{ collapsed: isFooterCollapsed }">Toggleable Footer</div>
     </div>
 
-    <ChatPane ref="chatPaneRef" />
+    <NxAdvancedRightPane ref="chatPaneRef" />
   </div>
 </template>
 
 <script setup>
 import {computed, ref} from 'vue';
-import LeftNavSidebar from "@nonix-advanced-layout/LeftNavSidebar.vue";
-import AdvancedTopBar from "@nonix-advanced-layout/AdvancedTopBar.vue";
-import ChatPane from "@nonix-advanced-layout/ChatPane.vue";
+import NxAdvancedLeftSidebar from "@nonix-advanced-layout/NxAdvancedLeftSidebar.vue";
+import NxAdvancedTopBar from "@nonix-advanced-layout/NxAdvancedTopBar.vue";
+import NxAdvancedRightPane from "@nonix-advanced-layout/NxAdvancedRightPane.vue";
 import { useNxAdvancedLayout } from './useNxAdvancedLayout.js';
 
 

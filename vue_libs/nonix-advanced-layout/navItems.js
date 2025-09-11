@@ -1,4 +1,4 @@
-export const leftNavItems = [
+export const NX_ADVANCED_LEFT_SIDEBAR_ITEMS = [
   {
     label: 'Music',
     icon: 'pi pi-music',

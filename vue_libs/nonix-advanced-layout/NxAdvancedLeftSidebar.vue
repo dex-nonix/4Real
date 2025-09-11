@@ -11,7 +11,7 @@ import PanelMenu from 'primevue/panelmenu'
 import {computed, nextTick} from 'vue'
 import {useRouter} from 'vue-router'
 import {useNxAdvancedLayout} from './useNxAdvancedLayout.js'
-import {leftNavItems} from './NavItems.js'
+import {NX_ADVANCED_LEFT_SIDEBAR_ITEMS} from './navItems.js'
 
 const props = defineProps({pinned: {type: Boolean, default: false}});
 
@@ -40,7 +40,7 @@ function enhance(items) {
   })
 }
 
-const menuItems = computed(() => enhance(leftNavItems))
+const menuItems = computed(() => enhance(NX_ADVANCED_LEFT_SIDEBAR_ITEMS))
 const ptOverrides = {
   action: {
     onMousedown: (e) => e.preventDefault()
