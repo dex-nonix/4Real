@@ -1,7 +1,7 @@
-import BaseWidgetManager from '@nonix/widget-manager/BaseWidgetManager.js'
+import NxBaseWidgetManager from '@nonix/widget-manager/NxBaseWidgetManager.js'
 import {DISPLAY_WIDGETS} from '@nonix/registries/display-widgets.js'
 
-class DisplayWidgetManager extends BaseWidgetManager {
+class DisplayWidgetManager extends NxBaseWidgetManager {
     constructor() {
         super(DISPLAY_WIDGETS)
     }

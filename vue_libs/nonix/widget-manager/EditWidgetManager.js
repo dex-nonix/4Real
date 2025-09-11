@@ -1,7 +1,7 @@
-import BaseWidgetManager from './BaseWidgetManager.js'
+import NxBaseWidgetManager from './NxBaseWidgetManager.js'
 import {EDIT_WIDGETS} from '@nonix/registries/edit-widgets.js'
 
-class EditWidgetManager extends BaseWidgetManager {
+class EditWidgetManager extends NxBaseWidgetManager {
     constructor() {
         super(EDIT_WIDGETS)
     }

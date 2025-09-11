@@ -1,7 +1,7 @@
-import BaseWidgetManager from './BaseWidgetManager.js'
+import NxBaseWidgetManager from './NxBaseWidgetManager.js'
 import {PAGES} from '@nonix/registries/pages.js'
 
-class PageManager extends BaseWidgetManager {
+class PageManager extends NxBaseWidgetManager {
     constructor() {
         super(PAGES)
     }

@@ -1,6 +1,6 @@
 import {markRaw} from 'vue'
 
-class BaseWidgetManager {
+class NxBaseWidgetManager {
     constructor(widgetMap = {}) {
         // Mark all components as raw to prevent Vue reactivity
         this.widgets = Object.fromEntries(
@@ -46,4 +46,4 @@ class BaseWidgetManager {
     }
 }
 
-export default BaseWidgetManager
+export default NxBaseWidgetManager

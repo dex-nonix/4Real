@@ -1,11 +1,11 @@
 import { markRaw } from 'vue';
-import BaseWidgetManager from '../../nonix/widget-manager/BaseWidgetManager.js';
+import NxBaseWidgetManager from '@nonix/widget-manager/NxBaseWidgetManager.js';
 
 /**
  * ChatMessageTypeManager - Registry for managing different chat message type components
- * Extends BaseWidgetManager to provide dynamic message rendering capabilities
+ * Extends NxBaseWidgetManager to provide dynamic message rendering capabilities
  */
-class ChatMessageTypeManager extends BaseWidgetManager {
+class ChatMessageTypeManager extends NxBaseWidgetManager {
   constructor() {
     super();
     this.messageTypes = new Map();
