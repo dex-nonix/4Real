@@ -19,6 +19,9 @@ export default defineConfig({
       '@nonix-crud': resolve(__dirname, 'vue_libs/nonix-crud'),
       '@nonix-api': resolve(__dirname, 'vue_libs/nonix-api'),
       '@nonix-ws': resolve(__dirname, 'vue_libs/nonix-ws'),
+      '@nonix-obj': resolve(__dirname, 'vue_libs/nonix-obj'),
+      '@nonix-plugin': resolve(__dirname, 'vue_libs/nonix-plugin'),
+      '@nonix-router': resolve(__dirname, 'vue_libs/nonix-router'),
     }
   },
   optimizeDeps: {

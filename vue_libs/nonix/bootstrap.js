@@ -7,7 +7,7 @@ import 'primevue/resources/themes/lara-light-blue/theme.css'
 import 'primeflex/primeflex.css'
 
 import NxApp from '@nonix/NxApp.vue'
-import {createRouter} from '@nonix/router'
+import {createRouter} from '@nonix-router'
 import NxLayoutManager from "@nonix/widget-manager/NxLayoutManager.js";
 import NxPageManager from "@nonix/widget-manager/NxPageManager.js";
 import NxDisplayWidgetManager from "@nonix/widget-manager/NxDisplayWidgetManager.js";
