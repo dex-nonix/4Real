@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nx-sidekick STT</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+</head>
+<body>
+    <h1>nx-sidekick Offline Speech-to-Text</h1>
+
+    <div class="live-stream">
+        <h2>Live Transcription</h2>
+        <button id="start-stream">Start Recording</button>
+        <button id="stop-stream" disabled>Stop Recording</button>
+        <div id="live-transcript"></div>
+    </div>
+
+    <hr>
+
+    <div class="file-upload">
+        <h2>Upload Audio File</h2>
+        <input type="file" id="audio-file-input" accept="audio/*">
+        <button id="upload-file">Upload and Transcribe</button>
+        <div id="file-transcript"></div>
+        <div id="upload-status"></div>
+    </div>
+
+    <script>
+        var socket = io();
+        let audioContext;
+        let audioInput;
+        let processor;
+        const sampleRate = 16000; // Match server expectation
+        const bufferSize = 4096; // Audio processing chunk size
+
+        socket.on('connect', function() {
+            console.log('Connected to server');
+        });
+
+        socket.on('disconnect', function() {
+            console.log('Disconnected from server');
+        });
+
+        socket.on('streaming_started', function(data) {
+            console.log('Streaming started:', data);
+            document.getElementById('start-stream').disabled = true;
+            document.getElementById('stop-stream').disabled = false;
+            document.getElementById('live-transcript').innerText = '... Listening ...';
+        });
+
+        socket.on('streaming_stopped', function(data) {
+            console.log('Streaming stopped:', data);
+            document.getElementById('start-stream').disabled = false;
+            document.getElementById('stop-stream').disabled = true;
+            // Keep the last transcription or clear it
+        });
+
+        socket.on('transcription_update', function(data) {
+            console.log('Transcription update:', data);
+            const transcriptDiv = document.getElementById('live-transcript');
+            // Append or update the transcript
+            // For simplicity, we'll just append for now
+            transcriptDiv.innerText += data.text + ' ';
+        });
+
+        socket.on('transcription_error', function(data) {
+            console.error('Transcription error:', data.error);
+            const transcriptDiv = document.getElementById('live-transcript');
+            transcriptDiv.innerText = 'Error: ' + data.error;
+        });
+
+        document.getElementById('start-stream').onclick = function() {
+            // Request access to microphone
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(function(stream) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: sampleRate });
+                    audioInput = audioContext.createMediaStreamSource(stream);
+
+                    // Create a ScriptProcessorNode to process audio chunks
+                    // Deprecated, but simple for basic example. For production, use AudioWorkletNode.
+                    processor = audioContext.createScriptProcessor(bufferSize, 1, 1);
+
+                    processor.onaudioprocess = function(e) {
+                        // Get the audio data from the input buffer
+                        const audioData = e.inputBuffer.getChannelData(0);
+
+                        // Convert Float32Array to Int16Array
+                        const int16Array = new Int16Array(audioData.length);
+                        for (let i = 0; i < audioData.length; i++) {
+                            int16Array[i] = Math.max(-1, Math.min(1, audioData[i])) * 32767;
+                        }
+
+                        // Send the raw audio data (as bytes) over the websocket
+                        socket.emit('audio_chunk', int16Array.buffer);
+                    };
+
+                    // Connect the audio nodes
+                    audioInput.connect(processor);
+                    processor.connect(audioContext.destination); // Connect to destination to keep the processor alive
+
+                    socket.emit('start_streaming');
+                })
+                .catch(function(err) {
+                    console.error('Error accessing microphone:', err);
+                    alert('Could not access microphone. Please ensure it is connected and permissions are granted.');
+                });
+        };
+
+        document.getElementById('stop-stream').onclick = function() {
+            if (audioInput) {
+                audioInput.disconnect();
+                audioInput.mediaStream.getTracks().forEach(track => track.stop());
+                audioInput = null;
+            }
+            if (processor) {
+                 processor.disconnect();
+                 processor = null;
+            }
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+            socket.emit('stop_streaming');
+        };
+
+        document.getElementById('upload-file').onclick = function() {
+            const fileInput = document.getElementById('audio-file-input');
+            const file = fileInput.files[0];
+            const uploadStatusDiv = document.getElementById('upload-status');
+            const fileTranscriptDiv = document.getElementById('file-transcript');
+
+            if (!file) {
+                uploadStatusDiv.innerText = 'Please select a file.';
+                return;
+            }
+
+            uploadStatusDiv.innerText = 'Uploading and transcribing...';
+            fileTranscriptDiv.innerText = ''; // Clear previous transcript
+
+            const formData = new FormData();
+            formData.append('audio_file', file);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.transcription) {
+                    fileTranscriptDiv.innerText = 'Transcription: ' + data.transcription;
+                    uploadStatusDiv.innerText = 'Upload and transcription successful.';
+                } else if (data.error) {
+                    fileTranscriptDiv.innerText = 'Error: ' + data.error;
+                    uploadStatusDiv.innerText = 'Upload or transcription failed.';
+                }
+            })
+            .catch(error => {
+                console.error('Upload error:', error);
+                fileTranscriptDiv.innerText = 'An error occurred during upload.';
+                uploadStatusDiv.innerText = 'Upload failed.';
+            });
+        };
+
+    </script>
+</body>
+</html>

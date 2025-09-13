@@ -12,7 +12,7 @@ if __name__ == "__main__":
         {"name": "template"},
         {"name": "static-files"},
         {"name": "agentic"},
-        # {"name": "file-manager"}, # settings problem
+        {"name": "file-manager"},
         {"name": "music-artist"},
 
     ]

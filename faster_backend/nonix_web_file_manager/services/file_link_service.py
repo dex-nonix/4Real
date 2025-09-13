@@ -5,10 +5,7 @@ from ..models.file_link import FileLink
 
 
 class FileLinkService(BaseCrudService):
-    """
-    Internal service for file link CRUD operations.
-    Contains all business logic for file link management.
-    """
+
     config = CRUDConfig(
         model=FileLink,
         create_schema=FileLinkCreate,

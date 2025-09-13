@@ -7,12 +7,14 @@ from fastapi import HTTPException, UploadFile, Form
 from nonix_web.router.decorators import router, route
 from nonix_web_db.crud import NxWebServerCrudRouter
 from nonix_di.resolve import NxInject
-from nonix_web_file_manager.services.file_service import FileService
+from ...services.file_service import FileService
+from ...models.file import File
+from nonix_web_db.plugin import AsyncSessionLocal
 
 
 @router("/files", tags=["Files"])
 class FileRouter(NxWebServerCrudRouter):
-    service: FileService = NxInject(FileService)  # ✅ Just inject!
+    service: FileService = NxInject(FileService)
 
     @route('/upload', methods=['POST'])
     async def upload(self, file: UploadFile, title: str = Form(None), category_id: int = Form(None)) -> Any:
@@ -25,15 +27,17 @@ class FileRouter(NxWebServerCrudRouter):
 
             if not filename or filename.strip() == "":
                 raise HTTPException(status_code=400, detail="Invalid filename")
-            if len(content) > settings.MAX_FILE_SIZE:
-                raise HTTPException(status_code=400, detail=f"File too large. Max size: {settings.MAX_FILE_SIZE} bytes")
-            file_ext = os.path.splitext(filename)[1].lower()
-            if file_ext not in settings.ALLOWED_EXTENSIONS:
-                raise HTTPException(status_code=400,
-                                    detail=f"File type not allowed. Allowed: {settings.ALLOWED_EXTENSIONS}")
 
-            upload_dir = settings.UPLOAD_FOLDER
-            os.makedirs(upload_dir, exist_ok=True)
+            if len(content) > self.service.max_file_size:
+                raise HTTPException(status_code=400, detail=f"File too large. Max: {self.service.max_file_size} bytes")
+
+            file_ext = os.path.splitext(filename)[1].lower()
+            if file_ext not in self.service.allowed_extensions:
+                raise HTTPException(status_code=400,
+                                    detail=f"File type not allowed. Allowed: {self.service.allowed_extensions}")
+
+            upload_dir = self.service.upload_folder
+            os.makedirs(upload_dir, exist_ok=self.service.auto_create_dirs)
 
             base, ext = os.path.splitext(filename)
             safe_name = filename
@@ -48,7 +52,7 @@ class FileRouter(NxWebServerCrudRouter):
 
             size_bytes = os.path.getsize(file_path)
             mime_type = file.content_type or 'application/octet-stream'
-            sha256 = self._file_sha256(file_path)
+            sha256 = self._file_sha256(file_path) if self.service.sha256_required else ''
             storage_url = f"/{upload_dir}/{safe_name}"
 
             rec = File(
