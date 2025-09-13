@@ -2,9 +2,10 @@ from pathlib import Path
 from typing import Any, Dict
 
 from nonix_di.decorator import injectables
+from nonix_di.resolve import NxInject
 from nonix_plugin.base import BasePlugin
-from nonix_plugin.descriptor import NxInjectPlugin
 from nonix_web.decorator import web_routers
+from nonix_template.services.template_service import TemplateService
 from .llm.agentic_tool_manager import AgenticToolManager
 from .routers.ai_analysis_result_router import AIAnalysisResultRouter
 from .routers.ai_model_mapping_router import AIModelMappingRouter
@@ -70,7 +71,7 @@ from .services.tool_invocation_log_service import ToolInvocationLogService
     ToolExecutionService
 ])
 class NxWebAgenticPlugin(BasePlugin):
-    template_plugin = NxInjectPlugin("template")
+    template_service: TemplateService = NxInject(TemplateService)
 
     async def _startup(self, config: Dict[str, Any]):
-        self.template_plugin.add_search_path(str(Path(__file__).parent / "templates"))
+        self.template_service.add_search_path(str(Path(__file__).parent / "templates"))

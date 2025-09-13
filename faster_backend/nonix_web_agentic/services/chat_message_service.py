@@ -12,6 +12,7 @@ from sqlalchemy.orm import selectinload
 
 from nonix_di.resolve import NxInject
 from nonix_plugin.descriptor import NxInjectPlugin
+from nonix_template.services.template_service import TemplateService
 from nonix_web.web_socket_service import NxWebServerWebSocketService
 from nonix_web_db import AsyncSessionLocal
 from nonix_web_db.crud import CRUDConfig, FilterConfig, SortingConfig, ValidationConfig, SelectorConfig, \
@@ -34,9 +35,6 @@ from ..services.chat.streaming_event_manager import StreamingEventManager
 from ..services.chat.streaming_interface import StreamingChunk
 from ..services.chat.streaming_message_handler import StreamingMessageHandler
 from ..services.chat.task_manager import ChatTaskManager
-
-if TYPE_CHECKING:
-    from nonix_template.plugin import NxWebTemplatePlugin
 
 
 class ChatMessageService(BaseCrudService):
@@ -64,7 +62,7 @@ class ChatMessageService(BaseCrudService):
     )
 
     # agentic_plugin: "NxWebAgenticPlugin" = NxInjectPlugin("agentic")
-    template_plugin: "NxWebTemplatePlugin" = NxInjectPlugin("template")
+    template_service: TemplateService = NxInject(TemplateService)
     agentic_tool_manager: AgenticToolManager = NxInject(AgenticToolManager)
     web_socket_service: NxWebServerWebSocketService = NxInject(NxWebServerWebSocketService)
 
@@ -103,9 +101,9 @@ class ChatMessageService(BaseCrudService):
         if context:
             template_vars.update(context)
 
-        # Render template using the new template plugin
+        # Render template using the template service
         # Template handles all conditional logic (artist checks, etc.)
-        return await self.template_plugin.render_template(
+        return await self.template_service.render_template(
             "llm_instructions/persona_system_prompt",
             context=template_vars
         )
