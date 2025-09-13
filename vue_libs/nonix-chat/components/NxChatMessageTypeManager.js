@@ -1,5 +1,5 @@
 import {markRaw} from 'vue';
-import NxBaseWidgetManager from '@nonix/widget-manager/NxBaseWidgetManager.js';
+import NxBaseWidgetManager from '@nonix-dynamic/manager/NxBaseWidgetManager.js';
 
 /**
  * NxChatMessageTypeManager - Registry for managing different chat message type components

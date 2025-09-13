@@ -1,407 +1,277 @@
-# File Manager Integration Analysis & Roadmap
+# File Manager Plugin - Required Changes
 
-## 📊 Current Status Overview
+## Current Issues Analysis
 
-### ✅ **WHAT ALREADY EXISTS**
+### ❌ WRONG Implementation (Current State)
+The file-manager plugin has several architectural issues:
 
-#### **Backend Models & Services (Complete & Ready)**
-1. **`File` Model** (`nonix_web_file_manager/models/file.py`):
-   - Complete with all necessary fields: title, filename, MIME type, size, SHA256, dimensions, storage URL
-   - Proper relationships with FileCategory
+1. **Missing Plugin Configuration**: `plugin.json` has empty config `{}`
+2. **Wrong Settings Access**: Router tries to use undefined `settings` instead of plugin config
+3. **Missing Imports**: Router missing `File` model and `AsyncSessionLocal` imports
+4. **Wrong Config Pattern**: Using non-existent `config.get()` inline defaults
+5. **Missing Service Initialization**: No proper config passing to services
 
-2. **`FileLink` Model** (`nonix_web_file_manager/models/file_link.py`):
-   - **Perfect generic design** with `entity_type` and `entity_id` fields for any table attachment
-   - Includes status, comment, sort_order fields
-   - Proper cascade delete: `cascade='all, delete-orphan'`
+### ✅ CORRECT Pattern (Based on LMStudio/MusicArtist/Template Plugins)
 
-3. **`FileCategory` Model** (`nonix_web_file_manager/models/file_category.py`):
-   - Ready for file organization with name, slug, description
+## Required Changes
 
-#### **🔥 CRITICAL INSIGHT: ROUTED vs INTERNAL SERVICES**
+### 1. Update `plugin.json` - Add Proper Configuration
+```json
+{
+  "name": "file-manager",
+  "version": "0.5.0",
+  "class": "NxWebFileManagerPlugin",
+  "dependencies": ["db"],
+  "config": {
+    "max_file_size": 10485760,
+    "allowed_extensions": [".jpg", ".png", ".pdf", ".txt", ".doc", ".docx"],
+    "upload_folder": "static/uploads",
+    "sha256_required": false,
+    "auto_create_dirs": true,
+    "filename_strategy": "safe_rename",
+    "mime_validation": true
+  }
+}
+```
 
-The existing services are **API ROUTED SERVICES** (for external HTTP access):
+### 2. Fix `plugin.py` - Use Correct Plugin Pattern
 ```python
-@router("/files", tags=["Files"])  # ← EXTERNAL API ROUTES
+from nonix_di.decorator import injectables
+from nonix_plugin.base import BasePlugin
+from nonix_web.decorator import web_routers
+from .services.file_service import FileService
+from .services.file_category_service import FileCategoryService
+from .services.file_link_service import FileLinkService
+from .routers.file import FileRouter
+from .routers.file_category import FileCategoryRouter
+from .routers.file_link import FileLinkRouter
+
+@web_routers([
+    FileRouter,
+    FileCategoryRouter,
+    FileLinkRouter
+])
+@injectables([
+    FileService,
+    FileCategoryService,
+    FileLinkService
+])
+class NxWebFileManagerPlugin(BasePlugin):
+    # NO DI registration of plugin itself!
+    # NO inline config.get() defaults!
+
+    async def _startup(self, config: Dict[str, Any]):
+        # Pass config to services through their initialize methods
+        await self.file_service.initialize(config)
+```
+
+### 3. Update Services - Add Config Initialization
+
+#### `file_service.py`:
+```python
+class FileService(BaseCrudService):
+    def __init__(self):
+        super().__init__()
+        self.max_file_size = None
+        self.allowed_extensions = None
+        self.upload_folder = None
+        self.sha256_required = None
+        self.auto_create_dirs = None
+
+    async def initialize(self, config: Dict[str, Any]):
+        # Store config values directly from plugin.json
+        self.max_file_size = config["max_file_size"]
+        self.allowed_extensions = config["allowed_extensions"]
+        self.upload_folder = config["upload_folder"]
+        self.sha256_required = config["sha256_required"]
+        self.auto_create_dirs = config["auto_create_dirs"]
+```
+
+#### `file_category_service.py`:
+```python
+class FileCategoryService(BaseCrudService):
+    def __init__(self):
+        super().__init__()
+        # Add any config needed for categories
+```
+
+#### `file_link_service.py`:
+```python
+class FileLinkService(BaseCrudService):
+    def __init__(self):
+        super().__init__()
+        # Add any config needed for links
+```
+
+### 4. Fix Router Implementation
+
+#### `file/file_router.py` - Complete Rewrite:
+```python
+import hashlib
+import os
+from typing import Any
+
+from fastapi import HTTPException, UploadFile, Form
+
+from nonix_web.router.decorators import router, route
+from nonix_web_db.crud import NxWebServerCrudRouter
+from nonix_di.resolve import NxInject
+from nonix_web_file_manager.services.file_service import FileService
+from nonix_web_file_manager.models.file import File
+from nonix_web_db.plugin import AsyncSessionLocal
+
+@router("/files", tags=["Files"])
 class FileRouter(NxWebServerCrudRouter):
-    # This creates HTTP endpoints like GET /api/files
-    # Used by frontend, external clients, etc.
-```
+    service: FileService = NxInject(FileService)
 
-**BUT WE'RE MISSING INTERNAL SERVICES** for plugin-to-plugin communication:
-```python
-class InternalFileService:  # ← INTERNAL SERVICE (no routing)
-    # Direct method calls for other plugins
-    async def create_file(self, data): ...
-    async def get_file(self, file_id): ...
-```
+    @route('/upload', methods=['POST'])
+    async def upload(self, file: UploadFile, title: str = Form(None), category_id: int = Form(None)) -> Any:
+        try:
+            if not file or not file.filename:
+                raise HTTPException(status_code=400, detail="File is required")
 
-### ❌ **WHAT'S MISSING/BROKEN**
+            content = await file.read()
+            filename = file.filename
 
-#### **Critical Issues**
-1. **Missing Settings Configuration**:
-   - `FileRouter.upload()` references undefined settings:
-     - `settings.MAX_FILE_SIZE`
-     - `settings.ALLOWED_EXTENSIONS`
-     - `settings.UPLOAD_FOLDER`
-   - `upload.py` also references these same undefined settings
-   - **File manager plugin is commented out** in `main.py` due to this issue
+            if not filename or filename.strip() == "":
+                raise HTTPException(status_code=400, detail="Invalid filename")
 
-2. **Missing Settings Import**:
-   - File service doesn't import settings but references them
+            # Use service config values (from plugin.json)
+            if len(content) > self.service.max_file_size:
+                raise HTTPException(status_code=400, detail=f"File too large. Max size: {self.service.max_file_size} bytes")
 
-#### **🚨 MISSING: Internal Services for Plugin Communication**
-1. **No Internal File Service**:
-   - Other plugins can't inject and use file operations directly
-   - No `InternalFileService` without routing decorators
+            file_ext = os.path.splitext(filename)[1].lower()
+            if file_ext not in self.service.allowed_extensions:
+                raise HTTPException(status_code=400,
+                                    detail=f"File type not allowed. Allowed: {self.service.allowed_extensions}")
 
-2. **No Internal FileLink Service**:
-   - No `InternalFileLinkService` for attaching/detaching files
+            upload_dir = self.service.upload_folder
+            os.makedirs(upload_dir, exist_ok=self.service.auto_create_dirs)
 
-3. **No FileManagerService**:
-   - No high-level service that other plugins can easily inject and use
-   - Missing helper methods like:
-     - `attachFilesToEntity()`
-     - `getEntityFiles()`
-     - `detachFilesFromEntity()`
-     - `cleanupOrphanedFiles()`
+            base, ext = os.path.splitext(filename)
+            safe_name = filename
+            counter = 1
+            while os.path.exists(os.path.join(upload_dir, safe_name)):
+                safe_name = f"{base}_{counter}{ext}"
+                counter += 1
 
-## 🚀 **CORRECTED IMPLEMENTATION ROADMAP**
+            file_path = os.path.join(upload_dir, safe_name)
+            with open(file_path, "wb") as buffer:
+                buffer.write(content)
 
-### **Phase 1: Fix Critical Issues (1-2 hours)**
-1. **Add missing settings to `Settings` class**:
-   ```python
-   # Add to nonix_web/config.py
-   MAX_FILE_SIZE: int = 10485760  # 10MB
-   ALLOWED_EXTENSIONS: list = [".jpg", ".png", ".pdf", ".txt", ".mp3", ".mp4"]
-   UPLOAD_FOLDER: str = "static/uploads"
-   STATIC_URL_PREFIX: str = "/static"
-   ```
+            size_bytes = os.path.getsize(file_path)
+            mime_type = file.content_type or 'application/octet-stream'
+            sha256 = self._file_sha256(file_path) if self.service.sha256_required else ''
+            storage_url = f"/{upload_dir}/{safe_name}"
 
-2. **Fix settings import in FileRouter**:
-   ```python
-   # Add to file_router.py
-   from ..config import settings
-   ```
-
-3. **Enable file-manager plugin**:
-   - Uncomment `{"name": "file-manager"}` in `main.py`
-
-### **Phase 2: Create Internal Services (3-4 hours)**
-Create internal services that other plugins can inject:
-
-```python
-# nonix_web_file_manager/routers/internal/file_router.py
-from typing import List, Optional
-from nonix_web_db import AsyncSessionLocal
-from ...models.file import File
-
-class InternalFileService:
-    """Internal file operations for other plugins (no routing)"""
-
-    async def create_file(self, file_data: dict) -> File:
-        async with AsyncSessionLocal() as session:
-            file = File(**file_data)
-            session.add(file)
-            await session.commit()
-            await session.refresh(file)
-            return file
-
-    async def get_file(self, file_id: int) -> Optional[File]:
-        async with AsyncSessionLocal() as session:
-            return await session.get(File, file_id)
-
-    async def update_file(self, file_id: int, updates: dict) -> Optional[File]:
-        async with AsyncSessionLocal() as session:
-            file = await session.get(File, file_id)
-            if file:
-                for key, value in updates.items():
-                    setattr(file, key, value)
-                await session.commit()
-                await session.refresh(file)
-            return file
-
-    async def delete_file(self, file_id: int) -> bool:
-        async with AsyncSessionLocal() as session:
-            file = await session.get(File, file_id)
-            if file:
-                await session.delete(file)
-                await session.commit()
-                return True
-            return False
-```
-
-```python
-# nonix_web_file_manager/routers/internal/file_link_service.py
-from typing import List, Optional
-from nonix_web_db import AsyncSessionLocal
-from ...models.file_link import FileLink
-
-class InternalFileLinkService:
-    """Internal file link operations for other plugins (no routing)"""
-
-    async def attach_file_to_entity(
-        self,
-        file_id: int,
-        entity_type: str,
-        entity_id: int,
-        status: str = "attached",
-        comment: str = None
-    ) -> FileLink:
-        async with AsyncSessionLocal() as session:
-            link = FileLink(
-                file_id=file_id,
-                entity_type=entity_type,
-                entity_id=entity_id,
-                status=status,
-                comment=comment
+            rec = File(
+                category_id=category_id,
+                title=title,
+                original_filename=filename,
+                mime_type=mime_type,
+                size_bytes=size_bytes,
+                storage_url=storage_url,
+                sha256=sha256,
             )
-            session.add(link)
-            await session.commit()
-            await session.refresh(link)
-            return link
 
-    async def get_entity_files(
-        self,
-        entity_type: str,
-        entity_id: int,
-        status: str = None
-    ) -> List[FileLink]:
-        async with AsyncSessionLocal() as session:
-            query = session.query(FileLink).filter(
-                FileLink.entity_type == entity_type,
-                FileLink.entity_id == entity_id
-            )
-            if status:
-                query = query.filter(FileLink.status == status)
-            return await query.all()
-
-    async def detach_file_from_entity(
-        self,
-        file_id: int,
-        entity_type: str,
-        entity_id: int
-    ) -> bool:
-        async with AsyncSessionLocal() as session:
-            link = await session.query(FileLink).filter(
-                FileLink.file_id == file_id,
-                FileLink.entity_type == entity_type,
-                FileLink.entity_id == entity_id
-            ).first()
-            if link:
-                await session.delete(link)
+            async with AsyncSessionLocal() as session:
+                session.add(rec)
                 await session.commit()
-                return True
-            return False
+                await session.refresh(rec)
 
-    async def cleanup_entity_files(
-        self,
-        entity_type: str,
-        entity_id: int
-    ) -> int:
-        """Remove all file links for an entity (called when entity is deleted)"""
-        async with AsyncSessionLocal() as session:
-            result = await session.query(FileLink).filter(
-                FileLink.entity_type == entity_type,
-                FileLink.entity_id == entity_id
-            ).delete()
-            await session.commit()
-            return result
+            return {"data": rec.to_dict(), "status": "success"}
+
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Upload failed: {exc}")
+
+    def _file_sha256(self, path: str) -> str:
+        try:
+            h = hashlib.sha256()
+            with open(path, 'rb') as f:
+                for chunk in iter(lambda: f.read(8192), b''):
+                    h.update(chunk)
+            return h.hexdigest()
+        except Exception:
+            return ''
 ```
 
-### **Phase 3: Create FileManagerService (2-3 hours)**
-
+#### `file_category/file_category_router.py`:
 ```python
-# nonix_web_file_manager/routers/file_manager_service.py
-from typing import List
+from nonix_web.router.decorators import router
+from nonix_web_db.crud import NxWebServerCrudRouter
 from nonix_di.resolve import NxInject
-from .internal.file_service import InternalFileService
-from .internal.file_link_service import InternalFileLinkService
+from nonix_web_file_manager.services.file_category_service import FileCategoryService
 
-
-class FileManagerService:
-    """High-level service for generic file management across plugins"""
-
-    file_service: InternalFileService = NxInject(InternalFileService)
-    file_link_service: InternalFileLinkService = NxInject(InternalFileLinkService)
-
-    async def attach_files_to_entity(
-            self,
-            entity_type: str,
-            entity_id: int,
-            file_ids: List[int],
-            status: str = "attached"
-    ) -> List[int]:
-        """Attach multiple files to any entity"""
-        attached_ids = []
-        for file_id in file_ids:
-            link = await self.file_link_service.attach_file_to_entity(
-                file_id, entity_type, entity_id, status
-            )
-            attached_ids.append(link.id)
-        return attached_ids
-
-    async def get_entity_files(
-            self,
-            entity_type: str,
-            entity_id: int,
-            status: str = None
-    ) -> List[dict]:
-        """Get all files attached to an entity with file details"""
-        links = await self.file_link_service.get_entity_files(
-            entity_type, entity_id, status
-        )
-
-        files = []
-        for link in links:
-            file = await self.file_service.get_file(link.file_id)
-            if file:
-                files.append({
-                    'file': file,
-                    'link': link
-                })
-        return files
-
-    async def detach_files_from_entity(
-            self,
-            entity_type: str,
-            entity_id: int,
-            file_ids: List[int] = None
-    ) -> int:
-        """Detach files from entity (all or specific)"""
-        if file_ids:
-            detached = 0
-            for file_id in file_ids:
-                if await self.file_link_service.detach_file_from_entity(
-                        file_id, entity_type, entity_id
-                ):
-                    detached += 1
-            return detached
-        else:
-            # Detach all files
-            return await self.file_link_service.cleanup_entity_files(
-                entity_type, entity_id
-            )
-
-    async def cleanup_orphaned_files(
-            self,
-            entity_type: str,
-            entity_id: int
-    ) -> int:
-        """Called when entity is deleted"""
-        return await self.file_link_service.cleanup_entity_files(
-            entity_type, entity_id
-        )
+@router("/file-categories", tags=["File Categories"])
+class FileCategoryRouter(NxWebServerCrudRouter):
+    service: FileCategoryService = NxInject(FileCategoryService)
 ```
 
-### **Phase 4: Register Internal Services (1 hour)**
-
+#### `file_link/file_link_router.py`:
 ```python
-# nonix_web_file_manager/routers/__init__.py
-from nonix_di import di_register
-from .internal.file_service import InternalFileService
-from .internal.file_link_service import InternalFileLinkService
-from .file_manager_service import FileManagerService
-
-# Register internal routers for other plugins to inject
-di_register(InternalFileService, singleton=True)
-di_register(InternalFileLinkService, singleton=True)
-di_register(FileManagerService, singleton=True)
-```
-
-### **Phase 5: Plugin Integration Example (1 hour)**
-
-```python
-# In any other plugin service
+from nonix_web.router.decorators import router
+from nonix_web_db.crud import NxWebServerCrudRouter
 from nonix_di.resolve import NxInject
-from nonix_web_file_manager.services.file_manager_service import FileManagerService
+from nonix_web_file_manager.services.file_link_service import FileLinkService
 
-
-class AlbumRouter(NxWebServerCrudRouter):
-    file_manager: FileManagerService = NxInject(FileManagerService)
-
-    async def create_album_with_cover(self, album_data, cover_file_id=None):
-        album = await self.create(album_data)
-
-        if cover_file_id:
-            await self.file_manager.attach_files_to_entity(
-                "album", album.id, [cover_file_id], status="cover"
-            )
-
-        return album
-
-    async def delete_album(self, album_id: int):
-        # Clean up files first
-        await self.file_manager.cleanup_orphaned_files("album", album_id)
-
-        # Then delete album
-        return await self.delete(album_id)
+@router("/file-links", tags=["File Links"])
+class FileLinkRouter(NxWebServerCrudRouter):
+    service: FileLinkService = NxInject(FileLinkService)
 ```
 
-## 🔧 **ARCHITECTURE CORRECTION**
-
-### **Dual-Service Architecture**
-```
-┌─────────────────┐    ┌──────────────────┐
-│   EXTERNAL API  │    │ INTERNAL SERVICES│
-│   (HTTP Routes) │    │  (Plugin Inject) │
-├─────────────────┤    ├──────────────────┤
-│ FileRouter     │    │ InternalFileSvc  │
-│ (/api/files)    │◄──►│ (Direct Methods) │
-│                 │    │                  │
-│ FileLinkRouter │    │ InternalFileLink │
-│ (/api/file-links│◄──►│ (Direct Methods) │
-│                 │    │                  │
-│ FileCategorySvc │    │ InternalFileCat  │
-│ (/api/categories│◄──►│ (Direct Methods) │
-└─────────────────┘    └──────────────────┘
-         │                       │
-         ▼                       ▼
-    Frontend/Vue.js        Other Plugins
+### 5. Enable Plugin in `main.py`
+```python
+settings.PLUGINS = [
+    # ... other plugins ...
+    {"name": "file-manager"},  # ← UNCOMMENT THIS LINE
+    # ... other plugins ...
+]
 ```
 
-### **Key Differences**
-| Aspect | Routed Service | Internal Service |
-|--------|----------------|------------------|
-| **Decorator** | `@router` | None |
-| **Purpose** | HTTP API endpoints | Plugin-to-plugin communication |
-| **Usage** | `axios.get('/api/files')` | `service = Inject(MyService)` |
-| **Return** | JSON responses | Python objects |
-| **Error Handling** | HTTP status codes | Exceptions |
+## Implementation Order
 
-## 📈 **Benefits of This Architecture**
+1. **Update `plugin.json`** - Add proper configuration
+2. **Fix `plugin.py`** - Use correct decorator pattern
+3. **Update Services** - Add `initialize()` methods
+4. **Fix Routers** - Use service config instead of undefined `settings`
+5. **Enable Plugin** - Uncomment in `main.py`
+6. **Test** - Verify file upload works
 
-1. **Separation of Concerns**: External API vs Internal Logic
-2. **Reusable**: Internal services can be used by any plugin
-3. **Testable**: Internal services are easier to unit test
-4. **Flexible**: Can change API without breaking internal usage
-5. **Performance**: Direct method calls vs HTTP overhead
+## Key Architectural Changes
 
-## 🎯 **Next Steps**
+### ❌ WRONG (Current):
+- Empty plugin.json config
+- Router uses undefined `settings`
+- Missing imports
+- No service initialization
 
-### **Immediate Actions (Today)**
-1. Fix settings configuration
-2. Create internal services (no routing decorators)
-3. Register internal services in DI container
-4. Test internal service injection
+### ✅ CORRECT (Target):
+- Plugin.json has full config
+- Services get config through `initialize()` method
+- Router uses `self.service.config_values`
+- Decorators register services/routers
+- No DI registration of plugin itself
+- No inline `config.get()` defaults
 
-### **Short Term (This Week)**
-1. Create FileManagerService with high-level methods
-2. Integrate with AlbumRouter as example
-3. Test cross-plugin file attachment
+## Testing Checklist
 
-### **Medium Term (Next Month)**
-1. Add file versioning and metadata
-2. Implement usage analytics
-3. Create admin interface
+- [ ] Plugin loads without errors
+- [ ] File upload endpoint works
+- [ ] Config values are used correctly
+- [ ] File validation works
+- [ ] Database operations work
+- [ ] Frontend integration works
 
-## 📝 **Current Blockers**
+## Files to Change
 
-1. **Settings Configuration**: Must be fixed before file manager can run
-2. **Missing Internal Services**: No way for plugins to communicate internally
-3. **Architecture Confusion**: Mixed up routed vs internal service purposes
-4. **DI Registration**: Internal services need to be registered for injection
-
----
-
-**Last Updated**: $(date)
-**Status**: Analysis Corrected, Ready for Proper Implementation
+1. `faster_backend/nonix_web_file_manager/plugin.json`
+2. `faster_backend/nonix_web_file_manager/plugin.py`
+3. `faster_backend/nonix_web_file_manager/services/file_service.py`
+4. `faster_backend/nonix_web_file_manager/services/file_category_service.py`
+5. `faster_backend/nonix_web_file_manager/services/file_link_service.py`
+6. `faster_backend/nonix_web_file_manager/routers/file/file_router.py`
+7. `faster_backend/nonix_web_file_manager/routers/file_category/file_category_router.py`
+8. `faster_backend/nonix_web_file_manager/routers/file_link/file_link_router.py`
+9. `faster_backend/main.py`

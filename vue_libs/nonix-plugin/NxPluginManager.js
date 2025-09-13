@@ -1,3 +1,5 @@
+import {NxBasePlugin} from "./NxBasePlugin.js";
+
 export class NxPluginManager {
     constructor() {
         this.availablePlugins = new Map(); // name -> definition
@@ -56,7 +58,7 @@ export class NxPluginManager {
 
             } else if (typeof entryPoint === 'function') {
                 // Could be a direct class or a lazy-load function
-                if (entryPoint.prototype instanceof BasePlugin) {
+                if (entryPoint.prototype instanceof NxBasePlugin) {
                     // Case 2: Entry point is a direct reference to the plugin class constructor
                     console.log(`  -> from direct class reference.`);
                     PluginClass = entryPoint;
@@ -75,7 +77,7 @@ export class NxPluginManager {
             }
             // --- End of Resolver ---
 
-            if (!PluginClass || !(PluginClass.prototype instanceof BasePlugin)) {
+            if (!PluginClass || !(PluginClass.prototype instanceof NxBasePlugin)) {
                  console.error(`Error: Entry point for '${pluginName}' did not resolve to a valid Plugin class.`);
                  continue;
             }

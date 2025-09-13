@@ -94,7 +94,7 @@
 <script>
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-import NxDisplayWidgetManager from '@nonix/widget-manager/NxDisplayWidgetManager.js'
+import NxDisplayWidgetManager from '@nonix-dynamic/manager/NxDisplayWidgetManager.js'
 import NxSearchFilter from '@nonix-dynamic/table/filters/NxSearchFilter.vue'
 import NxDateRangeFilter from '@nonix-dynamic/table/filters/NxDateRangeFilter.vue'
 import NxActionButtons from './actions/NxActionButtons.vue'

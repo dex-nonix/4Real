@@ -10,7 +10,7 @@ class NxLayoutManager extends NxBaseWidgetManager {
     getDefaultWidget() {
         return {
             component: NxPlainLayout,
-            props: {} // TODO: not implemented yet
+            props: {}
         }
     }
 }

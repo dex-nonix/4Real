@@ -9,7 +9,7 @@
 import {computed} from 'vue'
 import {useRoute} from 'vue-router'
 import Toast from 'primevue/toast'
-import NxLayoutManager from "./widget-manager/NxLayoutManager.js";
+import NxLayoutManager from "@nonix-dynamic/manager/NxLayoutManager.js";
 
 const route = useRoute()
 const computedLayoutName = computed(() => route.meta.layout || 'advanced')

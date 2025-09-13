@@ -14,6 +14,14 @@
             "folderPath": "4Real/backend/",
             "color": "foldercolorizer.color_99cc33",
             "isFolderOnly": true
+        },
+        {
+            "folderPath": "4Real/faster_backend/",
+            "color": "foldercolorizer.color_3333ff"
+        },
+        {
+            "folderPath": "4Real/vue_libs/",
+            "color": "foldercolorizer.color_996666"
         }
     ]
 }

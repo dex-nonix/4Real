@@ -15,7 +15,7 @@ import NxDynamicWidgetList from '@nonix-dynamic/widget/components/NxDynamicWidge
 import NxPage from '@nonix/page/NxPage.vue'
 import {useRoute} from 'vue-router'
 import {computed, inject} from 'vue'
-import NxPageManager from '@nonix/widget-manager/NxPageManager.js'
+import NxPageManager from '@nonix-dynamic/manager/NxPageManager.js'
 
 const NxDynamicPage = {
   name: 'NxDynamicPage',

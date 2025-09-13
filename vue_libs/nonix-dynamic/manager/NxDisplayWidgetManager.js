@@ -1,4 +1,4 @@
-import NxBaseWidgetManager from '@nonix-dynamic/widget-manager/NxBaseWidgetManager.js'
+import NxBaseWidgetManager from '@nonix-dynamic/manager/NxBaseWidgetManager.js'
 import {NX_DISPLAY_WIDGETS} from '@nonix-dynamic/registries/display-widgets.js'
 
 class NxDisplayWidgetManager extends NxBaseWidgetManager {

@@ -61,8 +61,8 @@
 </template>
 
 <script>
-import NxEditWidgetManager from '@nonix/widget-manager/NxEditWidgetManager.js'
-import NxDisplayWidgetManager from '@nonix/widget-manager/NxDisplayWidgetManager.js'
+import NxEditWidgetManager from '@nonix-dynamic/manager/NxEditWidgetManager.js'
+import NxDisplayWidgetManager from '@nonix-dynamic/manager/NxDisplayWidgetManager.js'
 import Button from 'primevue/button'
 
 export default {

@@ -8,10 +8,10 @@ import 'primeflex/primeflex.css'
 
 import NxApp from '@nonix/NxApp.vue'
 import {createRouter} from '@nonix-router'
-import NxLayoutManager from "@nonix/widget-manager/NxLayoutManager.js";
-import NxPageManager from "@nonix/widget-manager/NxPageManager.js";
-import NxDisplayWidgetManager from "@nonix/widget-manager/NxDisplayWidgetManager.js";
-import NxEditWidgetManager from "@nonix/widget-manager/NxEditWidgetManager.js";
+import NxLayoutManager from "@nonix-dynamic/manager/NxLayoutManager.js";
+import NxPageManager from "@nonix-dynamic/manager/NxPageManager.js";
+import NxDisplayWidgetManager from "@nonix-dynamic/manager/NxDisplayWidgetManager.js";
+import NxEditWidgetManager from "@nonix-dynamic/manager/NxEditWidgetManager.js";
 import NxDynamicWidgetManager from "@nonix-dynamic/widget/NxDynamicWidgetManager.js";
 import NxWebSocketService from "@nonix-ws/services/NxWebSocketService.js";
 
