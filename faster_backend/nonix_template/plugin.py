@@ -2,9 +2,9 @@ import os
 from pathlib import Path
 from typing import Dict, Any, List, TYPE_CHECKING
 
+from nonix_di.decorator import injectables
 from nonix_plugin.base import BasePlugin
 from nonix_web.decorator import web_routers
-from nonix_di.register import di_register
 from .router.template_router import TemplateRouter
 from .services.template_service import TemplateService
 from .template.template_renderer import TemplateRenderer
@@ -21,6 +21,9 @@ class TemplatePathError(Exception):
 @web_routers([
     TemplateRouter
 ])
+@injectables([
+    TemplateService
+])
 class NxWebTemplatePlugin(BasePlugin):
     template_renderer: TemplateRenderer = None
     _search_paths: List[Path] = None
@@ -31,9 +34,6 @@ class NxWebTemplatePlugin(BasePlugin):
 
     def _configure(self, config: Dict[str, Any]):
         """Initialize template renderer and services during plugin configuration"""
-        # Register services in DI system
-        di_register(TemplateService)
-
         # Initialize with empty search paths initially
         self.template_renderer = TemplateRenderer(self._search_paths)
 
