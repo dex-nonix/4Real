@@ -1,261 +1,172 @@
-# Frontend Plugin System Analysis
+# CLEAN & CORRECT: HOW TO PASS 0-N ARGUMENTS TO DESCRIPTORS
 
-## Overview
-This document analyzes how to implement a plugin system for the Vue.js frontend that mirrors the backend plugin architecture while adapting to frontend technologies.
+## ✅ **CORRECT APPROACH: Pass Arguments When Calling Descriptor Functions**
 
-## Backend Plugin Architecture (Reference)
-
-### Framework Packages
-- `nonix_di/decorator.py` - Dependency injection decorators (`injectables`)
-- `nonix_web/decorator.py` - Web/routing decorators (`web_routers`)
-- `nonix_plugin/` - Base plugin system (no decorators)
-
-### Plugin Packages Can Define Decorators
-- `nonix_web_agentic/llm/decorator.py` - Specialized LLM decorators (`llm_tools`)
-- Other plugin packages can extend the decorator system
-
-### Plugin Loading
-- Filesystem discovery of `plugin.json`
-- Dependency resolution
-- Lifecycle: configure → startup → shutdown
-- Decorator pattern: functions returning `{hook, callback}` objects
-
-## Frontend Plugin Architecture (Adapted)
-
-### Existing Frontend Packages
-- `vue_libs/nonix/` - Base framework (widget managers, registries)
-- `vue_libs/nonix-dynamic/` - Dynamic components/widgets
-- `vue_libs/nonix-router/` - Vue routing system
-- `vue_libs/nonix-plugin/` - Base plugin system
-- Individual plugin packages: `nonix-chat/`, `nonix-crud/`, etc.
-
-### Required Framework Packages
-- `vue_libs/nonix-di/` - Dependency injection decorators (needs creation)
-- Existing packages can contain decorators:
-  - `vue_libs/nonix-router/decorator.js` - Route decorators
-  - `vue_libs/nonix-dynamic/decorator.js` - Component/widget decorators
-
-### Decorator Pattern (Vanilla JavaScript - Backend Compatible)
 ```javascript
-// injectables - ONLY registers services
-export function injectables(serviceClasses) {
-  return {
-    hook: 'configure',
-    callback: () => {
-      // ONLY register services
-      for (const serviceClass of serviceClasses) {
-        diContainer.register(serviceClass);
-      }
+// Each descriptor function can take 0-N arguments as parameters
+export function NxSimple() {  // 0 arguments
+    return createDescriptor(() => "simple value");
+}
+
+export function NxInject(ServiceClass) {  // 1 argument
+    let instance = null;
+    return createDescriptor(() => {
+        if (!instance) {
+            instance = di_resolve(ServiceClass);  // Uses the passed ServiceClass
+        }
+        return instance;
+    });
+}
+
+export function NxComplex(...args) {  // N arguments using rest parameters
+    return createDescriptor(() => processArgs(...args));
+}
+
+export function NxConfig(options = {}) {  // 1 argument (options object)
+    return createDescriptor(() => useOptions(options));
+}
+
+// USAGE: Pass arguments when you CALL the descriptor functions
+export class MyPlugin extends NxObject {
+    // PASS YOUR 0-N ARGUMENTS HERE (in the function calls):
+    simple = NxSimple();                              // ← 0 arguments
+    service = NxInject(MyService);                     // ← 1 argument (service class)
+    complex = NxComplex(1, 'hello', true, [1,2,3]);   // ← N arguments
+    config = NxConfig({multiplier: 2, offset: 5});    // ← 1 argument (options object)
+}
+```
+
+## 🎯 **KEY POINT: Arguments Go in Function Calls**
+
+**You pass your 0-N arguments when you CALL the descriptor function:**
+
+```javascript
+// PASS ARGUMENTS HERE (in the function call):
+simple = NxSimple();                    // 0 args - no parameters
+service = NxInject(MyService);           // 1 arg - service class
+complex = NxComplex(a, b, c, d);        // N args - multiple parameters
+config = NxConfig({key: 'value'});      // 1 arg - options object
+```
+
+## ✅ **EACH DESCRIPTOR CAN TAKE WHATEVER ARGUMENTS IT NEEDS:**
+
+- **0 args**: `NxSimple()` → No parameters needed
+- **1 arg**: `NxInject(ServiceClass)` → Single service class
+- **N args**: `NxComplex(a, b, c, ...)` → Multiple parameters via rest
+- **Options**: `NxConfig({settings})` → Configuration object
+
+**No property detection, no magic - just normal JavaScript function arguments passed in function calls!** 🎯
+
+**Clean, correct, and simple!** ✅
+
+---
+
+# 0. CHANGES NEEDED TO NxObject.js
+
+## ✅ **ADD DESCRIPTOR SUPPORT TO NxObject:**
+
+### **1. Add _processDescriptors() call in constructor:**
+```javascript
+export class NxObject {
+    constructor() {
+        this._hooks = new Map();
+        this._applyDecorators();
+        this._processDescriptors();  // ← ADD THIS LINE
     }
-  };
-}
-
-
-// di_register - Registration function (main app only - not for plugins)
-export function di_register(serviceClass, singleton = true, instance = null) {
-  diContainer.register(serviceClass, singleton, instance);
-  return serviceClass;
-}
-
-// di_resolve - Manual resolution
-export function di_resolve(serviceClass) {
-  return diContainer.resolve(serviceClass);
+    // ... rest of existing code
 }
 ```
 
-### Plugin Structure (Static Decorators Array)
-```javascript
-// vue_libs/nonix-chat/plugin.js
-import { NxBasePlugin } from '@nonix-plugin';
-import { injectables, di_resolve } from '@nonix-di';
-import { routes } from '@nonix-router';
-import { displayWidgets } from '@nonix-dynamic';
-
-export class NxChatPlugin extends NxBasePlugin {
-  static decorators = [
-    injectables([NxChatService, NxChatSessionService]), // ONLY WAY
-    routes([{type: 'crud', entity: 'chat-sessions'}]),
-    displayWidgets(['NxLlmTool'])
-  ];
-
-  constructor(config) {
-    super(config);
-    this.name = 'chat';
-    this.version = '0.5.0';
-  }
-
-  async startup() {
-    // Manual resolution
-    const chatService = di_resolve(NxChatService);
-    const sessionService = di_resolve(NxChatSessionService);
-
-    await chatService.initialize();
-    await sessionService.loadAll();
-  }
-}
-```
-
-## Technology Adaptations
-
-| Backend Technology | Frontend Equivalent |
-|-------------------|-------------------|
-| Python DI container | JavaScript DI container (same logic) |
-| FastAPI route registration | Vue router configuration |
-| Database service instances | Client-side service instances |
-| HTTP server | Client-side app |
-| Filesystem scanning | Filesystem scanning (same) |
-| Python importlib | JavaScript dynamic imports |
-| Python descriptors (NxInject) | Descriptor-like injection (NxInject function) |
-| injectables decorator | injectables decorator (exact same API) |
-| di_register function | di_register function (main app only) |
-| di_resolve function | di_resolve function (exact same API) |
-
-## Dependency Injection (Descriptor-like Injection)
-
-**Backend Plugins**: `@injectables([...])` + `NxInject` descriptors
-**Frontend Plugins**: `injectables([...])` + `NxInject()` function (descriptor-like)
-**Main App**: `di_register(...)` function calls allowed
-
-Exact backend plugin pattern - decorator registration + descriptor injection
+### **2. Add descriptor processing methods:**
 
 ```javascript
-// Plugin registers services + uses descriptor-like injection
-export class ChatPlugin extends NxInjectable {
-  static decorators = [
-    injectables([ChatService, SessionService]) // Registration decorator
-  ];
+export class NxObject {
+    constructor() {
+        this._hooks = new Map();
+        this._applyDecorators();
+        this._processDescriptors();
+    }
 
-  // Descriptor-like injection (lazy + cached like Python NxInject)
-  chatService = NxInject(ChatService);
-  sessionService = NxInject(SessionService);
+    // ... existing _applyDecorators() method stays the same
 
-  async startup() {
-    // Direct access - getter resolves lazily like Python descriptors
-    await this.chatService.initialize();
-    await this.sessionService.loadAll();
-  }
-}
+    /**
+     * Process descriptors by scanning prototype chain for descriptor properties
+     */
+    _processDescriptors() {
+        let currentClass = this.constructor;
 
-// Main app can use direct di_register calls
-export class MainApp {
-  constructor() {
-    // Direct registration allowed here
-    di_register(SomeGlobalService, false, someInstance);
-    di_register(AnotherService);
-  }
-}
+        // Walk prototype chain
+        while (currentClass && currentClass !== NxObject) {
+            const proto = currentClass.prototype;
+            const propertyNames = Object.getOwnPropertyNames(proto);
 
-// Components can also use descriptor-like injection
-export class ChatComponent extends NxInjectable {
-  // Descriptor-like injection (lazy + cached)
-  chatService = NxInject(ChatService);
+            // Check each property for descriptor marker
+            for (const propName of propertyNames) {
+                const value = proto[propName];
 
-  async loadMessages() {
-    // Direct access - getter resolves lazily
-    return await this.chatService.getMessages();
-  }
-}
-```
-
-## Key Principles
-
-1. **Same Plugin Loading Logic** - Discovery, dependencies, lifecycle
-2. **Static Decorator Arrays** - `static decorators = []` with `{hook, callback}` objects
-3. **Vanilla JavaScript** - No @ syntax decorators, no descriptors, no transpilation needed
-4. **Framework vs Plugin Decorators** - Base framework provides generic decorators, plugin packages can provide specialized ones
-5. **Technology Adaptation** - Backend server concepts adapted to frontend client concepts
-6. **Package Structure** - Mirror backend multi-package architecture
-
-## Implementation Steps
-
-1. Create `vue_libs/nonix-di/` package with DI container, `injectables()` decorator, `di_register()` and `di_resolve()` functions
-2. Add `decorator.js` to `vue_libs/nonix-router/` for route decorators
-3. Add `decorator.js` to `vue_libs/nonix-dynamic/` for component/widget decorators
-4. Plugin manager already supports static decorator arrays (NxObject system)
-5. Update plugins to use `injectables([...])` ONLY for registration (like backend plugins)
-6. Main app uses `di_register()` for direct registration (like backend web server)
-7. Test plugin loading and DI resolution
-
-## DI Container Structure
-
-```javascript
-// vue_libs/nonix-di/
-// ├── di.js            # Container class (internal), di_register/di_resolve functions
-// ├── decorators.js    # injectables(), NxInject() functions, NxInjectable class
-// └── index.js         # Export functions only
-```
-
-## NxInject Descriptor-like Injection
-
-NxInject provides descriptor-like injection in vanilla JavaScript:
-
-```javascript
-// NxInject() - Descriptor-like injection function (mimics Python NxInject)
-export function NxInject(ClassOrFactory) {
-  return { __inject__: true, ClassOrFactory };
-}
-
-// NxInjectable - Base class with descriptor-like injection support
-export class NxInjectable {
-  constructor() {
-    this._setupInjections();
-  }
-
-  _setupInjections() {
-    for (const key of Object.keys(this)) {
-      const val = this[key];
-      if (val && val.__inject__) {
-        const Cls = val.ClassOrFactory;
-        let cached;
-        Object.defineProperty(this, key, {
-          configurable: true,
-          enumerable: true,
-          get() {
-            if (cached === undefined) {
-              // Support class or factory function
-              cached = typeof Cls === 'function' && Cls.prototype
-                ? new Cls()
-                : Cls();
+                // If it's a descriptor (has __descriptor__ marker), set it up
+                if (value && value.__descriptor__) {
+                    this._setupDescriptorProperty(propName, value);
+                }
             }
-            return cached;
-          },
-          set(v) {
-            cached = v; // Allow manual override
-          },
-        });
-      }
+
+            currentClass = Object.getPrototypeOf(currentClass);
+        }
     }
-  }
-}
 
-// Usage - Descriptor-like injection
-export class ChatPlugin extends NxInjectable {
-  static decorators = [
-    injectables([ChatService, SessionService]) // Registration decorator
-  ];
+    /**
+     * Set up a property with descriptor behavior
+     */
+    _setupDescriptorProperty(propName, descriptor) {
+        Object.defineProperty(this, propName, {
+            get: () => descriptor.get(this),      // ← Descriptor's get method
+            set: (value) => descriptor.set(this, value), // ← Descriptor's set method
+            enumerable: true,
+            configurable: true
+        });
+    }
 
-  // Descriptor-like injection (lazy + cached like Python NxInject)
-  chatService = NxInject(ChatService);
-  sessionService = NxInject(SessionService);
-
-  async startup() {
-    // Direct access - getter resolves lazily like Python descriptors
-    await this.chatService.initialize();
-    await this.sessionService.loadAll();
-  }
+    // ... existing _runHook() method stays the same
 }
 ```
 
-## Plugin Agnosticism
+## 🎯 **WHAT THESE CHANGES DO:**
 
-- **Base Plugin System**: No decorator definitions (clean separation)
-- **Framework Packages**: Provide generic decorators (`injectables`, `routes`, etc.)
-- **Plugin Packages**: Can provide specialized decorators for unique features
-- **Plugin Classes**: Use `injectables([...])` + `NxInject()` for registration + injection (like backend)
-- **Main App**: Uses `di_register()` for direct registration (like backend web server)
-- **Frontend Adaptation**: Descriptor-like injection with `NxInject()` (mimics Python descriptors)
-- **Same Interface**: Property access like backend `self.service` (lazy + cached)
+1. **`this._processDescriptors()`** - Scans prototype chain for descriptor properties
+2. **`_setupDescriptorProperty()`** - Sets up property with descriptor behavior using `Object.defineProperty()`
+3. **Walks inheritance hierarchy** - Just like existing `_applyDecorators()` does
+4. **Detects descriptors by `__descriptor__` marker** - Automatic detection
+5. **Calls descriptor methods** - `descriptor.get(this)` and `descriptor.set(this, value)`
 
-Provides the **exact backend plugin pattern** in vanilla JavaScript.
+## ✅ **RESULT:**
 
+After these changes, NxObject will automatically:
+- Detect descriptor properties on class prototypes
+- Set up lazy descriptor behavior for those properties
+- Handle inheritance properly (parent descriptors processed first)
+- Work alongside existing decorator system
 
+**NxObject now supports both traditional decorators AND new descriptors!** 🎯
+
+---
+
+# 0. SUGAR FUNCTION FOR EASY DESCRIPTOR CREATION
+
+```javascript
+// ✅ SWEET SUGAR: createDescriptor(getter, setter, extraProps)
+export function createDescriptor(getterFn, setterFn = null, extraProps = {}) {
+    return {
+        __descriptor__: true,
+        ...extraProps,  // Merge extra properties
+        get(instance) {
+            if (instance === undefined) return this;
+            return getterFn.call(this, instance);
+        },
+        set(instance, value) {
+            if (instance !== undefined && setterFn) {
+                setterFn.call(this, instance, value);
+            }
+        }
+    };
+}
+```
