@@ -11,37 +11,19 @@ export function injectables(serviceClasses) {
   };
 }
 
-export function NxInject(ClassOrFactory) {
-  return { __inject__: true, ClassOrFactory };
-}
-
-export class NxInjectable {
-  constructor() {
-    this._setupInjections();
-  }
-
-  _setupInjections() {
-    for (const key of Object.keys(this)) {
-      const val = this[key];
-      if (val && val.__inject__) {
-        const Cls = val.ClassOrFactory;
-        let cached;
-        Object.defineProperty(this, key, {
-          configurable: true,
-          enumerable: true,
-          get() {
-            if (cached === undefined) {
-              cached = typeof Cls === 'function' && Cls.prototype
-                ? new Cls()
-                : Cls();
+export function NxInject(ServiceClass) {
+    let instance = null;
+    return {
+        __descriptor__: true,
+        get(target) {
+            if (!instance) {
+                instance = di_resolve(ServiceClass);
             }
-            return cached;
-          },
-          set(v) {
-            cached = v; // Allow manual override
-          },
-        });
-      }
-    }
-  }
+            return instance;
+        },
+        set(target, value) {
+            instance = value;
+        }
+    };
 }
+
