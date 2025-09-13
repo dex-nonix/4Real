@@ -17,6 +17,7 @@ import NxChatHistoryService from '@nonix-chat/services/NxChatHistoryService.js'
 import NxChatMessageService from '@nonix-chat/services/NxChatMessageService.js'
 import NxChatPromptService from '@nonix-chat/services/NxChatPromptService.js'
 import NxToolInvocationLogService from '@nonix-chat/services/NxToolInvocationLogService.js'
+import NxSttConfigurationService from '@nonix-stt/services/NxSttConfigurationService.js'
 
 import NxFileService from '@nonix-file-manager/services/NxFileService.js'
 import NxFileLinkService from '@nonix-file-manager/services/NxFileLinkService.js'
@@ -62,6 +63,7 @@ export const appConfig = {
         {type: "crud", entity: 'chat-messages'},
         {type: "crud", entity: 'chat-prompts'},
         {type: "crud", entity: 'tool-invocation-logs'},
+        {type: "crud", entity: 'stt-configurations'},
         {type: "crud", entity: 'file-categories'},
         {type: "crud", entity: 'files'},
         {type: "crud", entity: 'file-links'},
@@ -89,6 +91,7 @@ export const appConfig = {
         "chat-messages": (app) => new NxChatMessageService(app),
         "chat-prompts": (app) => new NxChatPromptService(app),
         "tool-invocation-logs": (app) => new NxToolInvocationLogService(app),
+        "stt-configurations": (app) => new NxSttConfigurationService(app),
         "file-categories": (app) => new NxFileCategoryService(app),
         "files": (app) => new NxFileService(app),
         "file-links": (app) => new NxFileLinkService(app),

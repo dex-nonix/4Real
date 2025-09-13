@@ -25,6 +25,7 @@ export const NX_ADVANCED_LEFT_SIDEBAR_ITEMS = [
             {label: 'Persona MCP', icon: 'pi pi-share-alt', to: '/persona-mcp-servers'},
             {label: 'Personas', icon: 'pi pi-id-card', to: '/personas'},
             {label: 'Templates', icon: 'pi pi-file-text', to: '/templates'},
+            {label: 'STT Configurations', icon: 'pi pi-microphone', to: '/stt-configurations'},
             {label: 'Chat Sessions', icon: 'pi pi-clock', to: '/chat-sessions'},
             {label: 'Chat Histories', icon: 'pi pi-history', to: '/chat-histories'},
             {label: 'Chat Messages', icon: 'pi pi-envelope', to: '/chat-messages'},
