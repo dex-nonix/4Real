@@ -1,5 +1,5 @@
 import NxBaseWidgetManager from './NxBaseWidgetManager.js'
-import {NX_EDIT_WIDGETS} from '@nonix/registries/edit-widgets.js'
+import {NX_EDIT_WIDGETS} from '@nonix-dynamic/registries/edit-widgets.js'
 
 class NxEditWidgetManager extends NxBaseWidgetManager {
     constructor() {

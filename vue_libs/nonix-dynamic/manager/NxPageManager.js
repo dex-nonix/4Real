@@ -1,5 +1,5 @@
 import NxBaseWidgetManager from './NxBaseWidgetManager.js'
-import {NX_PAGES} from '@nonix/registries/pages.js'
+import {NX_PAGES} from '@nonix-dynamic/registries/pages.js'
 
 class NxPageManager extends NxBaseWidgetManager {
     constructor() {

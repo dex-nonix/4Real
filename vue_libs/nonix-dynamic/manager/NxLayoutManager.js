@@ -1,5 +1,5 @@
 import NxBaseWidgetManager from './NxBaseWidgetManager.js'
-import {NX_LAYOUTS} from "@nonix/registries/layouts.js";
+import {NX_LAYOUTS} from "@nonix-dynamic/registries/layouts.js";
 import NxPlainLayout from "@nonix/layout/NxPlainLayout.vue";
 
 class NxLayoutManager extends NxBaseWidgetManager {
