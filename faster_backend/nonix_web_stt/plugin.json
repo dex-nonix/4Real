@@ -1,0 +1,7 @@
+{
+  "name": "stt",
+  "version": "0.1.0",
+  "class": "NxWebSttPlugin",
+  "dependencies": ["web", "db"],
+  "config": {}
+}
