@@ -377,11 +377,10 @@ export default class MyService extends NxCrudService {
 
 ### ❌ WRONG PATTERNS
 
-1. **Empty Config Objects:**
-```json
-// WRONG
-"config": {}
-```
+1. **Dum AI comments:**
+Do mot all dum comments as a comment maximum extends the  Readable CODE!
+so manly there is never any code needed!! 
+never use DUMB comments  like, tell what is changed or such  as that is CRAP AI comments!!!
 
 2. **Inline Config Defaults:**
 ```python
@@ -408,6 +407,12 @@ def __init__(self):
 from .services.my_service import MyService
 from .models.my_model import MyModel
 ```
+
+
+5. **Inline Imports**
+Do never use inline imports! 
+Inline imports are illegal and no allowed
+
 
 ### ✅ CORRECT PATTERNS
 
@@ -442,6 +447,13 @@ from .models.my_model import MyModel
 from .services.my_service import MyService
 ```
 
+
+6. **Correct Import Order:**
+```python
+# Models first, then services
+from .models.my_model import MyModel
+from .services.my_service import MyService
+```
 ## Plugin Development Workflow
 
 1. **Plan Structure**: Define models, services, routers needed
