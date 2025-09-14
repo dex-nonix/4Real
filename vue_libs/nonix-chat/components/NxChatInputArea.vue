@@ -9,38 +9,25 @@ import Badge from 'primevue/badge';
 import NxLlmAvailableToolsDialog from './NxLlmAvailableToolsDialog.vue';
 import NxLlmToolExecutionDialog from './NxLlmToolExecutionDialog.vue';
 import NxChatErrorDialog from './NxChatErrorDialog.vue';
-import {NxVoiceInputButton} from '../../nonix-stt/components/index.js';
+import {NxVoiceInputButton} from '@nonix-stt/components/index.js';
 
 const props = defineProps({
-  // Session context
   sessionId: {type: [String, Number, null], required: true},
   historyId: {type: [String, Number, null], required: false, default: null},
   selectedSession: {type: Object, required: false, default: null},
-
-  // Error display
   errors: {type: Array, default: () => []},
-
-  // Available tools from parent
   availableTools: {type: Array, default: () => []},
-
-  // Streaming state
   streamingStatus: {type: Map, required: true},
   streamingMessages: {type: Map, required: true},
-
-  // Messages for optimistic updates
   messages: {type: Array, required: true}
 });
 
 const emit = defineEmits(['sendMessage', 'error']);
 
-// Service injection
 const chatService = inject('chat-service');
-
-// Error management
 const showErrorDialog = ref(false);
 const moreMenu = ref();
 
-// Show error dialog
 const showErrors = () => {
   showErrorDialog.value = true;
 };
@@ -90,25 +77,19 @@ const toolsLoading = ref(false);
 const selectedTool = ref(null);
 const toolExecutionDialogRef = ref(null);
 
-// Badge computation for consolidated notifications
 const totalNotifications = computed(() => {
   return props.errors.length + (toolsLoading.value ? 1 : 0);
 });
 
-// Session-specific input text storage
 const sessionInputTexts = ref(new Map());
 
-// Tools state
 const showTools = async () => {
   try {
     toolsLoading.value = true;
     showToolsDialog.value = true;
 
-    // Load tools for the current persona
     if (props.selectedSession?.persona_id && chatService) {
       const toolsData = await chatService.personaTools(props.selectedSession.persona_id);
-
-      // Backend returns {data: Array} - extract the actual tools array
       let toolsArray = [];
       if (toolsData && toolsData.data && Array.isArray(toolsData.data)) {
         toolsArray = toolsData.data;
@@ -127,8 +108,6 @@ const showTools = async () => {
     toolsLoading.value = false;
   }
 };
-
-// Select tool and show parameter form
 const selectTool = (toolData) => {
   selectedTool.value = toolData;
   if (toolExecutionDialogRef.value) {
@@ -142,8 +121,6 @@ const executeToolWithForm = async (formData) => {
     console.error('Cannot execute tool: Missing required data');
     return;
   }
-
-  // Extract the actual form data from NxDynamicForm's submit event
   const args = formData.__full || formData.args || {};
 
   try {
@@ -158,24 +135,12 @@ const executeToolWithForm = async (formData) => {
           }
         }
     );
-
-    // Backend returns: { tool_call_message_id, tool_result_message_id, status, result }
-    // WebSocket events will update the UI with real database messages
-
-    // Close tool form immediately on success
     showToolsDialog.value = false;
     selectedTool.value = null;
-
     // WebSocket events will automatically update the UI with real tool messages
 
   } catch (error) {
     console.error('Tool execution failed:', error);
-
-    // ✅ FIXED: Don't create dummy error messages - show error in UI differently
-    // For now, just log the error. Later we can add a proper error toast/notification
-    // WebSocket events should handle any backend-generated error messages
-
-    // Close tool form on error too
     showToolsDialog.value = false;
     selectedTool.value = null;
   }
