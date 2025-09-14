@@ -1,4 +1,6 @@
-from fastapi import UploadFile
+import os
+import tempfile
+from fastapi import UploadFile, HTTPException
 from nonix_web.router.decorators import router, route
 from nonix_web_db.crud import NxWebServerCrudRouter
 from nonix_di.resolve import NxInject
@@ -11,8 +13,18 @@ class NxSttRouter(NxWebServerCrudRouter):
 
     @route("/upload", methods=["POST"])
     async def upload_audio(self, audio_file: UploadFile, config_id: int):
-        return await self.stt_service.transcribe_file(audio_file, config_id)
-
-    @route("/stream", methods=["GET"])
-    async def get_stream_info(self):
-        return {"stream_url": "/stt/stream", "supported_formats": ["wav", "mp3", "flac"]}
+        if not audio_file.filename:
+            raise HTTPException(status_code=400, detail="No file selected")
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(audio_file.filename)[1]) as temp_file:
+            content = await audio_file.read()
+            temp_file.write(content)
+            temp_file.flush()
+            
+            try:
+                result = await self.stt_service.transcribe_file(temp_file.name, config_id)
+                return {"transcription": result}
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+            finally:
+                os.unlink(temp_file.name)
