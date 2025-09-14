@@ -7,7 +7,7 @@ from nonix_di.resolve import NxInject
 from ..services.stt_service import NxSttService
 
 
-@router("/stt", tags=["STT"])
+@router("/stt-configurations", tags=["STT"])
 class NxSttRouter(NxWebServerCrudRouter):
     service: NxSttService = NxInject(NxSttService)
 

@@ -1,4 +1,5 @@
 import InputText from 'primevue/inputtext'
+import InputNumber from 'primevue/inputnumber'
 import Dropdown from 'primevue/dropdown'
 import MultiSelect from 'primevue/multiselect'
 import AutoComplete from 'primevue/autocomplete'
@@ -16,6 +17,7 @@ import NxLlmTool from '@nonix-chat/widgets/NxLlmTool.vue'
 
 export const NX_EDIT_WIDGETS = {
   'text': { component: InputText, defaultProps: { placeholder: 'Enter text', class: 'w-full' } },
+  'number': { component: InputNumber, defaultProps: { placeholder: 'Enter number', class: 'w-full', showButtons: true, buttonLayout: 'horizontal' } },
   'textarea': { component: Textarea, defaultProps: { autoResize: true, class: 'w-full', rows: 5 } },
   'select': { component: Dropdown, defaultProps: { placeholder: 'Select option', class: 'w-full' } },
   'multi_select': { component: MultiSelect, defaultProps: { placeholder: 'Select options', class: 'w-full' } },
@@ -23,9 +25,7 @@ export const NX_EDIT_WIDGETS = {
   'slider': { component: Slider, defaultProps: { min: 0, max: 100, step: 1 } },
   'date': { component: Calendar, defaultProps: { dateFormat: 'yy-mm-dd', class: 'w-full' } },
   'file': { component: FileUpload, defaultProps: { multiple: false, accept: '*' } },
-  // Dedicated markdown editor (rich text). Use this only for markdown fields
   'markdown': { component: Editor, defaultProps: { height: '220px', readOnly: false } },
-  // JSON editor: textarea with validation and format helper
   'json': { component: {
     props: { modelValue: [Object, Array, String, null] },
     emits: ['update:modelValue'],
