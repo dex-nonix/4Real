@@ -9,7 +9,7 @@ import Badge from 'primevue/badge';
 import NxLlmAvailableToolsDialog from './NxLlmAvailableToolsDialog.vue';
 import NxLlmToolExecutionDialog from './NxLlmToolExecutionDialog.vue';
 import NxChatErrorDialog from './NxChatErrorDialog.vue';
-import {NxVoiceInputButton} from '@nonix-stt/components/index.js';
+import {NxVoiceInputButton, NxSttConfigDialog , useNxVoiceInputButton} from '@nonix-stt/components/index.js';
 
 const props = defineProps({
   sessionId: {type: [String, Number, null], required: true},
@@ -27,6 +27,10 @@ const emit = defineEmits(['sendMessage', 'error']);
 const chatService = inject('chat-service');
 const showErrorDialog = ref(false);
 const moreMenu = ref();
+
+// STT Configuration
+const showSttConfigDialog = ref(false);
+const voiceInput = useNxVoiceInputButton();
 
 const showErrors = () => {
   showErrorDialog.value = true;
@@ -55,6 +59,14 @@ const moreMenuItems = computed(() => [
     command: showTools,
     badge: availableToolsLocal.value.length > 0 ? availableToolsLocal.value.length : null,
     disabled: !hasHistory.value || toolsLoading.value
+  },
+
+  // STT Settings
+  {
+    label: 'Voice Input Settings',
+    icon: 'pi pi-microphone',
+    command: showSttSettings,
+    disabled: !hasHistory.value
   },
 
   // Separator
@@ -107,6 +119,10 @@ const showTools = async () => {
   } finally {
     toolsLoading.value = false;
   }
+};
+
+const showSttSettings = () => {
+  showSttConfigDialog.value = true;
 };
 const selectTool = (toolData) => {
   selectedTool.value = toolData;
@@ -321,6 +337,11 @@ const handleRecordingError = ({error, code}) => {
   });
 };
 
+const handleSttConfigSelected = (config) => {
+  voiceInput.setConfiguration(config);
+  console.log('STT configuration selected:', config);
+};
+
 // Watch for session changes
 watch(() => props.selectedSession, (newSession, oldSession) => {
   if (newSession) {
@@ -397,6 +418,13 @@ defineExpose({
     <!-- Tool Execution Dialog -->
     <NxLlmToolExecutionDialog ref="toolExecutionDialogRef" :selected-tool="selectedTool"
                               @execute-tool="executeToolWithForm"/>
+
+    <!-- STT Configuration Dialog -->
+    <NxSttConfigDialog 
+      :visible="showSttConfigDialog" 
+      @update:visible="showSttConfigDialog = $event"
+      @config-selected="handleSttConfigSelected"
+    />
   </div>
 
   <!-- Error Dialog -->
