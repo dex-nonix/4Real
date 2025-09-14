@@ -22,6 +22,7 @@ export default defineConfig({
             '@nonix-template': resolve(__dirname, 'vue_libs/nonix-template'),
             '@nonix-voice-input': resolve(__dirname, 'vue_libs/nonix-voice-input'),
             '@nonix-ws': resolve(__dirname, 'vue_libs/nonix-ws'),
+            '@nonix-stt': resolve(__dirname, 'vue_libs/nonix-stt'),
         }
     },
     optimizeDeps: {

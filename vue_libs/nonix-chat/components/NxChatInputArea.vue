@@ -9,7 +9,7 @@ import Badge from 'primevue/badge';
 import NxLlmAvailableToolsDialog from './NxLlmAvailableToolsDialog.vue';
 import NxLlmToolExecutionDialog from './NxLlmToolExecutionDialog.vue';
 import NxChatErrorDialog from './NxChatErrorDialog.vue';
-import {NxVoiceInputButton} from '@nonix-voice-input/components/index.js';
+import {NxVoiceInputButton} from '../../nonix-stt/components/index.js';
 
 const props = defineProps({
   // Session context
