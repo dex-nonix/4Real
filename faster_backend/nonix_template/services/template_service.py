@@ -46,7 +46,7 @@ class TemplateService(BaseCrudService):
         super().__init__()
         self._search_paths = []
 
-    def _configure_renderer(self, search_paths: List[str] = None):
+    def configure_renderer(self, search_paths: List[str] = None):
         """Initialize template renderer with search paths"""
         if search_paths:
             for path in search_paths:

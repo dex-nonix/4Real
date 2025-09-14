@@ -25,8 +25,4 @@ class NxWebTemplatePlugin(BasePlugin):
 
     def _configure(self, config: Dict[str, Any]):
         """Initialize template renderer and services during plugin configuration"""
-        # Add default search paths from config
-        default_paths = config.get('template_search_paths', [])
-
-        # Configure the template service with search paths and renderer
-        self.template_service._configure_renderer(default_paths)
+        self.template_service.configure_renderer(config.get('template_search_paths', []))

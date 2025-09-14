@@ -16,13 +16,12 @@ class BasePlugin(ABC):
 
     @final
     def configure(self, config: Dict[str, Any]):
+
+        if configure_callbacks := self._configure_callbacks:
+            for callback in configure_callbacks:
+                callback(self, config)
+
         self._configure(config)
-
-        if not (configure_callbacks := self._configure_callbacks):
-            return
-
-        for callback in configure_callbacks:
-            callback(self, config)
 
     @final
     async def startup(self, config: Dict[str, Any]):
