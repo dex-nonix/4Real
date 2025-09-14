@@ -14,7 +14,7 @@ if __name__ == "__main__":
         {"name": "agentic"},
         {"name": "file-manager"},
         {"name": "music-artist"},
-
+        {"name": "stt"},
     ]
 
     NxWebServer.run_gunicorn(settings)

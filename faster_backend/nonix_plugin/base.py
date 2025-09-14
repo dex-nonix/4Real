@@ -26,13 +26,11 @@ class BasePlugin(ABC):
     @final
     async def startup(self, config: Dict[str, Any]):
         """Runtime startup: database connections, async initialization"""
+        if startup_callbacks := self._startup_callbacks:
+            for callback in startup_callbacks:
+                await callback(self, config)
+
         await self._startup(config)
-
-        if not (startup_callbacks := self._startup_callbacks):
-            return
-
-        for callback in startup_callbacks:
-            await callback(self, config)
 
     @final
     async def shutdown(self, config: Dict[str, Any]):

@@ -9,7 +9,7 @@ from ..services.stt_service import NxSttService
 
 @router("/stt", tags=["STT"])
 class NxSttRouter(NxWebServerCrudRouter):
-    stt_service: NxSttService = NxInject(NxSttService)
+    service: NxSttService = NxInject(NxSttService)
 
     @route("/upload", methods=["POST"])
     async def upload_audio(self, audio_file: UploadFile, config_id: int):
@@ -22,7 +22,7 @@ class NxSttRouter(NxWebServerCrudRouter):
             temp_file.flush()
             
             try:
-                result = await self.stt_service.transcribe_file(temp_file.name, config_id)
+                result = await self.service.transcribe_file(temp_file.name, config_id)
                 return {"transcription": result}
             except Exception as e:
                 raise HTTPException(status_code=500, detail=str(e))

@@ -9,11 +9,11 @@ from .routers.stt_router import NxSttRouter
 from .services.stt_service import NxSttService
 
 
-@injectables([
-    NxSttService
-])
 @web_routers([
     NxSttRouter
+])
+@injectables([
+    NxSttService
 ])
 class NxWebSttPlugin(BasePlugin):
     stt_service: NxSttService = NxInject(NxSttService)

@@ -9,7 +9,8 @@ import Badge from 'primevue/badge';
 import NxLlmAvailableToolsDialog from './NxLlmAvailableToolsDialog.vue';
 import NxLlmToolExecutionDialog from './NxLlmToolExecutionDialog.vue';
 import NxChatErrorDialog from './NxChatErrorDialog.vue';
-import {NxVoiceInputButton, NxSttConfigDialog , useNxVoiceInputButton} from '@nonix-stt/components/index.js';
+import {NxVoiceInputButton, NxSttConfigDialog} from '@nonix-stt/components';
+import {useNxVoiceInputButton} from "@nonix-stt/composables";
 
 const props = defineProps({
   sessionId: {type: [String, Number, null], required: true},
