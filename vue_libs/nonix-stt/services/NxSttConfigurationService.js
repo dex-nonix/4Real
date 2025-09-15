@@ -44,7 +44,7 @@ export default class NxSttConfigurationService extends NxCrudService {
               { label: 'MPS (Apple)', value: 'mps' }
             ]
           },
-          { key: 'sample_rate', type: 'number', label: 'Sample Rate', placeholder: 16000, required: true, min: 8000, max: 48000 },
+          { key: 'sample_rate', type: 'number', label: 'Sample Rate', placeholder: '16000', required: true, min: 8000, max: 48000 },
           { key: 'vad_enabled', type: 'boolean', label: 'Voice Activity Detection' },
           { key: 'language', type: 'text', label: 'Language (optional)', placeholder: 'en, es, fr, de, etc.' },
           { key: 'is_active', type: 'boolean', label: 'Active' }
