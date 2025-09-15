@@ -17,25 +17,25 @@
           <template v-if="(mode !== 'display') && !item.displayOnly">
             <component
                 v-if="item.key"
-                :is="resolveEditWidget(item.editWidget ?? item.type).component"
+                :is="resolveWidgetForEdit(item).component"
+                v-bind="resolveWidgetForEdit(item).props"
                 :id="item.key || `__ui_${idx}`"
-                v-bind="{ ...resolveEditWidget(item.editWidget ?? item.type).props, ...(item.editProps ?? item.props ?? {}) }"
                 :model-value="formData[item.key]"
                 @update:model-value="updateField(item.key, $event)"
                 :class="{ 'error': item.key && fieldErrors[item.key] }"
             />
             <component
                 v-else
-                :is="resolveEditWidget(item.editWidget ?? item.type).component"
+                :is="resolveWidgetForEdit(item).component"
+                v-bind="resolveWidgetForEdit(item).props"
                 :id="`__ui_${idx}`"
-                v-bind="{ ...resolveEditWidget(item.editWidget ?? item.type).props, ...(item.editProps ?? item.props ?? {}) }"
             />
           </template>
           <component
               v-else
-              :is="resolveDisplayWidget((item.displayWidget ?? item.editWidget ?? item.type)).component"
+              :is="resolveWidgetForDisplay(item).component"
+              v-bind="resolveWidgetForDisplay(item).props"
               :id="item.key || `__ui_${idx}`"
-              v-bind="{ ...resolveDisplayWidget((item.displayWidget ?? item.editWidget ?? item.type)).props, ...(item.displayProps ?? item.editProps ?? item.props ?? {}) }"
           >
             {{ item.key ? formatDisplay(formData[item.key]) : '' }}
           </component>
@@ -137,12 +137,43 @@ export default {
   },
 
   methods: {
-    // Resolve widgets
-    resolveEditWidget(widget) {
-      return typeof widget === 'string' ? this.editManager.getWidget(widget, {}) : {component: widget, props: {}}
+    resolveEditWidget(widget, userProps = {}) {
+      return this.editManager.getWidget(widget, userProps)
     },
-    resolveDisplayWidget(widget) {
-      return typeof widget === 'string' ? this.displayManager.getWidget(widget, {}) : {component: widget, props: {}}
+    resolveDisplayWidget(widget, userProps = {}) {
+      return this.displayManager.getWidget(widget, userProps)
+    },
+
+    // Helper methods to avoid double resolution calls
+    resolveWidgetForEdit(item) {
+      const widgetType = item.editWidget ?? item.type
+
+      // Extract component props from item (options, min, max, placeholder, etc.)
+      const componentProps = (({ key, type, label, editWidget, displayWidget, displayOnly, check, ...rest }) => rest)(item)
+
+      // Merge: explicit editProps -> component props from item -> fallback props
+      const userProps = {
+        ...componentProps,
+        ...(item.editProps ?? item.props ?? {})
+      }
+
+      const resolved = this.editManager.getWidget(widgetType, userProps)
+      return resolved
+    },
+    resolveWidgetForDisplay(item) {
+      const widgetType = item.displayWidget ?? item.editWidget ?? item.type
+
+      // Extract component props from item (options, min, max, placeholder, etc.)
+      const componentProps = (({ key, type, label, editWidget, displayWidget, displayOnly, check, ...rest }) => rest)(item)
+
+      // Merge: explicit displayProps -> editProps -> component props from item -> fallback props
+      const userProps = {
+        ...componentProps,
+        ...(item.displayProps ?? item.editProps ?? item.props ?? {})
+      }
+
+      const resolved = this.displayManager.getWidget(widgetType, userProps)
+      return resolved
     },
     formatDisplay(value) {
       return value == null ? '' : String(value)
@@ -279,3 +310,4 @@ export default {
 <style scoped>
 
 </style>
+

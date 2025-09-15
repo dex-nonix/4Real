@@ -19,9 +19,9 @@ export const NX_EDIT_WIDGETS = {
   'text': { component: InputText, defaultProps: { placeholder: 'Enter text', class: 'w-full' } },
   'number': { component: InputNumber, defaultProps: { placeholder: 'Enter number', class: 'w-full', showButtons: true, buttonLayout: 'horizontal' } },
   'textarea': { component: Textarea, defaultProps: { autoResize: true, class: 'w-full', rows: 5 } },
-  'select': { component: Dropdown, defaultProps: { placeholder: 'Select option', class: 'w-full' } },
-  'multi_select': { component: MultiSelect, defaultProps: { placeholder: 'Select options', class: 'w-full' } },
-  'autocomplete': { component: AutoComplete, defaultProps: { placeholder: 'Type to search', minLength: 2, delay: 300 } },
+  'select': { component: Dropdown, defaultProps: { placeholder: 'Select option', class: 'w-full', optionLabel: 'label', optionValue: 'value' } },
+  'multi_select': { component: MultiSelect, defaultProps: { placeholder: 'Select options', class: 'w-full', optionLabel: 'label', optionValue: 'value' } },
+  'autocomplete': { component: AutoComplete, defaultProps: { placeholder: 'Type to search', minLength: 2, delay: 300, optionLabel: 'label', optionValue: 'value' } },
   'slider': { component: Slider, defaultProps: { min: 0, max: 100, step: 1 } },
   'date': { component: Calendar, defaultProps: { dateFormat: 'yy-mm-dd', class: 'w-full' } },
   'file': { component: FileUpload, defaultProps: { multiple: false, accept: '*' } },
@@ -103,9 +103,11 @@ function createFkSelect() {
       async function loadInitial() {
         try {
           if (props.resolveOnMount && props.modelValue != null && !props.multiple) {
-            const res = await service.selectorGet(props.modelValue)
-            const item = res?.data?.data || res?.data
-            if (item) options.value = [item]
+            const res = await service.selectorGet(props.modelValue);
+            const item = res?.data?.data || res?.data;
+            if (item) {
+                options.value = [item];
+            }
           } else {
             const res = await service.selectorList(props.params)
             options.value = res?.data?.data || res?.data || []

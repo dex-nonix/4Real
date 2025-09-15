@@ -14,17 +14,19 @@ class NxBaseWidgetManager {
         )
     }
 
-    // Get widget with resolved props
-    getWidget(type, userProps = {}) {
-        const widget = this.widgets[type]
-        if (!widget) {
-            return this.getDefaultWidget()
+    getWidget(typeOrComponent, userProps = {}) {
+        if (typeof typeOrComponent === 'string') {
+            const widget = this.widgets[typeOrComponent]
+            if (!widget) return this.getDefaultWidget()
+
+            return {
+                component: widget.component,
+                props: {...widget.defaultProps, ...userProps}
+            }
         }
 
-        return {
-            component: widget.component,
-            props: {...widget.defaultProps, ...userProps}
-        }
+        const comp = markRaw(typeOrComponent)
+        return { component: comp, props: {...userProps} }
     }
 
     // Register new widget

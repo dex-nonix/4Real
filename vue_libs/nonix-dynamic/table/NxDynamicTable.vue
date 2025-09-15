@@ -216,8 +216,8 @@ export default {
 
   methods: {
     // Resolve cell widget using TableCellWidgetManager
-    resolveCellWidget(type) {
-      return this.tableManager.getWidget(type, {})
+    resolveCellWidget(type, userProps = {}) {
+      return this.tableManager.getWidget(type, userProps)
     },
 
     // Responsive breakpoint handling
