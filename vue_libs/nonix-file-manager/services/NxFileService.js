@@ -7,10 +7,10 @@ export default class NxFileService extends NxCrudService {
                 columns: [
                     {field: 'title', header: 'Title', type: 'text', sortable: true},
                     {field: 'original_filename', header: 'Filename', type: 'text', sortable: true},
-                    {field: 'mime_type', header: 'MIME', type: 'text', sortable: true},
-                    {field: 'size_bytes', header: 'Size', type: 'number', sortable: true},
+                    {field: 'mime_type', header: 'Type', type: 'file_type', sortable: true},
+                    {field: 'size_bytes', header: 'Size', type: 'file_size', sortable: true},
                     {field: 'category_id', header: 'Category', type: 'fk_display', props: {entity: 'file-categories'}},
-                    {field: 'storage_url', header: 'Preview', type: 'file_preview'}
+                    {field: 'storage_url', header: 'Preview', type: 'file_preview', props: { showSize: true, showCategory: true }}
                 ]
             },
             form: {
@@ -23,10 +23,10 @@ export default class NxFileService extends NxCrudService {
                         props: {entity: 'file-categories', search: true}
                     },
                     {key: 'upload', type: 'file_upload', label: 'Upload File', required: true},
-                    {key: 'storage_url', type: 'file_preview', label: 'Preview', displayOnly: true},
+                    {key: 'storage_url', type: 'file_preview', label: 'Preview', displayOnly: true, props: { showSize: true, showCategory: true }},
                     {key: 'original_filename', type: 'text', label: 'Filename', displayOnly: true},
-                    {key: 'mime_type', type: 'text', label: 'MIME', displayOnly: true},
-                    {key: 'size_bytes', type: 'number', label: 'Size (bytes)', displayOnly: true}
+                    {key: 'mime_type', type: 'file_type', label: 'Type', displayOnly: true},
+                    {key: 'size_bytes', type: 'file_size', label: 'Size', displayOnly: true}
                 ]
             }
         })

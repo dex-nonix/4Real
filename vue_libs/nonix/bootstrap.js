@@ -12,6 +12,7 @@ import NxLayoutManager from "@nonix-dynamic/manager/NxLayoutManager.js";
 import NxPageManager from "@nonix-dynamic/manager/NxPageManager.js";
 import NxDisplayWidgetManager from "@nonix-dynamic/manager/NxDisplayWidgetManager.js";
 import NxEditWidgetManager from "@nonix-dynamic/manager/NxEditWidgetManager.js";
+import NxFileTypeManager from "@nonix-file-manager/manager/NxFileTypeManager.js";
 import NxDynamicWidgetManager from "@nonix-dynamic/widget/NxDynamicWidgetManager.js";
 import NxWebSocketService from "@nonix-ws/services/NxWebSocketService.js";
 
@@ -48,6 +49,7 @@ const loadConfigObject = (app, config) => {
     iterObject(config.pages, (key, item) => NxPageManager.registerWidget(key, item.component, item.defaultProps));
     iterObject(config.displayWidgets, (key, item) => NxDisplayWidgetManager.registerWidget(key, item.component, item.defaultProps));
     iterObject(config.editWidgets, (key, item) => NxEditWidgetManager.registerWidget(key, item.component, item.defaultProps));
+    iterObject(config.fileTypes, (key, item) => NxFileTypeManager.registerFileType(key, item));
     iterObject(config.dynamicWidgets, (key, item) => NxDynamicWidgetManager.registerWidget(key, item.component, item.defaultProps));
 };
 

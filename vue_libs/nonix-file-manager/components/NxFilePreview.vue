@@ -1,19 +1,33 @@
 <template>
   <div class="flex align-items-center gap-2">
+    <!-- Image preview -->
     <template v-if="isImage">
-      <img :src="effectiveUrl" :alt="altText" style="max-width: 64px; max-height: 64px; object-fit: cover;"/>
+      <img :src="effectiveUrl" :alt="altText"
+           style="max-width: 48px; max-height: 48px; object-fit: cover; border-radius: 4px;"/>
     </template>
+
+    <!-- Audio controls -->
     <template v-else-if="isAudio">
-      <audio :src="effectiveUrl" controls style="height: 28px"></audio>
+      <audio :src="effectiveUrl" controls style="height: 32px"></audio>
     </template>
+
+    <!-- File type icon -->
     <template v-else>
-      <i class="pi pi-file"></i>
+      <i :class="fileTypeIconClass" :style="{ color: fileTypeColor }" style="font-size: 1.5rem;"></i>
     </template>
-    <span class="text-sm">{{ titleOrName }}</span>
+
+    <!-- File info -->
+    <div class="flex flex-column">
+      <span class="text-sm font-medium">{{ displayName }}</span>
+      <small v-if="showSize && fileSize" class="text-gray-600">{{ formattedSize }}</small>
+      <small v-if="showCategory" class="text-gray-600">{{ fileTypeDisplayName }}</small>
+    </div>
   </div>
 </template>
 
 <script>
+import NxFileTypeManager from '@nonix-file-manager/manager/NxFileTypeManager.js'
+
 export default {
   name: 'NxFilePreview',
   props: {
@@ -22,7 +36,10 @@ export default {
     mime: {type: String, default: ''},
     title: {type: String, default: ''},
     filename: {type: String, default: ''},
-    urlField: {type: String, default: 'storage_url'}
+    size: {type: Number, default: 0},
+    urlField: {type: String, default: 'storage_url'},
+    showSize: {type: Boolean, default: false},
+    showCategory: {type: Boolean, default: false}
   },
   computed: {
     effectiveUrl() {
@@ -33,17 +50,55 @@ export default {
       }
       return ''
     },
+
+    // File type detection using the manager
+    fileTypeInfo() {
+      return NxFileTypeManager.detectFileType(this.mime, this.filename)
+    },
+
+    // File type properties from the registry
+    fileTypeIconClass() {
+      return NxFileTypeManager.getIconClass(this.fileTypeInfo)
+    },
+
+    fileTypeColor() {
+      return NxFileTypeManager.getColor(this.fileTypeInfo)
+    },
+
+    fileTypeDisplayName() {
+      return NxFileTypeManager.getDisplayName(this.fileTypeInfo)
+    },
+
+    // Check if file supports preview
     isImage() {
-      return (this.mime || '').startsWith('image/') || (this.effectiveUrl && this.effectiveUrl.match(/\.(png|jpe?g|gif|webp|svg)$/i))
+      return this.fileTypeInfo.category === 'image' && this.effectiveUrl
     },
+
     isAudio() {
-      return (this.mime || '').startsWith('audio/') || (this.effectiveUrl && this.effectiveUrl.match(/\.(mp3|wav|aac|ogg)$/i))
+      return this.fileTypeInfo.category === 'audio' && this.effectiveUrl
     },
+
+    // Display name
+    displayName() {
+      return this.title || this.filename || this.fileTypeDisplayName
+    },
+
+    // Formatted file size
+    formattedSize() {
+      return NxFileTypeManager.formatFileSize(this.size)
+    },
+
+    // File size from props or value object
+    fileSize() {
+      if (this.size) return this.size
+      if (this.value && typeof this.value === 'object' && this.value.size_bytes) {
+        return this.value.size_bytes
+      }
+      return 0
+    },
+
     altText() {
-      return this.title || this.filename || 'media'
-    },
-    titleOrName() {
-      return this.title || this.filename || this.effectiveUrl || ''
+      return this.title || this.filename || 'file'
     }
   }
 }
