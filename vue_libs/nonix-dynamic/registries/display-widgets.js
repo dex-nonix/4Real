@@ -4,7 +4,6 @@ import Avatar from 'primevue/avatar'
 import { ref, inject, h } from 'vue'
 import NxCrudService from '@nonix-crud/services/NxCrudService.js'
 import NxFilePreview from '@nonix-file-manager/components/NxFilePreview.vue'
-import NxFileTypeManager from '@nonix-file-manager/manager/NxFileTypeManager.js'
 import NxLlmTool from '@nonix-chat/widgets/NxLlmTool.vue'
 
 export const NX_DISPLAY_WIDGETS = {
@@ -77,31 +76,7 @@ export const NX_DISPLAY_WIDGETS = {
     render() { return h('span', this.label) }
   }, defaultProps: {} }
   ,
-  'llm_tool': { component: NxLlmTool, defaultProps: { mode: 'display' } },
-  'file_size': {
-    component: {
-      props: { value: [Number, String] },
-      render() {
-        const bytes = typeof this.value === 'string' ? parseInt(this.value) : this.value
-        return h('span', { class: 'font-mono text-sm' }, NxFileTypeManager.formatFileSize(bytes))
-      }
-    },
-    defaultProps: {}
-  },
-  'file_type': {
-    component: {
-      props: { value: String },
-      render() {
-        if (!this.value) return h('span', { class: 'text-gray-500' }, '-')
-        const fileType = NxFileTypeManager.getFileTypeByMime(this.value)
-        return h('div', { class: 'flex align-items-center gap-2' }, [
-          h('i', { class: NxFileTypeManager.getIconClass(fileType), style: { color: fileType.color, fontSize: '1.2rem' } }),
-          h('span', { class: 'text-sm' }, fileType.displayName || this.value.split('/')[0]?.toUpperCase() || 'UNKNOWN')
-        ])
-      }
-    },
-    defaultProps: {}
-  }
+  'llm_tool': { component: NxLlmTool, defaultProps: { mode: 'display' } }
 }
 
 

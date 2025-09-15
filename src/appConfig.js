@@ -22,6 +22,7 @@ import NxSttConfigurationService from '@nonix-stt/services/NxSttConfigurationSer
 import NxFileService from '@nonix-file-manager/services/NxFileService.js'
 import NxFileLinkService from '@nonix-file-manager/services/NxFileLinkService.js'
 import NxFileCategoryService from "@nonix-file-manager/services/NxFileCategoryService.js";
+import NxFileTypeManager from '@nonix-file-manager/manager/NxFileTypeManager.js';
 import NxChatService from '@nonix-chat/services/NxChatService.js'
 import Home from "@/views/Home.vue";
 import About from "@/views/About.vue";
@@ -95,6 +96,7 @@ export const appConfig = {
         "file-categories": (app) => new NxFileCategoryService(app),
         "files": (app) => new NxFileService(app),
         "file-links": (app) => new NxFileLinkService(app),
+        "fileTypeManager": (app) => NxFileTypeManager,
         "chat-service": (app) => new NxChatService(app),
     },
     use: [],
