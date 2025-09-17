@@ -303,8 +303,8 @@ const isSelected = (file) => {
   return selectedFilesLocal.value.some(f => f.id === file.id)
 }
 
-const handleRowAction = (action, rowData) => {
-  emit('row-action', { action, rowData })
+const handleRowAction = (action, file) => {
+  emit('row-action', { action, file })
 }
 
 const handleBulkAction = (action) => {

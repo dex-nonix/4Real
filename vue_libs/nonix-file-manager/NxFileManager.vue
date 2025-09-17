@@ -248,12 +248,10 @@ const loadData = async () => {
   }
 }
 
-const updateCategoryCounts = async () => {
-  try {
-    const categoriesResult = await fileManagerService.getCategoriesWithCounts()
-    categories.value = categoriesResult.data.data
-  } catch (error) {
-    console.error('Update category counts error:', error)
+const updateCategoryCount = (categoryId, delta) => {
+  const category = categories.value.find(c => c.id === categoryId)
+  if (category) {
+    category.file_count = (category.file_count || 0) + delta
   }
 }
 
@@ -300,7 +298,13 @@ const handleFileOpen = (file) => {
   }
 }
 
-const handleFileAction = (action, file) => {
+const deleteFile = (file) => {
+  selectedFiles.value = [file]
+  bulkOperation.value = 'delete'
+  showBulkDialog.value = true
+}
+
+const handleFileAction = ({ action, file }) => {
   switch (action) {
     case 'view':
       handleFileSelect(file)
@@ -309,13 +313,17 @@ const handleFileAction = (action, file) => {
       // Could open edit dialog
       break
     case 'delete':
-      executeFileAction('delete', [file])
+      deleteFile(file)
       break
     case 'copy':
-      initiateBulkOperation('copy', [file])
+      selectedFiles.value = [file]
+      bulkOperation.value = 'copy'
+      showBulkDialog.value = true
       break
     case 'move':
-      initiateBulkOperation('move', [file])
+      selectedFiles.value = [file]
+      bulkOperation.value = 'move'
+      showBulkDialog.value = true
       break
   }
 }
@@ -339,7 +347,7 @@ const executeBulkOperation = async () => {
 
     switch (bulkOperation.value) {
       case 'copy':
-        result = await fileManagerService.copyFiles(
+        result = await fileManagerService.bulkCopyFiles(
           selectedFiles.value.map(f => f.id),
           targetCategoryId.value
         )
@@ -354,7 +362,7 @@ const executeBulkOperation = async () => {
         // Get source categories before move
         const sourceCategories = [...new Set(selectedFiles.value.map(f => f.category_id))]
 
-        result = await fileManagerService.moveFiles(
+        result = await fileManagerService.bulkMoveFiles(
           selectedFiles.value.map(f => f.id),
           targetCategoryId.value
         )
@@ -371,12 +379,18 @@ const executeBulkOperation = async () => {
         break
 
       case 'delete':
-        await executeFileAction('delete', selectedFiles.value)
+        const fileIds = selectedFiles.value.map(f => f.id)
+        await fileManagerService.bulkDeleteFiles(fileIds)
+        // Remove from local file list
+        for (const file of selectedFiles.value) {
+          const index = files.value.findIndex(f => f.id === file.id)
+          if (index !== -1) {
+            files.value.splice(index, 1)
+          }
+          updateCategoryCount(file.category_id, -1)
+        }
         break
     }
-
-    // Update category counts after bulk operations
-    await updateCategoryCounts()
 
     showBulkDialog.value = false
     selectedFiles.value = []
@@ -389,56 +403,14 @@ const executeBulkOperation = async () => {
   }
 }
 
-const executeFileAction = async (action, files) => {
-  try {
-    // Get affected categories before operation
-    const affectedCategories = [...new Set(files.map(f => f.category_id))]
 
-    for (const file of files) {
-      switch (action) {
-        case 'delete':
-          await fileManagerService.deleteFile(file.id)
-          emit('file-deleted', file)
-          // Remove from local file list
-          const index = files.value.findIndex(f => f.id === file.id)
-          if (index !== -1) {
-            files.value.splice(index, 1)
-          }
-          break
-        case 'move':
-          await fileManagerService.moveFiles([file.id], file.targetCategoryId)
-          emit('file-moved', file)
-          // Update local file list
-          const moveIndex = files.value.findIndex(f => f.id === file.id)
-          if (moveIndex !== -1) {
-            files.value[moveIndex].category_id = file.targetCategoryId
-          }
-          break
-        case 'copy':
-          const copyResult = await fileManagerService.copyFiles([file.id], file.targetCategoryId)
-          emit('file-copied', copyResult)
-          // Reload files to get the new copied file
-          const filesResult = await fileManagerService.listFiles()
-          files.value = filesResult.data.data
-          break
-      }
-    }
-
-    // Update category counts after any file operation
-    await updateCategoryCounts()
-
-  } catch (error) {
-    console.error('File action error:', error)
-  }
-}
-
-const handleFileUploaded = async (uploadedFile) => {
+const handleFileUploaded = (uploadedFile) => {
   // Add uploaded file to the list
   files.value.push(uploadedFile)
   emit('file-uploaded', uploadedFile)
   
-  // Update category counts after upload
-  await updateCategoryCounts()
+  // Update count for the category
+  updateCategoryCount(uploadedFile.category_id, 1)
 }
 
 const handleCreateCategory = () => {

@@ -19,13 +19,18 @@ export default class NxFileManagerService extends NxBaseApiService {
     return this.delete(`/files/${fileId}`)
   }
 
-  async copyFiles(fileIds, targetCategoryId) {
-    return this.post('/files/copy', { fileIds, targetCategoryId })
+  async bulkDeleteFiles(fileIds) {
+    return this.post('/bulk/delete', { fileIds })
   }
 
-  async moveFiles(fileIds, targetCategoryId) {
-    return this.post('/files/move', { fileIds, targetCategoryId })
+  async bulkCopyFiles(fileIds, targetCategoryId) {
+    return this.post('/bulk/copy', { fileIds, targetCategoryId })
   }
+
+  async bulkMoveFiles(fileIds, targetCategoryId) {
+    return this.post('/bulk/move', { fileIds, targetCategoryId })
+  }
+
 
   async renameFile(fileId, newTitle) {
     return this.put(`/files/${fileId}/rename`, { newTitle })

@@ -1,4 +1,4 @@
-from fastapi import Request, UploadFile, Form
+from fastapi import Request, UploadFile, Form, HTTPException
 from nonix_web.router.decorators import router, route
 from nonix_di.resolve import NxInject
 from nonix_web.router.web_server_router import NxWebServerRouter
@@ -38,35 +38,45 @@ class FileManagerRouter(NxWebServerRouter):
     @route('/files/{id}', methods=['DELETE'], response_model=FileDeleteResponse)
     async def delete_file(self, req: Request, id: int) -> FileDeleteResponse:
         """Delete file by ID"""
-        return await self.service_call_and_respond(
-            self.file_service.delete, (), {'item_id': id}
-        )
+        try:
+            await self.file_service.delete(item_id=id)
+            return FileDeleteResponse(message="File deleted successfully", status="success")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
     
     @route('/files/copy', methods=['POST'], response_model=FileCopyResponse)
     async def copy_files(self, req: Request) -> FileCopyResponse:
         """Copy files to different category"""
-        body = await req.json()
-        file_ids = body.get('fileIds', [])
-        target_category_id = body.get('targetCategoryId')
-        result = await self.file_service.copy_files(file_ids, target_category_id)
-        return FileCopyResponse(message=result["message"], count=result["count"])
+        try:
+            body = await req.json()
+            file_ids = body.get('fileIds', [])
+            target_category_id = body.get('targetCategoryId')
+            result = await self.file_service.copy_files(file_ids, target_category_id)
+            return FileCopyResponse(message=result["message"], count=result["count"])
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Copy failed: {str(e)}")
     
     @route('/files/move', methods=['POST'], response_model=FileMoveResponse)
     async def move_files(self, req: Request) -> FileMoveResponse:
         """Move files to different category"""
-        body = await req.json()
-        file_ids = body.get('fileIds', [])
-        target_category_id = body.get('targetCategoryId')
-        result = await self.file_service.move_files(file_ids, target_category_id)
-        return FileMoveResponse(message=result["message"], count=result["count"])
+        try:
+            body = await req.json()
+            file_ids = body.get('fileIds', [])
+            target_category_id = body.get('targetCategoryId')
+            result = await self.file_service.move_files(file_ids, target_category_id)
+            return FileMoveResponse(message=result["message"], count=result["count"])
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Move failed: {str(e)}")
     
     @route('/files/{id}/rename', methods=['PUT'], response_model=FileRenameResponse)
     async def rename_file(self, req: Request, id: int) -> FileRenameResponse:
         """Rename file by ID"""
-        body = await req.json()
-        return await self.service_call_and_respond(
-            self.file_service.update, (), {'item_id': id, 'data': body}
-        )
+        try:
+            body = await req.json()
+            result = await self.file_service.update(item_id=id, data=body)
+            return FileRenameResponse(data=result, status="success")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Rename failed: {str(e)}")
     
     # Category Operations
     @route('/categories', methods=['GET'], response_model=CategoryListResponse)
@@ -79,10 +89,12 @@ class FileManagerRouter(NxWebServerRouter):
     @route('/categories', methods=['POST'], response_model=CategoryCreateResponse)
     async def create_category(self, req: Request) -> CategoryCreateResponse:
         """Create new category"""
-        body = await req.json()
-        return await self.service_call_and_respond(
-            self.category_service.create, (), {'data': body}
-        )
+        try:
+            body = await req.json()
+            result = await self.category_service.create(data=body)
+            return CategoryCreateResponse(data=result, status="success")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Create category failed: {str(e)}")
     
     @route('/categories/with-counts', methods=['GET'], response_model=CategoryWithCountListResponse)
     async def get_categories_with_counts(self, req: Request) -> CategoryWithCountListResponse:
@@ -102,26 +114,48 @@ class FileManagerRouter(NxWebServerRouter):
     @route('/categories/{id}', methods=['PUT'], response_model=CategoryUpdateResponse)
     async def update_category(self, req: Request, id: int) -> CategoryUpdateResponse:
         """Update category by ID"""
-        body = await req.json()
-        return await self.service_call_and_respond(
-            self.category_service.update, (), {'item_id': id, 'data': body}
-        )
+        try:
+            body = await req.json()
+            result = await self.category_service.update(item_id=id, data=body)
+            return CategoryUpdateResponse(data=result, status="success")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Update category failed: {str(e)}")
     
     # Bulk Operations
+    @route('/bulk/delete', methods=['POST'], response_model=BulkOperationResponse)
+    async def bulk_delete_files(self, req: Request) -> BulkOperationResponse:
+        """Bulk delete files"""
+        try:
+            body = await req.json()
+            file_ids = body.get('fileIds', [])
+            deleted_count = 0
+            for file_id in file_ids:
+                await self.file_service.delete(item_id=file_id)
+                deleted_count += 1
+            return BulkOperationResponse(message="Files deleted successfully", count=deleted_count)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Bulk delete failed: {str(e)}")
+
     @route('/bulk/copy', methods=['POST'], response_model=BulkOperationResponse)
     async def bulk_copy_files(self, req: Request) -> BulkOperationResponse:
         """Bulk copy files to different category"""
-        body = await req.json()
-        file_ids = body.get('fileIds', [])
-        target_category_id = body.get('targetCategoryId')
-        result = await self.file_service.bulk_copy_files(file_ids, target_category_id)
-        return BulkOperationResponse(message=result["message"], count=result["count"])
+        try:
+            body = await req.json()
+            file_ids = body.get('fileIds', [])
+            target_category_id = body.get('targetCategoryId')
+            result = await self.file_service.bulk_copy_files(file_ids, target_category_id)
+            return BulkOperationResponse(message=result["message"], count=result["count"])
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Bulk copy failed: {str(e)}")
     
     @route('/bulk/move', methods=['POST'], response_model=BulkOperationResponse)
     async def bulk_move_files(self, req: Request) -> BulkOperationResponse:
         """Bulk move files to different category"""
-        body = await req.json()
-        file_ids = body.get('fileIds', [])
-        target_category_id = body.get('targetCategoryId')
-        result = await self.file_service.bulk_move_files(file_ids, target_category_id)
-        return BulkOperationResponse(message=result["message"], count=result["count"])
+        try:
+            body = await req.json()
+            file_ids = body.get('fileIds', [])
+            target_category_id = body.get('targetCategoryId')
+            result = await self.file_service.bulk_move_files(file_ids, target_category_id)
+            return BulkOperationResponse(message=result["message"], count=result["count"])
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Bulk move failed: {str(e)}")
