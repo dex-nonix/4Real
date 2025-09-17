@@ -9,6 +9,7 @@
       <!-- Sidebar Tree -->
       <SplitterPanel v-if="showTree" :size="sidebarWidth" :minSize="5">
         <NxFileTree
+          ref="fileTreeRef"
           v-model:selectedCategories="selectedCategories"
           :categories="categories"
           :hierarchical="hierarchical"
@@ -192,9 +193,7 @@ const props = defineProps({
 const emit = defineEmits(['file-uploaded', 'file-deleted', 'file-copied', 'file-moved', 'category-created'])
 
 // Services
-const fileService = inject('files')
-const categoryService = inject('file-categories')
-const fileOperationsService = inject('fileOperations')
+const fileManagerService = inject('file-manager')
 
 // Data
 const categories = ref([])
@@ -202,6 +201,9 @@ const files = ref([])
 const selectedCategories = ref([])
 const selectedFiles = ref([])
 const selectedFile = ref(null)
+
+// Component refs
+const fileTreeRef = ref(null)
 
 // UI State
 const loading = ref(false)
@@ -234,15 +236,24 @@ const filteredFiles = computed(() => {
 const loadData = async () => {
   loading.value = true
   try {
-    const categoriesResult = await categoryService.list({ paginated: false })
+    const categoriesResult = await fileManagerService.getCategoriesWithCounts()
     categories.value = categoriesResult.data.data
 
-    const filesResult = await fileService.list({ paginated: false })
+    const filesResult = await fileManagerService.listFiles()
     files.value = filesResult.data.data
   } catch (error) {
     console.error('Load data error:', error)
   } finally {
     loading.value = false
+  }
+}
+
+const updateCategoryCounts = async () => {
+  try {
+    const categoriesResult = await fileManagerService.getCategoriesWithCounts()
+    categories.value = categoriesResult.data.data
+  } catch (error) {
+    console.error('Update category counts error:', error)
   }
 }
 
@@ -274,7 +285,6 @@ const handleViewModeChange = (newViewMode) => {
 
 const handleCategoryCreated = (category) => {
   categories.value.push(category)
-  loadData() // Refresh to get updated data
 }
 
 const handleFileSelect = (file) => {
@@ -329,24 +339,34 @@ const executeBulkOperation = async () => {
 
     switch (bulkOperation.value) {
       case 'copy':
-        result = await fileOperationsService.copyFiles(
+        result = await fileManagerService.copyFiles(
           selectedFiles.value.map(f => f.id),
           targetCategoryId.value
         )
         if (result.success) {
           emit('file-copied', result.results)
-          loadData()
+          // Add copied files to the list
+          files.value.push(...result.results)
         }
         break
 
       case 'move':
-        result = await fileOperationsService.moveFiles(
+        // Get source categories before move
+        const sourceCategories = [...new Set(selectedFiles.value.map(f => f.category_id))]
+
+        result = await fileManagerService.moveFiles(
           selectedFiles.value.map(f => f.id),
           targetCategoryId.value
         )
         if (result.success) {
           emit('file-moved', result.results)
-          loadData()
+          // Update file list with moved files
+          for (const movedFile of result.results) {
+            const index = files.value.findIndex(f => f.id === movedFile.id)
+            if (index !== -1) {
+              files.value[index] = movedFile
+            }
+          }
         }
         break
 
@@ -354,6 +374,9 @@ const executeBulkOperation = async () => {
         await executeFileAction('delete', selectedFiles.value)
         break
     }
+
+    // Update category counts after bulk operations
+    await updateCategoryCounts()
 
     showBulkDialog.value = false
     selectedFiles.value = []
@@ -368,24 +391,54 @@ const executeBulkOperation = async () => {
 
 const executeFileAction = async (action, files) => {
   try {
+    // Get affected categories before operation
+    const affectedCategories = [...new Set(files.map(f => f.category_id))]
+
     for (const file of files) {
       switch (action) {
         case 'delete':
-          await fileService.delete(file.id)
+          await fileManagerService.deleteFile(file.id)
           emit('file-deleted', file)
+          // Remove from local file list
+          const index = files.value.findIndex(f => f.id === file.id)
+          if (index !== -1) {
+            files.value.splice(index, 1)
+          }
+          break
+        case 'move':
+          await fileManagerService.moveFiles([file.id], file.targetCategoryId)
+          emit('file-moved', file)
+          // Update local file list
+          const moveIndex = files.value.findIndex(f => f.id === file.id)
+          if (moveIndex !== -1) {
+            files.value[moveIndex].category_id = file.targetCategoryId
+          }
+          break
+        case 'copy':
+          const copyResult = await fileManagerService.copyFiles([file.id], file.targetCategoryId)
+          emit('file-copied', copyResult)
+          // Reload files to get the new copied file
+          const filesResult = await fileManagerService.listFiles()
+          files.value = filesResult.data.data
           break
       }
     }
-    loadData()
+
+    // Update category counts after any file operation
+    await updateCategoryCounts()
+
   } catch (error) {
     console.error('File action error:', error)
   }
 }
 
-const handleFileUploaded = (uploadedFile) => {
+const handleFileUploaded = async (uploadedFile) => {
   // Add uploaded file to the list
   files.value.push(uploadedFile)
   emit('file-uploaded', uploadedFile)
+  
+  // Update category counts after upload
+  await updateCategoryCounts()
 }
 
 const handleCreateCategory = () => {

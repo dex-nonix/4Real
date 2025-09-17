@@ -28,6 +28,7 @@ export default class NxFileCategoryService extends NxCrudService {
             }
         })
     }
+
 }
 
 

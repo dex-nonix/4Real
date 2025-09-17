@@ -7,6 +7,7 @@ from nonix_di.resolve import NxInject
 from .routers.file import FileRouter
 from .routers.file_category import FileCategoryRouter
 from .routers.file_link import FileLinkRouter
+from .routers.file_manager_router import FileManagerRouter
 from .services.file_service import FileService
 from .services.file_category_service import FileCategoryService
 from .services.file_link_service import FileLinkService
@@ -15,7 +16,8 @@ from .services.file_link_service import FileLinkService
 @web_routers([
     FileRouter,
     FileCategoryRouter,
-    FileLinkRouter
+    FileLinkRouter,
+    FileManagerRouter
 ])
 @injectables([
     FileService,

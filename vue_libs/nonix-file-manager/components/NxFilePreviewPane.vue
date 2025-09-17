@@ -344,7 +344,7 @@ const emit = defineEmits(['close', 'file-action', 'file-renamed'])
 
 // Services
 const fileTypeManager = inject('fileTypeManager')
-const fileOperationsService = inject('fileOperations')
+const fileManagerService = inject('file-manager')
 
 // Reactive state
 const showRenameDialog = ref(false)
@@ -396,7 +396,7 @@ const renameFile = async () => {
 
   renaming.value = true
   try {
-    const result = await fileOperationsService.renameFile(props.selectedFile.id, newTitle.value.trim())
+    const result = await fileManagerService.renameFile(props.selectedFile.id, newTitle.value.trim())
     if (result.success) {
       emit('file-renamed', {
         fileId: props.selectedFile.id,

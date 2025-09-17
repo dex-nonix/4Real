@@ -1,8 +1,8 @@
 import { NX_FILE_TYPES, detectFileType, getFileTypeByMime, getFileTypeByExtension } from '@nonix-file-manager/registries/file-types.js'
 
 // File Type Manager - Service layer over NX_FILE_TYPES registry
-class NxFileTypeManager {
-    constructor() {
+export default class NxFileTypeManager {
+    constructor(app) {
         // Start with built-in file types
         this.fileTypes = { ...NX_FILE_TYPES }
     }
@@ -147,4 +147,4 @@ class NxFileTypeManager {
 }
 
 // Export singleton instance
-export default new NxFileTypeManager()
+

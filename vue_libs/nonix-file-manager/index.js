@@ -11,7 +11,7 @@ export { default as NxFileUploadArea } from './components/NxFileUploadArea.vue'
 export { default as NxFileService } from './services/NxFileService.js'
 export { default as NxFileCategoryService } from './services/NxFileCategoryService.js'
 export { default as NxFileLinkService } from './services/NxFileLinkService.js'
-export { default as NxFileOperationsService } from './services/NxFileOperationsService.js'
+export { default as NxFileManagerService } from './services/NxFileManagerService.js'
 
 // Managers
 export { default as NxFileTypeManager } from './manager/NxFileTypeManager.js'

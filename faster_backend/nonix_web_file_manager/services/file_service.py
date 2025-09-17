@@ -50,4 +50,40 @@ class FileService(BaseCrudService):
         self.sha256_required = config["sha256_required"]
         self.auto_create_dirs = config["auto_create_dirs"]
 
+    async def copy_files(self, file_ids: list, target_category_id: int):
+        """Copy files to different category"""
+        copied_count = 0
+        for file_id in file_ids:
+            file_data = await self.get_one(file_id)
+            if file_data:
+                copy_data = {
+                    'category_id': target_category_id,
+                    'title': file_data.title,
+                    'original_filename': file_data.original_filename,
+                    'mime_type': file_data.mime_type,
+                    'size_bytes': file_data.size_bytes,
+                    'storage_url': file_data.storage_url,
+                    'sha256': file_data.sha256
+                }
+                await self.create(copy_data)
+                copied_count += 1
+        return {"message": "Files copied successfully", "count": copied_count}
+
+    async def move_files(self, file_ids: list, target_category_id: int):
+        """Move files to different category"""
+        moved_count = 0
+        for file_id in file_ids:
+            update_data = {'category_id': target_category_id}
+            await self.update(file_id, update_data)
+            moved_count += 1
+        return {"message": "Files moved successfully", "count": moved_count}
+
+    async def bulk_copy_files(self, file_ids: list, target_category_id: int):
+        """Bulk copy files to different category"""
+        return await self.copy_files(file_ids, target_category_id)
+
+    async def bulk_move_files(self, file_ids: list, target_category_id: int):
+        """Bulk move files to different category"""
+        return await self.move_files(file_ids, target_category_id)
+
 

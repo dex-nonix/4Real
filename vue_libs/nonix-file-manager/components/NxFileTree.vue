@@ -24,7 +24,7 @@
       >
         <i :class="getCategoryIcon(category)" class="text-primary-500 mr-3"></i>
         <span class="flex-1 text-sm font-medium">{{ category.name }}</span>
-        <Badge v-if="showCounts" :value="fileCounts[category.id] || 0" severity="info" class="ml-auto text-xs" />
+        <Badge v-if="showCounts" :value="category.file_count || 0" severity="info" class="ml-auto text-xs" />
       </div>
     </div>
 
@@ -125,17 +125,16 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['category-select', 'category-unselect', 'selection-change', 'category-created', 'update:selectedCategories'])
+const emit = defineEmits(['category-select', 'category-unselect', 'selection-change', 'category-created', 'update:selectedCategories', 'category-count-updated'])
 
 // Services
-const fileOperationsService = inject('fileOperations')
+const fileManagerService = inject('file-manager')
 
 // Reactive state
 const selectedKeys = ref({})
 const showCreateDialog = ref(false)
 const newCategoryName = ref('')
 const creating = ref(false)
-const fileCounts = ref({}) // Cache for file counts
 
 // Methods
 const toggleCategory = (categoryId) => {
@@ -192,43 +191,20 @@ const getCategoryIcon = (category) => {
   return 'pi pi-folder'
 }
 
-const loadFileCounts = async () => {
-  if (!props.showCounts || !fileOperationsService) return
 
-  for (const category of props.categories) {
-    if (fileCounts.value[category.id] === undefined) {
-      const count = await fileOperationsService.getCategoryFileCount(category.id)
-      fileCounts.value[category.id] = count
-    }
-  }
-}
 
-const getCategoryFileCount = async (categoryId) => {
-  if (fileCounts.value[categoryId] !== undefined) {
-    return fileCounts.value[categoryId]
-  }
 
-  if (!fileOperationsService) {
-    return 0
-  }
-
-  const count = await fileOperationsService.getCategoryFileCount(categoryId)
-  fileCounts.value[categoryId] = count
-  return count
-}
 
 const createCategory = async () => {
   if (!newCategoryName.value.trim()) return
 
   creating.value = true
   try {
-    const result = await fileOperationsService.createCategory(newCategoryName.value.trim())
+    const result = await fileManagerService.createCategory(newCategoryName.value.trim())
     if (result.success) {
-      emit('category-created', result.result)
+      emit('category-created', result.data)
       showCreateDialog.value = false
       newCategoryName.value = ''
-      // Refresh file counts cache
-      fileCounts.value = {}
     }
   } catch (error) {
     console.error('Create category error:', error)
@@ -238,9 +214,6 @@ const createCategory = async () => {
 }
 
 // Watchers
-watch(() => props.categories, () => {
-  loadFileCounts()
-}, { immediate: true })
 
 watch(() => props.selectedCategories, (newVal) => {
   if (!props.hierarchical) return
@@ -251,10 +224,7 @@ watch(() => props.selectedCategories, (newVal) => {
   })
 }, { immediate: true })
 
-// Lifecycle
-onMounted(() => {
-  loadFileCounts()
-})
+
 </script>
 
 <style scoped>

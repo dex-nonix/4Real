@@ -22,7 +22,7 @@ import NxSttConfigurationService from '@nonix-stt/services/NxSttConfigurationSer
 import NxFileService from '@nonix-file-manager/services/NxFileService.js'
 import NxFileLinkService from '@nonix-file-manager/services/NxFileLinkService.js'
 import NxFileCategoryService from "@nonix-file-manager/services/NxFileCategoryService.js";
-import NxFileOperationsService from '@nonix-file-manager/services/NxFileOperationsService.js'
+import NxFileManagerService from '@nonix-file-manager/services/NxFileManagerService.js'
 import NxFileTypeManager from '@nonix-file-manager/manager/NxFileTypeManager.js'
 import NxFileManager from '@nonix-file-manager/NxFileManager.vue'
 import NxChatService from '@nonix-chat/services/NxChatService.js'
@@ -101,8 +101,8 @@ export const appConfig = {
         "file-categories": (app) => new NxFileCategoryService(app),
         "files": (app) => new NxFileService(app),
         "file-links": (app) => new NxFileLinkService(app),
-        "fileOperations": (app) => new NxFileOperationsService(app),
-        "fileTypeManager": (app) => NxFileTypeManager,
+        "file-manager": (app) => new NxFileManagerService(app),
+        "fileTypeManager": (app) => new NxFileTypeManager(app),
         "chat-service": (app) => new NxChatService(app),
     },
     use: [],

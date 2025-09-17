@@ -15,3 +15,6 @@ class FileCategoryUpdate(BaseUpdateModel, base_model=FileCategoryBase):
 
 class FileCategoryInDbModel(FileCategoryBase, BaseDbModelMixin):
     pass
+
+class FileCategoryWithCountModel(FileCategoryInDbModel):
+    file_count: int = 0

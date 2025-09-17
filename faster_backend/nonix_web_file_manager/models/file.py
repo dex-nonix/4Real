@@ -1,6 +1,7 @@
 from __future__ import annotations
+import os
 
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer, String, event
 from sqlalchemy.orm import relationship, backref
 
 from nonix_web_db import BaseModel
@@ -25,3 +26,16 @@ class File(BaseModel):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<File id={self.id} original={self.original_filename!r}>"
+
+
+@event.listens_for(File, 'before_delete')
+def delete_physical_file(mapper, connection, target):
+    """Generic file cleanup - deletes physical file when database record is deleted"""
+    if target.storage_url:
+        try:
+            file_path = target.storage_url.lstrip('/')
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            # Log error but don't fail the database operation
+            print(f"Warning: Could not delete physical file {file_path}: {e}")

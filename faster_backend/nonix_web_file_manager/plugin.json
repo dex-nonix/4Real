@@ -4,12 +4,12 @@
   "class": "NxWebFileManagerPlugin",
   "dependencies": ["db"],
   "config": {
-    "max_file_size": 10485760,
-    "allowed_extensions": [".jpg", ".png", ".pdf", ".txt", ".doc", ".docx"],
+    "max_file_size": null,
+    "allowed_extensions": null,
     "upload_folder": "static/uploads",
     "sha256_required": false,
     "auto_create_dirs": true,
     "filename_strategy": "safe_rename",
-    "mime_validation": true
+    "mime_validation": false
   }
 }
