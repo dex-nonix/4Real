@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-column surface-card border-round-lg" :style="{ height: treeHeight }">
-    <div class="flex justify-content-between align-items-center p-3 border-bottom-1 surface-border bg-surface-section border-round-top-lg">
+    <div class="flex justify-content-between align-items-center p-2 border-bottom-1 surface-border bg-surface-section border-round-top-lg">
       <span class="text-lg font-medium">Categories</span>
       <Button
         v-if="allowCreateCategory"

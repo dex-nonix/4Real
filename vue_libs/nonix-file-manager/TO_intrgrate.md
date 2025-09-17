@@ -1,424 +1,228 @@
-# File Manager Component Integration Plan
+# File Manager Component Integration Guide
 
-## Overview
+## Current Issues Analysis
 
-Build a standalone `NxFileManager.vue` component that provides a complete file management experience using existing services. The component should be mobile-first, include tree navigation, multi-select operations, and preview functionality.
+### 1. Component Structure Issues
 
-## Current Architecture Analysis
+- **NxFileManager.vue**: 
+  - Using Splitter layout that forces fullscreen-style display
+  - Not designed to work as an inline component
+  - Uses fixed height (`height: 100vh`) in CSS which prevents inline usage
 
-### ✅ Available Services & Components
+- **NxFileTree.vue**:
+  - Implemented as a sidebar panel instead of an inline component
+  - Custom styling when PrimeFlex could be used
+  - Already uses PrimeVue Tree component but with custom wrappers
 
-- **NxFileService** - Full CRUD + upload with progress tracking
-- **NxFileCategoryService** - Category management (flat structure)
-- **NxFileTypeManager** - Comprehensive file type detection & icons
-- **NxFilePreview** - File preview component with type-aware rendering
-- **NxDynamicTable** - Responsive table system with multi-select
-- **PrimeVue Tree** - Available for hierarchical navigation
+- **NxFilePreviewPane.vue**:
+  - Designed as separate pane rather than inline component
+  - Custom CSS structure with `.file-preview-pane` instead of PrimeFlex
+  - Good use of PrimeVue components internally
 
-### ❌ Missing Components
+- **NxFilePreview.vue**:
+  - Essential specialized component for file type rendering
+  - Already uses PrimeIcons correctly
+  - Minimal custom CSS (good)
 
-1. **NxFileManager.vue** - Main container component
-2. **NxFileTree.vue** - Tree navigation component
-3. **NxFileListView.vue** - Enhanced file list with grid/thumbnail options
-4. **NxFilePreviewPane.vue** - Full preview pane component
-5. **NxFileOperations.vue** - File operation dialogs (copy, move, rename)
+- **NxFileListView.vue**:
+  - Uses DataView component properly
+  - Some custom CSS when PrimeFlex could be used
 
-## Component Architecture
+### 2. CSS Usage Issues
 
-### NxFileManager.vue (Main Component)
+- Too many custom CSS classes instead of PrimeFlex utilities
+- Examples of custom CSS that should be replaced:
+  - `.file-preview-pane` → `flex flex-column h-full`
+  - `.preview-header` → `flex justify-content-between align-items-center p-2 border-bottom-1 surface-border`
+  - `.detail-row` → `flex justify-content-between mb-2 pb-1 border-bottom-1 surface-border`
 
-```vue
+### 3. Layout Problems
+
+- File tree forces sidebar layout rather than allowing inline usage
+- Preview pane opens as a separate section instead of being inline with other content
+- Components not designed to be flexible in different containers
+
+## Integration Steps
+
+### Step 1: Fix NxFileManager.vue
+
+1. Remove fixed height styling:
+```css
+/* Replace this */
+.file-manager {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* With PrimeFlex */
+.file-manager {
+  /* Remove height: 100vh */
+  /* Use flex classes in template instead */
+}
+```
+
+2. Make Splitter optional with prop:
+```js
+// Add new prop
+const props = defineProps({
+  // ...existing props
+  useSplitter: { type: Boolean, default: true },
+})
+```
+
+3. Add template option for inline layout:
+```html
+<!-- Add conditional wrapper -->
 <template>
-  <div class="file-manager">
-    <Splitter :gutterSize="8" class="file-manager-splitter">
-      <!-- Sidebar Tree -->
-      <SplitterPanel :size="25" :minSize="20">
-        <NxFileTree
-          v-model:selectedCategories="selectedCategories"
-          :categories="categories"
-          :hierarchical="hierarchical"
-          :showCounts="showCounts"
-          :treeData="treeData"
-          @category-select="handleCategorySelect"
-        />
-      </SplitterPanel>
-
-      <!-- Main Content Area -->
-      <SplitterPanel :size="75" :minSize="50">
-        <Splitter orientation="vertical">
-          <!-- File List -->
-          <SplitterPanel :size="70" :minSize="40">
-            <NxFileListView
-              :files="filteredFiles"
-              :loading="loading"
-              :viewMode="viewMode"
-              :selectedFiles="selectedFiles"
-              @file-select="handleFileSelect"
-              @file-action="handleFileAction"
-              @bulk-action="handleBulkAction"
-            />
-          </SplitterPanel>
-
-          <!-- Preview Pane -->
-          <SplitterPanel :size="30" :minSize="20" v-if="showPreview">
-            <NxFilePreviewPane
-              :selectedFile="selectedFile"
-              @close="showPreview = false"
-            />
-          </SplitterPanel>
-        </Splitter>
-      </SplitterPanel>
-    </Splitter>
+  <div class="file-manager" :class="{ 'mobile': isMobile }">
+    <template v-if="useSplitter">
+      <!-- Existing Splitter implementation -->
+    </template>
+    <template v-else>
+      <!-- New inline implementation -->
+      <div class="flex flex-column h-full">
+        <!-- Simplified layout without fixed panes -->
+      </div>
+    </template>
   </div>
 </template>
 ```
 
-### NxFileTree.vue (Tree Navigation)
+### Step 2: Fix NxFileTree.vue
 
-```vue
+1. Replace custom CSS with PrimeFlex:
+```css
+/* Replace custom styling */
+.file-tree {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Use PrimeFlex classes in template */
+<div class="flex flex-column h-full">
+```
+
+2. Make height configurable:
+```js
+// Add new prop
+const props = defineProps({
+  // ...existing props
+  treeHeight: { type: String, default: '100%' },
+})
+```
+
+3. Add style binding:
+```html
+<div class="flex flex-column" :style="{ height: treeHeight }">
+```
+
+### Step 3: Fix NxFilePreviewPane.vue
+
+1. Replace custom CSS with PrimeFlex:
+```css
+/* Replace */
+.file-preview-pane {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--surface-border);
+}
+
+/* With classes in template */
+<div class="flex flex-column h-full border-left-1 surface-border">
+```
+
+2. Add optional Card wrapper:
+```js
+// Add prop
+const props = defineProps({
+  // ...existing props
+  useCard: { type: Boolean, default: false },
+})
+```
+
+3. Add conditional Card component:
+```html
 <template>
-  <div class="file-tree">
-    <!-- Flat Categories View (initial implementation) -->
-    <div v-if="!hierarchical" class="flat-categories">
-      <div
-        v-for="category in categories"
-        :key="category.id"
-        :class="['category-item', { 'selected': selectedCategories.includes(category.id) }]"
-        @click="toggleCategory(category.id)"
-      >
-        <i :class="getCategoryIcon(category)" class="mr-2"></i>
-        <span>{{ category.name }}</span>
-        <small v-if="showCounts" class="ml-auto text-muted">
-          {{ getCategoryFileCount(category.id) }}
-        </small>
-      </div>
-    </div>
-
-    <!-- Hierarchical Tree View (future implementation) -->
-    <Tree
-      v-else
-      :value="treeData"
-      selectionMode="multiple"
-      v-model:selectionKeys="selectedKeys"
-      @node-select="handleNodeSelect"
-      @node-unselect="handleNodeUnselect"
-    >
-      <template #default="slotProps">
-        <span class="tree-node">
-          <i :class="getCategoryIcon(slotProps.node)" class="mr-2"></i>
-          {{ slotProps.node.label }}
-          <small v-if="showCounts" class="ml-auto text-muted">
-            {{ slotProps.node.fileCount || 0 }}
-          </small>
-        </span>
-      </template>
-    </Tree>
+  <Card v-if="useCard && selectedFile">
+    <!-- Content -->
+  </Card>
+  <div v-else-if="selectedFile" class="flex flex-column h-full border-left-1 surface-border">
+    <!-- Content -->
   </div>
+  <!-- No selection state -->
 </template>
 ```
 
-```javascript
-// NxFileTree Props
-props: {
-  categories: {
-    type: Array,
-    required: true
-  },
-  selectedCategories: {
-    type: Array,
-    default: () => []
-  },
-  hierarchical: {
-    type: Boolean,
-    default: false // Start with flat categories, set to true when parent_id is implemented
-  },
-  showCounts: {
-    type: Boolean,
-    default: true // Show file count per category
-  },
-  treeData: {
-    type: Array,
-    default: () => [] // For hierarchical tree structure (future use)
-  }
-},
-
-// NxFileTree Emits
-emits: ['category-select', 'category-unselect', 'selection-change']
-```
-
-### NxFileListView.vue (File Listing)
-
-```vue
-<template>
-  <div class="file-list-view">
-    <!-- Toolbar -->
-    <div class="flex justify-between items-center p-3 border-bottom">
-      <div class="flex gap-2">
-        <Button @click="viewMode = 'list'" :outlined="viewMode !== 'list'">
-          <i class="pi pi-list"></i>
-        </Button>
-        <Button @click="viewMode = 'grid'" :outlined="viewMode !== 'grid'">
-          <i class="pi pi-th"></i>
-        </Button>
-      </div>
-      <div class="flex gap-2">
-        <Button @click="uploadFiles" icon="pi pi-upload" />
-        <Button @click="createFolder" icon="pi pi-folder" />
-      </div>
-    </div>
-
-    <!-- File List/Grid -->
-    <div v-if="viewMode === 'list'" class="file-list">
-      <NxDynamicTable
-        :config="listConfig"
-        :data="files"
-        :loading="loading"
-        :compact="true"
-        selectionMode="multiple"
-        v-model:selection="selectedFiles"
-        @row-action="handleRowAction"
-        @bulk-action="handleBulkAction"
-      />
-    </div>
-
-    <div v-else class="file-grid">
-      <DataView
-        :value="files"
-        :layout="viewMode"
-        :loading="loading"
-        selectionMode="multiple"
-        v-model:selection="selectedFiles"
-      >
-        <template #grid="slotProps">
-          <div class="file-grid-item" @click="selectFile(slotProps.data)">
-            <NxFilePreview
-              :value="slotProps.data"
-              :showSize="true"
-              :showCategory="true"
-            />
-          </div>
-        </template>
-      </DataView>
-    </div>
-  </div>
-</template>
-```
-
-## Service Integration
-
-### File Operations Service
-
-```javascript
-// NxFileOperationsService.js
-export default class NxFileOperationsService {
-  constructor(fileService, categoryService) {
-    this.fileService = fileService
-    this.categoryService = categoryService
-  }
-
-  async copyFiles(fileIds, targetCategoryId) {
-    // Implementation
-  }
-
-  async moveFiles(fileIds, targetCategoryId) {
-    // Implementation
-  }
-
-  async renameFile(fileId, newTitle) {
-    // Implementation
-  }
-
-  async createCategory(name, parentId = null) {
-    // Implementation
-  }
-}
-```
-
-## Configuration & Props
-
-### NxFileManager Props
-
-```javascript
-props: {
-  // Display options
-  showPreview: { type: Boolean, default: true },
-  defaultViewMode: { type: String, default: 'list' }, // 'list' | 'grid'
-
-  // Selection options
-  selectionMode: { type: String, default: 'multiple' }, // 'single' | 'multiple'
-
-  // Layout options
-  sidebarWidth: { type: Number, default: 25 },
-  previewHeight: { type: Number, default: 30 },
-
-  // Tree/Category options
-  hierarchical: { type: Boolean, default: false }, // Enable hierarchical categories (future)
-  showCounts: { type: Boolean, default: true }, // Show file counts in categories
-  treeData: { type: Array, default: () => [] }, // Hierarchical tree data (future)
-
-  // Feature flags
-  allowUpload: { type: Boolean, default: true },
-  allowCreateCategory: { type: Boolean, default: true },
-  allowBulkOperations: { type: Boolean, default: true }
-}
-```
-
-## Mobile Responsiveness
-
-### Breakpoint Handling
-
-- **Desktop (lg+)**: Full split-pane layout with tree, list, and preview
-- **Tablet (md)**: Collapsible sidebar, stacked list/preview
-- **Mobile (sm)**: Full-screen list, modal preview, drawer tree
-
-### Touch Gestures
-
-- Swipe to open/close sidebar
-- Long press for multi-select
-- Drag & drop for file operations (where supported)
-
-## Events & Communication
-
-### Emitted Events
-
-```javascript
-// File selection
-'file-select' // { file, selectedFiles }
-
-// File operations
-'file-upload' // { files, categoryId }
-'file-delete' // { fileIds }
-'file-move' // { fileIds, targetCategoryId }
-'file-copy' // { fileIds, targetCategoryId }
-
-// Category operations
-'category-create' // { name, parentId }
-'category-rename' // { categoryId, newName }
-'category-delete' // { categoryId }
-```
-
-## Integration Points
-
-### 1. Service Registration
-
-Add to `appConfig.js`:
-
-```javascript
-import NxFileOperationsService from '@nonix-file-manager/services/NxFileOperationsService.js'
-
-service: {
-  // ... existing services
-  "fileOperations": (app) => new NxFileOperationsService(
-    app._context.provides.files,
-    app._context.provides['file-categories']
-  )
-}
-```
-
-### 2. Route Configuration
-
-```javascript
-routes: [
-  // ... existing routes
-  { path: '/file-manager', component: NxFileManager, meta: { layout: 'advanced' } }
-]
-```
-
-### 3. Component Registration
-
-```javascript
-// In main app or plugin
-import NxFileManager from '@nonix-file-manager/NxFileManager.vue'
-import NxFileTree from '@nonix-file-manager/NxFileTree.vue'
-import NxFileListView from '@nonix-file-manager/NxFileListView.vue'
-import NxFilePreviewPane from '@nonix-file-manager/NxFilePreviewPane.vue'
-```
-
-## Implementation Priority
-
-### Phase 1: Core Structure
-
-1. Create `NxFileManager.vue` with basic split-pane layout
-2. Implement `NxFileTree.vue` using existing categories
-3. Create `NxFileListView.vue` extending dynamic table
-
-### Phase 2: Enhanced Features
-
-1. Add `NxFilePreviewPane.vue` component
-2. Implement file operations service
-3. Add grid view mode
-
-### Phase 3: Advanced Features
-
-1. Mobile responsiveness improvements
-2. Drag & drop operations
-3. Bulk operations UI
-4. Search and filtering enhancements
-
-## Dependencies
-
-### PrimeVue Components Required
-
-- `Splitter` & `SplitterPanel` - Layout management
-- `Tree` - Hierarchical navigation
-- `DataView` - Grid/list view switching
-- `ContextMenu` - Right-click operations
-- `Dialog` - Operation confirmations
-- `Toast` - User feedback
-
-### Existing Dependencies
-
-- All existing file services
-- `NxDynamicTable` for list view
-- `NxFilePreview` for item rendering
-- `NxFileTypeManager` for type detection
-
-## Testing Strategy
-
-### Unit Tests
-
-- File operation services
-- Component prop validation
-- Event emission testing
-
-### Integration Tests
-
-- File upload flow
-- Tree navigation
-- Multi-select operations
-- Mobile responsiveness
-
-### E2E Tests
-
-- Complete file management workflows
-- Cross-device compatibility
-
-## Performance Considerations
-
-### Virtual Scrolling
-
-- Implement virtual scrolling for large file lists
-- Tree virtualization for deep category hierarchies
-
-### Lazy Loading
-
-- Load file previews on demand
-- Paginate large category contents
-
-### Caching
-
-- Cache file type information
-- Cache category tree structure
-
-## Future Extensions
-
-### Potential Enhancements
-
-1. **Hierarchical Categories** - Add parent_id to FileCategory model and enable hierarchical tree navigation
-2. **Cloud Storage Integration** - Add cloud provider connectors
-3. **Advanced Search** - Full-text search with filters
-4. **Version Control** - File versioning system
-5. **Sharing** - File sharing and permissions
-6. **Offline Support** - Service worker caching
-
-This integration plan leverages 100% of existing services and components while providing a complete file management experience. The modular architecture allows for incremental implementation and easy testing.
+### Step 4: Convert CSS to PrimeFlex
+
+#### NxFileManager.vue
+- `.file-manager-splitter` → `h-full border-1 surface-border`
+- `.mobile-header` → `flex justify-content-between align-items-center p-2 border-bottom-1 surface-border bg-surface-section`
+- `.mobile-content` → `flex-1 overflow-hidden`
+
+#### NxFilePreviewPane.vue
+- `.preview-header` → `flex justify-content-between align-items-center p-2 border-bottom-1 surface-border`
+- `.preview-content` → `flex-1 p-3 overflow-y-auto`
+- `.detail-row` → `flex justify-content-between mb-2 pb-1 border-bottom-1 surface-border`
+- `.preview-actions` → `flex flex-wrap gap-2`
+
+#### NxFileTree.vue
+- `.tree-header` → `flex justify-content-between align-items-center p-2 border-bottom-1 surface-border`
+- `.category-item` → `flex align-items-center p-2 cursor-pointer border-radius-2 transition-all transition-duration-200`
+- `.category-item.selected` → `bg-primary-50 text-primary-700`
+
+### Step 5: Add Integration Options
+
+1. Create new exportable components:
+   - `NxInlineFileManager.vue` - For embedding in other components
+   - `NxFilePickerDialog.vue` - For selection dialogs
+
+2. Add props to control appearance:
+   - `compact: Boolean` - Use more compact styling
+   - `height: String` - Control component height
+   - `showTree: Boolean` - Show/hide tree
+   - `showPreview: Boolean` - Show/hide preview
+
+3. Create PrimeVue-friendly wrappers:
+   - Dialog wrapper for file picker
+   - Panel wrapper for inline display
+
+## Implementation Notes
+
+1. **DO NOT REMOVE specialized functionality**:
+   - Keep NxFilePreview.vue as is - it handles multiple file types
+   - Maintain file type detection and specialized renderers
+
+2. **Preserve service integrations**:
+   - fileTypeManager service for file type detection
+   - fileOperationsService for file operations
+   - categoryService for categories
+
+3. **Component separation remains valid**:
+   - NxFilePreview.vue - Core preview for file types
+   - NxFilePreviewPane.vue - Detailed view with actions
+   - NxFileListView.vue - List/grid view of files
+   - NxFileTree.vue - Category navigation
+
+4. **CSS conversion priorities**:
+   - Replace custom flex layouts with PrimeFlex
+   - Keep specialized styling where necessary
+   - Don't compromise functionality for PrimeFlex purity
+
+5. **Update all imports**:
+   - Ensure all components import PrimeVue components
+   - Add any missing PrimeFlex imports
+
+## Testing Checklist
+
+After implementation, verify:
+
+- [ ] Components work inline without taking full screen
+- [ ] File preview still handles all file types correctly
+- [ ] Responsive behavior works on mobile devices
+- [ ] PrimeFlex styling is consistent
+- [ ] All file operations (upload, delete, etc.) still work
+- [ ] Tree navigation and selection works correctly
