@@ -160,132 +160,117 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, watch, inject, defineProps, defineEmits } from 'vue'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import NxFilePreview from './NxFilePreview.vue'
-import { inject } from 'vue'
 
-export default {
-  name: 'NxFilePreviewPane',
-  components: {
-    Button,
-    Dialog,
-    InputText,
-    NxFilePreview
-  },
-  props: {
-    selectedFile: {
-      type: Object,
-      default: null
-    }
-  },
-  emits: ['close', 'file-action', 'file-renamed'],
-  data() {
-    return {
-      showRenameDialog: false,
-      newTitle: '',
-      renaming: false
-    }
-  },
-  computed: {
-    fileTypeManager() {
-      return inject('fileTypeManager')
-    },
+// Props
+const props = defineProps({
+  selectedFile: {
+    type: Object,
+    default: null
+  }
+})
 
-    fileOperationsService() {
-      return inject('fileOperations')
-    },
+// Emits
+const emit = defineEmits(['close', 'file-action', 'file-renamed'])
 
-    previewUrl() {
-      if (!this.selectedFile) return ''
-      return this.selectedFile.storage_url || ''
-    },
+// Services
+const fileTypeManager = inject('fileTypeManager')
+const fileOperationsService = inject('fileOperations')
 
-    isImage() {
-      if (!this.selectedFile?.mime_type) return false
-      return this.selectedFile.mime_type.startsWith('image/')
-    },
+// Reactive state
+const showRenameDialog = ref(false)
+const newTitle = ref('')
+const renaming = ref(false)
 
-    isAudio() {
-      if (!this.selectedFile?.mime_type) return false
-      return this.selectedFile.mime_type.startsWith('audio/')
-    },
+// Computed
+const previewUrl = computed(() => {
+  if (!props.selectedFile) return ''
+  return props.selectedFile.storage_url || ''
+})
 
-    isVideo() {
-      if (!this.selectedFile?.mime_type) return false
-      return this.selectedFile.mime_type.startsWith('video/')
-    },
+const isImage = computed(() => {
+  if (!props.selectedFile?.mime_type) return false
+  return props.selectedFile.mime_type.startsWith('image/')
+})
 
-    formattedSize() {
-      if (!this.selectedFile?.size_bytes) return 'Unknown'
-      return this.fileTypeManager?.formatFileSize(this.selectedFile.size_bytes) || 'Unknown'
-    },
+const isAudio = computed(() => {
+  if (!props.selectedFile?.mime_type) return false
+  return props.selectedFile.mime_type.startsWith('audio/')
+})
 
-    categoryName() {
-      return this.selectedFile?.category?.name || 'Uncategorized'
-    }
-  },
-  watch: {
-    selectedFile: {
-      handler(newFile) {
-        if (newFile) {
-          this.newTitle = newFile.title || ''
-        }
-      },
-      immediate: true
-    }
-  },
-  methods: {
-    downloadFile() {
-      if (this.previewUrl) {
-        const link = document.createElement('a')
-        link.href = this.previewUrl
-        link.download = this.selectedFile.original_filename
-        link.click()
-      }
-    },
+const isVideo = computed(() => {
+  if (!props.selectedFile?.mime_type) return false
+  return props.selectedFile.mime_type.startsWith('video/')
+})
 
-    async renameFile() {
-      if (!this.newTitle.trim() || !this.selectedFile) return
+const formattedSize = computed(() => {
+  if (!props.selectedFile?.size_bytes) return 'Unknown'
+  return fileTypeManager?.formatFileSize(props.selectedFile.size_bytes) || 'Unknown'
+})
 
-      this.renaming = true
-      try {
-        const result = await this.fileOperationsService.renameFile(this.selectedFile.id, this.newTitle.trim())
-        if (result.success) {
-          this.$emit('file-renamed', {
-            fileId: this.selectedFile.id,
-            newTitle: this.newTitle.trim()
-          })
-          this.showRenameDialog = false
-        }
-      } catch (error) {
-        console.error('Rename file error:', error)
-      } finally {
-        this.renaming = false
-      }
-    },
+const categoryName = computed(() => {
+  return props.selectedFile?.category?.name || 'Uncategorized'
+})
 
-    formatDate(dateString) {
-      if (!dateString) return 'Unknown'
-      return new Date(dateString).toLocaleDateString()
-    },
-
-    formatDuration(seconds) {
-      if (!seconds) return 'Unknown'
-
-      const hours = Math.floor(seconds / 3600)
-      const minutes = Math.floor((seconds % 3600) / 60)
-      const secs = Math.floor(seconds % 60)
-
-      if (hours > 0) {
-        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-      }
-      return `${minutes}:${secs.toString().padStart(2, '0')}`
-    }
+// Methods
+const downloadFile = () => {
+  if (previewUrl.value) {
+    const link = document.createElement('a')
+    link.href = previewUrl.value
+    link.download = props.selectedFile.original_filename
+    link.click()
   }
 }
+
+const renameFile = async () => {
+  if (!newTitle.value.trim() || !props.selectedFile) return
+
+  renaming.value = true
+  try {
+    const result = await fileOperationsService.renameFile(props.selectedFile.id, newTitle.value.trim())
+    if (result.success) {
+      emit('file-renamed', {
+        fileId: props.selectedFile.id,
+        newTitle: newTitle.value.trim()
+      })
+      showRenameDialog.value = false
+    }
+  } catch (error) {
+    console.error('Rename file error:', error)
+  } finally {
+    renaming.value = false
+  }
+}
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'Unknown'
+  return new Date(dateString).toLocaleDateString()
+}
+
+const formatDuration = (seconds) => {
+  if (!seconds) return 'Unknown'
+
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const secs = Math.floor(seconds % 60)
+
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
+  return `${minutes}:${secs.toString().padStart(2, '0')}`
+}
+
+// Watchers
+watch(() => props.selectedFile, (newFile) => {
+  if (newFile) {
+    newTitle.value = newFile.title || ''
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>

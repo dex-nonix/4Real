@@ -140,139 +140,118 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, watch, inject, defineProps, defineEmits } from 'vue'
 import DataView from 'primevue/dataview'
 import Button from 'primevue/button'
 import Toolbar from 'primevue/toolbar'
 import NxFilePreview from './NxFilePreview.vue'
 import NxFileUploadArea from './NxFileUploadArea.vue'
-import { inject, ref, watch } from 'vue'
 
-export default {
-  name: 'NxFileListView',
-  components: {
-    DataView,
-    Button,
-    Toolbar,
-    NxFilePreview,
-    NxFileUploadArea
+// Props
+const props = defineProps({
+  files: {
+    type: Array,
+    default: () => []
   },
-  props: {
-    files: {
-      type: Array,
-      default: () => []
-    },
-    loading: {
-      type: Boolean,
-      default: false
-    },
-    viewMode: {
-      type: String,
-      default: 'list',
-      validator: value => ['list', 'grid'].includes(value)
-    },
-    selectionMode: {
-      type: String,
-      default: 'multiple',
-      validator: value => ['single', 'multiple'].includes(value)
-    },
-    selectedFiles: {
-      type: Array,
-      default: () => []
-    },
-    selectedCategories: {
-      type: Array,
-      default: () => []
-    },
-    allowUpload: {
-      type: Boolean,
-      default: true
-    },
-    gridPageSize: {
-      type: Number,
-      default: 20
-    }
+  loading: {
+    type: Boolean,
+    default: false
   },
-  emits: ['update:selectedFiles', 'row-action', 'bulk-action', 'upload', 'view-mode-change', 'file-select', 'file-open', 'file-uploaded'],
-  setup(props, { emit }) {
-    const selectedFilesLocal = ref([...props.selectedFiles])
-    const layout = ref(props.viewMode)
-    
-    watch(() => props.selectedFiles, (newVal) => {
-      selectedFilesLocal.value = [...newVal]
-    }, { immediate: true })
-    
-    watch(selectedFilesLocal, (newVal) => {
-      emit('update:selectedFiles', newVal)
-    })
-    
-    watch(layout, (newVal) => {
-      emit('view-mode-change', newVal)
-    })
-    
-    const fileTypeManager = inject('fileTypeManager')
-    
-    return {
-      selectedFilesLocal,
-      layout,
-      fileTypeManager
-    }
+  viewMode: {
+    type: String,
+    default: 'list',
+    validator: value => ['list', 'grid'].includes(value)
   },
-  data() {
-    return {}
+  selectionMode: {
+    type: String,
+    default: 'multiple',
+    validator: value => ['single', 'multiple'].includes(value)
   },
-  computed: {
-
+  selectedFiles: {
+    type: Array,
+    default: () => []
   },
-  watch: {
+  selectedCategories: {
+    type: Array,
+    default: () => []
   },
-  methods: {
-    selectFile(file) {
-      const isSelected = this.isSelected(file)
-      if (isSelected) {
-        this.selectedFilesLocal = this.selectedFilesLocal.filter(f => f.id !== file.id)
-      } else {
-        this.selectedFilesLocal = [...this.selectedFilesLocal, file]
-      }
-    },
-
-    openFile(file) {
-      this.$emit('file-select', file)
-    },
-
-    isSelected(file) {
-      return this.selectedFilesLocal.some(f => f.id === file.id)
-    },
-
-
-    handleRowAction(action, rowData) {
-      this.$emit('row-action', { action, rowData })
-    },
-
-    handleBulkAction(action) {
-      this.$emit('bulk-action', {
-        action,
-        selectedFiles: this.selectedFilesLocal
-      })
-    },
-
-
-    handleFileUploaded(uploadedFile) {
-      // Emit the uploaded file to parent
-      this.$emit('file-uploaded', uploadedFile)
-    },
-
-    truncateFileName(filename) {
-      if (!filename) return ''
-      if (filename.length <= 20) return filename
-      return filename.substring(0, 17) + '...'
-    },
-
-    formattedSize(bytes) {
-      if (!bytes) return ''
-      return this.fileTypeManager?.formatFileSize(bytes) || ''
-    }
+  allowUpload: {
+    type: Boolean,
+    default: true
+  },
+  gridPageSize: {
+    type: Number,
+    default: 20
   }
+})
+
+// Emits
+const emit = defineEmits(['update:selectedFiles', 'row-action', 'bulk-action', 'upload', 'view-mode-change', 'file-select', 'file-open', 'file-uploaded'])
+
+// Services
+const fileTypeManager = inject('fileTypeManager')
+
+// Reactive state
+const selectedFilesLocal = ref([...props.selectedFiles])
+const layout = ref(props.viewMode)
+
+// Watchers
+watch(() => props.selectedFiles, (newVal) => {
+  selectedFilesLocal.value = [...newVal]
+}, { immediate: true })
+
+watch(selectedFilesLocal, (newVal) => {
+  emit('update:selectedFiles', newVal)
+})
+
+watch(layout, (newVal) => {
+  emit('view-mode-change', newVal)
+})
+
+// Methods
+const selectFile = (file) => {
+  const isSelected = isSelected(file)
+  if (isSelected) {
+    selectedFilesLocal.value = selectedFilesLocal.value.filter(f => f.id !== file.id)
+  } else {
+    selectedFilesLocal.value = [...selectedFilesLocal.value, file]
+  }
+}
+
+const openFile = (file) => {
+  emit('file-select', file)
+}
+
+const isSelected = (file) => {
+  return selectedFilesLocal.value.some(f => f.id === file.id)
+}
+
+const handleRowAction = (action, rowData) => {
+  emit('row-action', { action, rowData })
+}
+
+const handleBulkAction = (action) => {
+  emit('bulk-action', {
+    action,
+    selectedFiles: selectedFilesLocal.value
+  })
+}
+
+const handleFileUploaded = (uploadedFile) => {
+  // Emit the uploaded file to parent
+  emit('file-uploaded', uploadedFile)
+}
+
+const truncateFileName = (filename) => {
+  if (!filename) return ''
+  if (filename.length <= 20) return filename
+  return filename.substring(0, 17) + '...'
+}
+
+const formattedSize = (bytes) => {
+  if (!bytes) return ''
+  return fileTypeManager?.formatFileSize(bytes) || ''
 }
 </script>
 

@@ -25,103 +25,96 @@
   </div>
 </template>
 
-<script>
-import { inject } from 'vue'
+<script setup>
+import { computed, inject, defineProps } from 'vue'
 
-export default {
-  name: 'NxFilePreview',
-  props: {
-    value: {type: [String, Object], default: null},
-    url: {type: String, default: ''},
-    mime: {type: String, default: ''},
-    title: {type: String, default: ''},
-    filename: {type: String, default: ''},
-    size: {type: Number, default: 0},
-    urlField: {type: String, default: 'storage_url'},
-    showSize: {type: Boolean, default: false},
-    showCategory: {type: Boolean, default: false}
-  },
-  setup() {
-    // Inject NxFileTypeManager using Vue's dependency injection
-    const fileTypeManager = inject('fileTypeManager')
+// Props
+const props = defineProps({
+  value: {type: [String, Object], default: null},
+  url: {type: String, default: ''},
+  mime: {type: String, default: ''},
+  title: {type: String, default: ''},
+  filename: {type: String, default: ''},
+  size: {type: Number, default: 0},
+  urlField: {type: String, default: 'storage_url'},
+  showSize: {type: Boolean, default: false},
+  showCategory: {type: Boolean, default: false}
+})
 
-    return {
-      fileTypeManager
-    }
-  },
-  computed: {
-    effectiveUrl() {
-      if (this.url) return this.url
-      if (typeof this.value === 'string' && this.value) return this.value
-      if (this.value && typeof this.value === 'object') {
-        if (this.value[this.urlField]) return this.value[this.urlField]
-      }
-      return ''
-    },
+// Services
+const fileTypeManager = inject('fileTypeManager')
 
-    // Get MIME type from various sources
-    mimeType() {
-      if (this.mime) return this.mime
-      if (this.value && typeof this.value === 'object' && this.value.mime_type) {
-        return this.value.mime_type
-      }
-      return ''
-    },
-
-    // Get filename from various sources
-    fileName() {
-      if (this.filename) return this.filename
-      if (this.value && typeof this.value === 'object' && this.value.original_filename) {
-        return this.value.original_filename
-      }
-      return ''
-    },
-
-    // File type detection using injected NxFileTypeManager
-    fileTypeInfo() {
-      return this.fileTypeManager.detectFileType(this.mimeType, this.fileName)
-    },
-
-    // File type properties from the registry
-    fileTypeIconClass() {
-      return this.fileTypeManager.getIconClass(this.fileTypeInfo)
-    },
-
-    fileTypeColor() {
-      return this.fileTypeManager.getColor(this.fileTypeInfo)
-    },
-
-    fileTypeDisplayName() {
-      return this.fileTypeManager.getDisplayName(this.fileTypeInfo)
-    },
-
-    // Check if file supports preview based on file type category
-    isImage() {
-      return this.fileTypeInfo.category === 'image'
-    },
-
-    isAudio() {
-      return this.fileTypeInfo.category === 'audio'
-    },
-
-    // Display name with fallback to file type name
-    displayName() {
-      return this.title || this.fileName || this.fileTypeDisplayName
-    },
-
-    // Formatted file size using injected NxFileTypeManager
-    formattedSize() {
-      const fileSize = this.size ||
-        (this.value && typeof this.value === 'object' && this.value.size_bytes) ||
-        0
-      return fileSize > 0 ? this.fileTypeManager.formatFileSize(fileSize) : ''
-    },
-
-    altText() {
-      return this.title || this.fileName || this.fileTypeDisplayName || 'file'
-    }
+// Computed
+const effectiveUrl = computed(() => {
+  if (props.url) return props.url
+  if (typeof props.value === 'string' && props.value) return props.value
+  if (props.value && typeof props.value === 'object') {
+    if (props.value[props.urlField]) return props.value[props.urlField]
   }
-}
+  return ''
+})
+
+// Get MIME type from various sources
+const mimeType = computed(() => {
+  if (props.mime) return props.mime
+  if (props.value && typeof props.value === 'object' && props.value.mime_type) {
+    return props.value.mime_type
+  }
+  return ''
+})
+
+// Get filename from various sources
+const fileName = computed(() => {
+  if (props.filename) return props.filename
+  if (props.value && typeof props.value === 'object' && props.value.original_filename) {
+    return props.value.original_filename
+  }
+  return ''
+})
+
+// File type detection using injected NxFileTypeManager
+const fileTypeInfo = computed(() => {
+  return fileTypeManager.detectFileType(mimeType.value, fileName.value)
+})
+
+// File type properties from the registry
+const fileTypeIconClass = computed(() => {
+  return fileTypeManager.getIconClass(fileTypeInfo.value)
+})
+
+const fileTypeColor = computed(() => {
+  return fileTypeManager.getColor(fileTypeInfo.value)
+})
+
+const fileTypeDisplayName = computed(() => {
+  return fileTypeManager.getDisplayName(fileTypeInfo.value)
+})
+
+// Check if file supports preview based on file type category
+const isImage = computed(() => {
+  return fileTypeInfo.value.category === 'image'
+})
+
+const isAudio = computed(() => {
+  return fileTypeInfo.value.category === 'audio'
+})
+
+// Display name with fallback to file type name
+const displayName = computed(() => {
+  return props.title || fileName.value || fileTypeDisplayName.value
+})
+
+// Formatted file size using injected NxFileTypeManager
+const formattedSize = computed(() => {
+  const fileSize = props.size ||
+    (props.value && typeof props.value === 'object' && props.value.size_bytes) ||
+    0
+  return fileSize > 0 ? fileTypeManager.formatFileSize(fileSize) : ''
+})
+
+const altText = computed(() => {
+  return props.title || fileName.value || fileTypeDisplayName.value || 'file'
+})
 </script>
 
 <style scoped>

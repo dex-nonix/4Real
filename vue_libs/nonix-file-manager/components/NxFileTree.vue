@@ -81,190 +81,177 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted, watch, inject, defineProps, defineEmits } from 'vue'
 import Tree from 'primevue/tree'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
-import { inject } from 'vue'
 
-export default {
-  name: 'NxFileTree',
-  components: {
-    Tree,
-    Button,
-    Dialog,
-    InputText
+// Props
+const props = defineProps({
+  categories: {
+    type: Array,
+    required: true
   },
-  props: {
-    categories: {
-      type: Array,
-      required: true
-    },
-    selectedCategories: {
-      type: Array,
-      default: () => []
-    },
-    selectionMode: {
-      type: String,
-      default: 'single',
-      validator: value => ['single', 'multiple'].includes(value)
-    },
-    hierarchical: {
-      type: Boolean,
-      default: false // Start with flat categories, set to true when parent_id is implemented
-    },
-    showCounts: {
-      type: Boolean,
-      default: true // Show file count per category
-    },
-    treeData: {
-      type: Array,
-      default: () => [] // For hierarchical tree structure (future use)
-    },
-    allowCreateCategory: {
-      type: Boolean,
-      default: true
+  selectedCategories: {
+    type: Array,
+    default: () => []
+  },
+  selectionMode: {
+    type: String,
+    default: 'single',
+    validator: value => ['single', 'multiple'].includes(value)
+  },
+  hierarchical: {
+    type: Boolean,
+    default: false // Start with flat categories, set to true when parent_id is implemented
+  },
+  showCounts: {
+    type: Boolean,
+    default: true // Show file count per category
+  },
+  treeData: {
+    type: Array,
+    default: () => [] // For hierarchical tree structure (future use)
+  },
+  allowCreateCategory: {
+    type: Boolean,
+    default: true
+  }
+})
+
+// Emits
+const emit = defineEmits(['category-select', 'category-unselect', 'selection-change', 'category-created', 'update:selectedCategories'])
+
+// Services
+const fileOperationsService = inject('fileOperations')
+
+// Reactive state
+const selectedKeys = ref({})
+const showCreateDialog = ref(false)
+const newCategoryName = ref('')
+const creating = ref(false)
+const fileCounts = ref({}) // Cache for file counts
+
+// Methods
+const toggleCategory = (categoryId) => {
+  if (props.selectionMode === 'single') {
+    // For single selection, just select this category (replace current selection)
+    if (props.selectedCategories[0] !== categoryId) {
+      const oldCategory = props.selectedCategories[0]
+      if (oldCategory) {
+        emit('category-unselect', oldCategory)
+      }
+      emit('category-select', categoryId)
+      emit('update:selectedCategories', [categoryId])
     }
-  },
-  emits: ['category-select', 'category-unselect', 'selection-change', 'category-created', 'update:selectedCategories'],
-  data() {
-    return {
-      selectedKeys: {},
-      showCreateDialog: false,
-      newCategoryName: '',
-      creating: false,
-      fileCounts: {} // Cache for file counts
+  } else {
+    // For multiple selection, toggle the category
+    const isSelected = props.selectedCategories.includes(categoryId)
+    let newSelectedCategories
+
+    if (isSelected) {
+      // Remove category
+      newSelectedCategories = props.selectedCategories.filter(id => id !== categoryId)
+      emit('category-unselect', categoryId)
+    } else {
+      // Add category
+      newSelectedCategories = [...props.selectedCategories, categoryId]
+      emit('category-select', categoryId)
     }
-  },
-  computed: {
-    fileOperationsService() {
-      return inject('fileOperations')
-    }
-  },
-  mounted() {
-    this.loadFileCounts()
-  },
-  watch: {
-    categories: {
-      handler() {
-        this.loadFileCounts()
-      },
-      immediate: true
-    },
-    selectedCategories: {
-      handler(newVal) {
-        if (!this.hierarchical) return
-        // Convert array to tree selection keys for hierarchical mode
-        this.selectedKeys = {}
-        newVal.forEach(id => {
-          this.selectedKeys[id] = true
-        })
-      },
-      immediate: true
-    }
-  },
-  methods: {
-    toggleCategory(categoryId) {
-      if (this.selectionMode === 'single') {
-        // For single selection, just select this category (replace current selection)
-        if (this.selectedCategories[0] !== categoryId) {
-          const oldCategory = this.selectedCategories[0]
-          if (oldCategory) {
-            this.$emit('category-unselect', oldCategory)
-          }
-          this.$emit('category-select', categoryId)
-          this.$emit('update:selectedCategories', [categoryId])
-        }
-      } else {
-        // For multiple selection, toggle the category
-        const isSelected = this.selectedCategories.includes(categoryId)
-        let newSelectedCategories
 
-        if (isSelected) {
-          // Remove category
-          newSelectedCategories = this.selectedCategories.filter(id => id !== categoryId)
-          this.$emit('category-unselect', categoryId)
-        } else {
-          // Add category
-          newSelectedCategories = [...this.selectedCategories, categoryId]
-          this.$emit('category-select', categoryId)
-        }
+    // Emit v-model update
+    emit('update:selectedCategories', newSelectedCategories)
+  }
+}
 
-        // Emit v-model update
-        this.$emit('update:selectedCategories', newSelectedCategories)
-      }
-    },
+const handleTreeSelectionChange = (event) => {
+  // event contains the new selectionKeys object from PrimeVue Tree
+  selectedKeys.value = event
 
-    handleTreeSelectionChange(event) {
-      // event contains the new selectionKeys object from PrimeVue Tree
-      this.selectedKeys = event
+  // Convert selectedKeys back to selectedCategories array
+  const newSelectedCategories = Object.keys(selectedKeys.value).filter(key => selectedKeys.value[key])
 
-      // Convert selectedKeys back to selectedCategories array
-      const newSelectedCategories = Object.keys(this.selectedKeys).filter(key => this.selectedKeys[key])
+  // For single selection, ensure only one category is selected
+  if (props.selectionMode === 'single' && newSelectedCategories.length > 1) {
+    // Keep only the last selected category
+    const lastSelected = newSelectedCategories[newSelectedCategories.length - 1]
+    selectedKeys.value = { [lastSelected]: true }
+    newSelectedCategories.splice(0, newSelectedCategories.length - 1)
+  }
 
-      // For single selection, ensure only one category is selected
-      if (this.selectionMode === 'single' && newSelectedCategories.length > 1) {
-        // Keep only the last selected category
-        const lastSelected = newSelectedCategories[newSelectedCategories.length - 1]
-        this.selectedKeys = { [lastSelected]: true }
-        newSelectedCategories.splice(0, newSelectedCategories.length - 1)
-      }
+  emit('update:selectedCategories', newSelectedCategories)
+}
 
-      this.$emit('update:selectedCategories', newSelectedCategories)
-    },
+const getCategoryIcon = (category) => {
+  // Simple icon logic - can be enhanced
+  return 'pi pi-folder'
+}
 
-    getCategoryIcon(category) {
-      // Simple icon logic - can be enhanced
-      return 'pi pi-folder'
-    },
+const loadFileCounts = async () => {
+  if (!props.showCounts || !fileOperationsService) return
 
-    async loadFileCounts() {
-      if (!this.showCounts || !this.fileOperationsService) return
-
-      for (const category of this.categories) {
-        if (this.fileCounts[category.id] === undefined) {
-          const count = await this.fileOperationsService.getCategoryFileCount(category.id)
-          this.fileCounts[category.id] = count
-        }
-      }
-    },
-
-    async getCategoryFileCount(categoryId) {
-      if (this.fileCounts[categoryId] !== undefined) {
-        return this.fileCounts[categoryId]
-      }
-
-      if (!this.fileOperationsService) {
-        return 0
-      }
-
-      const count = await this.fileOperationsService.getCategoryFileCount(categoryId)
-      this.fileCounts[categoryId] = count
-      return count
-    },
-
-    async createCategory() {
-      if (!this.newCategoryName.trim()) return
-
-      this.creating = true
-      try {
-        const result = await this.fileOperationsService.createCategory(this.newCategoryName.trim())
-        if (result.success) {
-          this.$emit('category-created', result.result)
-          this.showCreateDialog = false
-          this.newCategoryName = ''
-          // Refresh file counts cache
-          this.fileCounts = {}
-        }
-      } catch (error) {
-        console.error('Create category error:', error)
-      } finally {
-        this.creating = false
-      }
+  for (const category of props.categories) {
+    if (fileCounts.value[category.id] === undefined) {
+      const count = await fileOperationsService.getCategoryFileCount(category.id)
+      fileCounts.value[category.id] = count
     }
   }
 }
+
+const getCategoryFileCount = async (categoryId) => {
+  if (fileCounts.value[categoryId] !== undefined) {
+    return fileCounts.value[categoryId]
+  }
+
+  if (!fileOperationsService) {
+    return 0
+  }
+
+  const count = await fileOperationsService.getCategoryFileCount(categoryId)
+  fileCounts.value[categoryId] = count
+  return count
+}
+
+const createCategory = async () => {
+  if (!newCategoryName.value.trim()) return
+
+  creating.value = true
+  try {
+    const result = await fileOperationsService.createCategory(newCategoryName.value.trim())
+    if (result.success) {
+      emit('category-created', result.result)
+      showCreateDialog.value = false
+      newCategoryName.value = ''
+      // Refresh file counts cache
+      fileCounts.value = {}
+    }
+  } catch (error) {
+    console.error('Create category error:', error)
+  } finally {
+    creating.value = false
+  }
+}
+
+// Watchers
+watch(() => props.categories, () => {
+  loadFileCounts()
+}, { immediate: true })
+
+watch(() => props.selectedCategories, (newVal) => {
+  if (!props.hierarchical) return
+  // Convert array to tree selection keys for hierarchical mode
+  selectedKeys.value = {}
+  newVal.forEach(id => {
+    selectedKeys.value[id] = true
+  })
+}, { immediate: true })
+
+// Lifecycle
+onMounted(() => {
+  loadFileCounts()
+})
 </script>
 
 <style scoped>

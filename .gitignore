@@ -242,3 +242,4 @@ pnpm-debug.log*
 .env.production.local
 backend/app.db
 /faster_backend/4real.db
+/faster_backend/static/uploads/

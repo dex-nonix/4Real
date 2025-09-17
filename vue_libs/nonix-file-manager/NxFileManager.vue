@@ -171,7 +171,8 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted, onUnmounted, inject, defineProps, defineEmits } from 'vue'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import Button from 'primevue/button'
@@ -180,273 +181,251 @@ import Dropdown from 'primevue/dropdown'
 import NxFileTree from './components/NxFileTree.vue'
 import NxFileListView from './components/NxFileListView.vue'
 import NxFilePreviewPane from './components/NxFilePreviewPane.vue'
-import { inject, ref, computed, onMounted } from 'vue'
 
-export default {
-  name: 'NxFileManager',
-  components: {
-    Splitter,
-    SplitterPanel,
-    Button,
-    Dialog,
-    Dropdown,
-    NxFileTree,
-    NxFileListView,
-    NxFilePreviewPane
-  },
-  props: {
-    // Display options
-    showPreview: { type: Boolean, default: true },
-    defaultViewMode: { type: String, default: 'list' }, // 'list' | 'grid'
+// Props
+const props = defineProps({
+  // Display options
+  showPreview: { type: Boolean, default: true },
+  defaultViewMode: { type: String, default: 'list' }, // 'list' | 'grid'
 
-    // Selection options
-    selectionMode: { type: String, default: 'single' }, // 'single' | 'multiple'
+  // Selection options
+  selectionMode: { type: String, default: 'single' }, // 'single' | 'multiple'
 
-    // Layout options
-    sidebarWidth: { type: Number, default: 25 },
-    previewHeight: { type: Number, default: 70 },
+  // Layout options
+  sidebarWidth: { type: Number, default: 25 },
+  previewHeight: { type: Number, default: 70 },
 
-    // Tree/Category options
-    hierarchical: { type: Boolean, default: false }, // Enable hierarchical categories (future)
-    showCounts: { type: Boolean, default: true }, // Show file counts in categories
-    treeData: { type: Array, default: () => [] }, // Hierarchical tree data (future)
+  // Tree/Category options
+  hierarchical: { type: Boolean, default: false }, // Enable hierarchical categories (future)
+  showCounts: { type: Boolean, default: true }, // Show file counts in categories
+  treeData: { type: Array, default: () => [] }, // Hierarchical tree data (future)
 
-    // Feature flags
-    allowUpload: { type: Boolean, default: true },
-    allowCreateCategory: { type: Boolean, default: true },
-    allowBulkOperations: { type: Boolean, default: true }
-  },
-  emits: ['file-uploaded', 'file-deleted', 'file-copied', 'file-moved', 'category-created'],
-  setup() {
-    const fileService = inject('files')
-    const categoryService = inject('file-categories')
-    const fileOperationsService = inject('fileOperations')
+  // Feature flags
+  allowUpload: { type: Boolean, default: true },
+  allowCreateCategory: { type: Boolean, default: true },
+  allowBulkOperations: { type: Boolean, default: true }
+})
 
-    return {
-      fileService,
-      categoryService,
-      fileOperationsService
-    }
-  },
-  data() {
-    return {
-      // Data
-      categories: [],
-      files: [],
-      selectedCategories: [],
-      selectedFiles: [],
-      selectedFile: null,
+// Emits
+const emit = defineEmits(['file-uploaded', 'file-deleted', 'file-copied', 'file-moved', 'category-created'])
 
-      // UI State
-      loading: false,
-      viewMode: this.defaultViewMode,
-      showSidebar: false,
-      showPreviewModal: false,
-      showBulkDialog: false,
+// Services
+const fileService = inject('files')
+const categoryService = inject('file-categories')
+const fileOperationsService = inject('fileOperations')
 
-      // Operations
-      bulkOperation: '',
-      targetCategoryId: null,
-      bulkProcessing: false,
+// Data
+const categories = ref([])
+const files = ref([])
+const selectedCategories = ref([])
+const selectedFiles = ref([])
+const selectedFile = ref(null)
 
-      // Responsive
-      windowWidth: window.innerWidth
-    }
-  },
-  computed: {
-    isMobile() {
-      return this.windowWidth < 768
-    },
+// UI State
+const loading = ref(false)
+const viewMode = ref(props.defaultViewMode)
+const showSidebar = ref(false)
+const showPreviewModal = ref(false)
+const showBulkDialog = ref(false)
 
-    filteredFiles() {
-      if (this.selectedCategories.length === 0) {
-        return this.files
-      }
-      return this.files.filter(file =>
-        this.selectedCategories.includes(file.category_id)
-      )
-    }
-  },
-  mounted() {
-    this.loadData()
-    window.addEventListener('resize', this.handleResize)
-  },
-  beforeUnmount() {
-    window.removeEventListener('resize', this.handleResize)
-  },
-  methods: {
-    async loadData() {
-      this.loading = true
-      try {
-        const categoriesResult = await this.categoryService.list({ paginated: false })
-        this.categories = categoriesResult.data.data
+// Operations
+const bulkOperation = ref('')
+const targetCategoryId = ref(null)
+const bulkProcessing = ref(false)
 
-        const filesResult = await this.fileService.list({ paginated: false })
-        this.files = filesResult.data.data
-      } catch (error) {
-        console.error('Load data error:', error)
-      } finally {
-        this.loading = false
-      }
-    },
+// Responsive
+const windowWidth = ref(window.innerWidth)
 
-    handleCategorySelect(categoryId) {
-      if (this.selectionMode === 'single') {
-        this.selectedCategories = [categoryId]
-      } else {
-        if (!this.selectedCategories.includes(categoryId)) {
-          this.selectedCategories.push(categoryId)
-        }
-      }
-    },
+// Computed
+const isMobile = computed(() => windowWidth.value < 768)
 
-    handleCategoryUnselect(categoryId) {
-      this.selectedCategories = this.selectedCategories.filter(id => id !== categoryId)
-    },
+const filteredFiles = computed(() => {
+  if (selectedCategories.value.length === 0) {
+    return files.value
+  }
+  return files.value.filter(file =>
+    selectedCategories.value.includes(file.category_id)
+  )
+})
 
-    handleViewModeChange(newViewMode) {
-      this.viewMode = newViewMode
-    },
+// Methods
+const loadData = async () => {
+  loading.value = true
+  try {
+    const categoriesResult = await categoryService.list({ paginated: false })
+    categories.value = categoriesResult.data.data
 
-    handleCategoryCreated(category) {
-      this.categories.push(category)
-      this.loadData() // Refresh to get updated data
-    },
+    const filesResult = await fileService.list({ paginated: false })
+    files.value = filesResult.data.data
+  } catch (error) {
+    console.error('Load data error:', error)
+  } finally {
+    loading.value = false
+  }
+}
 
-    handleFileSelect(file) {
-      this.selectedFile = file
-      if (this.isMobile) {
-        this.showPreviewModal = true
-      }
-    },
-
-    handleFileAction(action, file) {
-      switch (action) {
-        case 'view':
-          this.handleFileSelect(file)
-          break
-        case 'edit':
-          // Could open edit dialog
-          break
-        case 'delete':
-          this.executeFileAction('delete', [file])
-          break
-        case 'copy':
-          this.initiateBulkOperation('copy', [file])
-          break
-        case 'move':
-          this.initiateBulkOperation('move', [file])
-          break
-      }
-    },
-
-    handleBulkAction({ action, selectedFiles }) {
-      this.initiateBulkOperation(action, selectedFiles)
-    },
-
-    initiateBulkOperation(action, files) {
-      this.bulkOperation = action
-      this.selectedFiles = files
-      this.showBulkDialog = true
-    },
-
-    async executeBulkOperation() {
-      if (!this.bulkOperation || this.selectedFiles.length === 0) return
-
-      this.bulkProcessing = true
-      try {
-        let result
-
-        switch (this.bulkOperation) {
-          case 'copy':
-            result = await this.fileOperationsService.copyFiles(
-              this.selectedFiles.map(f => f.id),
-              this.targetCategoryId
-            )
-            if (result.success) {
-              this.$emit('file-copied', result.results)
-              this.loadData()
-            }
-            break
-
-          case 'move':
-            result = await this.fileOperationsService.moveFiles(
-              this.selectedFiles.map(f => f.id),
-              this.targetCategoryId
-            )
-            if (result.success) {
-              this.$emit('file-moved', result.results)
-              this.loadData()
-            }
-            break
-
-          case 'delete':
-            await this.executeFileAction('delete', this.selectedFiles)
-            break
-        }
-
-        this.showBulkDialog = false
-        this.selectedFiles = []
-        this.bulkOperation = ''
-        this.targetCategoryId = null
-      } catch (error) {
-        console.error('Bulk operation error:', error)
-      } finally {
-        this.bulkProcessing = false
-      }
-    },
-
-    async executeFileAction(action, files) {
-      try {
-        for (const file of files) {
-          switch (action) {
-            case 'delete':
-              await this.fileService.delete(file.id)
-              this.$emit('file-deleted', file)
-              break
-          }
-        }
-        this.loadData()
-      } catch (error) {
-        console.error('File action error:', error)
-      }
-    },
-
-
-    handleFileUploaded(uploadedFile) {
-      // Add uploaded file to the list
-      this.files.push(uploadedFile)
-      this.$emit('file-uploaded', uploadedFile)
-    },
-
-    handleCreateCategory() {
-      // This could emit an event or show a dialog
-      this.$emit('create-category-requested')
-    },
-
-
-
-    handleFileRenamed({ fileId, newTitle }) {
-      const fileIndex = this.files.findIndex(f => f.id === fileId)
-      if (fileIndex !== -1) {
-        this.files[fileIndex].title = newTitle
-      }
-    },
-
-    handleResize() {
-      this.windowWidth = window.innerWidth
-    },
-
-    getBulkIcon(operation) {
-      const icons = {
-        copy: 'pi pi-copy',
-        move: 'pi pi-arrow-right',
-        delete: 'pi pi-trash'
-      }
-      return icons[operation] || 'pi pi-check'
+const handleCategorySelect = (categoryId) => {
+  if (props.selectionMode === 'single') {
+    selectedCategories.value = [categoryId]
+  } else {
+    if (!selectedCategories.value.includes(categoryId)) {
+      selectedCategories.value.push(categoryId)
     }
   }
 }
+
+const handleCategoryUnselect = (categoryId) => {
+  selectedCategories.value = selectedCategories.value.filter(id => id !== categoryId)
+}
+
+const handleViewModeChange = (newViewMode) => {
+  viewMode.value = newViewMode
+}
+
+const handleCategoryCreated = (category) => {
+  categories.value.push(category)
+  loadData() // Refresh to get updated data
+}
+
+const handleFileSelect = (file) => {
+  selectedFile.value = file
+  if (isMobile.value) {
+    showPreviewModal.value = true
+  }
+}
+
+const handleFileAction = (action, file) => {
+  switch (action) {
+    case 'view':
+      handleFileSelect(file)
+      break
+    case 'edit':
+      // Could open edit dialog
+      break
+    case 'delete':
+      executeFileAction('delete', [file])
+      break
+    case 'copy':
+      initiateBulkOperation('copy', [file])
+      break
+    case 'move':
+      initiateBulkOperation('move', [file])
+      break
+  }
+}
+
+const handleBulkAction = ({ action, selectedFiles: files }) => {
+  initiateBulkOperation(action, files)
+}
+
+const initiateBulkOperation = (action, files) => {
+  bulkOperation.value = action
+  selectedFiles.value = files
+  showBulkDialog.value = true
+}
+
+const executeBulkOperation = async () => {
+  if (!bulkOperation.value || selectedFiles.value.length === 0) return
+
+  bulkProcessing.value = true
+  try {
+    let result
+
+    switch (bulkOperation.value) {
+      case 'copy':
+        result = await fileOperationsService.copyFiles(
+          selectedFiles.value.map(f => f.id),
+          targetCategoryId.value
+        )
+        if (result.success) {
+          emit('file-copied', result.results)
+          loadData()
+        }
+        break
+
+      case 'move':
+        result = await fileOperationsService.moveFiles(
+          selectedFiles.value.map(f => f.id),
+          targetCategoryId.value
+        )
+        if (result.success) {
+          emit('file-moved', result.results)
+          loadData()
+        }
+        break
+
+      case 'delete':
+        await executeFileAction('delete', selectedFiles.value)
+        break
+    }
+
+    showBulkDialog.value = false
+    selectedFiles.value = []
+    bulkOperation.value = ''
+    targetCategoryId.value = null
+  } catch (error) {
+    console.error('Bulk operation error:', error)
+  } finally {
+    bulkProcessing.value = false
+  }
+}
+
+const executeFileAction = async (action, files) => {
+  try {
+    for (const file of files) {
+      switch (action) {
+        case 'delete':
+          await fileService.delete(file.id)
+          emit('file-deleted', file)
+          break
+      }
+    }
+    loadData()
+  } catch (error) {
+    console.error('File action error:', error)
+  }
+}
+
+const handleFileUploaded = (uploadedFile) => {
+  // Add uploaded file to the list
+  files.value.push(uploadedFile)
+  emit('file-uploaded', uploadedFile)
+}
+
+const handleCreateCategory = () => {
+  // This could emit an event or show a dialog
+  emit('create-category-requested')
+}
+
+const handleFileRenamed = ({ fileId, newTitle }) => {
+  const fileIndex = files.value.findIndex(f => f.id === fileId)
+  if (fileIndex !== -1) {
+    files.value[fileIndex].title = newTitle
+  }
+}
+
+const handleResize = () => {
+  windowWidth.value = window.innerWidth
+}
+
+const getBulkIcon = (operation) => {
+  const icons = {
+    copy: 'pi pi-copy',
+    move: 'pi pi-arrow-right',
+    delete: 'pi pi-trash'
+  }
+  return icons[operation] || 'pi pi-check'
+}
+
+// Lifecycle
+onMounted(() => {
+  loadData()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+})
 </script>
 
 <style scoped>

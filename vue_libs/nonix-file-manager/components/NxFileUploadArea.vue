@@ -34,89 +34,81 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, inject, defineProps, defineEmits } from 'vue'
 import Button from 'primevue/button'
 import ProgressBar from 'primevue/progressbar'
-import { inject } from 'vue'
 
-export default {
-  name: 'NxFileUploadArea',
-  components: {
-    Button,
-    ProgressBar
-  },
-  props: {
-    categoryId: {
-      type: [Number, String],
-      default: null
-    }
-  },
-  emits: ['file-uploaded'],
-  data() {
-    return {
-      uploading: false,
-      uploadProgress: 0,
-      currentFileName: ''
-    }
-  },
-  computed: {
-    fileService() {
-      return inject('files')
-    }
-  },
-  methods: {
-    handleFileSelect(event) {
-      const files = Array.from(event.target.files)
-      if (files.length === 0) return
+// Props
+const props = defineProps({
+  categoryId: {
+    type: [Number, String],
+    default: null
+  }
+})
 
-      // Reset input
-      event.target.value = ''
+// Emits
+const emit = defineEmits(['file-uploaded'])
 
-      // Upload files sequentially
-      this.uploadFiles(files)
-    },
+// Services
+const fileService = inject('files')
 
-    async uploadFiles(files) {
-      for (const file of files) {
-        await this.uploadFile(file)
+// Reactive state
+const uploading = ref(false)
+const uploadProgress = ref(0)
+const currentFileName = ref('')
+
+// Methods
+const handleFileSelect = (event) => {
+  const files = Array.from(event.target.files)
+  if (files.length === 0) return
+
+  // Reset input
+  event.target.value = ''
+
+  // Upload files sequentially
+  uploadFiles(files)
+}
+
+const uploadFiles = async (files) => {
+  for (const file of files) {
+    await uploadFile(file)
+  }
+}
+
+const uploadFile = async (file) => {
+  if (!props.categoryId) {
+    console.error('No category selected for upload')
+    return
+  }
+
+  uploading.value = true
+  uploadProgress.value = 0
+  currentFileName.value = file.name
+
+  try {
+    const result = await fileService.create({
+      upload: file,
+      title: file.name,
+      category_id: props.categoryId
+    }, {
+      onProgress: (progress) => {
+        uploadProgress.value = progress
       }
-    },
+    })
 
-    async uploadFile(file) {
-      if (!this.categoryId) {
-        console.error('No category selected for upload')
-        return
-      }
-
-      this.uploading = true
-      this.uploadProgress = 0
-      this.currentFileName = file.name
-
-      try {
-        const result = await this.fileService.create({
-          upload: file,
-          title: file.name,
-          category_id: this.categoryId
-        }, {
-          onProgress: (progress) => {
-            this.uploadProgress = progress
-          }
-        })
-
-        // Backend returns {data: {data: [...], pagination: {...}}}
-        const uploadedFile = result.data?.data || result.data
-        if (uploadedFile) {
-          this.$emit('file-uploaded', uploadedFile)
-        }
-      } catch (error) {
-        console.error('Upload failed:', error)
-        // Could emit error event here
-      } finally {
-        this.uploading = false
-        this.uploadProgress = 0
-        this.currentFileName = ''
-      }
+    // Backend returns {data: {data: [...], pagination: {...}}}
+    const uploadedFile = result.data?.data || result.data
+    if (uploadedFile) {
+      emit('file-uploaded', uploadedFile)
     }
+  } catch (error) {
+    console.error('Upload failed:', error)
+    // Could emit error event here
+  } finally {
+    uploading.value = false
+    uploadProgress.value = 0
+    currentFileName.value = ''
   }
 }
 </script>
