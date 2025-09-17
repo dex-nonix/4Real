@@ -117,22 +117,25 @@
           @click="handleBulkAction('copy')"
           icon="pi pi-copy"
           size="small"
-          label="Copy"
+          text
+          rounded
           v-tooltip.top="'Copy selected files'"
         />
         <Button
           @click="handleBulkAction('move')"
           icon="pi pi-arrow-right"
           size="small"
-          label="Move"
+          text
+          rounded
           v-tooltip.top="'Move selected files'"
         />
         <Button
           @click="handleBulkAction('delete')"
           icon="pi pi-trash"
           size="small"
+          text
+          rounded
           severity="danger"
-          label="Delete"
           v-tooltip.top="'Delete selected files'"
         />
       </div>
@@ -211,16 +214,17 @@ watch(layout, (newVal) => {
 
 // Methods
 const selectFile = (file) => {
-  const isSelected = isSelected(file)
-  if (isSelected) {
+  const alreadySelected = isSelected(file)
+  if (alreadySelected) {
     selectedFilesLocal.value = selectedFilesLocal.value.filter(f => f.id !== file.id)
   } else {
     selectedFilesLocal.value = [...selectedFilesLocal.value, file]
   }
+  emit('file-select', file)
 }
 
 const openFile = (file) => {
-  emit('file-select', file)
+  emit('file-open', file)
 }
 
 const isSelected = (file) => {
@@ -256,18 +260,6 @@ const formattedSize = (bytes) => {
 </script>
 
 <style scoped>
-/* Empty state styling */
-.empty-state {
-  text-align: center;
-  padding: 2rem;
-  color: var(--text-color-secondary);
-}
-
-.empty-state p {
-  margin: 1rem 0 0 0;
-  font-size: 0.875rem;
-}
-
 /* Responsive adjustments */
 @media (max-width: 768px) {
   /* Add any mobile-specific styles here */

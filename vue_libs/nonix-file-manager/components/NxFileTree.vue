@@ -1,29 +1,30 @@
 <template>
-  <div class="file-tree">
-    <div class="tree-header">
-      <h6>Categories</h6>
+  <div class="flex flex-column surface-card border-round-lg" :style="{ height: treeHeight }">
+    <div class="flex justify-content-between align-items-center p-3 border-bottom-1 surface-border bg-surface-section border-round-top-lg">
+      <span class="text-lg font-medium">Categories</span>
       <Button
         v-if="allowCreateCategory"
         icon="pi pi-plus"
         size="small"
+        text
+        rounded
         @click="showCreateDialog = true"
-        v-tooltip="'Create Category'"
+        v-tooltip.top="'Create Category'"
+        class="ml-2"
       />
     </div>
 
     <!-- Flat Categories View (initial implementation) -->
-    <div v-if="!hierarchical" class="flat-categories">
+    <div v-if="!hierarchical" class="flex flex-column gap-1 p-2 overflow-y-auto">
       <div
         v-for="category in categories"
         :key="category.id"
-        :class="['category-item', { 'selected': selectedCategories.includes(category.id) }]"
+        :class="['flex align-items-center p-2 cursor-pointer border-radius-lg transition-all transition-duration-200 hover:surface-hover', { 'bg-primary-50 border-primary-200 border-1 text-primary-700 shadow-2': selectedCategories.includes(category.id) }]"
         @click="toggleCategory(category.id)"
       >
-        <i :class="getCategoryIcon(category)" class="mr-2"></i>
-        <span>{{ category.name }}</span>
-        <small v-if="showCounts" class="ml-auto text-muted">
-          {{ fileCounts[category.id] || 0 }}
-        </small>
+        <i :class="getCategoryIcon(category)" class="text-primary-500 mr-3"></i>
+        <span class="flex-1 text-sm font-medium">{{ category.name }}</span>
+        <Badge v-if="showCounts" :value="fileCounts[category.id] || 0" severity="info" class="ml-auto text-xs" />
       </div>
     </div>
 
@@ -87,6 +88,7 @@ import Tree from 'primevue/tree'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
+import Badge from 'primevue/badge'
 
 // Props
 const props = defineProps({
@@ -118,7 +120,8 @@ const props = defineProps({
   allowCreateCategory: {
     type: Boolean,
     default: true
-  }
+  },
+  treeHeight: { type: String, default: '100%' }
 })
 
 // Emits
@@ -255,64 +258,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.file-tree {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.tree-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem;
-  border-bottom: 1px solid var(--surface-border);
-}
-
-.tree-header h6 {
-  margin: 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.flat-categories {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.category-item {
-  display: flex;
-  align-items: center;
-  padding: 0.5rem;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.category-item:hover {
-  background-color: var(--surface-hover);
-}
-
-.category-item.selected {
-  background-color: var(--primary-100);
-  color: var(--primary-700);
-}
-
-.category-item i {
-  font-size: 1rem;
-  color: var(--primary-500);
-}
-
-.category-item span {
-  flex: 1;
-  font-size: 0.875rem;
-}
-
-.category-item small {
-  font-size: 0.75rem;
-  opacity: 0.7;
-}
-
 .tree-node {
   display: flex;
   align-items: center;

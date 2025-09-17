@@ -1,12 +1,13 @@
 <template>
-  <div class="file-manager" :class="{ 'mobile': isMobile }">
-    <Splitter
-      v-if="!isMobile"
-      :gutterSize="8"
-      class="file-manager-splitter"
-    >
+  <div class="file-manager" :class="{ 'mobile': isMobile, 'compact': compact }" :style="{ height: height }">
+    <template v-if="useSplitter">
+      <Splitter
+        v-if="!isMobile"
+        :gutterSize="8"
+        class="file-manager-splitter"
+      >
       <!-- Sidebar Tree -->
-      <SplitterPanel :size="sidebarWidth" :minSize="20">
+      <SplitterPanel v-if="showTree" :size="sidebarWidth" :minSize="5">
         <NxFileTree
           v-model:selectedCategories="selectedCategories"
           :categories="categories"
@@ -38,6 +39,7 @@
               @bulk-action="handleBulkAction"
               @view-mode-change="handleViewModeChange"
               @file-select="handleFileSelect"
+              @file-open="handleFileOpen"
               @file-uploaded="handleFileUploaded"
             />
           </SplitterPanel>
@@ -58,6 +60,13 @@
         </Splitter>
       </SplitterPanel>
     </Splitter>
+    </template>
+
+    <template v-else>
+      <div class="flex flex-column h-full">
+        <!-- Simplified layout without fixed panes -->
+      </div>
+    </template>
 
     <!-- Mobile Layout -->
     <div v-else class="mobile-layout">
@@ -107,6 +116,7 @@
           @upload="handleUpload"
           @create-category="handleCreateCategory"
           @file-select="handleFileSelect"
+          @file-open="handleFileOpen"
         />
 
         <!-- Mobile Preview Modal -->
@@ -192,8 +202,15 @@ const props = defineProps({
   selectionMode: { type: String, default: 'single' }, // 'single' | 'multiple'
 
   // Layout options
-  sidebarWidth: { type: Number, default: 25 },
+  sidebarWidth: { type: Number, default: 20 },
   previewHeight: { type: Number, default: 70 },
+  useSplitter: { type: Boolean, default: true },
+
+  // Integration options
+  compact: { type: Boolean, default: false },
+  height: { type: String, default: '100%' },
+  showTree: { type: Boolean, default: true },
+  showPreview: { type: Boolean, default: true },
 
   // Tree/Category options
   hierarchical: { type: Boolean, default: false }, // Enable hierarchical categories (future)
@@ -291,6 +308,12 @@ const handleFileSelect = (file) => {
   selectedFile.value = file
   if (isMobile.value) {
     showPreviewModal.value = true
+  }
+}
+
+const handleFileOpen = (file) => {
+  if (file.storage_url) {
+    window.open(file.storage_url, '_blank')
   }
 }
 
@@ -429,11 +452,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.file-manager {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
 
 .file-manager-splitter {
   height: 100%;
