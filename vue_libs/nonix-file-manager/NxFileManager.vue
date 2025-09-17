@@ -34,10 +34,13 @@
               :selectionMode="selectionMode"
               :selectedFiles.sync="selectedFiles"
               :selectedCategories="selectedCategories"
+              :categories="categories"
+              :isMobile="isMobile"
               :allowUpload="allowUpload"
               @row-action="handleFileAction"
               @bulk-action="handleBulkAction"
               @view-mode-change="handleViewModeChange"
+              @category-select="handleCategorySelectFromList"
               @file-select="handleFileSelect"
               @file-open="handleFileOpen"
               @file-uploaded="handleFileUploaded"
@@ -60,63 +63,31 @@
         </Splitter>
       </SplitterPanel>
     </Splitter>
-    </template>
-
-    <template v-else>
-      <div class="flex flex-column h-full">
-        <!-- Simplified layout without fixed panes -->
-      </div>
-    </template>
 
     <!-- Mobile Layout -->
     <div v-else class="mobile-layout">
-      <!-- Mobile Header -->
-      <div class="mobile-header">
-        <Button
-          @click="showSidebar = !showSidebar"
-          icon="pi pi-bars"
-          size="small"
-        />
-        <h6>File Manager</h6>
-        <Button
-          v-if="selectedFile"
-          @click="selectedFile = null"
-          icon="pi pi-times"
-          size="small"
-        />
-      </div>
-
-      <!-- Mobile Sidebar (overlay) -->
-      <div v-if="showSidebar" class="mobile-sidebar-overlay" @click="showSidebar = false">
-        <div class="mobile-sidebar" @click.stop>
-          <NxFileTree
-            v-model:selectedCategories="selectedCategories"
-            :categories="categories"
-            :hierarchical="hierarchical"
-            :showCounts="showCounts"
-            :treeData="treeData"
-            :allowCreate="allowCreateCategory"
-            @category-select="handleCategorySelect"
-            @category-created="handleCategoryCreated"
-          />
-        </div>
-      </div>
-
       <!-- Mobile Content -->
       <div class="mobile-content">
         <NxFileListView
           :files="filteredFiles"
           :loading="loading"
           :viewMode="viewMode"
+          :selectionMode="selectionMode"
           :selectedFiles.sync="selectedFiles"
+          :selectedCategories="selectedCategories"
+          :categories="categories"
+          :isMobile="isMobile"
           :allowUpload="allowUpload"
           :allowCreateCategory="allowCreateCategory"
           @row-action="handleFileAction"
           @bulk-action="handleBulkAction"
+          @view-mode-change="handleViewModeChange"
           @upload="handleUpload"
           @create-category="handleCreateCategory"
+          @category-select="handleCategorySelectFromList"
           @file-select="handleFileSelect"
           @file-open="handleFileOpen"
+          @file-uploaded="handleFileUploaded"
         />
 
         <!-- Mobile Preview Modal -->
@@ -136,7 +107,7 @@
         </Dialog>
       </div>
     </div>
-
+    </template>
 
     <!-- Bulk Operations Dialog -->
     <Dialog
@@ -288,6 +259,14 @@ const handleCategorySelect = (categoryId) => {
     if (!selectedCategories.value.includes(categoryId)) {
       selectedCategories.value.push(categoryId)
     }
+  }
+}
+
+const handleCategorySelectFromList = (categoryId) => {
+  if (categoryId === null) {
+    selectedCategories.value = []
+  } else {
+    selectedCategories.value = [categoryId]
   }
 }
 

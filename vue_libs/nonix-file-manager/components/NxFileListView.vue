@@ -4,6 +4,17 @@
     <Toolbar class="">
       <template #start>
         <div class="flex align-items-center gap-2">
+          <Dropdown
+            v-if="isMobile"
+            v-model="selectedCategoryId"
+            :options="[{ id: null, name: 'All' }, ...(categories || [])]"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="Category"
+            @change="handleCategoryChange"
+            class="w-8rem"
+            size="small"
+          />
           <Button
             @click="layout = 'list'"
             :outlined="viewMode !== 'list'"
@@ -148,6 +159,7 @@ import { ref, watch, inject, defineProps, defineEmits } from 'vue'
 import DataView from 'primevue/dataview'
 import Button from 'primevue/button'
 import Toolbar from 'primevue/toolbar'
+import Dropdown from 'primevue/dropdown'
 import NxFilePreview from './NxFilePreview.vue'
 import NxFileUploadArea from './NxFileUploadArea.vue'
 
@@ -179,6 +191,14 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
+  categories: {
+    type: Array,
+    default: () => []
+  },
+  isMobile: {
+    type: Boolean,
+    default: false
+  },
   allowUpload: {
     type: Boolean,
     default: true
@@ -190,7 +210,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['update:selectedFiles', 'row-action', 'bulk-action', 'upload', 'view-mode-change', 'file-select', 'file-open', 'file-uploaded'])
+const emit = defineEmits(['update:selectedFiles', 'row-action', 'bulk-action', 'upload', 'view-mode-change', 'file-select', 'file-open', 'file-uploaded', 'category-select'])
 
 // Services
 const fileTypeManager = inject('fileTypeManager')
@@ -198,6 +218,7 @@ const fileTypeManager = inject('fileTypeManager')
 // Reactive state
 const selectedFilesLocal = ref([...props.selectedFiles])
 const layout = ref(props.viewMode)
+const selectedCategoryId = ref(null)
 
 // Watchers
 watch(() => props.selectedFiles, (newVal) => {
@@ -251,6 +272,10 @@ const truncateFileName = (filename) => {
   if (!filename) return ''
   if (filename.length <= 20) return filename
   return filename.substring(0, 17) + '...'
+}
+
+const handleCategoryChange = (event) => {
+  emit('category-select', event.value)
 }
 
 const formattedSize = (bytes) => {
