@@ -53,16 +53,23 @@
       :rows="gridPageSize"
       class="h-full"
       v-model:selection="selectedFilesLocal"
-      selectionMode="multiple"
+      :selectionMode="isInMultiSelectMode ? 'multiple' : 'single'"
     >
 
       <!-- List View Template -->
       <template #list="slotProps">
         <div class="flex flex-column">
-          <div v-for="(item, index) in slotProps.items" :key="index">
-            <div class="flex flex-column sm:flex-row sm:align-items-center p-4 gap-3" 
-                :class="{ 'border-top-1 surface-border': index !== 0, 'bg-primary-50 border-primary': isSelected(item) }"
-                @click="selectFile(item)"
+            <div v-for="(item, index) in slotProps.items" :key="index">
+              <div class="flex flex-column sm:flex-row sm:align-items-center p-4 gap-3"
+                :class="{
+                  'border-top-1 surface-border': index !== 0,
+                  'bg-primary-50 border-primary': isSelected(item),
+                  'selected-item': isSelected(item) && isInMultiSelectMode.value
+                }"
+                @click="handleFileClick(item)"
+                @touchstart="startLongPress(item)"
+                @touchend="cancelLongPress"
+                @touchmove="cancelLongPress"
                 @dblclick="openFile(item)"
                 style="cursor: pointer"
             >
@@ -95,10 +102,16 @@
       <template #grid="slotProps">
         <div class="grid">
           <div v-for="(item, index) in slotProps.items" :key="index" class="col-12 sm:col-6 md:col-4 lg:col-3 xl:col-2 p-2">
-            <div class="surface-card border-1 surface-border border-round-lg p-3 cursor-pointer transition-all transition-duration-200 flex flex-column align-items-center text-center" 
-              :class="{ 'border-primary bg-primary-50': isSelected(item) }"
+            <div class="surface-card border-1 surface-border border-round-lg p-3 cursor-pointer transition-all transition-duration-200 flex flex-column align-items-center text-center"
+              :class="{
+                'border-primary bg-primary-50': isSelected(item),
+                'selected-item': isSelected(item) && isInMultiSelectMode.value
+              }"
               style="aspect-ratio: 1"
-              @click="selectFile(item)"
+              @click="handleFileClick(item)"
+              @touchstart="startLongPress(item)"
+              @touchend="cancelLongPress"
+              @touchmove="cancelLongPress"
               @dblclick="openFile(item)"
             >
               <div class="mb-2">
@@ -118,10 +131,20 @@
       </template>
     </DataView>
     
-    <!-- Bulk Actions (shown when files selected) -->
-    <div v-if="selectedFilesLocal.length > 0" class="flex justify-content-between align-items-center p-3 surface-section border-top-1 surface-border flex-shrink-0">
-      <div class="text-sm text-color-secondary">
-        {{ selectedFilesLocal.length }} file{{ selectedFilesLocal.length > 1 ? 's' : '' }} selected
+    <!-- Multi-Select Action Bar (shown when in multi-select mode) -->
+    <div v-if="isInMultiSelectMode.value" class="flex justify-content-between align-items-center p-3 surface-section border-top-1 surface-border flex-shrink-0">
+      <div class="flex align-items-center gap-3">
+        <Button
+          @click="exitMultiSelectMode"
+          icon="pi pi-times"
+          size="small"
+          text
+          rounded
+          v-tooltip.top="'Exit multi-select mode'"
+        />
+        <div class="text-sm text-color-secondary">
+          {{ selectedFilesLocal.length }} file{{ selectedFilesLocal.length > 1 ? 's' : '' }} selected
+        </div>
       </div>
       <div class="flex gap-2">
         <Button
@@ -131,6 +154,7 @@
           text
           rounded
           v-tooltip.top="'Copy selected files'"
+          :disabled="selectedFilesLocal.length === 0"
         />
         <Button
           @click="handleBulkAction('move')"
@@ -139,6 +163,7 @@
           text
           rounded
           v-tooltip.top="'Move selected files'"
+          :disabled="selectedFilesLocal.length === 0"
         />
         <Button
           @click="handleBulkAction('delete')"
@@ -148,6 +173,7 @@
           rounded
           severity="danger"
           v-tooltip.top="'Delete selected files'"
+          :disabled="selectedFilesLocal.length === 0"
         />
       </div>
     </div>
@@ -177,11 +203,6 @@ const props = defineProps({
     type: String,
     default: 'list',
     validator: value => ['list', 'grid'].includes(value)
-  },
-  selectionMode: {
-    type: String,
-    default: 'multiple',
-    validator: value => ['single', 'multiple'].includes(value)
   },
   selectedFiles: {
     type: Array,
@@ -220,6 +241,10 @@ const selectedFilesLocal = ref([...props.selectedFiles])
 const layout = ref(props.viewMode)
 const selectedCategoryId = ref(null)
 
+
+const isInMultiSelectMode = ref(false) // Whether user has activated multi-select UI
+const longPressTimer = ref(null)
+
 // Watchers
 watch(() => props.selectedFiles, (newVal) => {
   selectedFilesLocal.value = [...newVal]
@@ -234,7 +259,28 @@ watch(layout, (newVal) => {
 })
 
 // Methods
-const selectFile = (file) => {
+const startLongPress = (file) => {
+  longPressTimer.value = setTimeout(() => {
+    isInMultiSelectMode.value = true
+    if (!isSelected(file)) {
+      selectedFilesLocal.value = [...selectedFilesLocal.value, file]
+    }
+  }, 500) // 500ms for long press
+}
+
+const cancelLongPress = () => {
+  if (longPressTimer.value) {
+    clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
+}
+
+const handleFileClick = (file) => {
+  cancelLongPress();
+  toggleFileSelection(file)
+}
+
+const toggleFileSelection = (file) => {
   const alreadySelected = isSelected(file)
   if (alreadySelected) {
     selectedFilesLocal.value = selectedFilesLocal.value.filter(f => f.id !== file.id)
@@ -242,6 +288,11 @@ const selectFile = (file) => {
     selectedFilesLocal.value = [...selectedFilesLocal.value, file]
   }
   emit('file-select', file)
+}
+
+const exitMultiSelectMode = () => {
+  isInMultiSelectMode.value = false
+  selectedFilesLocal.value = []
 }
 
 const openFile = (file) => {
@@ -285,8 +336,35 @@ const formattedSize = (bytes) => {
 </script>
 
 <style scoped>
+/* Multi-select mode styling */
+.selected-item {
+  box-shadow: 0 0 0 2px var(--primary-color);
+  background-color: var(--primary-50) !important;
+}
+
+.selected-item::before {
+  content: '✓';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  z-index: 1;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  /* Add any mobile-specific styles here */
+  /* Mobile-specific styles for touch interactions */
+  .selected-item {
+    transform: scale(0.98);
+  }
 }
 </style>

@@ -11,7 +11,6 @@
         <NxFileTree
           v-model:selectedCategories="selectedCategories"
           :categories="categories"
-          :selectionMode="selectionMode"
           :hierarchical="hierarchical"
           :showCounts="showCounts"
           :treeData="treeData"
@@ -31,7 +30,6 @@
               :files="filteredFiles"
               :loading="loading"
               :viewMode="viewMode"
-              :selectionMode="selectionMode"
               :selectedFiles.sync="selectedFiles"
               :selectedCategories="selectedCategories"
               :categories="categories"
@@ -72,9 +70,7 @@
           :files="filteredFiles"
           :loading="loading"
           :viewMode="viewMode"
-          :selectionMode="selectionMode"
           :selectedFiles.sync="selectedFiles"
-          :selectedCategories="selectedCategories"
           :categories="categories"
           :isMobile="isMobile"
           :allowUpload="allowUpload"
@@ -169,8 +165,6 @@ const props = defineProps({
   showPreview: { type: Boolean, default: true },
   defaultViewMode: { type: String, default: 'list' }, // 'list' | 'grid'
 
-  // Selection options
-  selectionMode: { type: String, default: 'single' }, // 'single' | 'multiple'
 
   // Layout options
   sidebarWidth: { type: Number, default: 20 },
