@@ -1,0 +1,296 @@
+<template>
+  <div class="flex flex-column h-full">
+    <!-- Toolbar using PrimeVue Toolbar component -->
+    <Toolbar class="">
+      <template #start>
+        <div class="flex align-items-center gap-2">
+          <Button
+            @click="layout = 'list'"
+            :outlined="viewMode !== 'list'"
+            icon="pi pi-list"
+            size="small"
+            v-tooltip.bottom="'List View'"
+          />
+          <Button
+            @click="layout = 'grid'"
+            :outlined="viewMode !== 'grid'"
+            icon="pi pi-th"
+            size="small"
+            v-tooltip.bottom="'Grid View'"
+          />
+        </div>
+      </template>
+      
+      <template #center>
+        <span class="text-sm text-color-secondary">{{ files.length }} files</span>
+      </template>
+      
+      <template #end>
+        <NxFileUploadArea
+          v-if="allowUpload"
+          :categoryId="selectedCategories[0]"
+          @file-uploaded="handleFileUploaded"
+        />
+      </template>
+    </Toolbar>
+    
+    <DataView
+      :value="files"
+      :layout="viewMode"
+      :loading="loading"
+      :paginator="true"
+      :rows="gridPageSize"
+      class="h-full"
+      v-model:selection="selectedFilesLocal"
+      selectionMode="multiple"
+    >
+
+      <!-- List View Template -->
+      <template #list="slotProps">
+        <div class="flex flex-column">
+          <div v-for="(item, index) in slotProps.items" :key="index">
+            <div class="flex flex-column sm:flex-row sm:align-items-center p-4 gap-3" 
+                :class="{ 'border-top-1 surface-border': index !== 0, 'bg-primary-50 border-primary': isSelected(item) }"
+                @click="selectFile(item)"
+                @dblclick="openFile(item)"
+                style="cursor: pointer"
+            >
+              <div class="relative">
+                <NxFilePreview
+                  :value="item"
+                  :showSize="true"
+                  :showCategory="true"
+                />
+              </div>
+              <div class="flex flex-column md:flex-row justify-content-between md:align-items-center flex-1 gap-3">
+                <div class="flex flex-column gap-2">
+                  <div class="text-lg font-medium">{{ item.original_filename }}</div>
+                  <div class="flex gap-2">
+                    <span class="text-color-secondary">{{ formattedSize(item.size_bytes) }}</span>
+                    <span class="text-color-secondary">{{ item.mime_type }}</span>
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  <Button icon="pi pi-eye" size="small" text rounded v-tooltip.top="'View File'" @click.stop="openFile(item)" />
+                  <Button icon="pi pi-trash" size="small" text rounded severity="danger" v-tooltip.top="'Delete File'" @click.stop="handleRowAction('delete', item)" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Grid View Template -->
+      <template #grid="slotProps">
+        <div class="grid">
+          <div v-for="(item, index) in slotProps.items" :key="index" class="col-12 sm:col-6 md:col-4 lg:col-3 xl:col-2 p-2">
+            <div class="surface-card border-1 surface-border border-round-lg p-3 cursor-pointer transition-all transition-duration-200 flex flex-column align-items-center text-center" 
+              :class="{ 'border-primary bg-primary-50': isSelected(item) }"
+              style="aspect-ratio: 1"
+              @click="selectFile(item)"
+              @dblclick="openFile(item)"
+            >
+              <div class="mb-2">
+                <NxFilePreview
+                  :value="item"
+                  :showSize="true"
+                  :showCategory="true"
+                />
+              </div>
+              <div class="w-full">
+                <div class="text-sm font-medium mb-1 break-word line-height-2">{{ item.original_filename ? truncateFileName(item.original_filename) : 'Untitled' }}</div>
+                <div class="text-color-secondary">{{ item.size_bytes ? formattedSize(item.size_bytes) : '' }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </DataView>
+    
+    <!-- Bulk Actions (shown when files selected) -->
+    <div v-if="selectedFilesLocal.length > 0" class="flex justify-content-between align-items-center p-3 surface-section border-top-1 surface-border flex-shrink-0">
+      <div class="text-sm text-color-secondary">
+        {{ selectedFilesLocal.length }} file{{ selectedFilesLocal.length > 1 ? 's' : '' }} selected
+      </div>
+      <div class="flex gap-2">
+        <Button
+          @click="handleBulkAction('copy')"
+          icon="pi pi-copy"
+          size="small"
+          label="Copy"
+          v-tooltip.top="'Copy selected files'"
+        />
+        <Button
+          @click="handleBulkAction('move')"
+          icon="pi pi-arrow-right"
+          size="small"
+          label="Move"
+          v-tooltip.top="'Move selected files'"
+        />
+        <Button
+          @click="handleBulkAction('delete')"
+          icon="pi pi-trash"
+          size="small"
+          severity="danger"
+          label="Delete"
+          v-tooltip.top="'Delete selected files'"
+        />
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import DataView from 'primevue/dataview'
+import Button from 'primevue/button'
+import Toolbar from 'primevue/toolbar'
+import NxFilePreview from './NxFilePreview.vue'
+import NxFileUploadArea from './NxFileUploadArea.vue'
+import { inject, ref, watch } from 'vue'
+
+export default {
+  name: 'NxFileListView',
+  components: {
+    DataView,
+    Button,
+    Toolbar,
+    NxFilePreview,
+    NxFileUploadArea
+  },
+  props: {
+    files: {
+      type: Array,
+      default: () => []
+    },
+    loading: {
+      type: Boolean,
+      default: false
+    },
+    viewMode: {
+      type: String,
+      default: 'list',
+      validator: value => ['list', 'grid'].includes(value)
+    },
+    selectionMode: {
+      type: String,
+      default: 'multiple',
+      validator: value => ['single', 'multiple'].includes(value)
+    },
+    selectedFiles: {
+      type: Array,
+      default: () => []
+    },
+    selectedCategories: {
+      type: Array,
+      default: () => []
+    },
+    allowUpload: {
+      type: Boolean,
+      default: true
+    },
+    gridPageSize: {
+      type: Number,
+      default: 20
+    }
+  },
+  emits: ['update:selectedFiles', 'row-action', 'bulk-action', 'upload', 'view-mode-change', 'file-select', 'file-open', 'file-uploaded'],
+  setup(props, { emit }) {
+    const selectedFilesLocal = ref([...props.selectedFiles])
+    const layout = ref(props.viewMode)
+    
+    watch(() => props.selectedFiles, (newVal) => {
+      selectedFilesLocal.value = [...newVal]
+    }, { immediate: true })
+    
+    watch(selectedFilesLocal, (newVal) => {
+      emit('update:selectedFiles', newVal)
+    })
+    
+    watch(layout, (newVal) => {
+      emit('view-mode-change', newVal)
+    })
+    
+    const fileTypeManager = inject('fileTypeManager')
+    
+    return {
+      selectedFilesLocal,
+      layout,
+      fileTypeManager
+    }
+  },
+  data() {
+    return {}
+  },
+  computed: {
+
+  },
+  watch: {
+  },
+  methods: {
+    selectFile(file) {
+      const isSelected = this.isSelected(file)
+      if (isSelected) {
+        this.selectedFilesLocal = this.selectedFilesLocal.filter(f => f.id !== file.id)
+      } else {
+        this.selectedFilesLocal = [...this.selectedFilesLocal, file]
+      }
+    },
+
+    openFile(file) {
+      this.$emit('file-select', file)
+    },
+
+    isSelected(file) {
+      return this.selectedFilesLocal.some(f => f.id === file.id)
+    },
+
+
+    handleRowAction(action, rowData) {
+      this.$emit('row-action', { action, rowData })
+    },
+
+    handleBulkAction(action) {
+      this.$emit('bulk-action', {
+        action,
+        selectedFiles: this.selectedFilesLocal
+      })
+    },
+
+
+    handleFileUploaded(uploadedFile) {
+      // Emit the uploaded file to parent
+      this.$emit('file-uploaded', uploadedFile)
+    },
+
+    truncateFileName(filename) {
+      if (!filename) return ''
+      if (filename.length <= 20) return filename
+      return filename.substring(0, 17) + '...'
+    },
+
+    formattedSize(bytes) {
+      if (!bytes) return ''
+      return this.fileTypeManager?.formatFileSize(bytes) || ''
+    }
+  }
+}
+</script>
+
+<style scoped>
+/* Empty state styling */
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-color-secondary);
+}
+
+.empty-state p {
+  margin: 1rem 0 0 0;
+  font-size: 0.875rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  /* Add any mobile-specific styles here */
+}
+</style>

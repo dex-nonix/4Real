@@ -22,7 +22,9 @@ import NxSttConfigurationService from '@nonix-stt/services/NxSttConfigurationSer
 import NxFileService from '@nonix-file-manager/services/NxFileService.js'
 import NxFileLinkService from '@nonix-file-manager/services/NxFileLinkService.js'
 import NxFileCategoryService from "@nonix-file-manager/services/NxFileCategoryService.js";
-import NxFileTypeManager from '@nonix-file-manager/manager/NxFileTypeManager.js';
+import NxFileOperationsService from '@nonix-file-manager/services/NxFileOperationsService.js'
+import NxFileTypeManager from '@nonix-file-manager/manager/NxFileTypeManager.js'
+import NxFileManager from '@nonix-file-manager/NxFileManager.vue'
 import NxChatService from '@nonix-chat/services/NxChatService.js'
 import Home from "@/views/Home.vue";
 import About from "@/views/About.vue";
@@ -40,6 +42,9 @@ export const appConfig = {
         {path: '/dynamic-form', name: 'dynamic-form', component: DynamicFormExample},
 
         {path: '/dynamic-table', name: 'dynamic-table', component: DynamicTableExample, meta: {layout: "advanced"}},
+
+        // File Manager
+        {path: '/file-manager', name: 'file-manager', component: NxFileManager, meta: {layout: "advanced"}},
 
         // Dynamic route
         {type: "dynamic", path: '/dashboard', page: 'dashboard'},
@@ -96,6 +101,7 @@ export const appConfig = {
         "file-categories": (app) => new NxFileCategoryService(app),
         "files": (app) => new NxFileService(app),
         "file-links": (app) => new NxFileLinkService(app),
+        "fileOperations": (app) => new NxFileOperationsService(app),
         "fileTypeManager": (app) => NxFileTypeManager,
         "chat-service": (app) => new NxChatService(app),
     },
