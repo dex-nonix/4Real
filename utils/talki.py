@@ -1,7 +1,6 @@
 import sys
 import threading
 import queue
-import pyperclip
 import numpy as np
 import sounddevice as sd
 import logging
@@ -236,8 +235,10 @@ class MainWindow(QMainWindow):
 
         checkbox_layout = QHBoxLayout()
         self.auto_submit_checkbox = QCheckBox("Auto-submit (Enter)")
+        self.ctrl_enter_checkbox = QCheckBox("Use Ctrl+Enter")
         self.clear_history_checkbox = QCheckBox("Clear after sending")
         checkbox_layout.addWidget(self.auto_submit_checkbox)
+        checkbox_layout.addWidget(self.ctrl_enter_checkbox)
         checkbox_layout.addWidget(self.clear_history_checkbox)
         self.layout.addLayout(checkbox_layout)
 
@@ -272,6 +273,13 @@ class MainWindow(QMainWindow):
         self.escape_listener = None  # For escape key when in global mode
         self.ctrl_pressed = False
         self.global_mode_active = False  # Track global control-click mode state
+
+        # Temporary paste mode state
+        self.temp_paste_mode = False
+        self.pending_paste_text = None
+        self.temp_mouse_listener = None
+        self.temp_keyboard_listener = None
+        self.temp_escape_listener = None
 
     def start_recording(self):
         device_index = self.mic_combo.currentData()
@@ -326,10 +334,18 @@ class MainWindow(QMainWindow):
         logger.info("📤 Send to focused input button pressed")
         text_to_paste = self.text_area.toPlainText()
         if text_to_paste:
-            logger.info(f"📋 Copying text to clipboard: \"{text_to_paste[:50]}...\" ({len(text_to_paste)} chars)")
-            pyperclip.copy(text_to_paste)
-            logger.debug("⏰ Scheduling paste operation in 100ms")
-            QTimer.singleShot(100, self._paste_and_enter)
+            logger.info(f"📝 Storing text for direct paste: \"{text_to_paste[:50]}...\" ({len(text_to_paste)} chars)")
+
+            # Store text for direct keyboard typing (no clipboard)
+            self.pending_paste_text = text_to_paste
+            self.temp_paste_mode = True
+
+            # Enable temporary global listener for Ctrl+click
+            logger.info("🎯 Enabling temporary Ctrl+Click listener - click target input with Ctrl+mouse")
+
+            # Small delay to let focus settle on target window
+            QTimer.singleShot(200, self._enable_temp_listeners)
+
             if self.clear_history_checkbox.isChecked():
                 logger.info("🧹 Clear history checkbox checked - clearing text area")
                 self.text_area.clear()
@@ -338,21 +354,131 @@ class MainWindow(QMainWindow):
         else:
             logger.warning("⚠️  No text to send - text area is empty")
 
-    def _paste_and_enter(self):
-        logger.info("⌨️  Executing paste operation...")
-        logger.debug("🔒 Pressing Ctrl+V")
-        self.keyboard_controller.press(keyboard.Key.ctrl)
-        self.keyboard_controller.press('v')
-        self.keyboard_controller.release('v')
-        self.keyboard_controller.release(keyboard.Key.ctrl)
-        logger.info("✅ Paste operation completed")
+    def _enable_temp_listeners(self):
+        """Enable temporary listeners for Ctrl+click paste mode"""
+        try:
+            logger.debug("🐭 Starting temporary mouse listener...")
+            self.temp_mouse_listener = mouse.Listener(on_click=self.on_temp_click)
+            self.temp_mouse_listener.start()
 
-        if self.auto_submit_checkbox.isChecked():
-            logger.info("⏎  Auto-submit enabled - scheduling Enter key press")
-            QTimer.singleShot(50, lambda: self.keyboard_controller.tap(keyboard.Key.enter))
-            logger.debug("⏰ Enter key will be pressed in 50ms")
+            logger.debug("⌨️  Starting temporary keyboard listener...")
+            self.temp_keyboard_listener = keyboard.Listener(on_press=self.on_temp_key_press,
+                                                           on_release=self.on_temp_key_release)
+            self.temp_keyboard_listener.start()
+
+            logger.debug("🚪 Starting temporary escape listener...")
+            self.temp_escape_listener = keyboard.Listener(on_press=self.on_temp_escape_press)
+            self.temp_escape_listener.start()
+
+            logger.info("✅ Temporary paste listeners enabled - Ctrl+Click to paste or ESC to cancel")
+        except Exception as e:
+            logger.error(f"❌ Failed to enable temporary listeners: {e}")
+            self._disable_temp_listeners()
+
+    def _disable_temp_listeners(self):
+        """Disable temporary listeners for paste mode"""
+        logger.info("🛑 Disabling temporary paste listeners...")
+
+        if self.temp_mouse_listener:
+            self.temp_mouse_listener.stop()
+            self.temp_mouse_listener = None
+
+        if self.temp_keyboard_listener:
+            self.temp_keyboard_listener.stop()
+            self.temp_keyboard_listener = None
+
+        if self.temp_escape_listener:
+            self.temp_escape_listener.stop()
+            self.temp_escape_listener = None
+
+        self.temp_paste_mode = False
+        self.pending_paste_text = None
+        logger.info("✅ Temporary paste listeners disabled")
+
+    def on_temp_click(self, x, y, button, pressed):
+        """Handle temporary Ctrl+click for paste operation"""
+        if pressed and button == mouse.Button.left and self.ctrl_pressed and self.temp_paste_mode:
+            logger.info(f"🎯 Temp Ctrl+Click detected at ({x}, {y}) - executing paste")
+            self._execute_temp_paste()
+
+    def on_temp_key_press(self, key):
+        """Handle Ctrl key press for temporary mode"""
+        if key in (keyboard.Key.ctrl_l, keyboard.Key.ctrl_r):
+            logger.debug("🔑 Temp mode: Ctrl key pressed")
+            self.ctrl_pressed = True
+
+    def on_temp_key_release(self, key):
+        """Handle Ctrl key release for temporary mode"""
+        if key in (keyboard.Key.ctrl_l, keyboard.Key.ctrl_r):
+            logger.debug("🔓 Temp mode: Ctrl key released")
+            self.ctrl_pressed = False
+
+    def on_temp_escape_press(self, key):
+        """Handle escape key press for temporary mode"""
+        if key == keyboard.Key.esc and self.temp_paste_mode:
+            logger.info("🚫 Temp mode: Escape key pressed - canceling paste")
+            self._disable_temp_listeners()
+            return False  # Stop the listener
+
+    def _execute_temp_paste(self):
+        """Execute the paste operation for temporary mode by typing text directly"""
+        logger.info("⌨️  Executing temp paste operation...")
+
+        # Type the stored text directly (no clipboard)
+        if self.pending_paste_text:
+            logger.debug(f"📝 Typing {len(self.pending_paste_text)} characters directly...")
+            self._type_text_directly(self.pending_paste_text)
+            logger.info("✅ Temp paste operation completed")
+
+            # Auto-submit if enabled
+            if self.auto_submit_checkbox.isChecked():
+                if self.ctrl_enter_checkbox.isChecked():
+                    logger.info("⏎  Auto-submit enabled - scheduling Ctrl+Enter key press")
+                    QTimer.singleShot(100, self._send_ctrl_enter)
+                    logger.debug("⏰ Ctrl+Enter will be pressed in 100ms")
+                else:
+                    logger.info("⏎  Auto-submit enabled - scheduling Enter key press")
+                    QTimer.singleShot(100, self._send_enter)
+                    logger.debug("⏰ Enter will be pressed in 100ms")
+            else:
+                logger.debug("🚫 Auto-submit disabled")
         else:
-            logger.debug("🚫 Auto-submit disabled")
+            logger.warning("⚠️  No text to paste in temp mode")
+
+        # Disable listeners after paste
+        self._disable_temp_listeners()
+
+    def _type_text_directly(self, text):
+        """Type text directly using keyboard controller"""
+        try:
+            for char in text:
+                if char == '\n':
+                    # Handle newlines by pressing Enter
+                    self.keyboard_controller.tap(keyboard.Key.enter)
+                elif char == '\t':
+                    # Handle tabs
+                    self.keyboard_controller.tap(keyboard.Key.tab)
+                else:
+                    # Type regular characters
+                    self.keyboard_controller.type(char)
+                # Small delay between characters for reliability
+                import time
+                time.sleep(0.001)
+        except Exception as e:
+            logger.error(f"❌ Error typing text directly: {e}")
+
+    def _send_enter(self):
+        """Send Enter keypress"""
+        logger.debug("⏎ Sending Enter keypress")
+        self.keyboard_controller.tap(keyboard.Key.enter)
+
+    def _send_ctrl_enter(self):
+        """Send Ctrl+Enter keypress"""
+        logger.debug("⏎ Sending Ctrl+Enter keypress")
+        self.keyboard_controller.press(keyboard.Key.ctrl)
+        self.keyboard_controller.tap(keyboard.Key.enter)
+        self.keyboard_controller.release(keyboard.Key.ctrl)
+
 
     def toggle_global_listener(self, state):
         try:
@@ -400,8 +526,27 @@ class MainWindow(QMainWindow):
     def on_global_click(self, x, y, button, pressed):
         if pressed and button == mouse.Button.left and self.ctrl_pressed:
             logger.info(f"🎯 Ctrl+Left Click detected at ({x}, {y})")
-            logger.debug("📤 Triggering send_to_focused from global click")
-            QTimer.singleShot(0, self.send_to_focused)
+            # Get current transcribed text and paste it directly
+            current_text = self.text_area.toPlainText()
+            if current_text:
+                logger.info(f"📝 Typing text directly from global click: \"{current_text[:50]}...\"")
+                self._type_text_directly(current_text)
+                logger.info("✅ Global paste operation completed")
+
+                # Auto-submit if enabled
+                if self.auto_submit_checkbox.isChecked():
+                    if self.ctrl_enter_checkbox.isChecked():
+                        logger.info("⏎  Auto-submit enabled - scheduling Ctrl+Enter key press")
+                        QTimer.singleShot(100, self._send_ctrl_enter)
+                        logger.debug("⏰ Ctrl+Enter will be pressed in 100ms")
+                    else:
+                        logger.info("⏎  Auto-submit enabled - scheduling Enter key press")
+                        QTimer.singleShot(100, self._send_enter)
+                        logger.debug("⏰ Enter will be pressed in 100ms")
+                else:
+                    logger.debug("🚫 Auto-submit disabled")
+            else:
+                logger.warning("⚠️  No text to paste from global click")
         elif pressed and button == mouse.Button.left:
             logger.debug(f"🖱️  Left click at ({x}, {y}) - no Ctrl modifier")
 
@@ -499,6 +644,11 @@ class MainWindow(QMainWindow):
             logger.debug("🚫 Disabling global mode during shutdown...")
             self.disable_global_mode()
 
+        # Disable temp paste mode if active
+        if self.temp_paste_mode:
+            logger.debug("🛑 Disabling temp paste mode during shutdown...")
+            self._disable_temp_listeners()
+
         if self.hotkey_listener:
             logger.debug("🔥 Stopping hotkey listener...")
             self.hotkey_listener.stop()
@@ -532,9 +682,11 @@ def main():
     logger.info("✅ Application initialized and ready")
     logger.info("🎤 Features available:")
     logger.info("   • Real-time speech-to-text transcription")
-    logger.info("   • Global Ctrl+Click to paste")
+    logger.info("   • Send to Focused: Click button, focus target input, Ctrl+Click to paste directly")
+    logger.info("   • Global Ctrl+Click to paste directly (ESC to cancel)")
     logger.info("   • Cmd+Space hotkey for recording toggle")
-    logger.info("   • Auto-submit and clear history options")
+    logger.info("   • Auto-submit with Enter or Ctrl+Enter")
+    logger.info("   • Clear history options")
     logger.info("=" * 60)
 
     sys.exit(app.exec())
