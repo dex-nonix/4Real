@@ -56,8 +56,8 @@ const loadConfigurations = async () => {
   try {
     loading.value = true;
     error.value = null;
-    const response = await sttService.getAll({ filters: { is_active: true } });
-    configurations.value = response.data || [];
+    const response = await sttService.list({  is_active: true  });
+    configurations.value = response.data?.data || [];
   } catch (err) {
     error.value = 'Failed to load STT configurations';
     console.error('Error loading configurations:', err);
