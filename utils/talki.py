@@ -245,6 +245,15 @@ class MainWindow(QMainWindow):
         self.global_listener_checkbox.stateChanged.connect(self.toggle_global_listener)
         self.layout.addWidget(self.global_listener_checkbox)
 
+        # Status indicator for global control-click mode
+        global_status_layout = QHBoxLayout()
+        self.global_status_label = QLabel("🎯 Global Mode: OFF")
+        self.global_status_label.setStyleSheet("color: gray; font-weight: bold;")
+        global_status_layout.addWidget(QLabel("Status:"))
+        global_status_layout.addWidget(self.global_status_label)
+        global_status_layout.addStretch()
+        self.layout.addLayout(global_status_layout)
+
         self.status_label = QLabel("Ready.")
         self.layout.addWidget(self.status_label)
 
@@ -260,7 +269,9 @@ class MainWindow(QMainWindow):
         # Listeners
         self.keyboard_controller = keyboard.Controller()
         self.mouse_listener, self.keyboard_listener_for_ctrl, self.hotkey_listener = None, None, None
+        self.escape_listener = None  # For escape key when in global mode
         self.ctrl_pressed = False
+        self.global_mode_active = False  # Track global control-click mode state
 
     def start_recording(self):
         device_index = self.mic_combo.currentData()
@@ -348,7 +359,8 @@ class MainWindow(QMainWindow):
             is_checked = (state == 2)
             if is_checked:
                 logger.info("🎯 Global listener checkbox enabled")
-                if not (self.mouse_listener and self.mouse_listener.is_alive()):
+                if not self.global_mode_active:
+                    self.global_mode_active = True
                     logger.debug("🐭 Starting mouse listener...")
                     self.mouse_listener = mouse.Listener(on_click=self.on_global_click)
                     self.mouse_listener.start()
@@ -356,21 +368,24 @@ class MainWindow(QMainWindow):
                     self.keyboard_listener_for_ctrl = keyboard.Listener(on_press=self.on_key_press,
                                                                         on_release=self.on_key_release)
                     self.keyboard_listener_for_ctrl.start()
-                    logger.info("✅ Global listeners started - Ctrl+Click enabled")
+                    logger.debug("🚪 Starting escape key listener...")
+                    self.escape_listener = keyboard.Listener(on_press=self.on_escape_press)
+                    self.escape_listener.start()
+                    self.update_global_status_indicator()
+                    logger.info("✅ Global mode activated - Ctrl+Click enabled (ESC to cancel)")
                 else:
-                    logger.debug("🔄 Global listeners already running")
+                    logger.debug("🔄 Global mode already active")
             else:
                 logger.info("🚫 Global listener checkbox disabled")
-                if self.mouse_listener:
-                    logger.debug("🐭 Stopping mouse listener...")
-                    self.mouse_listener.stop()
-                if self.keyboard_listener_for_ctrl:
-                    logger.debug("⌨️  Stopping keyboard listener...")
-                    self.keyboard_listener_for_ctrl.stop()
-                logger.info("✅ Global listeners stopped")
+                if self.global_mode_active:
+                    self.disable_global_mode()
+                else:
+                    logger.debug("🔄 Global mode already inactive")
         except Exception as e:
             logger.error(f"❌ Listener setup error: {e}")
             self.status_label.setText(f"Listener error: {e}")
+            self.global_mode_active = False
+            self.update_global_status_indicator()
 
     def on_key_press(self, key):
         if key in (keyboard.Key.ctrl_l, keyboard.Key.ctrl_r):
@@ -389,6 +404,50 @@ class MainWindow(QMainWindow):
             QTimer.singleShot(0, self.send_to_focused)
         elif pressed and button == mouse.Button.left:
             logger.debug(f"🖱️  Left click at ({x}, {y}) - no Ctrl modifier")
+
+    def update_global_status_indicator(self):
+        """Update the visual status indicator for global control-click mode"""
+        if self.global_mode_active:
+            self.global_status_label.setText("🎯 Global Mode: ACTIVE (Press ESC to cancel)")
+            self.global_status_label.setStyleSheet("color: green; font-weight: bold;")
+            logger.info("🔄 Global mode status: ACTIVE")
+        else:
+            self.global_status_label.setText("🎯 Global Mode: OFF")
+            self.global_status_label.setStyleSheet("color: gray; font-weight: bold;")
+            logger.info("🔄 Global mode status: OFF")
+
+    def on_escape_press(self, key):
+        """Handle escape key press to cancel global mode"""
+        if key == keyboard.Key.esc:
+            logger.info("🚫 Escape key pressed - canceling global control-click mode")
+            self.disable_global_mode()
+            return False  # Stop the listener
+
+    def disable_global_mode(self):
+        """Disable global control-click mode and cleanup listeners"""
+        logger.info("🛑 Disabling global control-click mode...")
+        self.global_mode_active = False
+
+        # Stop all global listeners
+        if self.mouse_listener:
+            logger.debug("🐭 Stopping mouse listener...")
+            self.mouse_listener.stop()
+            self.mouse_listener = None
+
+        if self.keyboard_listener_for_ctrl:
+            logger.debug("⌨️  Stopping Ctrl keyboard listener...")
+            self.keyboard_listener_for_ctrl.stop()
+            self.keyboard_listener_for_ctrl = None
+
+        if self.escape_listener:
+            logger.debug("🔚 Stopping escape listener...")
+            self.escape_listener.stop()
+            self.escape_listener = None
+
+        # Update UI
+        self.global_listener_checkbox.setChecked(False)
+        self.update_global_status_indicator()
+        logger.info("✅ Global mode disabled - all listeners stopped")
 
     def populate_microphones(self):
         try:
@@ -435,13 +494,10 @@ class MainWindow(QMainWindow):
         logger.debug("⏹️  Stopping audio recording...")
         self.audio_processor.stop_recording()
 
-        if self.mouse_listener:
-            logger.debug("🐭 Stopping mouse listener...")
-            self.mouse_listener.stop()
-
-        if self.keyboard_listener_for_ctrl:
-            logger.debug("⌨️  Stopping Ctrl keyboard listener...")
-            self.keyboard_listener_for_ctrl.stop()
+        # Disable global mode if active
+        if self.global_mode_active:
+            logger.debug("🚫 Disabling global mode during shutdown...")
+            self.disable_global_mode()
 
         if self.hotkey_listener:
             logger.debug("🔥 Stopping hotkey listener...")
