@@ -327,28 +327,16 @@ class MainWindow(QMainWindow):
 
     def send_to_focused(self):
         logger.info("📤 Send to focused input button pressed")
-        text_to_paste = self.text_area.toPlainText()
-        if text_to_paste:
-            logger.info(f"📝 Storing text for direct paste: \"{text_to_paste[:50]}...\" ({len(text_to_paste)} chars)")
 
-            # Store text for direct keyboard typing (no clipboard)
-            self.pending_paste_text = text_to_paste
-            self.paste_mode_active = True
-            self._update_paste_status()
+        # Don't capture text yet - wait for Ctrl+Click
+        self.paste_mode_active = True
+        self._update_paste_status()
 
-            # Enable paste mode for Ctrl+click
-            logger.info("🎯 Paste mode enabled - click target input with Ctrl+mouse")
+        # Enable paste mode for Ctrl+click
+        logger.info("🎯 Paste mode enabled - regular clicks focus windows, Ctrl+Click pastes")
 
-            # Small delay to let focus settle on target window
-            QTimer.singleShot(200, self._enable_paste_listeners)
-
-            if self.clear_history_checkbox.isChecked():
-                logger.info("🧹 Clear history checkbox checked - clearing text area")
-                self.text_area.clear()
-            else:
-                logger.debug("📝 Clear history not checked - keeping text")
-        else:
-            logger.warning("⚠️  No text to send - text area is empty")
+        # Small delay to let focus settle
+        QTimer.singleShot(200, self._enable_paste_listeners)
 
     def _enable_paste_listeners(self):
         """Enable paste mode listeners for Ctrl+click"""
@@ -366,7 +354,7 @@ class MainWindow(QMainWindow):
             self.paste_escape_listener = keyboard.Listener(on_press=self.on_paste_escape_press)
             self.paste_escape_listener.start()
 
-            logger.info("✅ Paste mode active - Ctrl+Click to paste or ESC to cancel")
+            logger.info("✅ Paste mode active - Regular clicks focus windows, Ctrl+Click pastes, ESC cancels")
         except Exception as e:
             logger.error(f"❌ Failed to enable paste listeners: {e}")
             self._disable_paste_listeners()
@@ -393,10 +381,26 @@ class MainWindow(QMainWindow):
         logger.info("✅ Paste mode disabled")
 
     def on_paste_click(self, x, y, button, pressed):
-        """Handle Ctrl+click for paste operation"""
-        if pressed and button == mouse.Button.left and self.ctrl_pressed and self.paste_mode_active:
-            logger.info(f"🎯 Ctrl+Click detected at ({x}, {y}) - executing paste")
-            self._execute_paste()
+        """Handle clicks for paste mode - regular clicks focus, Ctrl+Click pastes"""
+        if pressed and button == mouse.Button.left and self.paste_mode_active:
+            if self.ctrl_pressed:
+                # Ctrl+Click - capture text and paste
+                logger.info(f"🎯 Ctrl+Click detected at ({x}, {y}) - capturing text and pasting")
+
+                # Capture text at the moment of Ctrl+Click
+                current_text = self.text_area.toPlainText()
+                if current_text:
+                    self.pending_paste_text = current_text
+                    logger.info(f"📝 Captured text for paste: \"{current_text[:50]}...\"")
+                    self._execute_paste()
+                else:
+                    logger.warning("⚠️  No text available to paste - but mechanism still works")
+                    # Still disable mode even with no text
+                    self._disable_paste_listeners()
+            else:
+                # Regular click - just focus the window/area
+                logger.debug(f"🖱️  Regular click at ({x}, {y}) - focusing window/area")
+                # The click itself will focus the window, no extra action needed
 
     def on_paste_key_press(self, key):
         """Handle Ctrl key press for paste mode"""
@@ -427,6 +431,11 @@ class MainWindow(QMainWindow):
             self._type_text_directly(self.pending_paste_text)
             logger.info("✅ Paste operation completed")
 
+            # Clear text area after successful paste if option is enabled
+            if self.clear_history_checkbox.isChecked():
+                logger.info("🧹 Clear history enabled - clearing text area after paste")
+                self.text_area.clear()
+
             # Auto-submit if enabled
             if self.auto_submit_checkbox.isChecked():
                 if self.ctrl_enter_checkbox.isChecked():
@@ -440,7 +449,7 @@ class MainWindow(QMainWindow):
             else:
                 logger.debug("🚫 Auto-submit disabled")
         else:
-            logger.warning("⚠️  No text to paste")
+            logger.warning("⚠️  No text available to paste")
 
         # Disable listeners after paste
         self._disable_paste_listeners()
@@ -448,7 +457,7 @@ class MainWindow(QMainWindow):
     def _update_paste_status(self):
         """Update the paste status indicator"""
         if self.paste_mode_active:
-            self.paste_status_label.setText("🎯 Paste Mode Active - Ctrl+Click to paste (ESC to cancel)")
+            self.paste_status_label.setText("🎯 Paste Mode: Regular clicks focus, Ctrl+Click pastes (ESC cancels)")
             self.paste_status_label.setStyleSheet("color: green; font-weight: bold;")
             logger.info("🔄 Paste mode status: ACTIVE")
         else:
@@ -572,7 +581,7 @@ def main():
     logger.info("✅ Application initialized and ready")
     logger.info("🎤 Features available:")
     logger.info("   • Real-time speech-to-text transcription")
-    logger.info("   • Send to Focused Input: Click button → focus target → Ctrl+Click to paste")
+    logger.info("   • Send to Focused Input: Click button → regular clicks focus windows → Ctrl+Click pastes")
     logger.info("   • Direct text typing (no clipboard)")
     logger.info("   • Auto-submit with Enter or Ctrl+Enter")
     logger.info("   • ESC to cancel paste mode")
