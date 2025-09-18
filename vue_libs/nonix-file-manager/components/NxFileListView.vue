@@ -129,6 +129,20 @@
           </div>
         </div>
       </template>
+
+      <!-- Custom Empty State Template -->
+      <template #empty>
+        <div class="flex flex-column align-items-center justify-content-center p-6 text-center" style="height: 300px;">
+          <i class="pi pi-folder-open text-6xl text-400 mb-4"></i>
+          <h4 class="text-2xl font-medium text-900 mb-2">No Files Found</h4>
+          <p class="text-color-secondary mb-4">Upload your first file to get started</p>
+          <NxFileUploadArea
+            v-if="allowUpload"
+            :categoryId="selectedCategories[0]"
+            @file-uploaded="handleFileUploaded"
+          />
+        </div>
+      </template>
     </DataView>
     
     <!-- Multi-Select Action Bar (shown when in multi-select mode) -->
