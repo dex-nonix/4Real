@@ -4,10 +4,8 @@ Paste mode functionality with mouse and keyboard listeners.
 
 from typing import Callable, Optional
 from pynput import keyboard, mouse
-from PyQt6.QtCore import QTimer
 from talki.config.logging_config import logger
 from talki.input.keyboard_simulator import KeyboardSimulator
-from talki.utils.constants import PASTE_LISTENER_DELAY
 
 
 class PasteMode:
@@ -62,11 +60,15 @@ class PasteMode:
         self.active = True
         logger.info("🎯 Paste mode enabled - regular clicks focus windows, Ctrl+Click pastes")
 
-        # Small delay to let focus settle before enabling listeners
-        QTimer.singleShot(PASTE_LISTENER_DELAY, self._enable_listeners)
+        self._enable_listeners()
 
-    def stop_paste_mode(self):
-        """Stop paste mode and clean up listeners."""
+    def stop_paste_mode(self, call_callback: bool = True):
+        """
+        Stop paste mode and clean up listeners.
+
+        Args:
+            call_callback: Whether to call the cancellation callback
+        """
         if not self.active:
             logger.debug("🔇 Paste mode not active, ignoring stop request")
             return
@@ -79,8 +81,8 @@ class PasteMode:
         self._stop_mouse_listener()
         self._stop_keyboard_listener()
 
-        # Call cancellation callback if set
-        if self.on_mode_cancelled:
+        # Call cancellation callback if set and requested
+        if call_callback and self.on_mode_cancelled:
             try:
                 self.on_mode_cancelled()
             except Exception as e:
@@ -111,7 +113,7 @@ class PasteMode:
 
         except Exception as e:
             logger.error(f"❌ Failed to enable paste listeners: {e}")
-            self.stop_paste_mode()
+            self.stop_paste_mode(call_callback=True)
 
     def _stop_mouse_listener(self):
         """Stop the mouse listener."""
@@ -163,7 +165,7 @@ class PasteMode:
         try:
             if key == keyboard.Key.esc and self.active:
                 logger.info("🚫 Paste mode: Escape key pressed - canceling")
-                self.stop_paste_mode()
+                self.stop_paste_mode(call_callback=True)
                 return False  # Stop the listener
             elif key in (keyboard.Key.ctrl_l, keyboard.Key.ctrl_r):
                 logger.debug("🔑 Paste mode: Ctrl key pressed - setting ctrl_pressed = True")
@@ -191,7 +193,7 @@ class PasteMode:
         """Execute the paste operation."""
         if not self.pending_text:
             logger.warning("⚠️  No text available to paste")
-            self.stop_paste_mode()
+            self.stop_paste_mode(call_callback=True)
             return
 
         logger.info("⌨️  Executing paste operation...")
@@ -211,5 +213,5 @@ class PasteMode:
         except Exception as e:
             logger.error(f"❌ Error executing paste: {e}")
 
-        # Stop paste mode after paste operation
-        self.stop_paste_mode()
+        # Stop paste mode after paste operation (don't call cancellation callback since completion callback already handled UI updates)
+        self.stop_paste_mode(call_callback=False)

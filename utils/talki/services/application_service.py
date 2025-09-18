@@ -12,7 +12,7 @@ from talki.input.paste_mode import PasteMode
 from talki.input.keyboard_simulator import KeyboardSimulator
 from talki.utils.constants import (
     THREAD_CHECK_INTERVAL, AUTO_SUBMIT_DELAY,
-    PROCESSING_THREAD_TIMEOUT
+    PROCESSING_THREAD_TIMEOUT, PASTE_LISTENER_DELAY
 )
 
 
@@ -79,10 +79,6 @@ class ApplicationService(QObject):
         self.main_window.stop_recording_requested.connect(self._on_stop_recording_requested)
         self.main_window.send_to_focused_requested.connect(self._on_send_to_focused_requested)
         self.main_window.clear_requested.connect(self._on_clear_requested)
-
-        # Paste mode callbacks
-        self.paste_mode.on_paste_completed = self._on_paste_completed
-        self.paste_mode.on_mode_cancelled = self._on_paste_mode_cancelled
 
     def _setup_hotkeys(self):
         """Set up global hotkeys (Cmd+Space for macOS, adapt for Linux)."""
@@ -206,7 +202,9 @@ class ApplicationService(QObject):
         current_text = self.main_window.get_transcript_text()
         if current_text:
             self.main_window.set_paste_mode_active(True)
-            self.paste_mode.start_paste_mode(current_text)
+            # Small delay to let focus settle before enabling listeners
+            QTimer.singleShot(PASTE_LISTENER_DELAY, lambda: self.paste_mode.start_paste_mode(
+                current_text, self._on_paste_completed, self._on_paste_mode_cancelled))
         else:
             logger.warning("⚠️  No text available to send")
 
@@ -247,6 +245,9 @@ class ApplicationService(QObject):
     def _on_paste_completed(self):
         """Handle paste operation completion."""
         logger.info("✅ Paste operation completed")
+
+        # Reset paste mode status
+        self.main_window.set_paste_mode_active(False)
 
         # Clear text if option enabled
         if self.main_window.get_clear_after_send_enabled():

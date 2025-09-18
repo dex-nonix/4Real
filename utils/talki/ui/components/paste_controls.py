@@ -2,7 +2,7 @@
 Paste mode control UI components.
 """
 
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QLabel, QCheckBox
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QLabel, QCheckBox
 from PyQt6.QtCore import pyqtSignal
 from talki.config.logging_config import logger
 from talki.utils.constants import (
