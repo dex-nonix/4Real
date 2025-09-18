@@ -5,7 +5,9 @@ A modular Python application for real-time audio transcription using Whisper, fe
 ## Features
 
 - **Real-time speech-to-text transcription** using Faster Whisper
-- **Send to Focused Input**: Click button → regular clicks focus windows → Ctrl+Click pastes
+- **Compact toggle interface**: Single ▶️/🔴 button for start/stop recording
+- **Resizable text area**: Drag window corners to adjust transcription view
+- **Send to Focused Input**: 📤 button → regular clicks focus windows → Ctrl+Click pastes
 - **Auto-send after recording stop** (background mode)
 - **Direct text typing** (no clipboard)
 - **Auto-submit** with Enter or Ctrl+Enter
@@ -31,7 +33,10 @@ talki/
 ## Installation
 
 ```bash
+# Install dependencies
 pip install -r requirements.txt
+
+# Run the application
 python -m talki.main
 ```
 
@@ -55,11 +60,16 @@ talki
 ## Usage
 
 1. Select your microphone from the dropdown
-2. Click "Start Recording" or use Cmd+Space
+2. Click the ▶️ button to start recording (turns 🔴 when recording)
 3. Speak into your microphone
-4. Transcription appears in real-time
-5. Click "Send to Focused Input" to enable paste mode
+4. Transcription appears in real-time (resize window to see more/less text)
+5. Click the 📤 button to enable paste mode
 6. Regular clicks focus windows, Ctrl+Click pastes text
+7. Press ESC to cancel paste mode
+
+## Keyboard Shortcuts
+
+- **Cmd+Space**: Toggle recording start/stop (Linux: adapt as needed)
 
 ## Development
 
