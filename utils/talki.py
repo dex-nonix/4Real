@@ -236,9 +236,11 @@ class MainWindow(QMainWindow):
         checkbox_layout = QHBoxLayout()
         self.auto_submit_checkbox = QCheckBox("Auto-submit (Enter)")
         self.ctrl_enter_checkbox = QCheckBox("Use Ctrl+Enter")
+        self.auto_send_checkbox = QCheckBox("Auto-send after stop")
         self.clear_history_checkbox = QCheckBox("Clear after sending")
         checkbox_layout.addWidget(self.auto_submit_checkbox)
         checkbox_layout.addWidget(self.ctrl_enter_checkbox)
+        checkbox_layout.addWidget(self.auto_send_checkbox)
         checkbox_layout.addWidget(self.clear_history_checkbox)
         self.layout.addLayout(checkbox_layout)
 
@@ -309,6 +311,32 @@ class MainWindow(QMainWindow):
             self.thread_check_timer.stop()
             self.start_button.setEnabled(True)
             self.status_label.setText("Stopped.")
+
+            # Auto-send to focused input if enabled
+            if self.auto_send_checkbox.isChecked():
+                logger.info("🚀 Auto-send enabled - sending transcribed text to focused input")
+                current_text = self.text_area.toPlainText()
+                if current_text:
+                    logger.info(f"📝 Auto-sending text: \"{current_text[:50]}...\"")
+                    # Use the same direct typing approach as paste mode
+                    self._type_text_directly(current_text)
+                    logger.info("✅ Auto-send completed")
+
+                    # Auto-submit if enabled
+                    if self.auto_submit_checkbox.isChecked():
+                        if self.ctrl_enter_checkbox.isChecked():
+                            logger.info("⏎  Auto-submit enabled - scheduling Ctrl+Enter")
+                            QTimer.singleShot(100, self._send_ctrl_enter)
+                        else:
+                            logger.info("⏎  Auto-submit enabled - scheduling Enter")
+                            QTimer.singleShot(100, self._send_enter)
+
+                    # Clear text if option enabled
+                    if self.clear_history_checkbox.isChecked():
+                        logger.info("🧹 Clear history enabled - clearing text area after auto-send")
+                        self.text_area.clear()
+                else:
+                    logger.debug("📝 No text to auto-send")
         else:
             logger.debug("🧵 Processing thread still alive")
 
@@ -614,6 +642,7 @@ def main():
     logger.info("🎤 Features available:")
     logger.info("   • Real-time speech-to-text transcription")
     logger.info("   • Send to Focused Input: Click button → regular clicks focus windows → Ctrl+Click pastes")
+    logger.info("   • Auto-send after recording stop (background mode)")
     logger.info("   • Direct text typing (no clipboard)")
     logger.info("   • Auto-submit with Enter or Ctrl+Enter")
     logger.info("   • ESC to cancel paste mode")
