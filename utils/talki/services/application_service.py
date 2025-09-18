@@ -1,0 +1,291 @@
+"""
+Application service that coordinates between UI, audio processing, and input components.
+"""
+
+from typing import Optional
+from PyQt6.QtCore import QTimer, pyqtSignal, QObject
+from pynput import keyboard
+from talki.config.logging_config import logger
+from talki.core.audio.processor import AudioProcessor
+from talki.ui.main_window import MainWindow
+from talki.input.paste_mode import PasteMode
+from talki.input.keyboard_simulator import KeyboardSimulator
+from talki.utils.constants import (
+    THREAD_CHECK_INTERVAL, AUTO_SUBMIT_DELAY,
+    PROCESSING_THREAD_TIMEOUT
+)
+
+
+class ApplicationService(QObject):
+    """
+    Main application service that coordinates between all components.
+
+    Handles the business logic and communication between UI, audio processing,
+    and input simulation components.
+    """
+
+    def __init__(self):
+        """Initialize the application service."""
+        super().__init__()
+
+        # Components
+        self.audio_processor = None
+        self.main_window = None
+        self.paste_mode = None
+        self.keyboard_simulator = None
+
+        # Hotkey listener
+        self.hotkey_listener = None
+
+        # Timers
+        self.thread_check_timer = None
+
+        logger.debug("🎯 Application service initialized")
+
+    def initialize_components(self, main_window: MainWindow):
+        """
+        Initialize all components and set up connections.
+
+        Args:
+            main_window: The main application window
+        """
+        self.main_window = main_window
+
+        # Create components
+        self.audio_processor = AudioProcessor()
+        self.keyboard_simulator = KeyboardSimulator()
+        self.paste_mode = PasteMode(self.keyboard_simulator)
+
+        # Set up signal connections
+        self._connect_signals()
+
+        # Set up hotkeys
+        self._setup_hotkeys()
+
+        # Set up timers
+        self._setup_timers()
+
+        logger.info("✅ All components initialized and connected")
+
+    def _connect_signals(self):
+        """Connect all component signals."""
+        # Audio processor signals
+        self.audio_processor.transcript_update.connect(self._on_transcript_update)
+        self.audio_processor.error_signal.connect(self._on_audio_error)
+        self.audio_processor.recording_state_changed.connect(self._on_recording_state_changed)
+
+        # Main window signals
+        self.main_window.start_recording_requested.connect(self._on_start_recording_requested)
+        self.main_window.stop_recording_requested.connect(self._on_stop_recording_requested)
+        self.main_window.send_to_focused_requested.connect(self._on_send_to_focused_requested)
+        self.main_window.clear_requested.connect(self._on_clear_requested)
+
+        # Paste mode callbacks
+        self.paste_mode.on_paste_completed = self._on_paste_completed
+        self.paste_mode.on_mode_cancelled = self._on_paste_mode_cancelled
+
+    def _setup_hotkeys(self):
+        """Set up global hotkeys (Cmd+Space for macOS, adapt for Linux)."""
+        logger.info("🔥 Setting up global hotkeys (Cmd+Space)")
+
+        hotkeys = {keyboard.Key.cmd, keyboard.Key.space}
+        pressed_keys = set()
+
+        def on_press(key):
+            if key in hotkeys:
+                logger.debug(f"🔑 Hotkey key pressed: {key}")
+                pressed_keys.add(key)
+                if pressed_keys == hotkeys:
+                    logger.info("🎯 Cmd+Space hotkey activated!")
+                    self._toggle_recording_from_hotkey()
+
+        def on_release(key):
+            if key in hotkeys:
+                logger.debug(f"🔓 Hotkey key released: {key}")
+                pressed_keys.discard(key)
+
+        logger.debug("⌨️  Creating hotkey listener...")
+        self.hotkey_listener = keyboard.Listener(on_press=on_press, on_release=on_release)
+        self.hotkey_listener.start()
+        logger.info("✅ Global hotkeys activated")
+
+    def _setup_timers(self):
+        """Set up application timers."""
+        self.thread_check_timer = QTimer(self)
+        self.thread_check_timer.setInterval(THREAD_CHECK_INTERVAL)
+        self.thread_check_timer.timeout.connect(self._check_thread_status)
+
+    def _toggle_recording_from_hotkey(self):
+        """Toggle recording state from hotkey."""
+        # Determine action based on current UI state
+        if self.main_window.recording_controls.start_button.isEnabled():
+            action = "start_recording"
+            # Get current device and start recording
+            device_index = self.main_window.recording_controls.mic_combo.currentData()
+            if device_index is not None:
+                QTimer.singleShot(0, lambda: self._start_recording(device_index))
+        else:
+            action = "stop_recording"
+            QTimer.singleShot(0, self._stop_recording)
+
+        logger.debug(f"📤 Triggering {action} from hotkey")
+
+    def _start_recording(self, device_index: int):
+        """Start recording with the specified device."""
+        self.main_window.set_starting_state()
+        self.audio_processor.start_recording(device_index)
+
+    def _stop_recording(self):
+        """Stop current recording."""
+        self.main_window.set_stopping_state()
+        self.audio_processor.stop_recording()
+        self.thread_check_timer.start()
+
+    def _on_start_recording_requested(self, device_index: int):
+        """Handle start recording request from UI."""
+        self._start_recording(device_index)
+
+    def _on_stop_recording_requested(self):
+        """Handle stop recording request from UI."""
+        self._stop_recording()
+
+    def _on_transcript_update(self, text: str):
+        """Handle new transcript text."""
+        self.main_window.append_transcript(text)
+
+    def _on_audio_error(self, error_msg: str):
+        """Handle audio processing errors."""
+        logger.error(f"❌ Audio error received: {error_msg}")
+        self.main_window.recording_controls.status_label.setText(f"Error: {error_msg}")
+        self.main_window.set_recording_state(False)
+
+    def _on_recording_state_changed(self, is_recording: bool):
+        """Handle recording state changes."""
+        self.main_window.set_recording_state(is_recording)
+
+        if not is_recording:
+            # Recording stopped, check if auto-send is enabled
+            if self.main_window.get_auto_send_enabled():
+                logger.info("🚀 Auto-send enabled - sending transcribed text")
+                self._perform_auto_send()
+
+    def _check_thread_status(self):
+        """Check if the processing thread has finished."""
+        logger.debug("⏰ Thread check timer tick")
+
+        if not self.audio_processor.is_thread_alive():
+            logger.info("✅ Processing thread finished - resetting UI")
+            self.thread_check_timer.stop()
+            self.main_window.set_recording_state(False)
+
+            # Auto-send after thread completes if enabled
+            if self.main_window.get_auto_send_enabled():
+                self._perform_auto_send()
+
+    def _perform_auto_send(self):
+        """Perform auto-send of transcribed text."""
+        current_text = self.main_window.get_transcript_text()
+        if current_text:
+            logger.info(f"📝 Auto-sending text: \"{current_text[:50]}...\"")
+            self._send_text_to_focused_input(current_text)
+            logger.info("✅ Auto-send completed")
+
+            # Auto-submit if enabled
+            if self.main_window.get_auto_submit_enabled():
+                self._perform_auto_submit()
+
+            # Clear text if option enabled
+            if self.main_window.get_clear_after_send_enabled():
+                logger.info("🧹 Clear history enabled - clearing text area after auto-send")
+                self.main_window.clear_transcript()
+        else:
+            logger.debug("📝 No text to auto-send")
+
+    def _on_send_to_focused_requested(self):
+        """Handle send to focused input request."""
+        current_text = self.main_window.get_transcript_text()
+        if current_text:
+            self.main_window.set_paste_mode_active(True)
+            self.paste_mode.start_paste_mode(current_text)
+        else:
+            logger.warning("⚠️  No text available to send")
+
+    def _send_text_to_focused_input(self, text: str):
+        """Send text directly to focused input field."""
+        try:
+            self.keyboard_simulator.type_text(text)
+        except Exception as e:
+            logger.error(f"❌ Error sending text to focused input: {e}")
+
+    def _perform_auto_submit(self):
+        """Perform auto-submit after sending text."""
+        if self.main_window.get_ctrl_enter_enabled():
+            logger.info("⏎  Auto-submit enabled - scheduling Ctrl+Enter")
+            QTimer.singleShot(AUTO_SUBMIT_DELAY, self._send_ctrl_enter)
+        else:
+            logger.info("⏎  Auto-submit enabled - scheduling Enter")
+            QTimer.singleShot(AUTO_SUBMIT_DELAY, self._send_enter)
+
+    def _send_enter(self):
+        """Send Enter keypress."""
+        try:
+            self.keyboard_simulator.send_enter()
+        except Exception as e:
+            logger.error(f"❌ Error sending Enter keypress: {e}")
+
+    def _send_ctrl_enter(self):
+        """Send Ctrl+Enter keypress."""
+        try:
+            self.keyboard_simulator.send_ctrl_enter()
+        except Exception as e:
+            logger.error(f"❌ Error sending Ctrl+Enter keypress: {e}")
+
+    def _on_clear_requested(self):
+        """Handle clear transcript request."""
+        self.main_window.clear_transcript()
+
+    def _on_paste_completed(self):
+        """Handle paste operation completion."""
+        logger.info("✅ Paste operation completed")
+
+        # Clear text if option enabled
+        if self.main_window.get_clear_after_send_enabled():
+            logger.info("🧹 Clear history enabled - clearing text area after paste")
+            self.main_window.clear_transcript()
+
+        # Auto-submit if enabled
+        if self.main_window.get_auto_submit_enabled():
+            self._perform_auto_submit()
+
+    def _on_paste_mode_cancelled(self):
+        """Handle paste mode cancellation."""
+        logger.info("🚫 Paste mode cancelled")
+        self.main_window.set_paste_mode_active(False)
+
+    def shutdown(self):
+        """Clean shutdown of all components."""
+        logger.info("🔄 Application shutdown initiated")
+
+        # Stop recording
+        if self.audio_processor:
+            logger.debug("⏹️  Stopping audio recording...")
+            self.audio_processor.stop_recording()
+
+        # Stop paste mode
+        if self.paste_mode and self.paste_mode.is_active():
+            logger.debug("🛑 Disabling paste mode during shutdown...")
+            self.paste_mode.stop_paste_mode()
+
+        # Stop hotkey listener
+        if self.hotkey_listener:
+            logger.debug("🔥 Stopping hotkey listener...")
+            self.hotkey_listener.stop()
+
+        # Wait for processing thread
+        if self.audio_processor and self.audio_processor.is_thread_alive():
+            logger.debug("🧵 Waiting for processing thread to finish...")
+            self.audio_processor.processing_thread.join(timeout=PROCESSING_THREAD_TIMEOUT)
+            if self.audio_processor.processing_thread.is_alive():
+                logger.warning("⚠️  Processing thread did not finish within timeout")
+
+        logger.info("✅ Application shutdown completed")

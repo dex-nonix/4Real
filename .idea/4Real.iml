@@ -11,6 +11,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/faster_backend/plugins" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/vue_libs" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/utils" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/_old_to_ignore" />
       <excludeFolder url="file://$MODULE_DIR$/backend" />
     </content>
