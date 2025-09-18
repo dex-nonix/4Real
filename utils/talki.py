@@ -346,15 +346,13 @@ class MainWindow(QMainWindow):
             self.paste_mouse_listener.start()
 
             logger.debug("⌨️  Starting paste mode keyboard listener...")
+            # Separate callbacks for press and release events
             self.paste_keyboard_listener = keyboard.Listener(on_press=self.on_paste_key_press,
                                                            on_release=self.on_paste_key_release)
             self.paste_keyboard_listener.start()
 
-            logger.debug("🚪 Starting paste mode escape listener...")
-            self.paste_escape_listener = keyboard.Listener(on_press=self.on_paste_escape_press)
-            self.paste_escape_listener.start()
-
-            logger.info("✅ Paste mode active - Regular clicks focus windows, Ctrl+Click pastes, ESC cancels")
+            logger.info("✅ Paste mode active - Regular clicks focus, Ctrl+Click ONLY pastes, ESC cancels")
+            logger.debug(f"🔍 Initial ctrl_pressed state: {self.ctrl_pressed}")
         except Exception as e:
             logger.error(f"❌ Failed to enable paste listeners: {e}")
             self._disable_paste_listeners()
@@ -371,20 +369,19 @@ class MainWindow(QMainWindow):
             self.paste_keyboard_listener.stop()
             self.paste_keyboard_listener = None
 
-        if self.paste_escape_listener:
-            self.paste_escape_listener.stop()
-            self.paste_escape_listener = None
-
         self.paste_mode_active = False
         self.pending_paste_text = None
         self._update_paste_status()
         logger.info("✅ Paste mode disabled")
 
     def on_paste_click(self, x, y, button, pressed):
-        """Handle clicks for paste mode - regular clicks focus, Ctrl+Click pastes"""
+        """Handle clicks for paste mode - ONLY Ctrl+Click pastes, regular clicks focus"""
         if pressed and button == mouse.Button.left and self.paste_mode_active:
+            logger.debug(f"🖱️  Click detected at ({x}, {y}) - ctrl_pressed = {self.ctrl_pressed}")
+
+            # Use stored Ctrl state - make sure keyboard listeners are working properly
             if self.ctrl_pressed:
-                # Ctrl+Click - capture text and paste
+                # ONLY Ctrl+Click triggers paste
                 logger.info(f"🎯 Ctrl+Click detected at ({x}, {y}) - capturing text and pasting")
 
                 # Capture text at the moment of Ctrl+Click
@@ -398,28 +395,33 @@ class MainWindow(QMainWindow):
                     # Still disable mode even with no text
                     self._disable_paste_listeners()
             else:
-                # Regular click - just focus the window/area
-                logger.debug(f"🖱️  Regular click at ({x}, {y}) - focusing window/area")
-                # The click itself will focus the window, no extra action needed
+                # Regular click - ONLY focuses window, NO PASTE
+                logger.debug(f"🖱️  Regular click at ({x}, {y}) - focusing window/area only (NO PASTE)")
+                # The click itself will focus the window, no paste action
 
     def on_paste_key_press(self, key):
-        """Handle Ctrl key press for paste mode"""
-        if key in (keyboard.Key.ctrl_l, keyboard.Key.ctrl_r):
-            logger.debug("🔑 Paste mode: Ctrl key pressed")
-            self.ctrl_pressed = True
+        """Handle key press events for paste mode"""
+        try:
+            if key == keyboard.Key.esc and self.paste_mode_active:
+                logger.info("🚫 Paste mode: Escape key pressed - canceling")
+                self._disable_paste_listeners()
+                return False  # Stop the listener
+            elif key in (keyboard.Key.ctrl_l, keyboard.Key.ctrl_r):
+                logger.debug("🔑 Paste mode: Ctrl key pressed - setting ctrl_pressed = True")
+                self.ctrl_pressed = True
+                logger.debug(f"🔍 Ctrl state: {self.ctrl_pressed}")
+        except Exception as e:
+            logger.error(f"❌ Error in key press handler: {e}")
 
     def on_paste_key_release(self, key):
-        """Handle Ctrl key release for paste mode"""
-        if key in (keyboard.Key.ctrl_l, keyboard.Key.ctrl_r):
-            logger.debug("🔓 Paste mode: Ctrl key released")
-            self.ctrl_pressed = False
-
-    def on_paste_escape_press(self, key):
-        """Handle escape key press for paste mode"""
-        if key == keyboard.Key.esc and self.paste_mode_active:
-            logger.info("🚫 Paste mode: Escape key pressed - canceling")
-            self._disable_paste_listeners()
-            return False  # Stop the listener
+        """Handle key release events for paste mode"""
+        try:
+            if key in (keyboard.Key.ctrl_l, keyboard.Key.ctrl_r):
+                logger.debug("🔓 Paste mode: Ctrl key released - setting ctrl_pressed = False")
+                self.ctrl_pressed = False
+                logger.debug(f"🔍 Ctrl state: {self.ctrl_pressed}")
+        except Exception as e:
+            logger.error(f"❌ Error in key release handler: {e}")
 
     def _execute_paste(self):
         """Execute the paste operation by typing text directly"""
@@ -457,7 +459,7 @@ class MainWindow(QMainWindow):
     def _update_paste_status(self):
         """Update the paste status indicator"""
         if self.paste_mode_active:
-            self.paste_status_label.setText("🎯 Paste Mode: Regular clicks focus, Ctrl+Click pastes (ESC cancels)")
+            self.paste_status_label.setText("🎯 Paste Mode: Regular clicks focus, Ctrl+Click ONLY pastes (ESC cancels)")
             self.paste_status_label.setStyleSheet("color: green; font-weight: bold;")
             logger.info("🔄 Paste mode status: ACTIVE")
         else:
@@ -502,12 +504,42 @@ class MainWindow(QMainWindow):
         try:
             logger.debug("🎤 Querying available audio devices...")
             device_count = 0
+            default_device_index = None
+            first_device_index = None
+
             for i, d in enumerate(sd.query_devices()):
                 if d['max_input_channels'] > 0:
                     logger.debug(f"📱 Found input device: {d['name']} (index: {i})")
                     self.mic_combo.addItem(d['name'], i)
                     device_count += 1
-            logger.info(f"✅ Found {device_count} microphone devices")
+
+                    # Look for the device named "Default"
+                    if d['name'].lower() == 'default':
+                        default_device_index = i
+                        logger.info(f"🎯 Found system default microphone: {d['name']}")
+
+                    # Remember the first device as fallback
+                    if first_device_index is None:
+                        first_device_index = i
+
+            if device_count > 0:
+                # Select the device named "Default" if found, otherwise first device
+                if default_device_index is not None:
+                    # Find the combo box index for the default device
+                    for combo_index in range(self.mic_combo.count()):
+                        if self.mic_combo.itemData(combo_index) == default_device_index:
+                            self.mic_combo.setCurrentIndex(combo_index)
+                            break
+                    selected_device_name = self.mic_combo.currentText()
+                    logger.info(f"✅ Found {device_count} devices - System default selected: {selected_device_name}")
+                else:
+                    # No "Default" device found, use first available
+                    self.mic_combo.setCurrentIndex(0)
+                    selected_device_name = self.mic_combo.currentText()
+                    logger.info(f"✅ Found {device_count} devices - First available selected: {selected_device_name}")
+            else:
+                logger.warning("⚠️  No microphone devices found")
+
         except Exception as e:
             logger.error(f"❌ Could not list audio devices: {e}")
             self.status_label.setText(f"Could not list audio devices: {e}")
