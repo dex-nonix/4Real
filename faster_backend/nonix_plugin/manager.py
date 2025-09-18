@@ -147,6 +147,7 @@ class NxPluginManager:
 
             plugin_instance.name = plugin_name
             plugin_instance.version = metadata.get("version", "0.0.0")
+            plugin_instance.plugin_dir = plugin_dir
 
             self.loaded_plugins[plugin_name] = plugin_instance
 

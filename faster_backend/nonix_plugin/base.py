@@ -12,6 +12,7 @@ class BasePlugin(ABC):
         self.name: str = "Unnamed Plugin"
         self.version: str = "0.0.0"
         self.config = config
+        self.plugin_dir = None  # Set by plugin manager during loading
         self._logger = logging.getLogger(self.__class__.__name__)
 
     @final
