@@ -448,22 +448,24 @@ from nonix_web_stt.services.stt_service import NxSttService
 class AIAudioWorkflow:
     def __init__(self):
         self.stt_service = NxInject(NxSttService)
-        # Other AI services could be integrated here
+        # Initialize services as None - inject them properly if needed
+        self.llm_service = None
+        self.vector_store = None
         self.additional_services = []
 
     async def process_audio_query(self, audio_path: str):
         # Step 1: Transcribe audio to text
         transcription = await self.stt_service.transcribe_file(audio_path, config_id=1)
 
-        # Step 2: Generate AI response based on transcription
-        if hasattr(self, 'llm_service'):
+        # Step 2: Generate AI response based on transcription (if LLM service available)
+        if self.llm_service is not None:
             response = await self.llm_service.generate_response(
                 f"Based on this query: {transcription}\nPlease provide a helpful response:"
             )
             transcription = f"Query: {transcription}\nResponse: {response}"
 
-        # Step 3: Store for retrieval (optional)
-        if hasattr(self, 'vector_store'):
+        # Step 3: Store for retrieval (if vector store available)
+        if self.vector_store is not None:
             await self.vector_store.store_document(transcription)
 
         return transcription
@@ -475,8 +477,8 @@ class AIAudioWorkflow:
             data=audio_stream
         )
 
-        # Generate contextual response
-        if hasattr(self, 'llm_service'):
+        # Generate contextual response (if LLM service available)
+        if self.llm_service is not None:
             response = await self.llm_service.chat_completion([{
                 "role": "user",
                 "content": transcription.get('text', '')
@@ -497,6 +499,8 @@ class AIAudioWorkflow:
 Choose appropriate models based on use case:
 
 ```python
+import torch  # Import at top level
+
 class ModelSelector:
     @staticmethod
     def select_model_for_use_case(use_case: str):
@@ -513,9 +517,8 @@ class ModelSelector:
     def get_optimal_device():
         # Check for GPU availability
         try:
-            import torch
             return "cuda" if torch.cuda.is_available() else "cpu"
-        except ImportError:
+        except (ImportError, AttributeError):
             return "cpu"
 ```
 
