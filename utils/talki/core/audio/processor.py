@@ -184,7 +184,7 @@ class AudioProcessor(QObject):
         """Main audio processing thread function."""
         logger.info("🧵 Audio processing thread started")
 
-        audio_buffer = np.array([], dtype=np.float32)
+        audio_buffer = np.empty(0, dtype=np.float32)
         logger.debug(f"⚙️  Processing interval: {self.processing_interval_samples} samples ({PROCESSING_INTERVAL_SECONDS}s)")
 
         while self.is_recording:
@@ -209,7 +209,7 @@ class AudioProcessor(QObject):
                 if len(audio_buffer) >= self.processing_interval_samples:
                     logger.info("🔥 Processing audio chunk (2s interval)")
                     self._process_audio_chunk(audio_buffer)
-                    audio_buffer = np.array([], dtype=np.float32)  # Clear buffer
+                    audio_buffer = audio_buffer[:0]
                     logger.debug("🧹 Audio buffer cleared")
 
             except queue.Empty:
@@ -245,9 +245,7 @@ class AudioProcessor(QObject):
             if not self.stt_engine.session_active:
                 self.stt_engine.start_session()
 
-            text = self.stt_engine.process_audio_chunk(audio_chunk, self.native_sample_rate)
-            if text:
-                self.transcript_update.emit(text)
+            self.stt_engine.process_audio_chunk(audio_chunk, self.native_sample_rate)
         except Exception as e:
             logger.error(f"❌ Error processing audio chunk: {e}")
             self.error_signal.emit(f"Transcription error: {e}")

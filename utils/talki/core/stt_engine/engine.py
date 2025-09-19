@@ -124,10 +124,7 @@ class STTEngine:
                 audio_chunk, source_sample_rate
             )
 
-            print(f"DEBUG: Audio preprocessing - has_speech: {has_speech}, audio_len: {len(processed_audio)}")
-
             if not has_speech or len(processed_audio) == 0:
-                print(f"DEBUG: No speech detected or empty audio, returning None")
                 # Check for endpointing
                 if self.streaming_manager.should_endpoint(has_speech=False):
                     if self.on_endpoint:
@@ -135,8 +132,6 @@ class STTEngine:
                 return None
 
             # 2. ENGINE TRANSCRIPTION
-            print(f"DEBUG: Starting Whisper transcription...")
-            print(f"DEBUG: Audio shape: {processed_audio.shape}, dtype: {processed_audio.dtype}, min: {processed_audio.min():.6f}, max: {processed_audio.max():.6f}")
 
             segments, info = self.model.transcribe(
                 processed_audio,
@@ -144,24 +139,10 @@ class STTEngine:
             )
 
             segments_list = list(segments)
-            print(f"DEBUG: Whisper returned {len(segments_list)} segments")
-            print(f"DEBUG: Whisper info - language: {info.language if hasattr(info, 'language') else 'N/A'}")
-
-            # Test with a simple generated audio if no segments found
-            if len(segments_list) == 0:
-                print("DEBUG: No segments found, trying test audio...")
-                import numpy as np
-                # Generate a simple test tone
-                test_audio = np.sin(2 * np.pi * 440 * np.arange(16000) / 16000).astype(np.float32)
-                test_segments, test_info = self.model.transcribe(test_audio, language="en")
-                print(f"DEBUG: Test audio segments: {len(list(test_segments))}")
-                for seg in test_segments:
-                    print(f"DEBUG: Test segment: '{seg.text}'")
 
             # Convert segments to list of dicts
             segment_dicts = []
             for segment in segments_list:
-                print(f"DEBUG: Segment text: '{segment.text}'")
                 segment_dicts.append({
                     'text': segment.text,
                     'start': segment.start,
@@ -248,5 +229,10 @@ class STTEngine:
         """
         Async version for backend usage.
         """
-        loop = asyncio.get_event_loop()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
         return await loop.run_in_executor(None, self.process_audio_chunk, audio_chunk, source_sample_rate)
