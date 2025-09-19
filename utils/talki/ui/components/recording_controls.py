@@ -30,6 +30,7 @@ class RecordingControls(QWidget):
         self.mic_combo = None
         self.toggle_button = None
         self.config_controls = None
+        self.status_label = None
 
         # State
         self.is_recording = False
@@ -68,6 +69,9 @@ class RecordingControls(QWidget):
         recording_layout.addStretch()
         layout.addLayout(recording_layout)
 
+        # Status label below controls
+        layout.addWidget(self.status_label)
+
     def _create_ui(self):
         """Create the UI elements."""
         # Config controls
@@ -84,6 +88,10 @@ class RecordingControls(QWidget):
         self.toggle_button.setToolTip("Start/Stop Recording")
         self._update_button_style()
         self.toggle_button.clicked.connect(self._on_toggle_clicked)
+
+        # Status label
+        self.status_label = QLabel("Ready.")
+        self.status_label.setStyleSheet("color: #666; font-size: 11px;")
 
     def _update_button_style(self):
         """Update the button appearance based on recording state."""
@@ -223,3 +231,12 @@ class RecordingControls(QWidget):
     def _on_settings_requested(self):
         """Handle settings button click."""
         self.settings_requested.emit()
+
+    def set_status_text(self, text: str):
+        """Set the status label text."""
+        if self.status_label:
+            self.status_label.setText(text)
+
+    def get_status_text(self) -> str:
+        """Get the current status text."""
+        return self.status_label.text() if self.status_label else ""

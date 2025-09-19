@@ -65,8 +65,14 @@ class AudioProcessor(QObject):
             logger.warning("⚠️  Recording already in progress, ignoring start request")
             return
 
-        if not self.stt_engine or not self.stt_engine.is_loaded():
-            error_msg = "STT engine not initialized"
+        if not self.stt_engine:
+            error_msg = "STT engine not available"
+            logger.error(f"❌ {error_msg}")
+            self.error_signal.emit(error_msg)
+            return
+
+        if not self.stt_engine.is_loaded():
+            error_msg = "STT engine not loaded"
             logger.error(f"❌ {error_msg}")
             self.error_signal.emit(error_msg)
             return
@@ -230,6 +236,11 @@ class AudioProcessor(QObject):
             audio_chunk: Audio data to transcribe
         """
         try:
+            # Check if STT engine is available
+            if not self.stt_engine:
+                logger.error("❌ STT engine not available during processing")
+                return
+
             # Start session if not already started
             if not self.stt_engine.session_active:
                 self.stt_engine.start_session()

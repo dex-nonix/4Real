@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import QMessageBox
 from pynput import keyboard, mouse
 from talki.config.logging_config import logger
 from talki.core.audio.processor import AudioProcessor
-from talki.core.stt_engine import STTEngine
+from talki.core.stt_engine import STTEngine, STTConfig
 from talki.ui.main_window import MainWindow
 from talki.ui.components.stt_config_dialog import STTConfigDialog
 from talki.input.paste_mode import PasteMode
@@ -67,12 +67,30 @@ class ApplicationService(QObject):
         # Initialize STT engine with current config
         current_config = self.config_manager.get_current_config()
         if current_config:
-            self.stt_engine = STTEngine(current_config)
-            self.stt_engine.on_transcript = lambda text: self.main_window.append_transcript(text)
-            self.stt_engine.on_error = lambda error: logger.error(f"STT Error: {error}")
-            self.stt_engine.on_endpoint = lambda: logger.info("Endpoint detected")
+            try:
+                self.stt_engine = STTEngine(current_config)
+                self.stt_engine.on_transcript = lambda text: self.main_window.append_transcript(text)
+                self.stt_engine.on_error = lambda error: logger.error(f"STT Error: {error}")
+                self.stt_engine.on_endpoint = lambda: logger.info("Endpoint detected")
+                logger.info("✅ STT engine initialized successfully")
+            except Exception as e:
+                logger.error(f"❌ Failed to initialize STT engine: {e}")
+                # Try to create with default config as fallback
+                try:
+                    default_config = STTConfig()
+                    self.stt_engine = STTEngine(default_config)
+                    self.stt_engine.on_transcript = lambda text: self.main_window.append_transcript(text)
+                    self.stt_engine.on_error = lambda error: logger.error(f"STT Error: {error}")
+                    self.stt_engine.on_endpoint = lambda: logger.info("Endpoint detected")
+                    logger.info("✅ STT engine initialized with default config")
+                except Exception as e2:
+                    logger.error(f"❌ Failed to initialize STT engine even with default config: {e2}")
+                    self.stt_engine = None
+        else:
+            logger.error("❌ No current config available for STT engine initialization")
+            self.stt_engine = None
 
-        # Create audio processor with STT engine
+        # Create audio processor with STT engine (or None if engine failed)
         self.audio_processor = AudioProcessor(self.stt_engine)
 
         # Set up signal connections
@@ -192,21 +210,30 @@ class ApplicationService(QObject):
 
     def _toggle_recording_from_hotkey(self):
         """Toggle recording state from hotkey."""
-        # Determine action based on current UI state
-        if self.main_window.recording_controls.start_button.isEnabled():
+        # Determine action based on current recording state
+        if hasattr(self.audio_processor, 'is_recording') and self.audio_processor.is_recording:
+            action = "stop_recording"
+            QTimer.singleShot(0, self._stop_recording)
+        else:
             action = "start_recording"
             # Get current device and start recording
             device_index = self.main_window.recording_controls.mic_combo.currentData()
             if device_index is not None:
                 QTimer.singleShot(0, lambda: self._start_recording(device_index))
-        else:
-            action = "stop_recording"
-            QTimer.singleShot(0, self._stop_recording)
+            else:
+                logger.warning("⚠️  No valid microphone device selected for hotkey recording")
 
         logger.debug(f"📤 Triggering {action} from hotkey")
 
     def _start_recording(self, device_index: int):
         """Start recording with the specified device."""
+        # Check if STT engine is available
+        if not self.stt_engine:
+            error_msg = "STT engine not initialized"
+            logger.error(f"❌ {error_msg}")
+            self.main_window.recording_controls.set_status_text(f"Error: {error_msg}")
+            return
+
         self.main_window.set_starting_state()
         self.audio_processor.start_recording(device_index)
 

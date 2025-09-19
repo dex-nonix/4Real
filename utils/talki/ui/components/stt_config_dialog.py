@@ -46,6 +46,26 @@ class STTConfigDialog(QDialog):
         logger.debug(f"📋 Available configs: {self.config_manager.get_config_names()}")
         logger.debug(f"🔄 Current config: {self.config_manager.get_current_config_name()}")
 
+    def _select_config_by_name(self, config_name: str):
+        """
+        Select a config in the list by name using manual search.
+
+        Args:
+            config_name: Name of the config to select
+        """
+        if not config_name or not config_name.strip():
+            return
+
+        config_name = config_name.strip()
+
+        # Manual search instead of findItems to avoid PyQt6 issues
+        for i in range(self.config_list.count()):
+            item = self.config_list.item(i)
+            if item and item.text() == config_name:
+                self.config_list.setCurrentItem(item)
+                logger.debug(f"✅ Selected config: {config_name}")
+                break
+
     def _create_ui(self):
         """Create all UI elements."""
         # Config list
@@ -152,14 +172,7 @@ class STTConfigDialog(QDialog):
 
         # Select current config
         current_name = self.config_manager.get_current_config_name()
-        if current_name and current_name.strip():
-            current_name = current_name.strip()
-            # Manual search instead of findItems to avoid PyQt6 issues
-            for i in range(self.config_list.count()):
-                item = self.config_list.item(i)
-                if item and item.text() == current_name:
-                    self.config_list.setCurrentItem(item)
-                    break
+        self._select_config_by_name(current_name)
 
     def _on_config_selected(self, current, previous):
         """Handle configuration selection in list."""
@@ -220,14 +233,7 @@ class STTConfigDialog(QDialog):
                 self._populate_config_list()
 
                 # Select the saved config
-                if config_name and config_name.strip():
-                    config_name = config_name.strip()
-                    # Manual search instead of findItems to avoid PyQt6 issues
-                    for i in range(self.config_list.count()):
-                        item = self.config_list.item(i)
-                        if item and item.text() == config_name:
-                            self.config_list.setCurrentItem(item)
-                            break
+                self._select_config_by_name(config_name)
 
                 logger.info(f"💾 Saved config: {config_name}")
             else:
@@ -263,14 +269,7 @@ class STTConfigDialog(QDialog):
                     self._populate_config_list()
 
                     # Select new config
-                    if name and name.strip():
-                        name = name.strip()
-                        # Manual search instead of findItems to avoid PyQt6 issues
-                        for i in range(self.config_list.count()):
-                            item = self.config_list.item(i)
-                            if item and item.text() == name:
-                                self.config_list.setCurrentItem(item)
-                                break
+                    self._select_config_by_name(name)
 
                     logger.info(f"🆕 Created new config: {name}")
                 else:
@@ -303,14 +302,7 @@ class STTConfigDialog(QDialog):
                     self._populate_config_list()
 
                     # Select new config
-                    if name and name.strip():
-                        name = name.strip()
-                        # Manual search instead of findItems to avoid PyQt6 issues
-                        for i in range(self.config_list.count()):
-                            item = self.config_list.item(i)
-                            if item and item.text() == name:
-                                self.config_list.setCurrentItem(item)
-                                break
+                    self._select_config_by_name(name)
 
                     logger.info(f"📋 Duplicated config: {self.current_config_name} -> {name}")
                 else:

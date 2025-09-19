@@ -30,8 +30,15 @@ class ConfigManager:
         # Set default if no configs exist
         if not self.configs:
             self._create_default_config()
+        else:
+            # Set current config to default-speech if it exists, otherwise first available
+            if "default-speech" in self.configs:
+                self.current_config_name = "default-speech"
+            elif self.configs:
+                self.current_config_name = list(self.configs.keys())[0]
 
         logger.info(f"🎛️  ConfigManager initialized with {len(self.configs)} configurations")
+        logger.debug(f"🔄 Current config set to: {self.current_config_name}")
 
     def _load_all_configs(self):
         """Load all configuration files from config directory."""

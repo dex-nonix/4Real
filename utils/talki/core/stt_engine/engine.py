@@ -124,7 +124,10 @@ class STTEngine:
                 audio_chunk, source_sample_rate
             )
 
+            print(f"DEBUG: Audio preprocessing - has_speech: {has_speech}, audio_len: {len(processed_audio)}")
+
             if not has_speech or len(processed_audio) == 0:
+                print(f"DEBUG: No speech detected or empty audio, returning None")
                 # Check for endpointing
                 if self.streaming_manager.should_endpoint(has_speech=False):
                     if self.on_endpoint:
@@ -132,14 +135,18 @@ class STTEngine:
                 return None
 
             # 2. ENGINE TRANSCRIPTION
+            print(f"DEBUG: Starting Whisper transcription...")
             segments, info = self.model.transcribe(
                 processed_audio,
                 language=None if self.config.feature_preset.language_detection else "en"
             )
 
+            print(f"DEBUG: Whisper returned {len(list(segments))} segments")
+
             # Convert segments to list of dicts
             segment_dicts = []
             for segment in segments:
+                print(f"DEBUG: Segment text: '{segment.text}'")
                 segment_dicts.append({
                     'text': segment.text,
                     'start': segment.start,
