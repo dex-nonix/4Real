@@ -7,6 +7,7 @@ from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QFont
 from talki.config.logging_config import logger
 from talki.core.audio.device_manager import AudioDeviceManager
+from .config_controls import ConfigControls
 
 
 class RecordingControls(QWidget):
@@ -17,6 +18,8 @@ class RecordingControls(QWidget):
     # Signals
     start_recording_requested = pyqtSignal(int)  # device_index
     stop_recording_requested = pyqtSignal()
+    config_selected = pyqtSignal(str)  # config_name
+    settings_requested = pyqtSignal()  # Open config dialog
 
     def __init__(self, parent=None):
         """Initialize recording controls."""
@@ -26,6 +29,7 @@ class RecordingControls(QWidget):
         # UI Elements
         self.mic_combo = None
         self.toggle_button = None
+        self.config_controls = None
 
         # State
         self.is_recording = False
@@ -36,27 +40,39 @@ class RecordingControls(QWidget):
 
     def _setup_layout(self):
         """Set up the component layout."""
-        layout = QHBoxLayout(self)
+        layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        layout.setSpacing(5)
+
+        # Config controls at top
+        layout.addWidget(self.config_controls)
+
+        # Recording controls below
+        recording_layout = QHBoxLayout()
+        recording_layout.setContentsMargins(0, 0, 0, 0)
+        recording_layout.setSpacing(0)
 
         # Microphone icon
         mic_label = QLabel("🎤")
         mic_label.setFixedWidth(20)
-        layout.addWidget(mic_label)
+        recording_layout.addWidget(mic_label)
 
         # Microphone selection
         self.mic_combo.setFixedWidth(150)
-        layout.addWidget(self.mic_combo)
+        recording_layout.addWidget(self.mic_combo)
 
         # Toggle button (small and compact)
         self.toggle_button.setFixedSize(30, 30)
-        layout.addWidget(self.toggle_button)
+        recording_layout.addWidget(self.toggle_button)
 
-        layout.addStretch()
+        recording_layout.addStretch()
+        layout.addLayout(recording_layout)
 
     def _create_ui(self):
         """Create the UI elements."""
+        # Config controls
+        self.config_controls = ConfigControls(self)
+
         # Microphone selection
         self.mic_combo = QComboBox()
         self.mic_combo.setFixedWidth(150)
@@ -182,3 +198,28 @@ class RecordingControls(QWidget):
             # Button is in transition state (⏳), ignore click
             logger.debug(f"🔘 Button clicked while in transition state: {current_text}")
             return
+
+    def update_config_list(self, config_names: list):
+        """Update the configuration dropdown list."""
+        self.config_controls.update_config_list(config_names)
+
+    def set_current_config(self, config_name: str):
+        """Set the currently selected configuration."""
+        self.config_controls.set_current_config(config_name)
+
+    def get_current_config(self) -> str:
+        """Get the currently selected configuration name."""
+        return self.config_controls.get_current_config()
+
+    def connect_config_signals(self):
+        """Connect config control signals."""
+        self.config_controls.config_selected.connect(self._on_config_selected)
+        self.config_controls.settings_requested.connect(self._on_settings_requested)
+
+    def _on_config_selected(self, config_name: str):
+        """Handle configuration selection."""
+        self.config_selected.emit(config_name)
+
+    def _on_settings_requested(self):
+        """Handle settings button click."""
+        self.settings_requested.emit()

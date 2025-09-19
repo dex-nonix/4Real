@@ -1,0 +1,65 @@
+{
+  "name": "default-speech",
+  "version": "1.0.0",
+  "enabled": true,
+  "updated_at": null,
+  "engine_preset": {
+    "type": "whisper",
+    "model": "tiny.en",
+    "device": "cpu",
+    "compute_json": {
+      "compute_type": "int8"
+    },
+    "enabled": true
+  },
+  "preprocess_preset": {
+    "resample_hz": 16000,
+    "vad_json": {
+      "enabled": false,
+      "aggressiveness": 3,
+      "frame_duration_ms": 30
+    },
+    "denoise_json": {
+      "enabled": false,
+      "method": "spectral_subtraction"
+    },
+    "normalize_json": {
+      "enabled": true,
+      "method": "peak",
+      "target_level_db": -20.0
+    },
+    "enabled": true
+  },
+  "streaming_preset": {
+    "format": "pcm16",
+    "frame_ms": 100,
+    "partial_results": true,
+    "endpointing_json": {
+      "enabled": false,
+      "silence_threshold_ms": 1000,
+      "timeout_ms": 5000
+    },
+    "max_session_minutes": 60,
+    "enabled": true
+  },
+  "feature_preset": {
+    "language_detection": true,
+    "diarization_json": {
+      "enabled": false,
+      "method": "pyannote",
+      "num_speakers": null
+    },
+    "timestamps": false,
+    "punctuation": true,
+    "enabled": true
+  },
+  "postprocess_preset": {
+    "remove_fillers": true,
+    "capitalize_sentences": true,
+    "custom_rules_json": {
+      "enabled": false,
+      "rules": []
+    },
+    "enabled": true
+  }
+}

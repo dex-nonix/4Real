@@ -4,15 +4,19 @@ Application service that coordinates between UI, audio processing, and input com
 
 from typing import Optional
 from PyQt6.QtCore import QTimer, pyqtSignal, QObject
+from PyQt6.QtWidgets import QMessageBox
 from pynput import keyboard, mouse
 from talki.config.logging_config import logger
 from talki.core.audio.processor import AudioProcessor
+from talki.core.stt_engine import STTEngine
 from talki.ui.main_window import MainWindow
+from talki.ui.components.stt_config_dialog import STTConfigDialog
 from talki.input.paste_mode import PasteMode
 from talki.input.keyboard_simulator import KeyboardSimulator
+from talki.services.config_manager import ConfigManager
 from talki.utils.constants import (
     THREAD_CHECK_INTERVAL, AUTO_SUBMIT_DELAY,
-    PROCESSING_THREAD_TIMEOUT, PASTE_LISTENER_DELAY
+    PROCESSING_THREAD_TIMEOUT, PASTE_LISTENER_DELAY, CONFIGS_DIR
 )
 
 
@@ -33,6 +37,9 @@ class ApplicationService(QObject):
         self.main_window = None
         self.paste_mode = None
         self.keyboard_simulator = None
+        self.config_manager = None
+        self.stt_engine = None
+        self.config_dialog = None
 
         # Listeners
         self.hotkey_listener = None
@@ -53,9 +60,20 @@ class ApplicationService(QObject):
         self.main_window = main_window
 
         # Create components
-        self.audio_processor = AudioProcessor()
+        self.config_manager = ConfigManager(CONFIGS_DIR)
         self.keyboard_simulator = KeyboardSimulator()
         self.paste_mode = PasteMode(self.keyboard_simulator)
+
+        # Initialize STT engine with current config
+        current_config = self.config_manager.get_current_config()
+        if current_config:
+            self.stt_engine = STTEngine(current_config)
+            self.stt_engine.on_transcript = lambda text: self.main_window.append_transcript(text)
+            self.stt_engine.on_error = lambda error: logger.error(f"STT Error: {error}")
+            self.stt_engine.on_endpoint = lambda: logger.info("Endpoint detected")
+
+        # Create audio processor with STT engine
+        self.audio_processor = AudioProcessor(self.stt_engine)
 
         # Set up signal connections
         self._connect_signals()
@@ -68,6 +86,9 @@ class ApplicationService(QObject):
 
         # Set up timers
         self._setup_timers()
+
+        # Set up config management
+        self._setup_config_management()
 
         logger.info("✅ All components initialized and connected")
 
@@ -83,6 +104,8 @@ class ApplicationService(QObject):
         self.main_window.stop_recording_requested.connect(self._on_stop_recording_requested)
         self.main_window.send_to_focused_requested.connect(self._on_send_to_focused_requested)
         self.main_window.clear_requested.connect(self._on_clear_requested)
+        self.main_window.config_selected.connect(self._on_config_selected)
+        self.main_window.settings_requested.connect(self._on_settings_requested)
 
     def _setup_hotkeys(self):
         """Set up global hotkeys (Cmd+Space for macOS, adapt for Linux)."""
@@ -312,6 +335,59 @@ class ApplicationService(QObject):
         # Auto-submit if enabled
         if self.main_window.get_auto_submit_enabled():
             self._perform_auto_submit()
+
+    def _setup_config_management(self):
+        """Set up configuration management."""
+        # Update UI with current configs
+        config_names = self.config_manager.get_config_names()
+        self.main_window.update_config_list(config_names)
+
+        current_config = self.config_manager.get_current_config_name()
+        if current_config:
+            self.main_window.set_current_config(current_config)
+
+        logger.info(f"🎛️  Config management initialized with {len(config_names)} configurations")
+
+    def _on_config_selected(self, config_name: str):
+        """Handle configuration selection."""
+        logger.info(f"🔄 Switching to config: {config_name}")
+
+        # Stop current recording if active
+        if self.audio_processor and self.audio_processor.is_recording:
+            self._stop_recording()
+
+        # Switch configuration
+        if self.config_manager.set_current_config(config_name):
+            new_config = self.config_manager.get_current_config()
+            if new_config:
+                # Create new STT engine with new config
+                self.stt_engine = STTEngine(new_config)
+                self.stt_engine.on_transcript = lambda text: self.main_window.append_transcript(text)
+                self.stt_engine.on_error = lambda error: logger.error(f"STT Error: {error}")
+                self.stt_engine.on_endpoint = lambda: logger.info("Endpoint detected")
+
+                # Update audio processor with new engine
+                self.audio_processor.update_stt_engine(self.stt_engine)
+
+                logger.info(f"✅ Successfully switched to config: {config_name}")
+            else:
+                logger.error(f"❌ Failed to load config: {config_name}")
+        else:
+            logger.error(f"❌ Failed to switch to config: {config_name}")
+
+    def _on_settings_requested(self):
+        """Handle settings button click."""
+        logger.debug("⚙️  Opening config dialog")
+
+        self.config_dialog = STTConfigDialog(self.config_manager, self.main_window)
+        self.config_dialog.config_selected.connect(self._on_config_dialog_selected)
+        self.config_dialog.exec()
+
+    def _on_config_dialog_selected(self, config_name: str):
+        """Handle config selection from dialog."""
+        if config_name:
+            self._on_config_selected(config_name)
+            self.main_window.set_current_config(config_name)
 
     def _on_paste_mode_cancelled(self):
         """Handle paste mode cancellation."""

@@ -29,6 +29,8 @@ class MainWindow(QMainWindow):
     ctrl_enter_toggled = pyqtSignal(bool)
     clear_after_send_toggled = pyqtSignal(bool)
     transcript_update = pyqtSignal(str)  # Forward from transcription display
+    config_selected = pyqtSignal(str)  # config_name
+    settings_requested = pyqtSignal()  # Open config dialog
 
     def __init__(self):
         """Initialize the main window."""
@@ -38,6 +40,7 @@ class MainWindow(QMainWindow):
         self.recording_controls = None
         self.transcription_display = None
         self.paste_controls = None
+        self.config_dialog = None
 
         # System tray
         self.tray_icon = None
@@ -172,6 +175,11 @@ class MainWindow(QMainWindow):
         # Recording controls
         self.recording_controls.start_recording_requested.connect(self.start_recording_requested)
         self.recording_controls.stop_recording_requested.connect(self.stop_recording_requested)
+        self.recording_controls.config_selected.connect(self.config_selected)
+        self.recording_controls.settings_requested.connect(self.settings_requested)
+
+        # Connect config signals in recording controls
+        self.recording_controls.connect_config_signals()
 
         # Paste controls
         self.paste_controls.send_to_focused_requested.connect(self.send_to_focused_requested)
@@ -235,3 +243,15 @@ class MainWindow(QMainWindow):
     def get_clear_after_send_enabled(self) -> bool:
         """Check if clear after send is enabled."""
         return self.paste_controls.get_clear_after_send_enabled()
+
+    def update_config_list(self, config_names: list):
+        """Update the configuration dropdown list."""
+        self.recording_controls.update_config_list(config_names)
+
+    def set_current_config(self, config_name: str):
+        """Set the currently selected configuration."""
+        self.recording_controls.set_current_config(config_name)
+
+    def get_current_config(self) -> str:
+        """Get the currently selected configuration name."""
+        return self.recording_controls.get_current_config()

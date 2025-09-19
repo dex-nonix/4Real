@@ -8,7 +8,7 @@ import numpy as np
 import sounddevice as sd
 from PyQt6.QtCore import QObject, pyqtSignal
 from talki.config.logging_config import logger
-from talki.core.transcription.whisper_handler import WhisperTranscriber
+from talki.core.stt_engine import STTEngine
 from talki.utils.constants import (
     TARGET_SAMPLE_RATE, PROCESSING_INTERVAL_SECONDS,
     AUDIO_QUEUE_TIMEOUT, DEFAULT_MODEL_SIZE
@@ -27,12 +27,12 @@ class AudioProcessor(QObject):
     error_signal = pyqtSignal(str)       # Emitted on processing errors
     recording_state_changed = pyqtSignal(bool)  # Emitted when recording state changes
 
-    def __init__(self, model_size: str = DEFAULT_MODEL_SIZE):
+    def __init__(self, stt_engine: STTEngine):
         """
         Initialize the audio processor.
 
         Args:
-            model_size: Size of Whisper model to use for transcription
+            stt_engine: STT engine instance to use for transcription
         """
         super().__init__()
 
@@ -49,21 +49,10 @@ class AudioProcessor(QObject):
         self.audio_queue = queue.Queue()
         self.processing_thread = None
 
-        # Transcription
-        self.transcriber = None
-
-        # Initialize transcriber
-        self._initialize_transcriber(model_size)
+        # STT Engine
+        self.stt_engine = stt_engine
 
         logger.info("🎤 AudioProcessor initialized and ready")
-
-    def _initialize_transcriber(self, model_size: str):
-        """Initialize the Whisper transcriber."""
-        try:
-            self.transcriber = WhisperTranscriber(model_size)
-        except Exception as e:
-            logger.error(f"❌ Failed to initialize transcriber: {e}")
-            self.error_signal.emit(f"Failed to initialize transcriber: {e}")
 
     def start_recording(self, device_index: int):
         """
@@ -76,8 +65,8 @@ class AudioProcessor(QObject):
             logger.warning("⚠️  Recording already in progress, ignoring start request")
             return
 
-        if not self.transcriber or not self.transcriber.is_loaded():
-            error_msg = "Transcriber not initialized"
+        if not self.stt_engine or not self.stt_engine.is_loaded():
+            error_msg = "STT engine not initialized"
             logger.error(f"❌ {error_msg}")
             self.error_signal.emit(error_msg)
             return
@@ -235,15 +224,37 @@ class AudioProcessor(QObject):
 
     def _process_audio_chunk(self, audio_chunk: np.ndarray):
         """
-        Process a chunk of audio data through the transcriber.
+        Process a chunk of audio data through the STT engine.
 
         Args:
             audio_chunk: Audio data to transcribe
         """
         try:
-            text = self.transcriber.transcribe_chunk(audio_chunk)
+            # Start session if not already started
+            if not self.stt_engine.session_active:
+                self.stt_engine.start_session()
+
+            text = self.stt_engine.process_audio_chunk(audio_chunk, self.native_sample_rate)
             if text:
                 self.transcript_update.emit(text)
         except Exception as e:
             logger.error(f"❌ Error processing audio chunk: {e}")
             self.error_signal.emit(f"Transcription error: {e}")
+
+    def update_stt_engine(self, new_engine: STTEngine):
+        """
+        Update the STT engine (used when switching configurations).
+
+        Args:
+            new_engine: New STT engine instance
+        """
+        logger.info("🔄 Updating STT engine in AudioProcessor")
+
+        # Stop current session if active
+        if self.stt_engine and self.stt_engine.session_active:
+            self.stt_engine.end_session()
+
+        # Update to new engine
+        self.stt_engine = new_engine
+
+        logger.info("✅ STT engine updated successfully")

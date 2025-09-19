@@ -16,6 +16,9 @@ WINDOW_HEIGHT = 250
 WINDOW_X = 100
 WINDOW_Y = 100
 
+# Configuration paths
+CONFIGS_DIR = "configs"
+
 # Threading Configuration
 THREAD_CHECK_INTERVAL = 100  # ms
 PROCESSING_THREAD_TIMEOUT = 0.5  # seconds
