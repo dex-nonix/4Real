@@ -5,7 +5,7 @@ Application constants and configuration values.
 # Audio Configuration
 DEFAULT_MODEL_SIZE = "tiny.en"
 TARGET_SAMPLE_RATE = 16000
-PROCESSING_INTERVAL_SECONDS = 2.0
+PROCESSING_INTERVAL_SECONDS = 1.0
 MIN_CHUNK_DURATION = 0.2  # seconds
 AUDIO_DEVICE_DEFAULT_NAME = "default"
 

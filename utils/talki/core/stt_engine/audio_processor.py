@@ -97,11 +97,15 @@ class AudioPreprocessor:
         if not self.config.enabled:
             return audio, True
 
+        print(f"DEBUG: Original audio - shape: {audio.shape}, dtype: {audio.dtype}, min: {audio.min():.6f}, max: {audio.max():.6f}")
+
         # 1. Resample
         processed = self.resample_audio(audio, source_rate)
+        print(f"DEBUG: After resample - shape: {processed.shape}, dtype: {processed.dtype}, min: {processed.min():.6f}, max: {processed.max():.6f}")
 
         # 2. VAD
         processed, has_speech = self.apply_vad(processed, self.config.resample_hz)
+        print(f"DEBUG: After VAD - has_speech: {has_speech}, shape: {processed.shape}")
 
         if not has_speech or len(processed) == 0:
             return np.array([], dtype=np.float32), False
@@ -111,5 +115,6 @@ class AudioPreprocessor:
 
         # 4. Normalize
         processed = self.normalize_audio(processed)
+        print(f"DEBUG: After normalize - shape: {processed.shape}, min: {processed.min():.6f}, max: {processed.max():.6f}")
 
         return processed, True

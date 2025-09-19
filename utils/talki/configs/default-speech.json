@@ -14,7 +14,7 @@
     "resample_hz": 16000,
     "vad_json": {
       "enabled": false,
-      "aggressiveness": 3,
+      "aggressiveness": 0,
       "frame_duration_ms": 30
     },
     "denoise_json": {
@@ -22,7 +22,7 @@
       "method": "spectral_subtraction"
     },
     "normalize_json": {
-      "enabled": true,
+      "enabled": false,
       "method": "peak",
       "target_level_db": -20.0
     },

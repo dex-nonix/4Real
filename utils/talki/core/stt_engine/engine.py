@@ -136,16 +136,31 @@ class STTEngine:
 
             # 2. ENGINE TRANSCRIPTION
             print(f"DEBUG: Starting Whisper transcription...")
+            print(f"DEBUG: Audio shape: {processed_audio.shape}, dtype: {processed_audio.dtype}, min: {processed_audio.min():.6f}, max: {processed_audio.max():.6f}")
+
             segments, info = self.model.transcribe(
                 processed_audio,
                 language=None if self.config.feature_preset.language_detection else "en"
             )
 
-            print(f"DEBUG: Whisper returned {len(list(segments))} segments")
+            segments_list = list(segments)
+            print(f"DEBUG: Whisper returned {len(segments_list)} segments")
+            print(f"DEBUG: Whisper info - language: {info.language if hasattr(info, 'language') else 'N/A'}")
+
+            # Test with a simple generated audio if no segments found
+            if len(segments_list) == 0:
+                print("DEBUG: No segments found, trying test audio...")
+                import numpy as np
+                # Generate a simple test tone
+                test_audio = np.sin(2 * np.pi * 440 * np.arange(16000) / 16000).astype(np.float32)
+                test_segments, test_info = self.model.transcribe(test_audio, language="en")
+                print(f"DEBUG: Test audio segments: {len(list(test_segments))}")
+                for seg in test_segments:
+                    print(f"DEBUG: Test segment: '{seg.text}'")
 
             # Convert segments to list of dicts
             segment_dicts = []
-            for segment in segments:
+            for segment in segments_list:
                 print(f"DEBUG: Segment text: '{segment.text}'")
                 segment_dicts.append({
                     'text': segment.text,
