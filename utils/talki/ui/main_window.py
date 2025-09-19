@@ -2,7 +2,8 @@
 Main application window.
 """
 
-from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout
+from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QSystemTrayIcon, QMenu, QApplication
+from PyQt6.QtGui import QIcon, QAction
 from PyQt6.QtCore import pyqtSignal
 from talki.config.logging_config import logger
 from talki.ui.components.recording_controls import RecordingControls
@@ -38,9 +39,13 @@ class MainWindow(QMainWindow):
         self.transcription_display = None
         self.paste_controls = None
 
+        # System tray
+        self.tray_icon = None
+
         self._setup_window()
         self._create_components()
         self._setup_layout()
+        self._setup_system_tray()
         self._connect_signals()
 
         logger.info("🏠 MainWindow initialized")
@@ -49,13 +54,101 @@ class MainWindow(QMainWindow):
         """Set up basic window properties."""
         self.setWindowTitle(WINDOW_TITLE)
         self.setGeometry(WINDOW_X, WINDOW_Y, WINDOW_WIDTH, WINDOW_HEIGHT)
+        self.setMinimumSize(300, 200)  # Allow resizing but set minimum size
+        self.resize(WINDOW_WIDTH, WINDOW_HEIGHT)  # Ensure initial size
 
         # Create central widget
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.layout = QVBoxLayout(self.central_widget)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
 
         logger.debug("🖥️  Window layout created")
+
+    def _setup_system_tray(self):
+        """Set up system tray icon and menu."""
+        # Create tray icon
+        self.tray_icon = QSystemTrayIcon(self)
+
+        # Try to use custom icon from assets, fallback to default
+        try:
+            import os
+            assets_path = os.path.join(os.path.dirname(__file__), 'assets')
+            icon_path = os.path.join(assets_path, 'favicon-32x32.png')
+
+            if os.path.exists(icon_path):
+                self.tray_icon.setIcon(QIcon(icon_path))
+                logger.debug(f"🖼️  Loaded tray icon from: {icon_path}")
+            else:
+                # Fallback to default icon
+                self.tray_icon.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_ComputerIcon))
+                logger.debug("🖼️  Using default tray icon")
+        except Exception as e:
+            logger.warning(f"⚠️  Could not load tray icon: {e}")
+            # Fallback to default icon
+            try:
+                self.tray_icon.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_ComputerIcon))
+            except:
+                pass  # No icon available
+
+        self.tray_icon.setToolTip("Talki - Real-Time Transcription")
+
+        # Create tray menu
+        tray_menu = QMenu()
+
+        # Restore action
+        restore_action = QAction("Restore", self)
+        restore_action.triggered.connect(self._show_window)
+        tray_menu.addAction(restore_action)
+
+        tray_menu.addSeparator()
+
+        # Quit action
+        quit_action = QAction("Quit", self)
+        quit_action.triggered.connect(self._quit_application)
+        tray_menu.addAction(quit_action)
+
+        self.tray_icon.setContextMenu(tray_menu)
+        self.tray_icon.activated.connect(self._tray_icon_activated)
+
+        # Show tray icon
+        self.tray_icon.show()
+
+        logger.info("🔔 System tray initialized")
+
+    def _show_window(self):
+        """Show and restore the main window."""
+        self.show()
+        self.raise_()
+        self.activateWindow()
+        logger.debug("🖥️  Window restored from tray")
+
+    def _quit_application(self):
+        """Quit the application completely."""
+        self.tray_icon.hide()
+        QApplication.quit()
+        logger.info("👋 Application quit from tray menu")
+
+    def _tray_icon_activated(self, reason):
+        """Handle tray icon activation."""
+        if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
+            self._show_window()
+
+    def closeEvent(self, event):
+        """Override close event to minimize to tray instead of closing."""
+        if self.tray_icon.isVisible():
+            logger.info("🔔 Minimizing to system tray instead of closing")
+            self.hide()
+            self.tray_icon.showMessage(
+                "Talki",
+                "Application minimized to system tray. Double-click to restore.",
+                QSystemTrayIcon.MessageIcon.Information,
+                2000
+            )
+            event.ignore()  # Don't close the application
+        else:
+            event.accept()  # Close if no tray icon
 
     def _create_components(self):
         """Create and initialize all UI components."""
@@ -68,8 +161,8 @@ class MainWindow(QMainWindow):
         # Recording controls (microphone + buttons + status)
         self.layout.addWidget(self.recording_controls)
 
-        # Transcription display
-        self.layout.addWidget(self.transcription_display)
+        # Transcription display (allow expansion)
+        self.layout.addWidget(self.transcription_display, 1)  # stretch factor 1
 
         # Action buttons (clear + send + paste status + checkboxes)
         self.layout.addWidget(self.paste_controls)

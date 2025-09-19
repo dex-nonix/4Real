@@ -2,19 +2,16 @@
 Recording control UI components.
 """
 
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QLabel, QComboBox
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QLabel, QComboBox
 from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtGui import QFont
 from talki.config.logging_config import logger
 from talki.core.audio.device_manager import AudioDeviceManager
-from talki.utils.constants import (
-    START_BUTTON_TEXT, STOP_BUTTON_TEXT,
-    STATUS_READY, STATUS_STARTING, STATUS_RECORDING, STATUS_STOPPING, STATUS_STOPPED
-)
 
 
 class RecordingControls(QWidget):
     """
-    UI component for recording controls (microphone selection, start/stop buttons, status).
+    UI component for recording controls with a single toggle button.
     """
 
     # Signals
@@ -28,9 +25,7 @@ class RecordingControls(QWidget):
 
         # UI Elements
         self.mic_combo = None
-        self.start_button = None
-        self.stop_button = None
-        self.status_label = None
+        self.toggle_button = None
 
         # State
         self.is_recording = False
@@ -41,41 +36,77 @@ class RecordingControls(QWidget):
 
     def _setup_layout(self):
         """Set up the component layout."""
-        from PyQt6.QtWidgets import QVBoxLayout
-        layout = QVBoxLayout(self)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
-        # Microphone layout
-        mic_layout = QHBoxLayout()
-        from PyQt6.QtWidgets import QLabel
-        mic_layout.addWidget(QLabel("Microphone:"))
-        mic_layout.addWidget(self.mic_combo)
-        layout.addLayout(mic_layout)
+        # Microphone icon
+        mic_label = QLabel("🎤")
+        mic_label.setFixedWidth(20)
+        layout.addWidget(mic_label)
 
-        # Button layout
-        button_layout = QHBoxLayout()
-        button_layout.addWidget(self.start_button)
-        button_layout.addWidget(self.stop_button)
-        layout.addLayout(button_layout)
+        # Microphone selection
+        self.mic_combo.setFixedWidth(150)
+        layout.addWidget(self.mic_combo)
 
-        # Status label
-        layout.addWidget(self.status_label)
+        # Toggle button (small and compact)
+        self.toggle_button.setFixedSize(30, 30)
+        layout.addWidget(self.toggle_button)
+
+        layout.addStretch()
 
     def _create_ui(self):
         """Create the UI elements."""
         # Microphone selection
         self.mic_combo = QComboBox()
+        self.mic_combo.setFixedWidth(150)
         self._populate_microphones()
 
-        # Buttons
-        self.start_button = QPushButton(START_BUTTON_TEXT)
-        self.start_button.clicked.connect(self._on_start_clicked)
+        # Compact toggle button (icon only)
+        self.toggle_button = QPushButton("▶️")
+        self.toggle_button.setFixedSize(30, 30)
+        self.toggle_button.setToolTip("Start/Stop Recording")
+        self._update_button_style()
+        self.toggle_button.clicked.connect(self._on_toggle_clicked)
 
-        self.stop_button = QPushButton(STOP_BUTTON_TEXT)
-        self.stop_button.clicked.connect(self._on_stop_clicked)
-        self.stop_button.setEnabled(False)
-
-        # Status label
-        self.status_label = QLabel(STATUS_READY)
+    def _update_button_style(self):
+        """Update the button appearance based on recording state."""
+        if self.is_recording:
+            # Recording state - red with stop icon
+            self.toggle_button.setText("⏹️")
+            self.toggle_button.setStyleSheet("""
+                QPushButton {
+                    background-color: #f44336;
+                    color: white;
+                    border: 1px solid #d32f2f;
+                    border-radius: 4px;
+                    font-size: 14px;
+                }
+                QPushButton:hover {
+                    background-color: #d32f2f;
+                }
+                QPushButton:pressed {
+                    background-color: #b71c1c;
+                }
+            """)
+        else:
+            # Stopped state - green with play icon
+            self.toggle_button.setText("▶️")
+            self.toggle_button.setStyleSheet("""
+                QPushButton {
+                    background-color: #4CAF50;
+                    color: white;
+                    border: 1px solid #388E3C;
+                    border-radius: 4px;
+                    font-size: 14px;
+                }
+                QPushButton:hover {
+                    background-color: #388E3C;
+                }
+                QPushButton:pressed {
+                    background-color: #2E7D32;
+                }
+            """)
 
     def _populate_microphones(self):
         """Populate the microphone combo box with available devices."""
@@ -100,7 +131,6 @@ class RecordingControls(QWidget):
 
         except Exception as e:
             logger.error(f"❌ Could not populate microphones: {e}")
-            self.status_label.setText(f"Could not list microphones: {e}")
 
     def set_recording_state(self, is_recording: bool):
         """
@@ -109,43 +139,46 @@ class RecordingControls(QWidget):
         Args:
             is_recording: True if currently recording, False otherwise
         """
+        logger.debug(f"🔄 set_recording_state called with is_recording={is_recording}, current self.is_recording={self.is_recording}")
         self.is_recording = is_recording
+        self.toggle_button.setEnabled(True)  # Make sure button is enabled
+        self._update_button_style()
 
         if is_recording:
-            self.start_button.setEnabled(False)
-            self.stop_button.setEnabled(True)
-            self.status_label.setText(STATUS_RECORDING)
             logger.debug("🎤 UI updated: recording state")
         else:
-            self.start_button.setEnabled(True)
-            self.stop_button.setEnabled(False)
-            self.status_label.setText(STATUS_STOPPED)
             logger.debug("⏹️  UI updated: stopped state")
 
     def set_starting_state(self):
         """Set UI to starting state."""
-        self.start_button.setEnabled(False)
-        self.stop_button.setEnabled(False)
-        self.status_label.setText(STATUS_STARTING)
+        self.toggle_button.setEnabled(False)
+        self.toggle_button.setText("⏳")
 
     def set_stopping_state(self):
         """Set UI to stopping state."""
-        self.start_button.setEnabled(False)
-        self.stop_button.setEnabled(False)
-        self.status_label.setText(STATUS_STOPPING)
+        self.toggle_button.setEnabled(False)
+        self.toggle_button.setText("⏹️")
 
-    def _on_start_clicked(self):
-        """Handle start button click."""
+    def _on_toggle_clicked(self):
+        """Handle toggle button click."""
         device_index = self.mic_combo.currentData()
-        if device_index is not None:
+        if device_index is None:
+            logger.error("❌ No valid microphone device selected")
+            return
+
+        current_text = self.toggle_button.text()
+
+        if current_text == "▶️":
+            # Ready to start - send start signal
             logger.info(f"▶️  Start recording button pressed - Device: {device_index}")
             self.set_starting_state()
             self.start_recording_requested.emit(device_index)
+        elif current_text == "⏹️":
+            # Ready to stop - send stop signal
+            logger.info("⏹️  Stop recording button pressed")
+            self.set_stopping_state()
+            self.stop_recording_requested.emit()
         else:
-            logger.error("❌ No valid microphone device selected")
-
-    def _on_stop_clicked(self):
-        """Handle stop button click."""
-        logger.info("⏹️  Stop recording button pressed")
-        self.set_stopping_state()
-        self.stop_recording_requested.emit()
+            # Button is in transition state (⏳), ignore click
+            logger.debug(f"🔘 Button clicked while in transition state: {current_text}")
+            return

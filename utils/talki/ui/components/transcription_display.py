@@ -2,7 +2,7 @@
 Transcription display UI component.
 """
 
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QTextEdit
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QSizePolicy
 from PyQt6.QtCore import pyqtSignal
 from talki.config.logging_config import logger
 
@@ -21,9 +21,13 @@ class TranscriptionDisplay(QWidget):
         self.text_area = QTextEdit()
         self.text_area.setPlaceholderText("Transcribed text will appear here...")
 
+        # Make text area resizable
+        self.text_area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
         # Set up layout
-        from PyQt6.QtWidgets import QVBoxLayout
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         layout.addWidget(self.text_area)
 
         logger.debug("📝 Transcription display initialized")

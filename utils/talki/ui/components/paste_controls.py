@@ -2,7 +2,7 @@
 Paste mode control UI components.
 """
 
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QLabel, QCheckBox
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QCheckBox
 from PyQt6.QtCore import pyqtSignal
 from talki.config.logging_config import logger
 from talki.utils.constants import (
@@ -47,56 +47,55 @@ class PasteControls(QWidget):
 
     def _create_ui(self):
         """Create the UI elements."""
-        # Action buttons
-        self.clear_button = QPushButton(CLEAR_BUTTON_TEXT)
+        # Action buttons (icon-only, small)
+        self.clear_button = QPushButton("🗑️")
+        self.clear_button.setFixedSize(30, 30)
+        self.clear_button.setToolTip("Clear Text")
         self.clear_button.clicked.connect(self._on_clear_clicked)
 
-        self.send_button = QPushButton(SEND_BUTTON_TEXT)
+        self.send_button = QPushButton("📤")
+        self.send_button.setFixedSize(30, 30)
+        self.send_button.setToolTip("Send to Focused Input")
         self.send_button.clicked.connect(self._on_send_clicked)
 
-        # Paste status indicator
-        self.paste_status_label = QLabel(PASTE_STATUS_READY)
-        self.paste_status_label.setStyleSheet("color: gray; font-weight: bold;")
+        # Paste status indicator (compact)
+        self.paste_status_label = QLabel("🎯 Ready")
+        self.paste_status_label.setStyleSheet("color: gray;")
 
-        # Checkboxes
-        self.auto_submit_checkbox = QCheckBox("Auto-submit (Enter)")
+        # Checkboxes (compact text)
+        self.auto_submit_checkbox = QCheckBox("Auto-submit")
         self.auto_submit_checkbox.toggled.connect(self._on_auto_submit_toggled)
 
         self.ctrl_enter_checkbox = QCheckBox("Use Ctrl+Enter")
         self.ctrl_enter_checkbox.toggled.connect(self._on_ctrl_enter_toggled)
 
-        self.auto_send_checkbox = QCheckBox("Auto-send after stop")
+        self.auto_send_checkbox = QCheckBox("Auto-send")
         self.auto_send_checkbox.toggled.connect(self._on_auto_send_toggled)
 
-        self.clear_history_checkbox = QCheckBox("Clear after sending")
+        self.clear_history_checkbox = QCheckBox("Clear after send")
         self.clear_history_checkbox.toggled.connect(self._on_clear_after_send_toggled)
 
     def _setup_layout(self):
         """Set up the component layout."""
-        from PyQt6.QtWidgets import QVBoxLayout
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
-        # Action buttons layout
-        action_layout = QHBoxLayout()
-        action_layout.addWidget(self.clear_button)
-        action_layout.addWidget(self.send_button)
-        layout.addLayout(action_layout)
+        # Top row: buttons + status
+        top_layout = QHBoxLayout()
+        top_layout.setContentsMargins(0, 0, 0, 0)
+        top_layout.setSpacing(0)
+        top_layout.addWidget(self.clear_button)
+        top_layout.addWidget(self.send_button)
+        top_layout.addWidget(self.paste_status_label)
+        top_layout.addStretch()
+        layout.addLayout(top_layout)
 
-        # Status layout
-        status_layout = QHBoxLayout()
-        from PyQt6.QtWidgets import QLabel
-        status_layout.addWidget(QLabel("Status:"))
-        status_layout.addWidget(self.paste_status_label)
-        status_layout.addStretch()
-        layout.addLayout(status_layout)
-
-        # Checkboxes layout
-        checkbox_layout = QHBoxLayout()
-        checkbox_layout.addWidget(self.auto_submit_checkbox)
-        checkbox_layout.addWidget(self.ctrl_enter_checkbox)
-        checkbox_layout.addWidget(self.auto_send_checkbox)
-        checkbox_layout.addWidget(self.clear_history_checkbox)
-        layout.addLayout(checkbox_layout)
+        # Checkboxes stacked vertically (no spacing)
+        layout.addWidget(self.auto_submit_checkbox)
+        layout.addWidget(self.ctrl_enter_checkbox)
+        layout.addWidget(self.auto_send_checkbox)
+        layout.addWidget(self.clear_history_checkbox)
 
     def set_paste_mode_active(self, active: bool):
         """
@@ -108,12 +107,12 @@ class PasteControls(QWidget):
         self.paste_mode_active = active
 
         if active:
-            self.paste_status_label.setText(PASTE_STATUS_ACTIVE)
-            self.paste_status_label.setStyleSheet("color: green; font-weight: bold;")
+            self.paste_status_label.setText("🎯 Active")
+            self.paste_status_label.setStyleSheet("color: green; font-size: 10px; font-weight: bold;")
             logger.info("🔄 Paste mode status: ACTIVE")
         else:
-            self.paste_status_label.setText(PASTE_STATUS_READY)
-            self.paste_status_label.setStyleSheet("color: gray; font-weight: bold;")
+            self.paste_status_label.setText("🎯 Ready")
+            self.paste_status_label.setStyleSheet("color: gray; font-size: 10px;")
             logger.info("🔄 Paste mode status: READY")
 
     def get_auto_send_enabled(self) -> bool:

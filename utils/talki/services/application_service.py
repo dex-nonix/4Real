@@ -4,7 +4,7 @@ Application service that coordinates between UI, audio processing, and input com
 
 from typing import Optional
 from PyQt6.QtCore import QTimer, pyqtSignal, QObject
-from pynput import keyboard
+from pynput import keyboard, mouse
 from talki.config.logging_config import logger
 from talki.core.audio.processor import AudioProcessor
 from talki.ui.main_window import MainWindow
@@ -34,8 +34,9 @@ class ApplicationService(QObject):
         self.paste_mode = None
         self.keyboard_simulator = None
 
-        # Hotkey listener
+        # Listeners
         self.hotkey_listener = None
+        self.mouse_listener = None
 
         # Timers
         self.thread_check_timer = None
@@ -61,6 +62,9 @@ class ApplicationService(QObject):
 
         # Set up hotkeys
         self._setup_hotkeys()
+
+        # Set up mouse button listening
+        self._setup_mouse_buttons()
 
         # Set up timers
         self._setup_timers()
@@ -105,6 +109,55 @@ class ApplicationService(QObject):
         self.hotkey_listener.start()
         logger.info("✅ Global hotkeys activated")
 
+    def _setup_mouse_buttons(self):
+        """Set up global mouse button listening."""
+        logger.info("🖱️  Setting up global mouse button listening")
+
+        def on_mouse_click(x, y, button, pressed):
+            """Handle global mouse button presses."""
+            if not pressed:  # Only handle button down events
+                return
+
+            try:
+                if button == mouse.Button.x1:
+                    # Backward button - toggle recording (same as Cmd+Space)
+                    logger.info("🔙 Mouse X1 (backward) - toggling recording")
+                    QTimer.singleShot(0, self._toggle_recording_from_hotkey)
+
+                elif button == mouse.Button.x2:
+                    # Forward button - cancel/stop operations
+                    logger.info("🔜 Mouse X2 (forward) - canceling operations")
+                    QTimer.singleShot(0, self._cancel_operations)
+
+            except Exception as e:
+                logger.error(f"❌ Error handling mouse button: {e}")
+
+        try:
+            logger.debug("🐭 Creating global mouse listener...")
+            self.mouse_listener = mouse.Listener(on_click=on_mouse_click)
+            self.mouse_listener.start()
+            logger.info("✅ Global mouse buttons activated (X1=toggle recording, X2=cancel)")
+        except Exception as e:
+            logger.error(f"❌ Failed to setup mouse listener: {e}")
+
+    def _cancel_operations(self):
+        """Cancel/stop current operations (called by mouse X2 button)."""
+        logger.info("🚫 Canceling operations via mouse X2 button")
+
+        # Stop recording if active
+        if hasattr(self.audio_processor, 'is_recording') and self.audio_processor.is_recording:
+            logger.info("⏹️  Stopping recording due to cancel")
+            self._stop_recording()
+        else:
+            logger.debug("ℹ️  No active recording to cancel")
+
+        # Cancel paste mode if active
+        if hasattr(self.paste_mode, 'is_active') and self.paste_mode.is_active():
+            logger.info("🎯 Canceling paste mode due to cancel")
+            self.paste_mode.stop_paste_mode()
+        else:
+            logger.debug("ℹ️  No active paste mode to cancel")
+
     def _setup_timers(self):
         """Set up application timers."""
         self.thread_check_timer = QTimer(self)
@@ -133,6 +186,7 @@ class ApplicationService(QObject):
 
     def _stop_recording(self):
         """Stop current recording."""
+        logger.debug("🛑 Calling stop_recording on audio processor")
         self.main_window.set_stopping_state()
         self.audio_processor.stop_recording()
         self.thread_check_timer.start()
@@ -143,6 +197,7 @@ class ApplicationService(QObject):
 
     def _on_stop_recording_requested(self):
         """Handle stop recording request from UI."""
+        logger.debug("🛑 Stop recording requested from UI")
         self._stop_recording()
 
     def _on_transcript_update(self, text: str):
@@ -267,6 +322,11 @@ class ApplicationService(QObject):
         """Clean shutdown of all components."""
         logger.info("🔄 Application shutdown initiated")
 
+        # Hide tray icon
+        if hasattr(self.main_window, 'tray_icon') and self.main_window.tray_icon:
+            logger.debug("🔔 Hiding system tray icon...")
+            self.main_window.tray_icon.hide()
+
         # Stop recording
         if self.audio_processor:
             logger.debug("⏹️  Stopping audio recording...")
@@ -277,10 +337,14 @@ class ApplicationService(QObject):
             logger.debug("🛑 Disabling paste mode during shutdown...")
             self.paste_mode.stop_paste_mode()
 
-        # Stop hotkey listener
+        # Stop listeners
         if self.hotkey_listener:
             logger.debug("🔥 Stopping hotkey listener...")
             self.hotkey_listener.stop()
+
+        if self.mouse_listener:
+            logger.debug("🖱️  Stopping mouse listener...")
+            self.mouse_listener.stop()
 
         # Wait for processing thread
         if self.audio_processor and self.audio_processor.is_thread_alive():
