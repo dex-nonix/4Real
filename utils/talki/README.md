@@ -13,6 +13,8 @@ A modular Python application for real-time audio transcription using Whisper, fe
 - **Auto-submit** with Enter or Ctrl+Enter
 - **ESC to cancel** paste mode
 - **Cmd+Space hotkey** for recording toggle
+- **Global mouse button support** (X1/X2 buttons on gaming mice)
+- **System tray integration** (minimize to tray instead of closing)
 
 ## Architecture
 
@@ -66,10 +68,26 @@ talki
 5. Click the 📤 button to enable paste mode
 6. Regular clicks focus windows, Ctrl+Click pastes text
 7. Press ESC to cancel paste mode
+8. Click the window close button to minimize to system tray (don't close the app)
 
-## Keyboard Shortcuts
+## Keyboard & Mouse Controls
 
+### Keyboard Shortcuts
 - **Cmd+Space**: Toggle recording start/stop (Linux: adapt as needed)
+
+### Mouse Buttons (Global)
+- **X1 Button (Backward)**: Toggle recording start/stop
+- **X2 Button (Forward)**: Cancel/stop current operations
+
+## System Tray
+
+Talki integrates with your system tray for easy access:
+
+- **Minimize to Tray**: Click the window's close button (X) to hide the window
+- **Restore Window**: Double-click the tray icon or use the context menu
+- **Quit Application**: Right-click tray icon → "Quit" to fully close the app
+
+The application stays running in the background when minimized to tray.
 
 ## Development
 
