@@ -1,8 +1,6 @@
 {
   "name": "default-speech",
   "version": "1.0.0",
-  "enabled": true,
-  "updated_at": null,
   "engine_preset": {
     "type": "whisper",
     "model": "tiny.en",
@@ -61,5 +59,7 @@
       "rules": []
     },
     "enabled": true
-  }
+  },
+  "enabled": true,
+  "updated_at": null
 }

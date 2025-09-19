@@ -41,8 +41,8 @@ class RecordingControls(QWidget):
     def _setup_layout(self):
         """Set up the component layout."""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(5)
+        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setSpacing(8)
 
         # Config controls at top
         layout.addWidget(self.config_controls)
@@ -50,7 +50,7 @@ class RecordingControls(QWidget):
         # Recording controls below
         recording_layout = QHBoxLayout()
         recording_layout.setContentsMargins(0, 0, 0, 0)
-        recording_layout.setSpacing(0)
+        recording_layout.setSpacing(8)
 
         # Microphone icon
         mic_label = QLabel("🎤")
@@ -58,7 +58,7 @@ class RecordingControls(QWidget):
         recording_layout.addWidget(mic_label)
 
         # Microphone selection
-        self.mic_combo.setFixedWidth(150)
+        self.mic_combo.setFixedWidth(160)
         recording_layout.addWidget(self.mic_combo)
 
         # Toggle button (small and compact)
@@ -75,7 +75,7 @@ class RecordingControls(QWidget):
 
         # Microphone selection
         self.mic_combo = QComboBox()
-        self.mic_combo.setFixedWidth(150)
+        self.mic_combo.setFixedWidth(160)
         self._populate_microphones()
 
         # Compact toggle button (icon only)

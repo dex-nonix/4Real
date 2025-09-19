@@ -153,6 +153,8 @@ class STTConfigEditor(QWidget):
     def _setup_layout(self):
         """Set up the component layout with tabs."""
         main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(10)
 
         # Tab widget for different preset categories
         self.tab_widget = QTabWidget()
@@ -185,9 +187,14 @@ class STTConfigEditor(QWidget):
 
         # Action buttons
         buttons_layout = QHBoxLayout()
+        buttons_layout.setContentsMargins(0, 5, 0, 0)
+
         save_button = QPushButton("💾 Save")
+        save_button.setFixedWidth(80)
         save_button.clicked.connect(self._on_save_clicked)
+
         cancel_button = QPushButton("❌ Cancel")
+        cancel_button.setFixedWidth(80)
         cancel_button.clicked.connect(self._on_cancel_clicked)
 
         buttons_layout.addStretch()
@@ -199,6 +206,8 @@ class STTConfigEditor(QWidget):
         """Create basic configuration tab."""
         widget = QWidget()
         layout = QFormLayout(widget)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(10)
 
         layout.addRow("Name:", self.name_edit)
         layout.addRow("Version:", self.version_edit)
@@ -210,6 +219,8 @@ class STTConfigEditor(QWidget):
         """Create engine configuration tab."""
         widget = QWidget()
         layout = QFormLayout(widget)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(10)
 
         layout.addRow("Engine Type:", self.engine_type_combo)
         layout.addRow("Model:", self.model_combo)
@@ -222,6 +233,8 @@ class STTConfigEditor(QWidget):
         """Create preprocessing configuration tab."""
         widget = QWidget()
         layout = QFormLayout(widget)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(10)
 
         layout.addRow("Sample Rate (Hz):", self.resample_spin)
         layout.addRow("", self.vad_enabled_check)
@@ -234,6 +247,8 @@ class STTConfigEditor(QWidget):
         """Create streaming configuration tab."""
         widget = QWidget()
         layout = QFormLayout(widget)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(10)
 
         layout.addRow("Frame Size (ms):", self.frame_ms_spin)
         layout.addRow("", self.partial_results_check)
@@ -246,6 +261,8 @@ class STTConfigEditor(QWidget):
         """Create features configuration tab."""
         widget = QWidget()
         layout = QFormLayout(widget)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(10)
 
         layout.addRow("", self.language_detection_check)
         layout.addRow("", self.timestamps_check)
@@ -257,6 +274,8 @@ class STTConfigEditor(QWidget):
         """Create postprocessing configuration tab."""
         widget = QWidget()
         layout = QFormLayout(widget)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(10)
 
         layout.addRow("", self.remove_fillers_check)
         layout.addRow("", self.capitalize_sentences_check)
@@ -265,82 +284,137 @@ class STTConfigEditor(QWidget):
 
     def _populate_values(self):
         """Populate UI with current config values."""
-        config = self.current_config
+        try:
+            config = self.current_config
 
-        # Basic config
-        self.name_edit.setText(config.name)
-        self.version_edit.setText(config.version)
-        self.enabled_check.setChecked(config.enabled)
+            # Basic config
+            self.name_edit.setText(getattr(config, 'name', 'default-speech'))
+            self.version_edit.setText(getattr(config, 'version', '1.0.0'))
+            self.enabled_check.setChecked(getattr(config, 'enabled', True))
 
-        # Engine preset
-        engine_preset = config.engine_preset
-        self.engine_type_combo.setCurrentText(engine_preset.type)
-        self.model_combo.setCurrentText(engine_preset.model)
-        self.device_combo.setCurrentText(engine_preset.device)
-        self.compute_type_combo.setCurrentText(engine_preset.compute_json.get("compute_type", "int8"))
+            # Engine preset
+            engine_preset = getattr(config, 'engine_preset', None)
+            if engine_preset and hasattr(engine_preset, 'type'):
+                self.engine_type_combo.setCurrentText(engine_preset.type)
+                self.model_combo.setCurrentText(getattr(engine_preset, 'model', 'tiny.en'))
+                self.device_combo.setCurrentText(getattr(engine_preset, 'device', 'cpu'))
+                self.compute_type_combo.setCurrentText(
+                    getattr(engine_preset, 'compute_json', {}).get("compute_type", "int8")
+                )
+            else:
+                # Fallback to defaults
+                self.engine_type_combo.setCurrentText("whisper")
+                self.model_combo.setCurrentText("tiny.en")
+                self.device_combo.setCurrentText("cpu")
+                self.compute_type_combo.setCurrentText("int8")
 
-        # Preprocess preset
-        preprocess_preset = config.preprocess_preset
-        self.resample_spin.setValue(preprocess_preset.resample_hz)
-        self.vad_enabled_check.setChecked(preprocess_preset.vad_json.get("enabled", False))
-        self.denoise_enabled_check.setChecked(preprocess_preset.denoise_json.get("enabled", False))
-        self.normalize_enabled_check.setChecked(preprocess_preset.normalize_json.get("enabled", True))
+            # Preprocess preset
+            preprocess_preset = getattr(config, 'preprocess_preset', None)
+            if preprocess_preset and hasattr(preprocess_preset, 'resample_hz'):
+                self.resample_spin.setValue(getattr(preprocess_preset, 'resample_hz', 16000))
+                self.vad_enabled_check.setChecked(
+                    getattr(preprocess_preset, 'vad_json', {}).get("enabled", False)
+                )
+                self.denoise_enabled_check.setChecked(
+                    getattr(preprocess_preset, 'denoise_json', {}).get("enabled", False)
+                )
+                self.normalize_enabled_check.setChecked(
+                    getattr(preprocess_preset, 'normalize_json', {}).get("enabled", True)
+                )
+            else:
+                # Fallback to defaults
+                self.resample_spin.setValue(16000)
+                self.vad_enabled_check.setChecked(False)
+                self.denoise_enabled_check.setChecked(False)
+                self.normalize_enabled_check.setChecked(True)
 
-        # Streaming preset
-        streaming_preset = config.streaming_preset
-        self.frame_ms_spin.setValue(streaming_preset.frame_ms)
-        self.partial_results_check.setChecked(streaming_preset.partial_results)
-        self.endpointing_enabled_check.setChecked(streaming_preset.endpointing_json.get("enabled", False))
-        self.max_session_minutes_spin.setValue(streaming_preset.max_session_minutes)
+            # Streaming preset
+            streaming_preset = getattr(config, 'streaming_preset', None)
+            if streaming_preset and hasattr(streaming_preset, 'frame_ms'):
+                self.frame_ms_spin.setValue(getattr(streaming_preset, 'frame_ms', 100))
+                self.partial_results_check.setChecked(getattr(streaming_preset, 'partial_results', True))
+                self.endpointing_enabled_check.setChecked(
+                    getattr(streaming_preset, 'endpointing_json', {}).get("enabled", False)
+                )
+                self.max_session_minutes_spin.setValue(getattr(streaming_preset, 'max_session_minutes', 60))
+            else:
+                # Fallback to defaults
+                self.frame_ms_spin.setValue(100)
+                self.partial_results_check.setChecked(True)
+                self.endpointing_enabled_check.setChecked(False)
+                self.max_session_minutes_spin.setValue(60)
 
-        # Feature preset
-        feature_preset = config.feature_preset
-        self.language_detection_check.setChecked(feature_preset.language_detection)
-        self.timestamps_check.setChecked(feature_preset.timestamps)
-        self.punctuation_check.setChecked(feature_preset.punctuation)
+            # Feature preset
+            feature_preset = getattr(config, 'feature_preset', None)
+            if feature_preset and hasattr(feature_preset, 'language_detection'):
+                self.language_detection_check.setChecked(getattr(feature_preset, 'language_detection', True))
+                self.timestamps_check.setChecked(getattr(feature_preset, 'timestamps', False))
+                self.punctuation_check.setChecked(getattr(feature_preset, 'punctuation', True))
+            else:
+                # Fallback to defaults
+                self.language_detection_check.setChecked(True)
+                self.timestamps_check.setChecked(False)
+                self.punctuation_check.setChecked(True)
 
-        # Postprocess preset
-        postprocess_preset = config.postprocess_preset
-        self.remove_fillers_check.setChecked(postprocess_preset.remove_fillers)
-        self.capitalize_sentences_check.setChecked(postprocess_preset.capitalize_sentences)
+            # Postprocess preset
+            postprocess_preset = getattr(config, 'postprocess_preset', None)
+            if postprocess_preset and hasattr(postprocess_preset, 'remove_fillers'):
+                self.remove_fillers_check.setChecked(getattr(postprocess_preset, 'remove_fillers', True))
+                self.capitalize_sentences_check.setChecked(getattr(postprocess_preset, 'capitalize_sentences', True))
+            else:
+                # Fallback to defaults
+                self.remove_fillers_check.setChecked(True)
+                self.capitalize_sentences_check.setChecked(True)
+
+        except Exception as e:
+            logger.error(f"❌ Error populating config values: {e}")
+            # Set defaults if there's an error
+            self.name_edit.setText("default-speech")
+            self.version_edit.setText("1.0.0")
+            self.enabled_check.setChecked(True)
 
     def _collect_values(self) -> STTConfig:
         """Collect values from UI into config object."""
-        config = STTConfig()
+        try:
+            config = STTConfig()
 
-        # Basic config
-        config.name = self.name_edit.text()
-        config.version = self.version_edit.text()
-        config.enabled = self.enabled_check.isChecked()
+            # Basic config
+            config.name = self.name_edit.text().strip() or "default-speech"
+            config.version = self.version_edit.text().strip() or "1.0.0"
+            config.enabled = self.enabled_check.isChecked()
 
-        # Engine preset
-        config.engine_preset.type = self.engine_type_combo.currentText()
-        config.engine_preset.model = self.model_combo.currentText()
-        config.engine_preset.device = self.device_combo.currentText()
-        config.engine_preset.compute_json = {"compute_type": self.compute_type_combo.currentText()}
+            # Engine preset
+            config.engine_preset.type = self.engine_type_combo.currentText() or "whisper"
+            config.engine_preset.model = self.model_combo.currentText() or "tiny.en"
+            config.engine_preset.device = self.device_combo.currentText() or "cpu"
+            config.engine_preset.compute_json = {"compute_type": self.compute_type_combo.currentText() or "int8"}
 
-        # Preprocess preset
-        config.preprocess_preset.resample_hz = self.resample_spin.value()
-        config.preprocess_preset.vad_json["enabled"] = self.vad_enabled_check.isChecked()
-        config.preprocess_preset.denoise_json["enabled"] = self.denoise_enabled_check.isChecked()
-        config.preprocess_preset.normalize_json["enabled"] = self.normalize_enabled_check.isChecked()
+            # Preprocess preset
+            config.preprocess_preset.resample_hz = self.resample_spin.value()
+            config.preprocess_preset.vad_json["enabled"] = self.vad_enabled_check.isChecked()
+            config.preprocess_preset.denoise_json["enabled"] = self.denoise_enabled_check.isChecked()
+            config.preprocess_preset.normalize_json["enabled"] = self.normalize_enabled_check.isChecked()
 
-        # Streaming preset
-        config.streaming_preset.frame_ms = self.frame_ms_spin.value()
-        config.streaming_preset.partial_results = self.partial_results_check.isChecked()
-        config.streaming_preset.endpointing_json["enabled"] = self.endpointing_enabled_check.isChecked()
-        config.streaming_preset.max_session_minutes = self.max_session_minutes_spin.value()
+            # Streaming preset
+            config.streaming_preset.frame_ms = self.frame_ms_spin.value()
+            config.streaming_preset.partial_results = self.partial_results_check.isChecked()
+            config.streaming_preset.endpointing_json["enabled"] = self.endpointing_enabled_check.isChecked()
+            config.streaming_preset.max_session_minutes = self.max_session_minutes_spin.value()
 
-        # Feature preset
-        config.feature_preset.language_detection = self.language_detection_check.isChecked()
-        config.feature_preset.timestamps = self.timestamps_check.isChecked()
-        config.feature_preset.punctuation = self.punctuation_check.isChecked()
+            # Feature preset
+            config.feature_preset.language_detection = self.language_detection_check.isChecked()
+            config.feature_preset.timestamps = self.timestamps_check.isChecked()
+            config.feature_preset.punctuation = self.punctuation_check.isChecked()
 
-        # Postprocess preset
-        config.postprocess_preset.remove_fillers = self.remove_fillers_check.isChecked()
-        config.postprocess_preset.capitalize_sentences = self.capitalize_sentences_check.isChecked()
+            # Postprocess preset
+            config.postprocess_preset.remove_fillers = self.remove_fillers_check.isChecked()
+            config.postprocess_preset.capitalize_sentences = self.capitalize_sentences_check.isChecked()
 
-        return config
+            return config
+        except Exception as e:
+            logger.error(f"❌ Error collecting config values: {e}")
+            # Return a default config if there's an error
+            return STTConfig()
 
     def _on_config_changed(self):
         """Handle any config value change."""

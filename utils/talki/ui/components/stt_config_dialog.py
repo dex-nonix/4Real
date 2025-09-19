@@ -35,14 +35,16 @@ class STTConfigDialog(QDialog):
         self.current_config_name = None
 
         self.setWindowTitle("STT Configuration Manager")
-        self.setMinimumSize(800, 600)
-        self.resize(1000, 700)
+        self.setMinimumSize(700, 500)
+        self.resize(900, 650)
 
         self._create_ui()
         self._setup_layout()
         self._populate_config_list()
 
         logger.debug("🗣️  STTConfigDialog initialized")
+        logger.debug(f"📋 Available configs: {self.config_manager.get_config_names()}")
+        logger.debug(f"🔄 Current config: {self.config_manager.get_current_config_name()}")
 
     def _create_ui(self):
         """Create all UI elements."""
@@ -76,11 +78,8 @@ class STTConfigDialog(QDialog):
     def _setup_layout(self):
         """Set up the dialog layout."""
         main_layout = QVBoxLayout(self)
-
-        # Title
-        title_label = QLabel("STT Configuration Manager")
-        title_label.setFont(QFont("Arial", 14, QFont.Weight.Bold))
-        main_layout.addWidget(title_label)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(10)
 
         # Splitter for list and editor
         splitter = QSplitter()
@@ -92,11 +91,14 @@ class STTConfigDialog(QDialog):
         # Right side - config editor
         splitter.addWidget(self.config_editor)
 
-        splitter.setSizes([200, 600])
+        splitter.setSizes([180, 600])
+        splitter.setStretchFactor(0, 0)  # Left panel doesn't stretch
+        splitter.setStretchFactor(1, 1)  # Right panel stretches
         main_layout.addWidget(splitter)
 
         # Bottom buttons
         bottom_layout = QHBoxLayout()
+        bottom_layout.setContentsMargins(0, 5, 0, 0)
         bottom_layout.addStretch()
         bottom_layout.addWidget(self.use_button)
         bottom_layout.addWidget(self.close_button)
@@ -108,17 +110,27 @@ class STTConfigDialog(QDialog):
 
         widget = QWidget()
         layout = QVBoxLayout(widget)
+        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setSpacing(8)
 
         # Config list label
         list_label = QLabel("Configurations:")
         list_label.setFont(QFont("Arial", 10, QFont.Weight.Bold))
         layout.addWidget(list_label)
 
-        # Config list
+        # Config list with fixed height
+        self.config_list.setMaximumWidth(160)
+        self.config_list.setMinimumHeight(200)
         layout.addWidget(self.config_list)
 
-        # Buttons
+        # Buttons with consistent sizing
+        button_width = 140
+        self.new_button.setFixedWidth(button_width)
+        self.duplicate_button.setFixedWidth(button_width)
+        self.delete_button.setFixedWidth(button_width)
+
         buttons_layout = QVBoxLayout()
+        buttons_layout.setSpacing(5)
 
         buttons_layout.addWidget(self.new_button)
         buttons_layout.addWidget(self.duplicate_button)
@@ -140,26 +152,33 @@ class STTConfigDialog(QDialog):
 
         # Select current config
         current_name = self.config_manager.get_current_config_name()
-        if current_name:
-            items = self.config_list.findItems(current_name, 0)
-            if items:
-                self.config_list.setCurrentItem(items[0])
+        if current_name and current_name.strip():
+            current_name = current_name.strip()
+            # Manual search instead of findItems to avoid PyQt6 issues
+            for i in range(self.config_list.count()):
+                item = self.config_list.item(i)
+                if item and item.text() == current_name:
+                    self.config_list.setCurrentItem(item)
+                    break
 
     def _on_config_selected(self, current, previous):
         """Handle configuration selection in list."""
         if current:
             config_name = current.text()
+            logger.debug(f"📋 List item selected: '{config_name}'")
             self.current_config_name = config_name
 
             config = self.config_manager.get_config(config_name)
             if config:
+                logger.debug(f"✅ Config loaded successfully: {config_name}")
                 self.config_editor.set_config(config)
                 self.use_button.setEnabled(True)
                 logger.debug(f"📋 Selected config: {config_name}")
             else:
-                self.use_button.setEnabled(False)
                 logger.error(f"❌ Config not found: {config_name}")
+                self.use_button.setEnabled(False)
         else:
+            logger.debug("📋 No list item selected")
             self.current_config_name = None
             self.use_button.setEnabled(False)
 
@@ -171,33 +190,46 @@ class STTConfigDialog(QDialog):
     def _on_save_requested(self, config: STTConfig):
         """Handle save request from editor."""
         try:
+            logger.debug(f"💾 Save requested for config: {config.name if config else 'None'}")
+
             # Validate config name
-            if not config.name.strip():
+            if not config.name or not config.name.strip():
                 QMessageBox.warning(self, "Invalid Name", "Configuration name cannot be empty.")
                 return
 
+            config_name = config.name.strip()
+            logger.debug(f"📝 Processing config name: '{config_name}'")
+
             # Check if name changed
-            if self.current_config_name and config.name != self.current_config_name:
+            if self.current_config_name and config_name != self.current_config_name:
                 # Name changed - create new config
-                if config.name in self.config_manager.get_config_names():
-                    QMessageBox.warning(self, "Name Exists", f"Configuration '{config.name}' already exists.")
+                if config_name in self.config_manager.get_config_names():
+                    QMessageBox.warning(self, "Name Exists", f"Configuration '{config_name}' already exists.")
                     return
 
                 # Delete old config if it exists
                 if self.current_config_name != "default-speech":
                     self.config_manager.delete_config(self.current_config_name)
 
+            # Update config name in case it was modified
+            config.name = config_name
+
             # Save config
             if self.config_manager.save_config(config):
-                QMessageBox.information(self, "Success", f"Configuration '{config.name}' saved successfully.")
+                QMessageBox.information(self, "Success", f"Configuration '{config_name}' saved successfully.")
                 self._populate_config_list()
 
                 # Select the saved config
-                items = self.config_list.findItems(config.name, 0)
-                if items:
-                    self.config_list.setCurrentItem(items[0])
+                if config_name and config_name.strip():
+                    config_name = config_name.strip()
+                    # Manual search instead of findItems to avoid PyQt6 issues
+                    for i in range(self.config_list.count()):
+                        item = self.config_list.item(i)
+                        if item and item.text() == config_name:
+                            self.config_list.setCurrentItem(item)
+                            break
 
-                logger.info(f"💾 Saved config: {config.name}")
+                logger.info(f"💾 Saved config: {config_name}")
             else:
                 QMessageBox.critical(self, "Save Failed", "Failed to save configuration.")
 
@@ -218,7 +250,7 @@ class STTConfigDialog(QDialog):
         try:
             name, ok = QInputDialog.getText(self, "New Configuration", "Enter configuration name:")
 
-            if ok and name.strip():
+            if ok and name and name.strip():
                 name = name.strip()
 
                 if name in self.config_manager.get_config_names():
@@ -231,9 +263,14 @@ class STTConfigDialog(QDialog):
                     self._populate_config_list()
 
                     # Select new config
-                    items = self.config_list.findItems(name, 0)
-                    if items:
-                        self.config_list.setCurrentItem(items[0])
+                    if name and name.strip():
+                        name = name.strip()
+                        # Manual search instead of findItems to avoid PyQt6 issues
+                        for i in range(self.config_list.count()):
+                            item = self.config_list.item(i)
+                            if item and item.text() == name:
+                                self.config_list.setCurrentItem(item)
+                                break
 
                     logger.info(f"🆕 Created new config: {name}")
                 else:
@@ -253,7 +290,7 @@ class STTConfigDialog(QDialog):
             name, ok = QInputDialog.getText(self, "Duplicate Configuration",
                                           f"Enter name for duplicate of '{self.current_config_name}':")
 
-            if ok and name.strip():
+            if ok and name and name.strip():
                 name = name.strip()
 
                 if name in self.config_manager.get_config_names():
@@ -266,9 +303,14 @@ class STTConfigDialog(QDialog):
                     self._populate_config_list()
 
                     # Select new config
-                    items = self.config_list.findItems(name, 0)
-                    if items:
-                        self.config_list.setCurrentItem(items[0])
+                    if name and name.strip():
+                        name = name.strip()
+                        # Manual search instead of findItems to avoid PyQt6 issues
+                        for i in range(self.config_list.count()):
+                            item = self.config_list.item(i)
+                            if item and item.text() == name:
+                                self.config_list.setCurrentItem(item)
+                                break
 
                     logger.info(f"📋 Duplicated config: {self.current_config_name} -> {name}")
                 else:

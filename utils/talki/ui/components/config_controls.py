@@ -35,8 +35,8 @@ class ConfigControls(QWidget):
     def _setup_layout(self):
         """Set up the component layout."""
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(5)
+        layout.setContentsMargins(5, 2, 5, 2)
+        layout.setSpacing(8)
 
         # Config icon
         config_label = QLabel("⚙️")
@@ -44,7 +44,7 @@ class ConfigControls(QWidget):
         layout.addWidget(config_label)
 
         # Configuration selection
-        self.config_combo.setFixedWidth(120)
+        self.config_combo.setFixedWidth(140)
         layout.addWidget(self.config_combo)
 
         # Settings button
@@ -57,7 +57,7 @@ class ConfigControls(QWidget):
         """Create the UI elements."""
         # Configuration selection
         self.config_combo = QComboBox()
-        self.config_combo.setFixedWidth(120)
+        self.config_combo.setFixedWidth(140)
         self.config_combo.currentTextChanged.connect(self._on_config_changed)
 
         # Settings button

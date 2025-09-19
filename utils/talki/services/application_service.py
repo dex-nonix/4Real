@@ -142,18 +142,21 @@ class ApplicationService(QObject):
                 return
 
             try:
-                if button == mouse.Button.x1:
+                # Check button by name to avoid attribute errors
+                button_name = str(button).lower()
+
+                if 'x1' in button_name or 'backward' in button_name:
                     # Backward button - toggle recording (same as Cmd+Space)
                     logger.info("🔙 Mouse X1 (backward) - toggling recording")
                     QTimer.singleShot(0, self._toggle_recording_from_hotkey)
 
-                elif button == mouse.Button.x2:
+                elif 'x2' in button_name or 'forward' in button_name:
                     # Forward button - cancel/stop operations
                     logger.info("🔜 Mouse X2 (forward) - canceling operations")
                     QTimer.singleShot(0, self._cancel_operations)
 
             except Exception as e:
-                logger.error(f"❌ Error handling mouse button: {e}")
+                logger.debug(f"⚠️  Mouse button not recognized: {button} - {e}")
 
         try:
             logger.debug("🐭 Creating global mouse listener...")

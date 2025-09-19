@@ -13,6 +13,16 @@ class EnginePreset:
     compute_json: Dict[str, Any] = field(default_factory=lambda: {"compute_type": "int8"})
     enabled: bool = True
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "type": self.type,
+            "model": self.model,
+            "device": self.device,
+            "compute_json": self.compute_json,
+            "enabled": self.enabled
+        }
+
 
 @dataclass
 class PreprocessPreset:
@@ -34,6 +44,16 @@ class PreprocessPreset:
     })
     enabled: bool = True
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "resample_hz": self.resample_hz,
+            "vad_json": self.vad_json,
+            "denoise_json": self.denoise_json,
+            "normalize_json": self.normalize_json,
+            "enabled": self.enabled
+        }
+
 
 @dataclass
 class StreamingPreset:
@@ -49,6 +69,17 @@ class StreamingPreset:
     max_session_minutes: int = 60
     enabled: bool = True
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "format": self.format,
+            "frame_ms": self.frame_ms,
+            "partial_results": self.partial_results,
+            "endpointing_json": self.endpointing_json,
+            "max_session_minutes": self.max_session_minutes,
+            "enabled": self.enabled
+        }
+
 
 @dataclass
 class FeaturePreset:
@@ -63,6 +94,16 @@ class FeaturePreset:
     punctuation: bool = True
     enabled: bool = True
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "language_detection": self.language_detection,
+            "diarization_json": self.diarization_json,
+            "timestamps": self.timestamps,
+            "punctuation": self.punctuation,
+            "enabled": self.enabled
+        }
+
 
 @dataclass
 class PostprocessPreset:
@@ -74,6 +115,15 @@ class PostprocessPreset:
         "rules": []
     })
     enabled: bool = True
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "remove_fillers": self.remove_fillers,
+            "capitalize_sentences": self.capitalize_sentences,
+            "custom_rules_json": self.custom_rules_json,
+            "enabled": self.enabled
+        }
 
 
 @dataclass
@@ -126,7 +176,7 @@ class STTConfig:
         result = {}
         for key in self.__dataclass_fields__:
             value = getattr(self, key)
-            if hasattr(value, 'to_dict'):
+            if hasattr(value, 'to_dict') and callable(getattr(value, 'to_dict')):
                 result[key] = value.to_dict()
             else:
                 result[key] = value
