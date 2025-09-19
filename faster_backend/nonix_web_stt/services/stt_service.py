@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Any
 
 import numpy as np
 from faster_whisper import WhisperModel
@@ -29,6 +29,25 @@ class NxSttService(BaseCrudService):
         super().__init__()
         self._connections: Dict[str, Dict] = {}
         self._models: Dict[str, WhisperModel] = {}
+
+    async def get_server_status(self) -> Dict[str, Any]:
+        return {
+            'service_ready': True,
+            'active_connections': len(self._connections),
+            'loaded_models': list(self._models.keys())
+        }
+
+    async def health_check(self) -> bool:
+        return True
+
+    def get_service_info(self) -> Dict[str, Any]:
+        supported_models = [
+            "tiny", "base", "small", "medium", "large-v1", "large-v2", "large-v3"
+        ]
+        return {
+            'supported_models': supported_models,
+            'default_device': 'cpu'
+        }
 
     def _get_model(self, model_name: str) -> WhisperModel:
         if model_name not in self._models:

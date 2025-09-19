@@ -11,6 +11,19 @@ from ..services.stt_service import NxSttService
 class NxSttRouter(NxWebServerCrudRouter):
     service: NxSttService = NxInject(NxSttService)
 
+    @route("/status", methods=["GET"])
+    async def get_status(self):
+        return await self.service.get_server_status()
+
+    @route("/health", methods=["GET"])
+    async def get_health(self):
+        healthy = await self.service.health_check()
+        return {"healthy": healthy}
+
+    @route("/service-info", methods=["GET"])
+    async def get_service_info(self):
+        return self.service.get_service_info()
+
     @route("/upload", methods=["POST"])
     async def upload_audio(self, audio_file: UploadFile, config_id: int):
         if not audio_file.filename:
