@@ -6,6 +6,8 @@ from nonix_web_db import AsyncSessionLocal
 from ..schemas.persona_schemas import PersonaCreate, PersonaUpdate, PersonaInDbModel
 from ..models.persona import Persona
 from ..models.chat_session import ChatSession
+from ..models.persona_mcp_server import PersonaMCPServer
+from ..models.mcp_server import MCPServer
 
 
 class PersonaService(BaseCrudService):
@@ -81,3 +83,31 @@ class PersonaService(BaseCrudService):
         persona_data['active_sessions_count'] = session_count
 
         return persona_data
+
+    async def get_persona_mcp_servers(self, persona_id: int):
+        """Get MCP servers assigned to a specific persona."""
+        async with AsyncSessionLocal() as db_session:
+            query = select(
+                PersonaMCPServer,
+                MCPServer
+            ).join(
+                MCPServer,
+                PersonaMCPServer.mcp_server_id == MCPServer.id
+            ).where(
+                PersonaMCPServer.persona_id == persona_id,
+                PersonaMCPServer.is_active,
+                MCPServer.is_active
+            )
+
+            result_set = await db_session.execute(query)
+            results = result_set.all()
+
+            mcp_servers = []
+            for persona_mcp_server, mcp_server in results:
+                server_data = mcp_server.to_dict()
+                server_data['override_args_json'] = persona_mcp_server.override_args_json
+                server_data['override_env_json'] = persona_mcp_server.override_env_json
+                server_data['persona_mcp_server_id'] = persona_mcp_server.id
+                mcp_servers.append(server_data)
+
+            return mcp_servers

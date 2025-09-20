@@ -17,8 +17,7 @@ class PersonaMCPServer(BaseModel):
 
     # Relationships
     persona = relationship('Persona', foreign_keys=[persona_id], backref=backref('persona_mcp_servers', lazy=True))
-    mcp_server = relationship('MCPServer', foreign_keys=[mcp_server_id],
-                              backref=backref('persona_mcp_servers', lazy=True))
+    mcp_server = relationship('MCPServer', foreign_keys=[mcp_server_id], backref=backref('persona_mcp_servers', lazy=True))
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<PersonaMCPServer id={self.id} persona_id={self.persona_id} mcp_server_id={self.mcp_server_id}>"
