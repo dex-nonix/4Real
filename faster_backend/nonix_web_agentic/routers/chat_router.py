@@ -218,6 +218,20 @@ class ChatRouter(NxWebServerRouter):
             service_args=(persona_id,)
         )
 
+    @route('/personas/{persona_id}/mcp-servers/tools', methods=['GET'])
+    async def persona_mcp_servers_tools(self, req: Request, persona_id: int):
+        return await self.service_call_and_respond(
+            self.tool_service.discover_mcp_tools_for_persona,
+            service_args=(persona_id,)
+        )
+
+    @route('/personas/{persona_id}/mcp-servers/{persona_mcp_server_id}/tools/{tool_name}/call', methods=['POST'])
+    async def persona_mcp_server_tool_call(self, req: Request, payload: dict, persona_id: int, persona_mcp_server_id: int, tool_name: str):
+        return await self.service_call_and_respond(
+            self.tool_service.call_persona_mcp_tool,
+            service_args=(persona_id, persona_mcp_server_id, tool_name, payload.get('args', {}))
+        )
+
     @route('/tools/registry', methods=['GET'])
     async def registry_tools(self, req: Request):
         """List all registered LLM tools from the in-memory registry."""

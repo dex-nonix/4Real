@@ -8,6 +8,8 @@ from nonix_di.resolve import NxInject
 from ..models.mcp_server import MCPServer
 from ..models.persona import Persona
 from ..llm.agentic_tool_manager import AgenticToolManager
+from ..utils.mcp_client import list_mcp_server_tools_by_server_id, call_mcp_tool_by_server_id
+from ..models.persona_mcp_server import PersonaMCPServer
 
 
 class ToolExecutionService:
@@ -109,6 +111,41 @@ class ToolExecutionService:
                     }
                 )
                 raise
+
+    async def discover_mcp_tools_for_persona(self, persona_id: int):
+        """Return MCP tools for each active persona-assigned server."""
+        async with AsyncSessionLocal() as db_session:
+            stmt = select(PersonaMCPServer).where(PersonaMCPServer.persona_id == persona_id,
+                                                  PersonaMCPServer.is_active)
+            result = await db_session.execute(stmt)
+            links = result.scalars().all()
+
+        out = []
+        for link in links:
+            tools = await list_mcp_server_tools_by_server_id(link.mcp_server_id)
+            out.append({
+                'persona_mcp_server_id': link.id,
+                'mcp_server_id': link.mcp_server_id,
+                'mcp_server_name': getattr(link.mcp_server, 'name', None),
+                'tools': tools
+            })
+        return out
+
+
+    async def call_persona_mcp_tool(self, persona_id: int, persona_mcp_server_id: int,
+                                    tool_name: str, tool_args: Dict[str, Any] | None = None):
+        """Call a tool on a persona-assigned MCP server (verifies assignment)."""
+        async with AsyncSessionLocal() as db_session:
+            stmt = select(PersonaMCPServer).where(PersonaMCPServer.id == persona_mcp_server_id,
+                                                  PersonaMCPServer.persona_id == persona_id,
+                                                  PersonaMCPServer.is_active)
+            result = await db_session.execute(stmt)
+            link = result.scalar_one_or_none()
+            if not link:
+                raise ValueError('MCP server not assigned to persona or inactive')
+
+        return await call_mcp_tool_by_server_id(link.mcp_server_id, tool_name, tool_args)
+
 
     async def get_mcp_servers_status(self):
         """Get status of all MCP servers."""
