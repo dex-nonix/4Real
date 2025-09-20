@@ -1,40 +1,40 @@
 from fastapi import Request, UploadFile, Form, HTTPException
-from nonix_web.router.decorators import router, route
+
 from nonix_di.resolve import NxInject
+from nonix_web.router.decorators import router, route
 from nonix_web.router.web_server_router import NxWebServerRouter
-from nonix_web_db.crud.query_processor import QueryProcessor
-from ..services.file_service import FileService
-from ..services.file_category_service import FileCategoryService
-from ..services.file_link_service import FileLinkService
-from ..utils.file_upload_utils import upload_file_logic
+from nonix_web_db.crud.query_processor import process_query
 from .file_manager_schemas import (
     FileUploadResponse, FileDeleteResponse, FileCopyResponse, FileMoveResponse,
     FileRenameResponse, CategoryCreateResponse, CategoryUpdateResponse,
     BulkOperationResponse, FileListResponse, CategoryListResponse, CategoryWithCountListResponse
 )
+from ..services.file_category_service import FileCategoryService
+from ..services.file_link_service import FileLinkService
+from ..services.file_service import FileService
+from ..utils.file_upload_utils import upload_file_logic
 
 
 @router("/file-manager", tags=["File Manager"])
 class FileManagerRouter(NxWebServerRouter):
     """Clean, independent file manager API without CRUD conflicts"""
-    
+
     file_service: FileService = NxInject(FileService)
     category_service: FileCategoryService = NxInject(FileCategoryService)
     link_service: FileLinkService = NxInject(FileLinkService)
-    
+
     # File Operations
     @route('/upload', methods=['POST'], response_model=FileUploadResponse)
-    async def upload_file(self, file: UploadFile, title: str = Form(None), category_id: int = Form(None)) -> FileUploadResponse:
+    async def upload_file(self, file: UploadFile, title: str = Form(None),
+                          category_id: int = Form(None)) -> FileUploadResponse:
         """Upload single file with validation"""
         return await upload_file_logic(file, title, category_id, self.file_service)
-    
+
     @route('/files', methods=['GET'], response_model=FileListResponse)
     async def list_files(self, req: Request) -> FileListResponse:
         """List files with category information"""
-        query_processor = QueryProcessor(model=self.file_service.model, config=self.file_service.config)
-        q_params = await query_processor(req)
-        return await self.file_service.get_all(q_params)
-    
+        return await self.file_service.get_all(await process_query(self.file_service, req))
+
     @route('/files/{id}', methods=['DELETE'], response_model=FileDeleteResponse)
     async def delete_file(self, req: Request, id: int) -> FileDeleteResponse:
         """Delete file by ID"""
@@ -43,7 +43,7 @@ class FileManagerRouter(NxWebServerRouter):
             return FileDeleteResponse(message="File deleted successfully", status="success")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
-    
+
     @route('/files/copy', methods=['POST'], response_model=FileCopyResponse)
     async def copy_files(self, req: Request) -> FileCopyResponse:
         """Copy files to different category"""
@@ -55,7 +55,7 @@ class FileManagerRouter(NxWebServerRouter):
             return FileCopyResponse(message=result["message"], count=result["count"])
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Copy failed: {str(e)}")
-    
+
     @route('/files/move', methods=['POST'], response_model=FileMoveResponse)
     async def move_files(self, req: Request) -> FileMoveResponse:
         """Move files to different category"""
@@ -67,7 +67,7 @@ class FileManagerRouter(NxWebServerRouter):
             return FileMoveResponse(message=result["message"], count=result["count"])
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Move failed: {str(e)}")
-    
+
     @route('/files/{id}/rename', methods=['PUT'], response_model=FileRenameResponse)
     async def rename_file(self, req: Request, id: int) -> FileRenameResponse:
         """Rename file by ID"""
@@ -77,15 +77,13 @@ class FileManagerRouter(NxWebServerRouter):
             return FileRenameResponse(data=result, status="success")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Rename failed: {str(e)}")
-    
+
     # Category Operations
     @route('/categories', methods=['GET'], response_model=CategoryListResponse)
     async def list_categories(self, req: Request) -> CategoryListResponse:
         """List all categories"""
-        query_processor = QueryProcessor(model=self.category_service.model, config=self.category_service.config)
-        q_params = await query_processor(req)
-        return await self.category_service.get_all(q_params)
-    
+        return await self.category_service.get_all(await process_query(self.category_service, req))
+
     @route('/categories', methods=['POST'], response_model=CategoryCreateResponse)
     async def create_category(self, req: Request) -> CategoryCreateResponse:
         """Create new category"""
@@ -95,7 +93,7 @@ class FileManagerRouter(NxWebServerRouter):
             return CategoryCreateResponse(data=result, status="success")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Create category failed: {str(e)}")
-    
+
     @route('/categories/with-counts', methods=['GET'], response_model=CategoryWithCountListResponse)
     async def get_categories_with_counts(self, req: Request) -> CategoryWithCountListResponse:
         """Get categories with file counts"""
@@ -110,7 +108,7 @@ class FileManagerRouter(NxWebServerRouter):
             has_prev=False
         )
         return CategoryWithCountListResponse(data=result["data"], pagination=pagination)
-    
+
     @route('/categories/{id}', methods=['PUT'], response_model=CategoryUpdateResponse)
     async def update_category(self, req: Request, id: int) -> CategoryUpdateResponse:
         """Update category by ID"""
@@ -120,7 +118,7 @@ class FileManagerRouter(NxWebServerRouter):
             return CategoryUpdateResponse(data=result, status="success")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Update category failed: {str(e)}")
-    
+
     # Bulk Operations
     @route('/bulk/delete', methods=['POST'], response_model=BulkOperationResponse)
     async def bulk_delete_files(self, req: Request) -> BulkOperationResponse:
@@ -147,7 +145,7 @@ class FileManagerRouter(NxWebServerRouter):
             return BulkOperationResponse(message=result["message"], count=result["count"])
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Bulk copy failed: {str(e)}")
-    
+
     @route('/bulk/move', methods=['POST'], response_model=BulkOperationResponse)
     async def bulk_move_files(self, req: Request) -> BulkOperationResponse:
         """Bulk move files to different category"""

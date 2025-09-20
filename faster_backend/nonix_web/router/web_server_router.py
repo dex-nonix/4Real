@@ -23,8 +23,7 @@ class NxWebServerRouter(ABC):
     server: "NxWebServer" = NxInject(NxWebServer)
     router: APIRouter
 
-    def __init__(self, router: APIRouter):
-        self.router = router
+    def __init__(self):
         self._logger = logging.getLogger(self.__class__.__name__)
 
     async def send_ws_message(self, room: str, message: dict):
@@ -102,13 +101,16 @@ class NxWebServerRouter(ABC):
             # System errors -> 500 Internal Server Error
             return JSONResponse({'error': str(e)}, 500)
 
-    @classmethod
-    def to_router(cls, *args, **kwargs) -> APIRouter:
-        router = APIRouter(**asdict(_get_routed_service_definition(cls)))
-        inst = cls(router, *args, **kwargs)
-        for method_name in dir(inst):
-            method = getattr(inst, method_name)
+    def register_routes(self, router):
+        for method_name in dir(self):
+            method = getattr(self, method_name)
             route_definition = _get_route_info(method)
             if route_definition:
                 router.add_api_route(endpoint=method, **asdict(route_definition))
+
+    @classmethod
+    def to_router(cls, *args, **kwargs) -> APIRouter:
+        inst = cls(*args, **kwargs)
+        router = APIRouter(**asdict(_get_routed_service_definition(cls)))
+        inst.register_routes(router)
         return router

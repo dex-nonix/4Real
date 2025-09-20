@@ -1,15 +1,14 @@
 from datetime import datetime, date
-from typing import Type, Any
+from typing import Any
 
 from starlette.requests import Request
 
 from .models_and_schemas import CRUDConfig
-from .types import ModelType
 
 
 class QueryProcessor:
-    def __init__(self, model: Type[ModelType], config: CRUDConfig):
-        self.model = model
+    def __init__(self, config: CRUDConfig):
+        self.model = config.model
         self.config = config
 
     async def _coerce_value(self, field, raw_value: str) -> Any:
@@ -79,3 +78,8 @@ class QueryProcessor:
             "page": page,
             "per_page": per_page,
         }
+
+
+async def process_query(service, req):
+    proc = QueryProcessor(service.config)
+    return await proc(req)

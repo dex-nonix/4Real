@@ -22,28 +22,22 @@ __all__ = [
 
 class NxWebServerCrudRouter(NxWebServerRouter):
     service: BaseCrudService  # Inject service instead of having config
+    query_processor:QueryProcessor
 
-    def __init__(self, router: APIRouter):
-        super().__init__(router)
-        # Delay query processor and route registration until service is injected
-        self._init_components()
+    def __init__(self):
+        super().__init__()
+        self.query_processor = QueryProcessor(self.service.config)
 
-    def _init_components(self):
-        """Initialize components after service injection"""
-        # Trigger service injection once and cache the service
-        config = self.service.config
-
-        # Query processor stays in router (HTTP parsing responsibility)
-        self.query_processor = QueryProcessor(model=config.model, config=config)
-        self._register_routes()
+    def register_routes(self, router):
+        super().register_routes(router)
+        self._register_routes(router)
 
     # All CRUD operations now delegate to the injected service
-    def _register_routes(self) -> None:
+    def _register_routes(self, router) -> None:
         # Use cached service reference (injection already triggered in _init_components)
         service = self.service
         config = service.config
         ops = config.operations
-        router = self.router
 
         if ops.create:
             @router.post(
