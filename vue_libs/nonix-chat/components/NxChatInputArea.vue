@@ -145,6 +145,27 @@ const selectTool = (toolData) => {
   }
 };
 
+// Handle tool-selected from tools dialog, including MCP tools
+const handleToolSelected = (toolPayload) => {
+  // toolPayload may be { tool: {...}, persona_mcp_server_id, is_mcp }
+  if (toolPayload && toolPayload.is_mcp) {
+    // attach mcp metadata into selectedTool so execution flow can use it
+    selectedTool.value = {
+      name: toolPayload.tool.name,
+      description: toolPayload.tool.description,
+      parameters: toolPayload.tool.parameters || []
+    };
+    // keep MCP context on selectedTool
+    selectedTool.value._mcp = {
+      persona_mcp_server_id: toolPayload.persona_mcp_server_id
+    };
+    if (toolExecutionDialogRef.value) toolExecutionDialogRef.value.openDialog(selectedTool.value);
+  } else {
+    // regular tool
+    selectTool(toolPayload);
+  }
+};
+
 // Execute tool with form data
 const executeToolWithForm = async (formData) => {
   if (!selectedTool.value || !props.selectedSession?.persona_id || !props.historyId || !chatService) {
@@ -154,21 +175,33 @@ const executeToolWithForm = async (formData) => {
   const args = formData.__full || formData.args || {};
 
   try {
+    // If selected tool is an MCP tool, call MCP-specific endpoint
+    if (selectedTool.value && selectedTool.value._mcp) {
+      const personaId = props.selectedSession.persona_id;
+      const personaMcpServerId = selectedTool.value._mcp.persona_mcp_server_id;
+      const toolName = selectedTool.value.name;
+
+      await chatService.callPersonaMcpTool(personaId, personaMcpServerId, toolName, args);
+
+      showToolsDialog.value = false;
+      selectedTool.value = null;
+      return;
+    }
+
     await chatService.sendMessage(
-        props.selectedSession.id,
-        props.historyId,
-        {
-          message_type: 'tool_call',
-          content: {
-            tool: selectedTool.value.name,
-            args: args
-          }
+      props.selectedSession.id,
+      props.historyId,
+      {
+        message_type: 'tool_call',
+        content: {
+          tool: selectedTool.value.name,
+          args: args
         }
+      }
     );
+
     showToolsDialog.value = false;
     selectedTool.value = null;
-    // WebSocket events will automatically update the UI with real tool messages
-
   } catch (error) {
     console.error('Tool execution failed:', error);
     showToolsDialog.value = false;
@@ -426,8 +459,8 @@ defineExpose({
     <!-- More Menu -->
     <Menu ref="moreMenu" id="more_menu" :model="moreMenuItems" :popup="true"/>
     <!-- Tools Dialog -->
-    <NxLlmAvailableToolsDialog :visible="showToolsDialog" :tools="availableToolsLocal" :mcpServers="availableMcpServersLocal"                                                                          
-                               @update:visible="showToolsDialog = $event" @tool-selected="selectTool"/>
+    <NxLlmAvailableToolsDialog :visible="showToolsDialog" :tools="availableToolsLocal" :mcpServers="availableMcpServersLocal" :personaId="props.selectedSession?.persona_id"                                                                         
+                               @update:visible="showToolsDialog = $event" @tool-selected="handleToolSelected"/>
 
     <!-- Tool Execution Dialog -->
     <NxLlmToolExecutionDialog ref="toolExecutionDialogRef" :selected-tool="selectedTool"

@@ -42,21 +42,28 @@ faster_backend/nonix_vscode/
   "name": "vscode",
   "version": "0.1.0",
   "class": "NxVscodePlugin",
-  "dependencies": ["db"],
-  "config": {}
+  "dependencies": ["db", "daemon"],
+  "config": {
+    "code_server_cmd": "code-server"
+  }
 }
 ```
 
 ### 2. plugin.py
 ```python
+from typing import Dict, Any
+
 from nonix_di.decorator import injectables
+from nonix_di.resolve import NxInject
 from nonix_plugin.base import BasePlugin
 from nonix_web.decorator import web_routers
-from nonix_daemon.decorator import daemons
+from nonix_daemon.manager import NxDaemonManager
+
 from .routers.vscode_router import VscodeRouter
 from .routers.vscode_workspace_router import VscodeWorkspaceRouter
 from .services.vscode_workspace_service import VscodeWorkspaceService
 from .daemons.vscode_daemon import VscodeDaemon
+
 
 @web_routers([
     VscodeRouter,           # Main business logic router (start/stop/status)
@@ -65,11 +72,20 @@ from .daemons.vscode_daemon import VscodeDaemon
 @injectables([
     VscodeWorkspaceService
 ])
-@daemons([
-    VscodeDaemon
-])
 class NxVscodePlugin(BasePlugin):
-    pass
+    workspace_service: VscodeWorkspaceService = NxInject(VscodeWorkspaceService)
+    daemon_manager: NxDaemonManager = NxInject(NxDaemonManager)
+
+    async def _configure(self, config: Dict[str, Any]):
+        # Initialize service and register daemon instance with manager
+        await self.workspace_service.initialize(config)
+        daemon = VscodeDaemon(config)
+        self.daemon_manager.add_daemon(daemon)
+
+    async def _shutdown(self, config: Dict[str, Any]):
+        # Cleanup HTTP session
+        if getattr(self.workspace_service, "session", None):
+            await self.workspace_service.session.close()
 ```
 
 ### 3. __init__.py
@@ -121,6 +137,7 @@ class VscodeWorkspace(BaseModel):
 import asyncio
 import logging
 from typing import Dict, Any, Optional
+from datetime import datetime
 import aiohttp
 
 from nonix_di.resolve import NxInject
@@ -177,21 +194,17 @@ class VscodeWorkspaceService(BaseCrudService):
     async def start_workspace(self, workspace_id: int):
         """Start VSCode workspace - handles all logic including daemon coordination"""
         try:
-            # Get workspace from database
             async with AsyncSessionLocal() as session:
                 workspace = await session.get(VscodeWorkspace, workspace_id)
                 if not workspace:
                     return {"success": False, "message": "Workspace not found"}
 
-                # Get daemon and start workspace
                 daemon = self.daemon_manager.daemons.get("vscode-daemon")
                 if not daemon:
                     return {"success": False, "message": "VSCode daemon not found"}
 
-                # Start the workspace through daemon
                 result = await daemon.start_workspace(workspace)
                 if result["success"]:
-                    # Update database status
                     workspace.status = VscodeStatus.RUNNING
                     await session.commit()
 
@@ -204,21 +217,17 @@ class VscodeWorkspaceService(BaseCrudService):
     async def stop_workspace(self, workspace_id: int):
         """Stop VSCode workspace - handles all logic including daemon coordination"""
         try:
-            # Get workspace from database
             async with AsyncSessionLocal() as session:
                 workspace = await session.get(VscodeWorkspace, workspace_id)
                 if not workspace:
                     return {"success": False, "message": "Workspace not found"}
 
-                # Get daemon and stop workspace
                 daemon = self.daemon_manager.daemons.get("vscode-daemon")
                 if not daemon:
                     return {"success": False, "message": "VSCode daemon not found"}
 
-                # Stop the workspace through daemon
                 result = await daemon.stop_workspace(workspace)
                 if result["success"]:
-                    # Update database status
                     workspace.status = VscodeStatus.STOPPED
                     await session.commit()
 
@@ -231,7 +240,6 @@ class VscodeWorkspaceService(BaseCrudService):
     async def get_workspace_status(self, workspace_id: int):
         """Get workspace health status"""
         try:
-            # Get workspace from database
             async with AsyncSessionLocal() as session:
                 workspace = await session.get(VscodeWorkspace, workspace_id)
                 if not workspace:
@@ -240,10 +248,10 @@ class VscodeWorkspaceService(BaseCrudService):
                 if workspace.status == VscodeStatus.STOPPED:
                     return self._create_status_response(workspace)
 
-                # Check health using host and port
                 if self.session and workspace.port is not None:
                     try:
-                        url = f"{workspace.host}:{workspace.port}"
+                        host = workspace.host or "localhost"
+                        url = f"http://{host}:{workspace.port}/"
                         async with self.session.get(url, timeout=5) as response:
                             if response.status == 200:
                                 workspace.status = VscodeStatus.RUNNING
@@ -258,7 +266,6 @@ class VscodeWorkspaceService(BaseCrudService):
                         await session.commit()
                         return self._create_status_response(workspace)
                 else:
-                    # Port not assigned or session not available
                     await session.commit()
                     return self._create_status_response(workspace)
 
@@ -266,9 +273,7 @@ class VscodeWorkspaceService(BaseCrudService):
             self.logger.error(f"Failed to get workspace status {workspace_id}: {e}")
             return {"status": "error"}
 
-    # pyee Event Handler Methods - called by daemon events
     async def handle_process_crashed(self, workspace_id: int, exit_code: int):
-        """Handle process crashed event from daemon using pyee"""
         async with AsyncSessionLocal() as session:
             workspace = await session.get(VscodeWorkspace, workspace_id)
             if workspace:
@@ -278,7 +283,6 @@ class VscodeWorkspaceService(BaseCrudService):
                 await session.commit()
 
     async def handle_process_restarted(self, workspace_id: int, attempt_count: int):
-        """Handle process restarted event from daemon using pyee"""
         async with AsyncSessionLocal() as session:
             workspace = await session.get(VscodeWorkspace, workspace_id)
             if workspace:
@@ -288,7 +292,6 @@ class VscodeWorkspaceService(BaseCrudService):
                 await session.commit()
 
     async def handle_max_restarts_exceeded(self, workspace_id: int, attempt_count: int):
-        """Handle max restarts exceeded event from daemon using pyee"""
         async with AsyncSessionLocal() as session:
             workspace = await session.get(VscodeWorkspace, workspace_id)
             if workspace:
@@ -298,7 +301,6 @@ class VscodeWorkspaceService(BaseCrudService):
                 await session.commit()
 
     async def handle_restart_failed(self, workspace_id: int, attempt_count: int, error_msg: str):
-        """Handle restart failed event from daemon using pyee"""
         async with AsyncSessionLocal() as session:
             workspace = await session.get(VscodeWorkspace, workspace_id)
             if workspace:
@@ -308,12 +310,10 @@ class VscodeWorkspaceService(BaseCrudService):
                 await session.commit()
 
     async def get_workspace_by_id(self, workspace_id: int) -> Optional[VscodeWorkspace]:
-        """Get workspace by ID for daemon use with pyee events"""
         async with AsyncSessionLocal() as session:
             return await session.get(VscodeWorkspace, workspace_id)
 
     def _create_status_response(self, workspace: VscodeWorkspace):
-        """Create standardized status response"""
         return {
             "status": workspace.status,
             "host": workspace.host,
@@ -334,11 +334,11 @@ import logging
 import time
 from typing import Dict, Any, Optional, Callable
 from pathlib import Path
-from pyee import AsyncIOEventEmitter  # Standard event library
+from pyee import asyncio as pyee_asyncio
 
 from nonix_daemon.daemons.asyncio_daemon import NxAsyncioDaemon
 from nonix_di.resolve import NxInject
-from ..models.vscode_workspace import VscodeWorkspace, VscodeStatus
+from ..models.vscode_workspace import VscodeWorkspace
 from ..services.vscode_workspace_service import VscodeWorkspaceService
 
 class VscodeDaemon(NxAsyncioDaemon):
@@ -352,7 +352,7 @@ class VscodeDaemon(NxAsyncioDaemon):
         self.code_server_cmd = config.get("code_server_cmd", "code-server")
         self.running_processes: Dict[int, subprocess.Popen] = {}
         self.restart_counts: Dict[int, int] = {}
-        self.events = AsyncIOEventEmitter()  # pyee event emitter
+        self.events = pyee_asyncio.AsyncIOEventEmitter()
         self.logger = logging.getLogger(__name__)
 
         # Set up event handlers using pyee
@@ -360,7 +360,6 @@ class VscodeDaemon(NxAsyncioDaemon):
 
     def _setup_event_handlers(self):
         """Set up pyee event handlers"""
-        # Service subscribes to daemon events
         @self.events.on('process_crashed')
         async def handle_process_crashed(workspace_id, exit_code):
             await self.workspace_service.handle_process_crashed(workspace_id, exit_code)
@@ -378,31 +377,25 @@ class VscodeDaemon(NxAsyncioDaemon):
             await self.workspace_service.handle_restart_failed(workspace_id, attempt_count, error_msg)
 
     async def _run(self):
-        """Main daemon loop - monitor VSCode processes"""
         while True:
             try:
-                # Check health of all running processes
                 for workspace_id, process in list(self.running_processes.items()):
-                    if process.poll() is not None:  # Process died
+                    if process.poll() is not None:
                         await self._handle_process_death(workspace_id, process)
 
-                await asyncio.sleep(30)  # Check every 30 seconds
+                await asyncio.sleep(30)
 
             except Exception as e:
                 self.logger.error(f"Daemon loop error: {e}")
                 await asyncio.sleep(10)
 
     async def _handle_process_death(self, workspace_id: int, process: subprocess.Popen):
-        """Handle process death using pyee events"""
         self.logger.warning(f"VSCode process for workspace {workspace_id} died with code {process.returncode}")
 
-        # Clean up process
         del self.running_processes[workspace_id]
 
-        # Emit event using pyee - service will handle via event subscription
         await self.events.emit('process_crashed', workspace_id, process.returncode)
 
-        # Get workspace and check restart policy
         try:
             workspace = await self.workspace_service.get_workspace_by_id(workspace_id)
             if not workspace:
@@ -411,18 +404,15 @@ class VscodeDaemon(NxAsyncioDaemon):
             current_attempts = self.restart_counts.get(workspace_id, 0)
 
             if workspace.auto_restart and current_attempts < workspace.max_restarts:
-                # Schedule restart
                 delay = min(2 ** current_attempts, 300)
                 asyncio.create_task(self._perform_restart(workspace, current_attempts + 1, delay))
             else:
-                # Max restarts exceeded
                 await self.events.emit('max_restarts_exceeded', workspace_id, current_attempts)
 
         except Exception as e:
             self.logger.error(f"Error handling process death: {e}")
 
     async def _perform_restart(self, workspace: VscodeWorkspace, attempt_count: int, delay: float):
-        """Perform restart with pyee event communication"""
         await asyncio.sleep(delay)
 
         try:
@@ -439,12 +429,10 @@ class VscodeDaemon(NxAsyncioDaemon):
             await self.events.emit('restart_failed', workspace.id, attempt_count, str(e))
 
     async def start_workspace(self, workspace: VscodeWorkspace) -> Dict[str, Any]:
-        """Start a VSCode workspace process"""
         try:
-            # Check if already running
             if workspace.id in self.running_processes:
                 process = self.running_processes[workspace.id]
-                if process.poll() is None:  # Still running
+                if process.poll() is None:
                     host = workspace.host or "localhost"
                     return {
                         "success": True,
@@ -452,7 +440,6 @@ class VscodeDaemon(NxAsyncioDaemon):
                         "url": f"http://{host}:{workspace.port}"
                     }
 
-            # Start code-server process
             cmd = [
                 self.code_server_cmd,
                 "--bind-addr", f"0.0.0.0:{workspace.port}",
@@ -468,13 +455,10 @@ class VscodeDaemon(NxAsyncioDaemon):
                 stderr=subprocess.PIPE
             )
 
-            # Store process reference
             self.running_processes[workspace.id] = process
 
-            # Wait for startup
             await asyncio.sleep(3)
 
-            # Verify process is still running
             if process.poll() is None:
                 url = f"http://{host}:{workspace.port}"
                 self.logger.info(f"VSCode workspace {workspace.name} started successfully")
@@ -492,7 +476,6 @@ class VscodeDaemon(NxAsyncioDaemon):
 
         except Exception as e:
             self.logger.error(f"Failed to start workspace {workspace.name}: {e}")
-            # Clean up if process was started
             if workspace.id in self.running_processes:
                 del self.running_processes[workspace.id]
             return {
@@ -501,7 +484,6 @@ class VscodeDaemon(NxAsyncioDaemon):
             }
 
     async def stop_workspace(self, workspace: VscodeWorkspace) -> Dict[str, Any]:
-        """Stop a VSCode workspace process"""
         try:
             if workspace.id not in self.running_processes:
                 return {
@@ -511,8 +493,7 @@ class VscodeDaemon(NxAsyncioDaemon):
 
             process = self.running_processes[workspace.id]
 
-            # Terminate process
-            if process.poll() is None:  # Still running
+            if process.poll() is None:
                 self.logger.info(f"Stopping VSCode workspace: {workspace.name}")
                 process.terminate()
                 await asyncio.sleep(1)
@@ -521,7 +502,6 @@ class VscodeDaemon(NxAsyncioDaemon):
                     process.kill()
                     await asyncio.sleep(0.5)
 
-            # Clean up
             del self.running_processes[workspace.id]
             self.logger.info(f"VSCode workspace {workspace.name} stopped")
 
@@ -532,7 +512,6 @@ class VscodeDaemon(NxAsyncioDaemon):
 
         except Exception as e:
             self.logger.error(f"Failed to stop workspace {workspace.name}: {e}")
-            # Clean up anyway
             if workspace.id in self.running_processes:
                 del self.running_processes[workspace.id]
             return {
@@ -541,7 +520,6 @@ class VscodeDaemon(NxAsyncioDaemon):
             }
 
     async def _cleanup_all_processes(self):
-        """Clean up all running processes on shutdown"""
         for workspace_id, process in list(self.running_processes.items()):
             try:
                 if process.poll() is None:
@@ -571,33 +549,28 @@ class VscodeRouter(NxWebServerRouter):
 
     workspace_service: VscodeWorkspaceService = NxInject(VscodeWorkspaceService)
 
-    # ==========================================
-    # WORKSPACE MANAGEMENT ENDPOINTS (Business Logic)
-    # ==========================================
-    # NOTE: NO CRUD operations here - those are in VscodeWorkspaceRouter
-
     @route('/workspaces/{workspace_id}/start', methods=['POST'])
     async def start_workspace(self, req: Request, workspace_id: int):
-        """Start VSCode workspace"""
         return await self.service_call_and_respond(
             self.workspace_service.start_workspace,
-            service_args=(workspace_id,)
+            service_args=(workspace_id,),
+            response_converter=lambda r: r
         )
 
     @route('/workspaces/{workspace_id}/stop', methods=['POST'])
     async def stop_workspace(self, req: Request, workspace_id: int):
-        """Stop VSCode workspace"""
         return await self.service_call_and_respond(
             self.workspace_service.stop_workspace,
-            service_args=(workspace_id,)
+            service_args=(workspace_id,),
+            response_converter=lambda r: r
         )
 
     @route('/workspaces/{workspace_id}/status', methods=['GET'])
     async def get_workspace_status(self, req: Request, workspace_id: int):
-        """Get workspace health status"""
         return await self.service_call_and_respond(
             self.workspace_service.get_workspace_status,
-            service_args=(workspace_id,)
+            service_args=(workspace_id,),
+            response_converter=lambda r: r
         )
 ```
 
