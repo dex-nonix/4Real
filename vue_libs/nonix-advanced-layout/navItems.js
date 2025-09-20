@@ -37,9 +37,11 @@ export const NX_ADVANCED_LEFT_SIDEBAR_ITEMS = [
         label: 'Media',
         icon: 'pi pi-image',
         items: [
+            {label: 'File Manager', icon: 'pi pi-folder', to: '/file-manager'},
             {label: 'File Categories', icon: 'pi pi-folder', to: '/file-categories'},
             {label: 'Files', icon: 'pi pi-file', to: '/files'},
             {label: 'File Links', icon: 'pi pi-link', to: '/file-links'}
+
         ]
     },
     {

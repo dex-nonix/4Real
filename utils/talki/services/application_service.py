@@ -3,7 +3,7 @@ Application service that coordinates between UI, audio processing, and input com
 """
 
 from typing import Optional
-from PyQt6.QtCore import QTimer, pyqtSignal, QObject
+from PyQt6.QtCore import QTimer, pyqtSignal, QObject, pyqtSlot
 from PyQt6.QtWidgets import QMessageBox
 from pynput import keyboard, mouse
 from talki.config.logging_config import logger
@@ -50,6 +50,9 @@ class ApplicationService(QObject):
 
         logger.debug("🎯 Application service initialized")
 
+    # Signals
+    transcript_received = pyqtSignal(str)
+
     def initialize_components(self, main_window: MainWindow):
         """
         Initialize all components and set up connections.
@@ -69,7 +72,7 @@ class ApplicationService(QObject):
         if current_config:
             try:
                 self.stt_engine = STTEngine(current_config)
-                self.stt_engine.on_transcript = lambda text: self.main_window.append_transcript(text)
+                self.stt_engine.on_transcript = lambda text: self.transcript_received.emit(text)
                 self.stt_engine.on_error = lambda error: logger.error(f"STT Error: {error}")
                 self.stt_engine.on_endpoint = lambda: logger.info("Endpoint detected")
                 logger.info("✅ STT engine initialized successfully")
@@ -79,7 +82,7 @@ class ApplicationService(QObject):
                 try:
                     default_config = STTConfig()
                     self.stt_engine = STTEngine(default_config)
-                    self.stt_engine.on_transcript = lambda text: self.main_window.append_transcript(text)
+                    self.stt_engine.on_transcript = lambda text: self.transcript_received.emit(text)
                     self.stt_engine.on_error = lambda error: logger.error(f"STT Error: {error}")
                     self.stt_engine.on_endpoint = lambda: logger.info("Endpoint detected")
                     logger.info("✅ STT engine initialized with default config")
@@ -124,6 +127,9 @@ class ApplicationService(QObject):
         self.main_window.clear_requested.connect(self._on_clear_requested)
         self.main_window.config_selected.connect(self._on_config_selected)
         self.main_window.settings_requested.connect(self._on_settings_requested)
+
+        # STT transcript signal
+        self.transcript_received.connect(self._on_stt_transcript_received)
 
     def _setup_hotkeys(self):
         """Set up global hotkeys (Cmd+Space for macOS, adapt for Linux)."""
@@ -255,6 +261,11 @@ class ApplicationService(QObject):
 
     def _on_transcript_update(self, text: str):
         """Handle new transcript text."""
+        self.main_window.append_transcript(text)
+
+    @pyqtSlot(str)
+    def _on_stt_transcript_received(self, text: str):
+        """Handle STT transcript from audio thread (runs on main thread)."""
         self.main_window.append_transcript(text)
 
     def _on_audio_error(self, error_msg: str):
@@ -392,7 +403,7 @@ class ApplicationService(QObject):
             if new_config:
                 # Create new STT engine with new config
                 self.stt_engine = STTEngine(new_config)
-                self.stt_engine.on_transcript = lambda text: self.main_window.append_transcript(text)
+                self.stt_engine.on_transcript = lambda text: self.transcript_received.emit(text)
                 self.stt_engine.on_error = lambda error: logger.error(f"STT Error: {error}")
                 self.stt_engine.on_endpoint = lambda: logger.info("Endpoint detected")
 

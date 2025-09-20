@@ -1,0 +1,290 @@
+# AI_README.md Format Specification
+
+## Purpose
+AI_README.md files are compact API reference cheatsheets for AI consumption. They contain ONLY the complete API surface area - no verbose explanations, no examples, no human-oriented content.
+
+## File Location
+- Place AI_README.md in the same directory as the package
+- Example: `/faster_backend/nonix_daemon/AI_README.md`
+
+## EXACT Format Structure
+
+### 1. Header (EXACT format)
+```markdown
+# AI_README: [Package Name] API
+
+## Requirements
+- Python 3.X+
+- dependency1
+- dependency2
+```
+
+### 2. Core Classes & Interfaces (EXACT format)
+
+**RULES FOR CLASSES:**
+- List ALL public classes that AI needs to know about
+- Include COMPLETE method signatures with types
+- Use EXACT class/method names from codebase
+- One-line description after method signature
+- Include ALL public properties and attributes
+- Group related classes together
+
+**EXACT FORMAT:**
+```python
+class ExactClassName:
+    """One-line class purpose"""
+    def __init__(self, param1: Type1, param2: Type2 = default) -> None
+    def method_name(self, param: Type) -> ReturnType: """What method does"""
+    async def async_method(self, param: Type) -> ReturnType: """What async method does"""
+    @property
+    def property_name(self) -> Type: """What property returns"""
+    # Public attributes
+    public_attr: Type
+```
+
+### 3. Events & Constants (ONLY if applicable)
+
+**RULES FOR EVENTS:**
+- Only include if package has event system
+- List all event constants
+- Show how events are used
+
+**EXACT FORMAT:**
+```python
+class EventConstants:
+    """Event system constants"""
+    EVENT_STARTED = "started"
+    EVENT_ERROR = "error"
+
+# Event usage patterns
+emitter.on(event_name, callback_function)
+emitter.emit(event_name, event_data)
+```
+
+### 4. Decorators & Utilities (EXACT format)
+
+**RULES FOR DECORATORS:**
+- List ALL decorators the package provides
+- Include complete signature
+- One-line description
+
+**EXACT FORMAT:**
+```python
+def exact_decorator_name(param1: Type, param2: Type = default) -> Callable:
+    """What decorator does"""
+```
+
+### 5. Integration Points (EXACT format)
+
+**RULES FOR INTEGRATION:**
+- Show how package integrates with other systems
+- Include DI injection patterns
+- Plugin registration patterns
+- Configuration setup
+
+**EXACT FORMAT:**
+```python
+# Dependency injection
+NxInject(ServiceClass)
+
+# Plugin registration
+@plugin_decorator([Class1, Class2])
+
+# Settings configuration
+settings.PLUGINS = [{"name": "package-name"}]
+```
+
+### 6. Configuration Schema (EXACT format)
+
+**RULES FOR CONFIG:**
+- Show the EXACT plugin.json structure
+- Include all required fields
+- Show optional fields if they exist
+
+**EXACT FORMAT:**
+```json
+{
+  "name": "exact-package-name",
+  "class": "ExactPluginClass",
+  "dependencies": ["exact-dep1", "exact-dep2"],
+  "config": {
+    "setting_name": "default_value",
+    "another_setting": 123
+  }
+}
+```
+
+## CONCRETE EXAMPLE - nonix_daemon
+
+Here's the EXACT AI_README.md for nonix_daemon:
+
+```
+# AI_README: Nonix Daemon System API
+
+## Requirements
+- Python 3.8+
+- nonix_plugin
+- nonix_di
+
+## Core Classes & Interfaces
+
+### Daemon Base Classes
+```python
+class NxAsyncioDaemon:
+    """Async I/O background tasks"""
+    def __init__(self, name: str) -> None
+    async def _run(self) -> None: """Main daemon loop implementation"""
+    async def start(self) -> None: """Start the daemon"""
+    async def stop(self) -> None: """Stop the daemon"""
+    @property
+    def status(self) -> str: """Current daemon status"""
+    @property
+    def name(self) -> str: """Daemon name"""
+    logger: Logger
+
+class NxThreadDaemon:
+    """CPU-bound tasks in separate thread"""
+    def __init__(self, name: str) -> None
+    async def _run(self) -> None: """Main daemon loop implementation"""
+    async def start(self) -> None: """Start the daemon"""
+    async def stop(self) -> None: """Stop the daemon"""
+    @property
+    def status(self) -> str: """Current daemon status"""
+    @property
+    def name(self) -> str: """Daemon name"""
+    logger: Logger
+
+class NxProcessDaemon:
+    """Memory-heavy tasks in separate process"""
+    def __init__(self, name: str) -> None
+    async def _run(self) -> None: """Main daemon loop implementation"""
+    async def start(self) -> None: """Start the daemon"""
+    async def stop(self) -> None: """Stop the daemon"""
+    @property
+    def status(self) -> str: """Current daemon status"""
+    @property
+    def name(self) -> str: """Daemon name"""
+    logger: Logger
+```
+
+### Daemon Manager
+```python
+class NxDaemonManager:
+    """Manages all registered daemons"""
+    daemons: Dict[str, NxDaemonBase]  # Daemon instances by name
+
+    async def start_all(self) -> None: """Start all registered daemons"""
+    async def stop_all(self) -> None: """Stop all registered daemons"""
+    async def start_daemon(self, name: str) -> None: """Start specific daemon"""
+    async def stop_daemon(self, name: str) -> None: """Stop specific daemon"""
+    def get_daemon(self, name: str) -> NxDaemonBase: """Get daemon by name"""
+
+    emitter: EventEmitter  # Event system
+```
+
+### Events
+```python
+class NxDaemonEvents:
+    """Daemon lifecycle events"""
+    BEFORE_START = "before_start"
+    AFTER_START = "after_start"
+    BEFORE_STOP = "before_stop"
+    AFTER_STOP = "after_stop"
+    ERROR = "error"
+
+class NxDaemonManagerEvents:
+    """Manager events"""
+    DAEMON_ADDED = "daemon_added"
+    DAEMON_REMOVED = "daemon_removed"
+    BEFORE_START_ALL = "before_start_all"
+    AFTER_START_ALL = "after_start_all"
+    BEFORE_STOP_ALL = "before_stop_all"
+    AFTER_STOP_ALL = "after_stop_all"
+    MANAGER_ERROR = "manager_error"
+```
+
+## Decorators
+```python
+def daemons(daemon_classes: List[Type[NxDaemonBase]]) -> Callable:
+    """Register daemons with plugin system"""
+```
+
+## Integration Points
+```python
+# Inject daemon manager
+NxInject(NxDaemonManager)
+
+# Register daemons in plugin
+@daemons([MyAsyncioDaemon])
+
+# Enable daemon system
+settings.PLUGINS = [{"name": "daemon"}]
+```
+
+## Configuration Schema
+```json
+{
+  "name": "daemon",
+  "class": "NxDaemonPlugin",
+  "dependencies": []
+}
+```
+```
+
+## DETAIL LEVEL RULES
+
+### Functions/Methods:
+- Include: signature with types, return type, one-line description
+- Format: `def method_name(param: Type) -> ReturnType: """Description"""`
+- Include ALL public methods AI might call
+
+### Properties:
+- Include: `@property` decorator, return type, description
+- Format: `@property def name(self) -> Type: """Description"""`
+
+### Attributes:
+- Include: `attribute_name: Type` for public attributes
+- Only include attributes AI needs to know about
+
+### Async Methods:
+- Include: `async def` prefix, same rules as regular methods
+- Format: `async def method(self) -> ReturnType: """Description"""`
+
+### Classes:
+- Include: class name, one-line purpose, ALL public methods/properties
+- Group related classes (Base classes, Manager classes, etc.)
+
+### Events:
+- Include: ALL event constants, how to listen/emit
+- Format: `EVENT_NAME = "event_name"`
+
+### Integration:
+- Include: EXACT patterns for DI, plugin registration, settings
+- Show the code AI would write to use the package
+
+### Configuration:
+- Include: EXACT JSON structure for plugin.json
+- Include all required and optional fields
+
+## WHAT TO EXCLUDE
+- ❌ Implementation examples
+- ❌ Usage tutorials
+- ❌ Verbose explanations
+- ❌ Best practices
+- ❌ Troubleshooting
+- ❌ Architecture diagrams
+- ❌ Philosophy sections
+- ❌ Multiple examples
+- ❌ Code comments from source
+- ❌ Human-oriented content
+
+## VERIFICATION CHECKLIST
+- [ ] All public classes listed with complete interfaces
+- [ ] All methods have type signatures and descriptions
+- [ ] All properties documented
+- [ ] Events documented if they exist
+- [ ] Integration patterns shown
+- [ ] Configuration schema complete
+- [ ] No verbose content or examples
+- [ ] One-line descriptions only
+- [ ] Exact names from codebase used

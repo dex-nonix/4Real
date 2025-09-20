@@ -16,18 +16,10 @@
             size="small"
           />
           <Button
-            @click="layout = 'list'"
-            :outlined="viewMode !== 'list'"
-            icon="pi pi-list"
+            @click="toggleViewMode"
+            :icon="viewMode === 'list' ? 'pi pi-th-large' : 'pi pi-list'"
             size="small"
-            v-tooltip.bottom="'List View'"
-          />
-          <Button
-            @click="layout = 'grid'"
-            :outlined="viewMode !== 'grid'"
-            icon="pi pi-th"
-            size="small"
-            v-tooltip.bottom="'Grid View'"
+            v-tooltip.bottom="viewMode === 'list' ? 'Switch to Grid View' : 'Switch to List View'"
           />
         </div>
       </template>
@@ -341,6 +333,10 @@ const truncateFileName = (filename) => {
 
 const handleCategoryChange = (event) => {
   emit('category-select', event.value)
+}
+
+const toggleViewMode = () => {
+  layout.value = layout.value === 'list' ? 'grid' : 'list'
 }
 
 const formattedSize = (bytes) => {
