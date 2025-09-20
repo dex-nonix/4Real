@@ -29,8 +29,7 @@ faster_backend/nonix_vscode/
 │   └── vscode_daemon.py     # Daemon managing code-server processes
 └── routers/
     ├── __init__.py
-    ├── vscode_router.py         # Main business logic router (start/stop/status)
-    ├── vscode_workspace_router.py # CRUD router for workspaces
+    ├── vscode_workspace_router.py # CRUD + start/stop/status endpoints
     └── vscode_schemas.py        # Pydantic schemas
 ```
 
@@ -59,15 +58,13 @@ from nonix_plugin.base import BasePlugin
 from nonix_web.decorator import web_routers
 from nonix_daemon.manager import NxDaemonManager
 
-from .routers.vscode_router import VscodeRouter
 from .routers.vscode_workspace_router import VscodeWorkspaceRouter
 from .services.vscode_workspace_service import VscodeWorkspaceService
 from .daemons.vscode_daemon import VscodeDaemon
 
 
 @web_routers([
-    VscodeRouter,           # Main business logic router (start/stop/status)
-    VscodeWorkspaceRouter   # CRUD router for workspaces
+    VscodeWorkspaceRouter   # CRUD + business operations
 ])
 @injectables([
     VscodeWorkspaceService
@@ -534,56 +531,18 @@ class VscodeDaemon(NxAsyncioDaemon):
 # Empty - routers imported directly in plugin.py
 ```
 
-### 10. routers/vscode_router.py
+### 10. routers/vscode_workspace_router.py
 ```python
 from fastapi import Request
-
 from nonix_web.router.web_server_router import NxWebServerRouter
 from nonix_web.router.decorators import router, route
-from nonix_di.resolve import NxInject
-from ..services.vscode_workspace_service import VscodeWorkspaceService
-
-@router("/vscode", tags=["VSCode"])
-class VscodeRouter(NxWebServerRouter):
-    """Main VSCode business logic router - mirrors ChatRouter pattern (NO CRUD, only business operations)"""
-
-    workspace_service: VscodeWorkspaceService = NxInject(VscodeWorkspaceService)
-
-    @route('/workspaces/{workspace_id}/start', methods=['POST'])
-    async def start_workspace(self, req: Request, workspace_id: int):
-        return await self.service_call_and_respond(
-            self.workspace_service.start_workspace,
-            service_args=(workspace_id,),
-            response_converter=lambda r: r
-        )
-
-    @route('/workspaces/{workspace_id}/stop', methods=['POST'])
-    async def stop_workspace(self, req: Request, workspace_id: int):
-        return await self.service_call_and_respond(
-            self.workspace_service.stop_workspace,
-            service_args=(workspace_id,),
-            response_converter=lambda r: r
-        )
-
-    @route('/workspaces/{workspace_id}/status', methods=['GET'])
-    async def get_workspace_status(self, req: Request, workspace_id: int):
-        return await self.service_call_and_respond(
-            self.workspace_service.get_workspace_status,
-            service_args=(workspace_id,),
-            response_converter=lambda r: r
-        )
-```
-
-### 11. routers/vscode_workspace_router.py
-```python
-from nonix_web.router.decorators import router
 from nonix_web_db.crud import NxWebServerCrudRouter
 from nonix_di.resolve import NxInject
 from ..services.vscode_workspace_service import VscodeWorkspaceService
 
 @router("/vscode-workspaces", tags=["VSCode Workspaces"])
 class VscodeWorkspaceRouter(NxWebServerCrudRouter):
-    """VSCode Workspace CRUD router - mirrors ChatSessionRouter pattern"""
+    """VSCode Workspace CRUD + business operations router"""
 
     service: VscodeWorkspaceService = NxInject(VscodeWorkspaceService)
 
@@ -593,9 +552,34 @@ class VscodeWorkspaceRouter(NxWebServerCrudRouter):
     # GET /vscode-workspaces/{id} - Get workspace
     # PUT /vscode-workspaces/{id} - Update workspace
     # DELETE /vscode-workspaces/{id} - Delete workspace
+
+    # Business operations colocated for better cohesion
+    @route('/{workspace_id}/start', methods=['POST'])
+    async def start_workspace(self, req: Request, workspace_id: int):
+        return await self.service_call_and_respond(
+            self.service.start_workspace,
+            service_args=(workspace_id,),
+            response_converter=lambda r: r
+        )
+
+    @route('/{workspace_id}/stop', methods=['POST'])
+    async def stop_workspace(self, req: Request, workspace_id: int):
+        return await self.service_call_and_respond(
+            self.service.stop_workspace,
+            service_args=(workspace_id,),
+            response_converter=lambda r: r
+        )
+
+    @route('/{workspace_id}/status', methods=['GET'])
+    async def get_workspace_status(self, req: Request, workspace_id: int):
+        return await self.service_call_and_respond(
+            self.service.get_workspace_status,
+            service_args=(workspace_id,),
+            response_converter=lambda r: r
+        )
 ```
 
-### 12. routers/vscode_schemas.py
+### 11. routers/vscode_schemas.py
 ```python
 from datetime import datetime
 from enum import StrEnum
@@ -635,20 +619,16 @@ class VscodeWorkspaceInDbModel(VscodeWorkspaceBase, BaseDbModelMixin):
 
 ## Endpoints
 
-### Business Logic Endpoints (VscodeRouter)
-```
-POST   /vscode/workspaces/{id}/start   # Start code-server instance
-POST   /vscode/workspaces/{id}/stop    # Stop code-server instance
-GET    /vscode/workspaces/{id}/status  # Get health status, host and port
-```
-
-### CRUD Endpoints (VscodeWorkspaceRouter)
+### CRUD + Business Endpoints (VscodeWorkspaceRouter)
 ```
 GET    /vscode-workspaces        # List all workspaces
 POST   /vscode-workspaces        # Create workspace
 GET    /vscode-workspaces/{id}   # Get workspace by ID
 PUT    /vscode-workspaces/{id}   # Update workspace
 DELETE /vscode-workspaces/{id}   # Delete workspace
+POST   /vscode-workspaces/{id}/start   # Start code-server instance
+POST   /vscode-workspaces/{id}/stop    # Stop code-server instance
+GET    /vscode-workspaces/{id}/status  # Get health status, host and port
 ```
 
 ## Configuration
@@ -698,7 +678,7 @@ settings.PLUGINS = [
 
 ## Testing
 
-### CRUD Operations (VscodeWorkspaceRouter)
+### CRUD + Business Operations (VscodeWorkspaceRouter)
 ```bash
 # Create workspace (host is just hostname, no protocol)
 curl -X POST http://localhost:5000/vscode-workspaces \
@@ -720,17 +700,17 @@ curl -X PUT http://localhost:5000/vscode-workspaces/1 \
 curl -X DELETE http://localhost:5000/vscode-workspaces/1
 ```
 
-### Business Logic Operations (VscodeRouter)
+### Business operations on a workspace
 ```bash
 # Start workspace
-curl -X POST http://localhost:5000/vscode/workspaces/1/start
+curl -X POST http://localhost:5000/vscode-workspaces/1/start
 
 # Get workspace status (shows current status, host and port)
-curl http://localhost:5000/vscode/workspaces/1/status
+curl http://localhost:5000/vscode-workspaces/1/status
 # Response: {"status": "running", "host": "localhost", "port": 8080}
 
 # Stop workspace
-curl -X POST http://localhost:5000/vscode/workspaces/1/stop
+curl -X POST http://localhost:5000/vscode-workspaces/1/stop
 ```
 
 
@@ -740,9 +720,7 @@ curl -X POST http://localhost:5000/vscode/workspaces/1/stop
 - pyee (Python Event Emitter library for event-driven communication)
 
 ## Key Integration Points
-- **Dual Router Pattern**: Mirrors chat system with separate routers for different concerns
-- **VscodeRouter**: Business logic router (like `ChatRouter`) - handles start/stop/status operations
-- **VscodeWorkspaceRouter**: CRUD router (like `ChatSessionRouter`) - handles basic CRUD operations
+- **Single Workspace Router**: Combines CRUD and business operations in one cohesive router
 - **Single Service Architecture**: `VscodeWorkspaceService` handles all workspace operations (CRUD + process management) like `ChatSessionService`
 - **No Controllers**: Business logic lives in services, not separate controller layer
 - **pyee Event-Driven Communication**: Daemon uses `AsyncIOEventEmitter` to publish events, service subscribes via `@events.on()` decorators
