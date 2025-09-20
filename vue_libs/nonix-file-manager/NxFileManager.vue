@@ -293,8 +293,8 @@ const handleFileSelect = (file) => {
 }
 
 const handleFileOpen = (file) => {
-  if (file.storage_url) {
-    window.open(file.storage_url, '_blank')
+  if (file.id) {
+    fileManagerService.downloadFile(file.id)
   }
 }
 

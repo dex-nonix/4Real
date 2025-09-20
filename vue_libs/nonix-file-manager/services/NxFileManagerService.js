@@ -36,6 +36,26 @@ export default class NxFileManagerService extends NxBaseApiService {
     return this.put(`/files/${fileId}/rename`, { newTitle })
   }
 
+  async downloadFile(fileId) {
+    // Return the download URL for the browser to handle
+    const url = this.buildUrl(`/files/${fileId}/download`)
+    window.open(url, '_blank')
+    return { success: true }
+  }
+
+  async getFileUrl(fileId, action = 'preview') {
+    // Return URL for file access (preview/stream/download)
+    return this.buildUrl(`/files/${fileId}/${action}`)
+  }
+
+  async getPreviewUrl(fileId) {
+    return this.getFileUrl(fileId, 'preview')
+  }
+
+  async getStreamUrl(fileId) {
+    return this.getFileUrl(fileId, 'stream')
+  }
+
   // Category Operations
   async getCategories() {
     return this.get('/categories')

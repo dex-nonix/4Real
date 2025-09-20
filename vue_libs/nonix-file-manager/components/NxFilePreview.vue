@@ -43,12 +43,25 @@ const props = defineProps({
 
 // Services
 const fileTypeManager = inject('fileTypeManager')
+const fileManagerService = inject('file-manager')
 
 // Computed
 const effectiveUrl = computed(() => {
   if (props.url) return props.url
   if (typeof props.value === 'string' && props.value) return props.value
   if (props.value && typeof props.value === 'object') {
+    const fileId = props.value.id
+    if (fileId && isImage.value) {
+      return fileManagerService.getPreviewUrl(fileId)
+    }
+    if (fileId && isAudio.value) {
+      return fileManagerService.getStreamUrl(fileId)
+    }
+    // For other file types or fallback, use download URL
+    if (fileId) {
+      return fileManagerService.getFileUrl(fileId, 'download')
+    }
+    // Fallback to old behavior if no fileId
     if (props.value[props.urlField]) return props.value[props.urlField]
   }
   return ''

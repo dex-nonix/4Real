@@ -354,7 +354,16 @@ const renaming = ref(false)
 // Computed
 const previewUrl = computed(() => {
   if (!props.selectedFile) return ''
-  return props.selectedFile.storage_url || ''
+  const fileId = props.selectedFile.id
+  if (!fileId) return ''
+
+  if (isImage.value) {
+    return fileManagerService.getPreviewUrl(fileId)
+  } else if (isVideo.value || isAudio.value) {
+    return fileManagerService.getStreamUrl(fileId)
+  } else {
+    return fileManagerService.getFileUrl(fileId, 'download')
+  }
 })
 
 const isImage = computed(() => {
@@ -383,11 +392,8 @@ const categoryName = computed(() => {
 
 // Methods
 const downloadFile = () => {
-  if (previewUrl.value) {
-    const link = document.createElement('a')
-    link.href = previewUrl.value
-    link.download = props.selectedFile.original_filename
-    link.click()
+  if (props.selectedFile?.id) {
+    fileManagerService.downloadFile(props.selectedFile.id)
   }
 }
 
