@@ -86,6 +86,7 @@ const moreMenuItems = computed(() => [
 const inputText = ref('');
 const showToolsDialog = ref(false);
 const availableToolsLocal = ref([]);
+const availableMcpServersLocal = ref([]);
 const toolsLoading = ref(false);
 const selectedTool = ref(null);
 const toolExecutionDialogRef = ref(null);
@@ -102,21 +103,33 @@ const showTools = async () => {
     showToolsDialog.value = true;
 
     if (props.selectedSession?.persona_id && chatService) {
-      const toolsData = await chatService.personaTools(props.selectedSession.persona_id);
+      // Load tools
+      const toolsData = await chatService.personaTools(props.selectedSession.persona_id);                                                                       
       let toolsArray = [];
       if (toolsData && toolsData.data && Array.isArray(toolsData.data)) {
         toolsArray = toolsData.data;
       } else if (Array.isArray(toolsData)) {
         toolsArray = toolsData;
       }
-
       availableToolsLocal.value = toolsArray;
+
+      // Load MCP servers
+      const mcpServersData = await chatService.personaMcpServers(props.selectedSession.persona_id);
+      let mcpServersArray = [];
+      if (mcpServersData && mcpServersData.data && Array.isArray(mcpServersData.data)) {
+        mcpServersArray = mcpServersData.data;
+      } else if (Array.isArray(mcpServersData)) {
+        mcpServersArray = mcpServersData;
+      }
+      availableMcpServersLocal.value = mcpServersArray;
     } else {
       availableToolsLocal.value = [];
+      availableMcpServersLocal.value = [];
     }
   } catch (error) {
     console.error('Failed to load tools:', error);
     availableToolsLocal.value = [];
+    availableMcpServersLocal.value = [];
   } finally {
     toolsLoading.value = false;
   }
@@ -413,7 +426,7 @@ defineExpose({
     <!-- More Menu -->
     <Menu ref="moreMenu" id="more_menu" :model="moreMenuItems" :popup="true"/>
     <!-- Tools Dialog -->
-    <NxLlmAvailableToolsDialog :visible="showToolsDialog" :tools="availableToolsLocal"
+    <NxLlmAvailableToolsDialog :visible="showToolsDialog" :tools="availableToolsLocal" :mcpServers="availableMcpServersLocal"                                                                          
                                @update:visible="showToolsDialog = $event" @tool-selected="selectTool"/>
 
     <!-- Tool Execution Dialog -->

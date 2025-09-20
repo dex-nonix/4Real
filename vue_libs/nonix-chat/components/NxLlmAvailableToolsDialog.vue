@@ -1,52 +1,89 @@
 <template>
   <Dialog
       :visible="visible"
-      header="Available Tools"
+      header="Persona Capabilities"
       modal
-      :style="{ width: '90vw', maxWidth: '700px' }"
+      :style="{ width: '90vw', maxWidth: '800px' }"
       class="p-dialog-sm"
       @update:visible="$emit('update:visible', $event)"
   >
-    <div v-if="tools.length > 0">
-      <DataTable
-          :value="tools"
-          class="p-datatable-sm"
-          :showGridlines="true"
-          stripedRows
-          responsiveLayout="scroll"
-      >
-        <Column field="name" header="Tool" style="width: 40%">
-          <template #body="{ data }">
-            <div class="font-mono text-sm">{{ data.name }}</div>
-          </template>
-        </Column>
+    <TabView>
+      <TabPanel header="Tools">
+        <div v-if="tools.length > 0">
+          <DataTable
+              :value="tools"
+              class="p-datatable-sm"
+              :showGridlines="true"
+              stripedRows
+              responsiveLayout="scroll"
+          >
+            <Column field="name" header="Tool" style="width: 40%">
+              <template #body="{ data }">
+                <div class="font-mono text-sm">{{ data.name }}</div>
+              </template>
+            </Column>
 
-        <Column field="description" header="Description" style="width: 45%">
-          <template #body="{ data }">
-            <div class="text-xs text-600">{{ data.description }}</div>
-          </template>
-        </Column>
+            <Column field="description" header="Description" style="width: 45%">
+              <template #body="{ data }">
+                <div class="text-xs text-600">{{ data.description }}</div>
+              </template>
+            </Column>
 
-        <Column header="Action" style="width: 15%">
-          <template #body="{ data }">
-            <Button
-                icon="pi pi-play"
-                size="small"
-                @click="$emit('tool-selected', data)"
-                severity="primary"
-                class="p-button-sm"
-                text
-                rounded
-            />
-          </template>
-        </Column>
-      </DataTable>
-    </div>
+            <Column header="Action" style="width: 15%">
+              <template #body="{ data }">
+                <Button
+                    icon="pi pi-play"
+                    size="small"
+                    @click="$emit('tool-selected', data)"
+                    severity="primary"
+                    class="p-button-sm"
+                    text
+                    rounded
+                />
+              </template>
+            </Column>
+          </DataTable>
+        </div>
 
-    <div v-else class="text-center p-3">
-      <i class="pi pi-info-circle text-2xl text-500"></i>
-      <p class="text-500 text-sm mt-2">No tools available for this persona</p>
-    </div>
+        <div v-else class="text-center p-3">
+          <i class="pi pi-info-circle text-2xl text-500"></i>
+          <p class="text-500 text-sm mt-2">No tools available for this persona</p>
+        </div>
+      </TabPanel>
+
+      <TabPanel header="MCP Servers">
+        <div v-if="mcpServers.length > 0">
+          <DataTable
+              :value="mcpServers"
+              class="p-datatable-sm"
+              :showGridlines="true"
+              stripedRows
+              responsiveLayout="scroll"
+          >
+            <Column field="name" header="Server Name" style="width: 70%">
+              <template #body="{ data }">
+                <div class="font-mono text-sm">{{ data.name }}</div>
+              </template>
+            </Column>
+
+            <Column field="is_active" header="Status" style="width: 30%">
+              <template #body="{ data }">
+                <Tag 
+                    :value="data.is_active ? 'Active' : 'Inactive'"
+                    :severity="data.is_active ? 'success' : 'danger'"
+                    class="text-xs"
+                />
+              </template>
+            </Column>
+          </DataTable>
+        </div>
+
+        <div v-else class="text-center p-3">
+          <i class="pi pi-info-circle text-2xl text-500"></i>
+          <p class="text-500 text-sm mt-2">No MCP servers available for this persona</p>
+        </div>
+      </TabPanel>
+    </TabView>
   </Dialog>
 </template>
 
@@ -55,10 +92,17 @@ import Dialog from 'primevue/dialog'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
+import TabView from 'primevue/tabview'
+import TabPanel from 'primevue/tabpanel'
+import Tag from 'primevue/tag'
 
 const props = defineProps({
   visible: Boolean,
   tools: {
+    type: Array,
+    default: () => []
+  },
+  mcpServers: {
     type: Array,
     default: () => []
   }

@@ -133,6 +133,12 @@ export default class NxChatService extends NxBaseApiService {
     return response.data  
   }
 
+  async personaMcpServers(personaId) {
+    
+    const response = await this.get(`/chat/personas/${personaId}/mcp-servers`)
+    return response.data  
+  }
+
   // MCP Status
   async mcpStatus() {
 
