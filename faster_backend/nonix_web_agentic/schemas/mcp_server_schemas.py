@@ -1,4 +1,4 @@
-from typing import Optional, Any, Dict
+from typing import List, Optional, Any, Dict
 
 from pydantic import BaseModel, Field
 
@@ -8,7 +8,7 @@ from nonix_web.router.base_db_model_mixin import BaseDbModelMixin, BaseUpdateMod
 class MCPServerBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     command: str = Field(..., min_length=1, max_length=512)
-    args_json: Optional[Dict[str, Any]] = None
+    args_json: Optional[List[str]] = None
     env_json: Optional[Dict[str, Any]] = None
     is_active: bool = True
 
