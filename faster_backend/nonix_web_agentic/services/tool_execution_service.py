@@ -1,6 +1,7 @@
 from typing import Dict, Any
 from datetime import datetime
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 import logging
 
 from nonix_web_db import AsyncSessionLocal
@@ -115,8 +116,10 @@ class ToolExecutionService:
     async def discover_mcp_tools_for_persona(self, persona_id: int):
         """Return MCP tools for each active persona-assigned server."""
         async with AsyncSessionLocal() as db_session:
-            stmt = select(PersonaMCPServer).where(PersonaMCPServer.persona_id == persona_id,
-                                                  PersonaMCPServer.is_active)
+            stmt = select(PersonaMCPServer).options(
+                joinedload(PersonaMCPServer.mcp_server)
+            ).where(PersonaMCPServer.persona_id == persona_id,
+                   PersonaMCPServer.is_active)
             result = await db_session.execute(stmt)
             links = result.scalars().all()
 
