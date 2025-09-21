@@ -210,6 +210,14 @@ class ChatRouter(NxWebServerRouter):
             service_args=(persona_id,)
         )
 
+    @route('/personas/{persona_id}/tools/{tool_name}/schema', methods=['GET'])
+    async def persona_tool_schema(self, req: Request, persona_id: int, tool_name: str):
+        """Get schema for a specific tool."""
+        return await self.service_call_and_respond(
+            self.tool_service.get_persona_tool_schema,
+            service_args=(persona_id, tool_name)
+        )
+
     @route('/personas/{persona_id}/mcp-servers', methods=['GET'])
     async def persona_mcp_servers(self, req: Request, persona_id: int):
         """Get MCP servers assigned to a specific persona."""

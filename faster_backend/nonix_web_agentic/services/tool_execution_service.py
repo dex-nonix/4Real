@@ -82,12 +82,12 @@ class ToolExecutionService:
                     'is_external': True,
                     'tools': []
                 }
+            # Use basic tool info - don't fetch schemas upfront to avoid hanging
             for tool in server['tools']:
-                full_tool_info = await self.get_tool_schema(server['mcp_server_id'], tool['name'])
                 namespace_map[namespace]['tools'].append({
                     'name': tool['name'],
-                    'description': full_tool_info['description'],
-                    'parameters': full_tool_info['parameters']
+                    'description': tool['description'],
+                    'parameters': []  # Will be fetched on-demand when tool is selected
                 })
         return list(namespace_map.values())
 
@@ -112,6 +112,36 @@ class ToolExecutionService:
 
     async def get_tool_schema(self, server_id: int, tool_name: str) -> Dict[str, Any]:
         return await get_external_tool_schema(server_id, tool_name)
+
+    async def get_persona_tool_schema(self, persona_id: int, tool_name: str) -> Dict[str, Any]:
+        """Get schema for any tool (internal or external) by full name."""
+        if ':' not in tool_name:
+            # Internal tool - get from agentic tool manager
+            tools_info = await self.agentic_tool_manager.list_persona_tools(persona_id)
+            tool_info = next((t for t in tools_info if t['name'] == tool_name), None)
+            if tool_info:
+                return {'name': tool_info['name'], 'description': tool_info['description'], 'parameters': tool_info['parameters']}
+            else:
+                return {'name': tool_name, 'description': '', 'parameters': []}
+        else:
+            # External tool - parse namespace and get schema
+            namespace, actual_tool_name = tool_name.split(':', 1)
+            # Find the server ID for this namespace/persona
+            async with AsyncSessionLocal() as db_session:
+                stmt = select(PersonaMCPServer).options(
+                    joinedload(PersonaMCPServer.mcp_server)
+                ).where(
+                    PersonaMCPServer.persona_id == persona_id,
+                    PersonaMCPServer.is_active,
+                    MCPServer.name == namespace,
+                    MCPServer.is_active
+                )
+                result = await db_session.execute(stmt)
+                link = result.scalar_one_or_none()
+                if link:
+                    return await self.get_tool_schema(link.mcp_server_id, actual_tool_name)
+                else:
+                    return {'name': tool_name, 'description': '', 'parameters': []}
 
     async def execute_tool_for_persona(self, persona_id: int, tool_name: str, parameters: Dict[str, Any]):
         """Execute a tool for a specific persona."""
