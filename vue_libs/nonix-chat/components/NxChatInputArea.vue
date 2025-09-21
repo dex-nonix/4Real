@@ -58,7 +58,7 @@ const moreMenuItems = computed(() => [
     label: 'Available Tools',
     icon: 'pi pi-box',
     command: showTools,
-    badge: availableToolsLocal.value.length > 0 ? availableToolsLocal.value.length : null,
+    badge: groupedToolsLocal.value.length > 0 ? groupedToolsLocal.value.flatMap(ns => ns.tools).length : null,
     disabled: !hasHistory.value || toolsLoading.value
   },
 
@@ -85,8 +85,7 @@ const moreMenuItems = computed(() => [
 // State management
 const inputText = ref('');
 const showToolsDialog = ref(false);
-const availableToolsLocal = ref([]);
-const availableMcpServersLocal = ref([]);
+const groupedToolsLocal = ref([]);
 const toolsLoading = ref(false);
 const selectedTool = ref(null);
 const toolExecutionDialogRef = ref(null);
@@ -103,33 +102,21 @@ const showTools = async () => {
     showToolsDialog.value = true;
 
     if (props.selectedSession?.persona_id && chatService) {
-      // Load tools
-      const toolsData = await chatService.personaTools(props.selectedSession.persona_id);                                                                       
-      let toolsArray = [];
-      if (toolsData && toolsData.data && Array.isArray(toolsData.data)) {
-        toolsArray = toolsData.data;
-      } else if (Array.isArray(toolsData)) {
-        toolsArray = toolsData;
+      // Load grouped tools (internal + external)
+      const groupedToolsData = await chatService.personaTools(props.selectedSession.persona_id);
+      let groupedToolsArray = [];
+      if (groupedToolsData && groupedToolsData.data && Array.isArray(groupedToolsData.data)) {
+        groupedToolsArray = groupedToolsData.data;
+      } else if (Array.isArray(groupedToolsData)) {
+        groupedToolsArray = groupedToolsData;
       }
-      availableToolsLocal.value = toolsArray;
-
-      // Load MCP servers
-      const mcpServersData = await chatService.personaMcpServers(props.selectedSession.persona_id);
-      let mcpServersArray = [];
-      if (mcpServersData && mcpServersData.data && Array.isArray(mcpServersData.data)) {
-        mcpServersArray = mcpServersData.data;
-      } else if (Array.isArray(mcpServersData)) {
-        mcpServersArray = mcpServersData;
-      }
-      availableMcpServersLocal.value = mcpServersArray;
+      groupedToolsLocal.value = groupedToolsArray;
     } else {
-      availableToolsLocal.value = [];
-      availableMcpServersLocal.value = [];
+      groupedToolsLocal.value = [];
     }
   } catch (error) {
     console.error('Failed to load tools:', error);
-    availableToolsLocal.value = [];
-    availableMcpServersLocal.value = [];
+    groupedToolsLocal.value = [];
   } finally {
     toolsLoading.value = false;
   }
@@ -145,24 +132,34 @@ const selectTool = (toolData) => {
   }
 };
 
-// Handle tool-selected from tools dialog, including MCP tools
-const handleToolSelected = (toolPayload) => {
-  // toolPayload may be { tool: {...}, persona_mcp_server_id, is_mcp }
-  if (toolPayload && toolPayload.is_mcp) {
-    // attach mcp metadata into selectedTool so execution flow can use it
-    selectedTool.value = {
-      name: toolPayload.tool.name,
-      description: toolPayload.tool.description,
-      parameters: toolPayload.tool.parameters || []
-    };
-    // keep MCP context on selectedTool
-    selectedTool.value._mcp = {
-      persona_mcp_server_id: toolPayload.persona_mcp_server_id
-    };
-    if (toolExecutionDialogRef.value) toolExecutionDialogRef.value.openDialog(selectedTool.value);
-  } else {
-    // regular tool
-    selectTool(toolPayload);
+// Handle tool-selected from tools dialog (unified internal + external)
+const handleToolSelected = async (toolPayload) => {
+  // toolPayload now includes: name, description, parameters, namespace, is_external
+  const fullToolName = toolPayload.is_external ? `${toolPayload.namespace}:${toolPayload.name}` : toolPayload.name;
+
+  let parameters = toolPayload.parameters || [];
+
+  // For external tools, fetch parameters on-demand if not already available
+  if (toolPayload.is_external && (!parameters || parameters.length === 0)) {
+    try {
+      const schema = await chatService.getToolSchema(props.selectedSession.persona_id, fullToolName);
+      parameters = schema.parameters || [];
+    } catch (error) {
+      console.error('Failed to fetch tool schema:', error);
+      parameters = [];
+    }
+  }
+
+  selectedTool.value = {
+    name: fullToolName,
+    description: toolPayload.description,
+    parameters: parameters,
+    namespace: toolPayload.namespace,
+    is_external: toolPayload.is_external
+  };
+
+  if (toolExecutionDialogRef.value) {
+    toolExecutionDialogRef.value.openDialog(selectedTool.value);
   }
 };
 
@@ -175,19 +172,7 @@ const executeToolWithForm = async (formData) => {
   const args = formData.__full || formData.args || {};
 
   try {
-    // If selected tool is an MCP tool, call MCP-specific endpoint
-    if (selectedTool.value && selectedTool.value._mcp) {
-      const personaId = props.selectedSession.persona_id;
-      const personaMcpServerId = selectedTool.value._mcp.persona_mcp_server_id;
-      const toolName = selectedTool.value.name;
-
-      await chatService.callPersonaMcpTool(personaId, personaMcpServerId, toolName, args);
-
-      showToolsDialog.value = false;
-      selectedTool.value = null;
-      return;
-    }
-
+    // All tools (internal and external) now go through LLM as tool calls
     await chatService.sendMessage(
       props.selectedSession.id,
       props.historyId,
@@ -459,7 +444,7 @@ defineExpose({
     <!-- More Menu -->
     <Menu ref="moreMenu" id="more_menu" :model="moreMenuItems" :popup="true"/>
     <!-- Tools Dialog -->
-    <NxLlmAvailableToolsDialog :visible="showToolsDialog" :tools="availableToolsLocal" :mcpServers="availableMcpServersLocal" :personaId="props.selectedSession?.persona_id"                                                                         
+    <NxLlmAvailableToolsDialog :visible="showToolsDialog" :groupedTools="groupedToolsLocal" :personaId="props.selectedSession?.persona_id"
                                @update:visible="showToolsDialog = $event" @tool-selected="handleToolSelected"/>
 
     <!-- Tool Execution Dialog -->
