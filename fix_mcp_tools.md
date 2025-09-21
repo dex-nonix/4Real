@@ -1,5 +1,9 @@
 # MCP Tool Integration Implementation Plan
 
+**WARNING: NEVER USE INLINE IMPORTS**
+**WARNING: NEVER USE hasattr**
+**WARNING: NEVER CALL TERMINAL OR CONSOLE**
+
 ## Overview
 Unify all MCP tools (internal registry + external MCP servers) into a single system. LLM gets flat array of structured tools. UI gets grouped-by-namespace data as array.
 
@@ -131,15 +135,14 @@ async def get_external_servers(self, persona_id: int):
         out.append({
             'persona_mcp_server_id': link.id,
             'mcp_server_id': link.mcp_server_id,
-            'mcp_server_name': getattr(link.mcp_server, 'name', None),
+            'mcp_server_name': link.mcp_server.name if link.mcp_server else None,
             'tools': tools
         })
     return out
 
 async def get_tool_schema(self, server_id: int, tool_name: str) -> Dict[str, Any]:
     """Get complete tool schema including parameters from MCP server."""
-    from ..utils.mcp_client import get_mcp_tool_schema
-    return await get_mcp_tool_schema(server_id, tool_name)
+    return await get_external_tool_schema(server_id, tool_name)
 ```
 
 ### 2. ToolExecutionService - MODIFY execute_tool_for_persona() EXECUTION LOGIC
@@ -169,8 +172,8 @@ if self.agentic_tool_manager.get(tool_name) is not None:
         parameters=parameters
     )
 else:
-    # External tool - execute via external server
-    tool_result = await self.execute_external_tool_by_namespace(
+    # External tool - execute via external server (namespace:name)
+    tool_result = await self.execute_external_tool(
         persona_id, tool_name, parameters
     )
 ```
@@ -181,7 +184,7 @@ else:
 
 **Code to Add**:
 ```python
-async def get_mcp_tool_schema(server_id: int, tool_name: str) -> Dict[str, Any]:
+async def get_external_tool_schema(server_id: int, tool_name: str) -> Dict[str, Any]:
     """Get complete tool schema with parameters from MCP server."""
     server = await _load_server(server_id)
     if not server:
@@ -222,7 +225,7 @@ async def get_mcp_tool_schema(server_id: int, tool_name: str) -> Dict[str, Any]:
     }
 ```
 
-### 3. ToolExecutionService.execute_external_tool_by_namespace() - NEW METHOD
+### 3. ToolExecutionService.execute_external_tool() - NEW METHOD
 
 **File**: `faster_backend/nonix_web_agentic/services/tool_execution_service.py`
 
@@ -230,27 +233,26 @@ async def get_mcp_tool_schema(server_id: int, tool_name: str) -> Dict[str, Any]:
 
 **Code to Add**:
 ```python
-async def execute_external_tool_by_namespace(self, persona_id: int, tool_name: str, parameters: Dict[str, Any]):
-    """Execute external MCP server tool by parsing namespace from full name."""
+async def execute_external_tool(self, persona_id: int, tool_name: str, parameters: Dict[str, Any]):
+    """Execute external MCP server tool by parsing namespace from full name (namespace:name)."""
 
     if ':' not in tool_name:
         raise ValueError('Tool name must have namespace: server_name:tool_name')
 
     server_name, actual_tool_name = tool_name.split(':', 1)
 
-    # Find MCP server by name for this persona
+    # Find MCP server by name for this persona (explicit join for filtering)
     async with AsyncSessionLocal() as db_session:
-        from sqlalchemy.orm import joinedload
-        from sqlalchemy import select
-        from ..models.mcp_server import MCPServer
-
-        stmt = select(PersonaMCPServer).options(
-            joinedload(PersonaMCPServer.mcp_server)
-        ).where(
-            PersonaMCPServer.persona_id == persona_id,
-            PersonaMCPServer.is_active,
-            MCPServer.name == server_name,
-            MCPServer.is_active
+        stmt = (
+            select(PersonaMCPServer)
+            .join(MCPServer, PersonaMCPServer.mcp_server)
+            .options(joinedload(PersonaMCPServer.mcp_server))
+            .where(
+                PersonaMCPServer.persona_id == persona_id,
+                PersonaMCPServer.is_active,
+                MCPServer.name == server_name,
+                MCPServer.is_active
+            )
         )
         result = await db_session.execute(stmt)
         link = result.scalar_one_or_none()
@@ -259,20 +261,19 @@ async def execute_external_tool_by_namespace(self, persona_id: int, tool_name: s
             raise ValueError(f'External server {server_name} not assigned to persona {persona_id}')
 
     # Call the MCP tool
-    from ..utils.mcp_client import call_mcp_tool_by_server_id
     return await call_mcp_tool_by_server_id(link.mcp_server_id, actual_tool_name, parameters)
 ```
 
-### 4. ChatRouter - ADD UI TOOLS ENDPOINT
+### 4. ChatRouter - MODIFY EXISTING UI TOOLS ENDPOINT
 
 **File**: `faster_backend/nonix_web_agentic/routers/chat_router.py`
 
-**Location**: Add after line 211 (after `persona_tools` endpoint)
+**Location**: Replace the existing `/personas/{persona_id}/tools` handler body
 
-**Code to Add**:
+**Replace With**:
 ```python
 @route('/personas/{persona_id}/tools', methods=['GET'])
-async def get_persona_tools(self, req: Request, persona_id: int):
+async def persona_tools(self, req: Request, persona_id: int):
     """Get all tools grouped by namespace for UI display."""
     return await self.service_call_and_respond(
         self.tool_service.get_tools,
@@ -304,16 +305,11 @@ async def create_internal_langchain_tools(
 
 async def create_external_langchain_tools(self, persona_id: int) -> List[StructuredTool]:
     """Create LangChain StructuredTool objects from external MCP servers only."""
-    from ..utils.mcp_client import MultiServerMCPClient
 
     langchain_tools = []
 
     # Get external servers for this persona
     async with AsyncSessionLocal() as db_session:
-        from ..models.persona_mcp_server import PersonaMCPServer
-        from ..models.mcp_server import MCPServer
-        from sqlalchemy import select, joinedload
-
         stmt = select(PersonaMCPServer).options(
             joinedload(PersonaMCPServer.mcp_server)
         ).where(PersonaMCPServer.persona_id == persona_id, PersonaMCPServer.is_active)
@@ -337,6 +333,7 @@ async def create_external_langchain_tools(self, persona_id: int) -> List[Structu
             for tool in external_tools:
                 # Convert MCP tool to StructuredTool
                 # Create Pydantic schema from tool.inputSchema
+                # Name must be f"{server.name}:{tool.name}" for routing
                 # Create StructuredTool wrapper
                 langchain_tools.append(external_langchain_tool)
         except Exception as e:
@@ -357,65 +354,28 @@ async def create_langchain_tools(
     return internal_tools + external_tools
 ```
 
-### 6. ToolExecutionService - ADD IMPORTS
+### 6. ToolExecutionService - IMPORTS
 
-**File**: `faster_backend/nonix_web_agentic/services/tool_execution_service.py`
+No additional imports needed if `select`, `joinedload`, `PersonaMCPServer`, and `MCPServer` are already imported (they currently are).
 
-**Location**: Add to imports section (around line 1-13)
-
-**Code to Add**:
-```python
-from sqlalchemy.orm import joinedload
-from sqlalchemy import select
-from ..models.persona_mcp_server import PersonaMCPServer
-from ..models.mcp_server import MCPServer
-```
-
-### 7. ChatMessageService - UPDATE LLM TOOL FETCHING
+### 7. ChatMessageService - LLM TOOL FETCHING (NO CHANGE NEEDED)
 
 **File**: `faster_backend/nonix_web_agentic/services/chat_message_service.py`
 
-**Location**: Replace current tool fetching with call to updated `create_langchain_tools()`
-
-**Current Code** (around line 986):
-```python
-available_tools_info = await self.agentic_tool_manager.list_persona_tools(persona_id)
-```
-
-**Replace With**:
-```python
-# Get tool metadata for LLM integration
-available_tools_info = await self.agentic_tool_manager.list_persona_tools(persona_id)
-
-# Create structured tools for both internal and external
-structured_tools = await self.agentic_tool_manager.create_langchain_tools(persona_id, available_tools_info)
-```
-
-**Then update the streaming call** (around line 1008):
-```python
-# Replace: available_tools_info
-# With: structured_tools
-async for message in self.run_chat_streaming_with_retry(
-    provider,
-    mapping_obj,
-    chat_history,
-    structured_tools,  # ← Changed from available_tools_info
-    persona_id,
-    max_retries=2
-):
-```
+- Keep passing `available_tools_info` to `run_chat_streaming_with_retry`.
+- Tools are built inside `run_chat_streaming` via `agentic_tool_manager.create_langchain_tools(...)`, which now returns merged internal + external tools after implementing step 5.
 
 ## Execution Flow After Changes
 
 ### LLM Integration (UPDATED):
-- `ChatMessageService.send_message_to_history()` calls `agentic_tool_manager.create_langchain_tools(persona_id, available_tools_info)`
-- Gets flat array of StructuredTool objects for both internal and external tools: `tools=[StructuredTool(...), StructuredTool(...)]`
+- `run_chat_streaming` builds tools by calling `agentic_tool_manager.create_langchain_tools(persona_id, available_tools_info)`
+- Gets flat array of StructuredTool objects for both internal and external tools
 
 ### Tool Execution:
 1. LLM calls MCP tool "filesystem:list_dir"
 2. `execute_tool_for_persona()` checks `agentic_tool_manager.get("filesystem:list_dir")` → None (not internal)
-3. Routes to `execute_external_tool_by_namespace()` → parses "filesystem" + "list_dir"
-4. Looks up MCP server by name, creates MCP client, calls tool
+3. Routes to `execute_external_tool()` → parses "filesystem" + "list_dir"
+4. Looks up MCP server by name (joined to filter), creates MCP client, calls tool
 
 ### UI Display:
 1. Frontend calls `/personas/{id}/tools` → gets array of namespaces:
@@ -446,7 +406,7 @@ async for message in self.run_chat_streaming_with_retry(
 
 - [ ] LLM gets merged internal + external tools from updated `create_langchain_tools()`
 - [ ] UI gets array of namespaces with grouped tools from `/personas/{id}/tools`
-- [ ] Tool execution routes correctly: internal tools first, then external
+- [ ] Tool execution routes correctly: internal tools first, then external via `execute_external_tool`
 - [ ] Internal MCP tools work in LLM (database:query_users)
 - [ ] External MCP server tools work in LLM (filesystem:list_dir)
 - [ ] UI displays grouped tools correctly with expanders/accordions
@@ -465,26 +425,30 @@ async for message in self.run_chat_streaming_with_retry(
    - Add `get_tools()` method - groups tools by namespace for UI (public method)
    - Add internal helpers: `get_internal_tools()`, `get_external_tools()`
    - Add `get_external_servers()` method
-   - Add `get_tool_schema()` method
+   - Add `get_tool_schema()` method (imports `get_external_tool_schema`)
    - Modify `execute_tool_for_persona()` to route execution: internal → external
-   - Add `execute_external_tool_by_namespace()` method
-   - Add imports
+   - Add `execute_external_tool()` method (namespace:name)
 
 3. `faster_backend/nonix_web_agentic/utils/mcp_client.py`
-   - Add `get_mcp_tool_schema()` function
+   - Add `get_external_tool_schema()` function
 
 4. `faster_backend/nonix_web_agentic/routers/chat_router.py`
-   - Add `/personas/{persona_id}/tools` endpoint for UI display
+   - Modify `/personas/{persona_id}/tools` endpoint to return grouped tools via `tool_service.get_tools`
 
 5. `faster_backend/nonix_web_agentic/services/chat_message_service.py`
-   - Update tool fetching to use `create_langchain_tools()` for merged internal + external tools
-
-## Files That Need Updates
-
-- None additional - all required changes listed above
+   - No signature changes; tools are built inside `run_chat_streaming`
 
 ## No Changes Needed
 
-- `mcp_client.py` - existing functions work as-is
 - Database models - no changes needed
 - UI components - will adapt to new grouped-by-namespace API response
+
+**WARNING: NEVER USE INLINE IMPORTS**
+**WARNING: NEVER USE hasattr**
+**WARNING: NEVER CALL TERMINAL OR CONSOLE**
+**WARNING: NEVER USE INLINE IMPORTS**
+**WARNING: NEVER USE hasattr**
+**WARNING: NEVER CALL TERMINAL OR CONSOLE**
+**WARNING: NEVER USE INLINE IMPORTS**
+**WARNING: NEVER USE hasattr**
+**WARNING: NEVER CALL TERMINAL OR CONSOLE**
