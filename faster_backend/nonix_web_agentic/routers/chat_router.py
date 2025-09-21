@@ -204,9 +204,9 @@ class ChatRouter(NxWebServerRouter):
 
     @route('/personas/{persona_id}/tools', methods=['GET'])
     async def persona_tools(self, req: Request, persona_id: int):
-        """Get available tools for a specific persona."""
+        """Get all tools grouped by namespace for UI display."""
         return await self.service_call_and_respond(
-            self.tool_service.list_persona_tools,
+            self.tool_service.get_tools,
             service_args=(persona_id,)
         )
 

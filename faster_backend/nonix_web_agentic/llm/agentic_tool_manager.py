@@ -6,6 +6,10 @@ from typing import Callable
 from langchain.tools import StructuredTool
 from pydantic import BaseModel, Field
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
+from ..models.persona_mcp_server import PersonaMCPServer
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from ..utils.mcp_client import call_mcp_tool_by_server_id
 
 from nonix_web_db import AsyncSessionLocal
 from ..models.persona import Persona
@@ -231,53 +235,36 @@ class AgenticToolManager:
         except Exception as exc:  # noqa: BLE001
             return {'status': 'error', 'error': str(exc)}
 
-    async def create_langchain_tools(
+    async def create_internal_langchain_tools(
             self,
             persona_id: int,
             available_tools_info: List[Dict[str, Any]]
     ) -> List[StructuredTool]:
-        """Create LangChain StructuredTool objects from persona tools with proper Pydantic schemas."""
-        # Get the persona-scoped tools with partial binding
         persona_tools = await self.build_persona_tool_map(persona_id)
-
         langchain_tools = []
         for tool_name, tool_func in persona_tools.items():
-            # Find tool info for description
             tool_info = next((t for t in available_tools_info if t['name'] == tool_name), None)
             description = tool_info.get('description', f'Execute {tool_name}') if tool_info else f'Execute {tool_name}'
-
-            # Create a dynamic Pydantic model for the tool parameters
             if tool_info and 'parameters' in tool_info:
                 try:
-                    # Create a dynamic schema class from the already-extracted parameters
                     schema_fields = {}
                     annotations = {}
-
                     for param in tool_info['parameters']:
                         param_name = param['name']
                         param_type = param['type']
                         param_required = param['required']
                         param_default = param['default']
-
-                        # Get the base field type
                         field_type = _get_field_type(param_type)
-
-                        # Create the field - the logic is the same regardless of Optional/Union
                         if param_required:
                             schema_fields[param_name] = Field(description=f"Parameter: {param_name}")
                             annotations[param_name] = field_type
                         else:
-                            schema_fields[param_name] = Field(default=param_default,
-                                                              description=f"Parameter: {param_name}")
+                            schema_fields[param_name] = Field(default=param_default, description=f"Parameter: {param_name}")
                             annotations[param_name] = Optional[field_type]
-
-                    # Create the schema class dynamically with proper annotations (allow zero-field schema)
                     ToolSchema = type(f'{tool_name}Schema', (BaseModel,), {
                         '__annotations__': annotations,
                         **schema_fields
                     })
-
-                    # Route through manager execute path to preserve auto-injection
                     wrapped_tool = make_agent_tool_wrapper(self, persona_id, tool_name)
                     langchain_tool = StructuredTool.from_function(
                         coroutine=wrapped_tool,
@@ -285,15 +272,9 @@ class AgenticToolManager:
                         description=description,
                         args_schema=ToolSchema
                     )
-
-                    self._logger.debug(f"🔧 Created tool '{tool_name}' with Pydantic schema")
-
-                except Exception as e:
-                    # Strict mode: no fallback
-                    self._logger.error(f"🔧 Schema build failed for tool '{tool_name}': {e}", exc_info=True)
+                except Exception:
                     continue
             else:
-                # Always create a schema (may be zero-field) and enforce strict call path
                 ToolSchema = type(f'{tool_name}Schema', (BaseModel,), {})
                 wrapped_tool = make_agent_tool_wrapper(self, persona_id, tool_name)
                 langchain_tool = StructuredTool.from_function(
@@ -302,8 +283,64 @@ class AgenticToolManager:
                     description=description,
                     args_schema=ToolSchema
                 )
-
             langchain_tools.append(langchain_tool)
-
-        self._logger.info(f"🔧 Created {len(langchain_tools)} LangChain tools for persona {persona_id}")
         return langchain_tools
+
+    async def create_external_langchain_tools(self, persona_id: int) -> List[StructuredTool]:
+        langchain_tools = []
+        async with AsyncSessionLocal() as db_session:
+            stmt = select(PersonaMCPServer).options(
+                joinedload(PersonaMCPServer.mcp_server)
+            ).where(PersonaMCPServer.persona_id == persona_id, PersonaMCPServer.is_active)
+            result = await db_session.execute(stmt)
+            external_servers = result.scalars().all()
+        for server_link in external_servers:
+            server = server_link.mcp_server
+            server_config = {
+                "command": server.command,
+                "args": server.args_json or [],
+                "env": server.env_json or {},
+                "transport": "stdio"
+            }
+            client = MultiServerMCPClient({f"server_{server.id}": server_config})
+            try:
+                external_tools = await client.get_tools()
+                for tool in external_tools:
+                    annotations = {}
+                    schema_fields = {}
+                    if getattr(tool, 'inputSchema', None) and 'properties' in tool.inputSchema:
+                        schema = tool.inputSchema
+                        for param_name, param_schema in schema['properties'].items():
+                            field_type = _get_field_type(param_schema.get('type', 'string'))
+                            if param_name in schema.get('required', []):
+                                schema_fields[param_name] = Field(description=f"Parameter: {param_name}")
+                                annotations[param_name] = field_type
+                            else:
+                                schema_fields[param_name] = Field(default=param_schema.get('default'), description=f"Parameter: {param_name}")
+                                annotations[param_name] = Optional[field_type]
+                    ToolSchema = type(f"{server.name}:{tool.name}Schema", (BaseModel,), {
+                        '__annotations__': annotations,
+                        **schema_fields
+                    })
+                    tool_qname = f"{server.name}:{tool.name}"
+                    async def external_wrapper(**kwargs):
+                        return await call_mcp_tool_by_server_id(server.id, tool.name, kwargs or {})
+                    langchain_tool = StructuredTool.from_function(
+                        coroutine=external_wrapper,
+                        name=tool_qname,
+                        description=(tool.description or ''),
+                        args_schema=ToolSchema
+                    )
+                    langchain_tools.append(langchain_tool)
+            except Exception as e:
+                self._logger.error(f"Failed to load tools from MCP server {server.name}: {e}")
+        return langchain_tools
+
+    async def create_langchain_tools(
+            self,
+            persona_id: int,
+            available_tools_info: List[Dict[str, Any]]
+    ) -> List[StructuredTool]:
+        internal_tools = await self.create_internal_langchain_tools(persona_id, available_tools_info)
+        external_tools = await self.create_external_langchain_tools(persona_id)
+        return internal_tools + external_tools

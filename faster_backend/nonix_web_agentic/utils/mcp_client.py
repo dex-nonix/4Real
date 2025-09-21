@@ -50,3 +50,36 @@ async def call_mcp_tool_by_server_id(server_id: int, tool_name: str, tool_args: 
             return result
     except Exception as e:
         return {'status': 'error', 'error': str(e)}
+
+
+async def get_external_tool_schema(server_id: int, tool_name: str) -> Dict[str, Any]:
+    server = await _load_server(server_id)
+    if not server:
+        return {'name': tool_name, 'description': '', 'parameters': []}
+    server_config = {
+        "command": server.command,
+        "args": server.args_json or [],
+        "env": server.env_json or {},
+        "transport": "stdio"
+    }
+    client = MultiServerMCPClient({f"server_{server_id}": server_config})
+    tools = await client.get_tools()
+    tool = next((t for t in tools if t.name == tool_name), None)
+    if not tool:
+        return {'name': tool_name, 'description': '', 'parameters': []}
+    parameters = []
+    if getattr(tool, 'inputSchema', None) and 'properties' in tool.inputSchema:
+        schema = tool.inputSchema
+        for param_name, param_schema in schema['properties'].items():
+            parameters.append({
+                'name': param_name,
+                'type': param_schema.get('type', 'string'),
+                'required': param_name in schema.get('required', []),
+                'default': param_schema.get('default'),
+                'description': param_schema.get('description', '')
+            })
+    return {
+        'name': tool.name,
+        'description': tool.description or '',
+        'parameters': parameters
+    }
