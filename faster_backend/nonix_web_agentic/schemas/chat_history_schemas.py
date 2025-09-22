@@ -22,3 +22,4 @@ class ChatHistoryUpdate(BaseUpdateModel, base_model=ChatHistoryBase):
 
 class ChatHistoryInDbModel(ChatHistoryBase, BaseDbModelMixin):
     pass
+

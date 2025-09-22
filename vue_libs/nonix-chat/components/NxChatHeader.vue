@@ -2,7 +2,7 @@
 import Avatar from 'primevue/avatar';
 import Button from 'primevue/button';
 import Menu from 'primevue/menu';
-import NxConfirmMenuItem from '@nonix-menu-item/components/NxConfirmMenuItem.vue';
+import NxConfirmMenuItem from '@nonix-common/components/NxConfirmMenuItem.vue';
 import {computed, inject, ref, watch} from 'vue';
 
 const props = defineProps({

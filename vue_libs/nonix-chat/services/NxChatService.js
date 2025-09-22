@@ -45,7 +45,8 @@ export default class NxChatService extends NxBaseApiService {
 
   async createHistory(sessionId, title) {
     
-    const response = await this.post(`/chat/sessions/${sessionId}/histories`, {
+    const response = await this.post(`/chat/histories`, {
+      session_id: sessionId,
       title: title
     })
     return response.data  
@@ -59,6 +60,11 @@ export default class NxChatService extends NxBaseApiService {
 
   async deleteHistory(sessionId, historyId) {
     const response = await this.delete(`/chat/sessions/${sessionId}/histories/${historyId}`)
+    return response.data  
+  }
+
+  async selectHistory(sessionId, historyId) {
+    const response = await this.post(`/chat/sessions/${sessionId}/select-history/${historyId}`)
     return response.data  
   }
 

@@ -114,12 +114,12 @@ class ChatRouter(NxWebServerRouter):
             response_converter=lambda r: {'data': r, 'total': len(r)}
         )
 
-    @route('/sessions/{id}/histories', methods=['POST'])
-    async def create_session_history(self, req: Request, payload: ChatHistoryCreate, id: int):
+    @route('/histories', methods=['POST'])
+    async def create_session_history(self, req: Request, payload: ChatHistoryCreate):
         """Create a new history for a specific session."""
         return await self.service_call_and_respond(
             self.history_service.create_session_history,
-            service_args=(id, payload.title),
+            service_args=(payload.session_id, payload.title),
             response_converter=lambda r: ({'data': r.to_dict()}, 201)
         )
 
@@ -145,6 +145,14 @@ class ChatRouter(NxWebServerRouter):
         """Delete a specific history within a session."""
         return await self.service_call_and_respond(
             self.history_service.delete_session_history,
+            service_args=(id, history_id)
+        )
+
+    @route('/sessions/{id}/select-history/{history_id}', methods=['POST'])
+    async def select_session_history(self, req: Request, id: int, history_id: int):
+        """Set the current history for a session."""
+        return await self.service_call_and_respond(
+            self.session_service.set_current_history,
             service_args=(id, history_id)
         )
 

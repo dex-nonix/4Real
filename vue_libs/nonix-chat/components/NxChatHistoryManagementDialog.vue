@@ -6,19 +6,15 @@
       header="Chat History"
       :style="{ width: '600px' }"
   >
-    <div v-if="loading" class="flex justify-content-center p-4">
-      <ProgressSpinner/>
-    </div>
-
-    <div v-else class="history-panel">
+    <div class="history-panel">
       <div class="flex justify-content-between align-items-center mb-3">
         <h3 class="m-0">Conversation History</h3>
         <Button
             icon="pi pi-plus"
             size="small"
             @click="createNewHistory"
-            label="New Chat"
             :disabled="!sessionId"
+            v-tooltip.bottom="'New History'"
         />
       </div>
 
@@ -26,41 +22,14 @@
         <span class="text-500">Please select a session to view history</span>
       </div>
 
-      <div v-else-if="histories.length === 0" class="flex justify-content-center p-4">
-        <span class="text-500">No conversation history available</span>
-      </div>
-
-      <div v-else class="histories-list">
-        <div
-            v-for="historyItem in histories"
-            :key="historyItem.id"
-            class="history-item cursor-pointer p-2 border-round hover:surface-100"
-            :class="{ 'surface-100 border-left-2 border-blue-500': currentHistoryId === historyItem.id }"
-            @click="selectHistory(historyItem.id)"
-        >
-          <div class="flex justify-content-between align-items-center">
-            <span class="font-medium">{{ historyItem.title }}</span>
-            <span class="text-xs text-500">{{ historyItem.message_count }} messages</span>
-          </div>
-          <div class="flex gap-2 mt-2">
-            <Button
-                icon="pi pi-pencil"
-                size="small"
-                text
-                @click.stop="editHistory(historyItem)"
-                v-tooltip.bottom="'Rename History'"
-            />
-            <Button
-                icon="pi pi-trash"
-                size="small"
-                text
-                severity="danger"
-                @click.stop="deleteHistory(historyItem.id)"
-                v-tooltip.bottom="'Delete History'"
-            />
-          </div>
-        </div>
-      </div>
+      <NxDynamicTable
+          v-else
+          :config="tableConfig"
+          :data="histories"
+          :loading="loading"
+          @row-action="handleRowAction"
+          @row-select="handleRowSelect"
+      />
     </div>
 
     <!-- New History Dialog -->
@@ -113,12 +82,13 @@
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
-import ProgressSpinner from 'primevue/progressspinner';
-import {inject, ref, watch} from 'vue';
+import NxDynamicTable from '@nonix-dynamic/table/NxDynamicTable.vue';
+import {inject, ref, watch, computed} from 'vue';
 
 const props = defineProps({
   visible: {type: Boolean, required: true},
-  sessionId: {type: [String, Number, null], required: false, default: null}
+  sessionId: {type: [String, Number, null], required: false, default: null},
+  currentHistoryId: {type: [String, Number, null], required: false, default: null}
 });
 
 const emit = defineEmits(['update:visible', 'historySelected', 'createHistory', 'updateHistory', 'deleteHistory']);
@@ -129,7 +99,7 @@ const chatService = inject('chat-service');
 // State
 const histories = ref([]);
 const loading = ref(false);
-const currentHistoryId = ref(null);
+const currentHistoryId = ref(props.currentHistoryId);
 
 // Dialog states
 const showNewHistoryDialog = ref(false);
@@ -137,6 +107,23 @@ const showEditHistoryDialog = ref(false);
 const newHistoryTitle = ref('');
 const editHistoryTitle = ref('');
 const editingHistory = ref(null);
+
+// Delete confirmation states
+const deletingHistoryId = ref(null);
+
+// Table configuration
+const tableConfig = computed(() => ({
+  columns: [
+    { field: 'title', header: 'Title', sortable: true },
+    { field: 'message_count', header: 'Messages', sortable: true }
+  ],
+  actions: ['edit', 'delete'],
+  actionsDisplay: 'icons-only',
+  sortable: true,
+  striped: true,
+  hover: true,
+  paginated: false
+}));
 
 // Load histories when dialog opens
 const loadHistories = async () => {
@@ -150,7 +137,7 @@ const loadHistories = async () => {
     loading.value = true;
     const response = await chatService.getHistories(props.sessionId);
 
-    histories.value = response || [];
+    histories.value = response.data || [];
   } catch (error) {
     console.error('Failed to load histories:', error);
     histories.value = [];
@@ -169,6 +156,11 @@ watch(() => props.visible, (newVisible) => {
   }
 });
 
+// Watch for currentHistoryId changes to update selection
+watch(() => props.currentHistoryId, (newId) => {
+  currentHistoryId.value = newId;
+}, { immediate: true });
+
 const updateVisible = (value) => {
   emit('update:visible', value);
 };
@@ -177,10 +169,32 @@ const close = () => {
   emit('update:visible', false);
 };
 
-const selectHistory = (historyId) => {
-  currentHistoryId.value = historyId;
-  emit('historySelected', historyId);
-  close();
+const selectHistory = async (historyId) => {
+  try {
+    await chatService.selectHistory(props.sessionId, historyId);
+    currentHistoryId.value = historyId;
+    emit('historySelected', historyId);
+    close();
+  } catch (error) {
+    console.error('Failed to select history:', error);
+  }
+};
+
+const handleRowSelect = (event) => {
+  if (event.data && event.data.id) {
+    selectHistory(event.data.id);
+  }
+};
+
+const handleRowAction = ({ action, rowData }) => {
+  switch (action) {
+    case 'edit':
+      editHistory(rowData);
+      break;
+    case 'delete':
+      startDelete(rowData.id);
+      break;
+  }
 };
 
 const createNewHistory = () => {
@@ -243,12 +257,36 @@ const confirmEditHistory = async () => {
   }
 };
 
-const deleteHistory = async (historyId) => {
+const startDelete = (historyId) => {
+  deletingHistoryId.value = historyId;
+};
+
+const cancelDelete = () => {
+  deletingHistoryId.value = null;
+};
+
+const confirmDelete = async (historyId) => {
   try {
     await chatService.deleteHistory(props.sessionId, historyId);
+    deletingHistoryId.value = null;
     await loadHistories(); // Reload histories
+    
+    // If we deleted the current history, select another one
+    if (currentHistoryId.value === historyId) {
+      if (histories.value.length > 0) {
+        // Select the first available history
+        const newHistoryId = histories.value[0].id;
+        currentHistoryId.value = newHistoryId;
+        emit('historySelected', newHistoryId);
+      } else {
+        // No histories left, emit null
+        currentHistoryId.value = null;
+        emit('historySelected', null);
+      }
+    }
   } catch (error) {
     console.error('Failed to delete history:', error);
+    deletingHistoryId.value = null;
   }
 };
 </script>
@@ -258,17 +296,10 @@ const deleteHistory = async (historyId) => {
   min-height: 300px;
 }
 
-.histories-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.history-item {
-  transition: all 0.2s ease;
-}
-
-.history-item:hover {
-  background-color: var(--surface-100);
+.tiny-button {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  padding: 0 !important;
 }
 </style>

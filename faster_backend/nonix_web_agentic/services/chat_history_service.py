@@ -130,9 +130,19 @@ class ChatHistoryService(BaseCrudService):
                 # Validate session and history
                 session, history = await self._validate_session_and_history(db_session, session_id, history_id)
 
-                # Check if this is the current history
+                # If deleting current history, create new one first
                 if session.current_history_id == history_id:
-                    raise ValueError('Cannot delete current history')
+                    new_history = ChatHistory(
+                        session_id=session_id,
+                        title='New Conversation',
+                        message_count=0
+                    )
+                    db_session.add(new_history)
+                    await db_session.commit()
+                    await db_session.refresh(new_history)
+                    
+                    session.current_history_id = new_history.id
+                    await db_session.commit()
 
                 await db_session.delete(history)
                 await db_session.commit()

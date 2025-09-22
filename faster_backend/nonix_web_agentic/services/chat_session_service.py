@@ -196,6 +196,30 @@ class ChatSessionService(BaseCrudService):
 
             return sessions_data
 
+    async def set_current_history(self, session_id: int, history_id: int):
+        """Set the current history for a session."""
+        async with AsyncSessionLocal() as db_session:
+            try:
+                session = await self._get_session_by_id(db_session, session_id)
+                
+                # Verify history belongs to this session
+                history_stmt = select(ChatHistory).where(
+                    ChatHistory.id == history_id, 
+                    ChatHistory.session_id == session_id
+                )
+                history_result = await db_session.execute(history_stmt)
+                history = history_result.scalar_one_or_none()
+                
+                if not history:
+                    raise ValueError('History not found or does not belong to this session')
+                
+                session.current_history_id = history_id
+                await db_session.commit()
+                return {'message': 'Current history updated successfully'}
+            except Exception as exc:
+                await db_session.rollback()
+                raise exc
+
     async def start_chat_with_persona(self, persona_id: int, session_name: str = None, session_icon: str = None):
         """Start a new chat session with a persona."""
         return await self.create_session_with_history(persona_id, session_name, session_icon)

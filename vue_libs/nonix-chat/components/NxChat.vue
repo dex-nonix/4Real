@@ -417,7 +417,9 @@ const handleHistorySelected = async (historyId) => {
     addSuccess('History selected successfully');
 
     // Refresh messages for the new history
-    await refreshMessages();
+    if (chatMessageContainerRef.value && chatMessageContainerRef.value.refreshMessages) {
+      await chatMessageContainerRef.value.refreshMessages();
+    }
 
   } catch (error) {
     console.error('Failed to select history:', error);
@@ -595,8 +597,8 @@ defineExpose({
 
     <NxChatHistoryManagementDialog
         v-model:visible="showHistoryDialog"
-        :session-id="currentSessionId"
-        :current-history-id="currentHistoryId"
+        :sessionId="currentSessionId"
+        :currentHistoryId="currentHistoryId"
         @history-selected="handleHistorySelected"
     />
   </div>
