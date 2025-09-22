@@ -1,27 +1,39 @@
 <template>
   <div class="action-buttons flex gap-2 justify-content-start">
-    <Button 
-      v-for="action in actions" 
-      :key="action"
-      :label="getActionLabel(action)"
-      :icon="getActionIcon(action)"
-      :size="'small'"
-      :severity="getActionSeverity(action)"
-      @click="handleAction(action)"
-      class="action-btn"
-      :class="{ 'mobile': isMobile }"
-      :title="getActionTitle(action)"
-    />
+    <template v-for="action in actions" :key="action">
+      <NxConfirmIconButton
+        v-if="confirmActiveAction === action"
+        :icon="getActionIcon(action)"
+        :confirmText="`${action}?`"
+        :size="'small'"
+        :severity="getActionSeverity(action)"
+        :showConfirmInitially="true"
+        @confirm="() => emitRowAction(action)"
+        @cancel="onCancelConfirm"
+      />
+      <Button
+        v-else-if="!confirmActiveAction"
+        :label="getActionLabel(action)"
+        :icon="getActionIcon(action)"
+        :size="'small'"
+        :severity="getActionSeverity(action)"
+        @click="onActionClick(action)"
+        class="action-btn"
+        :class="{ 'mobile': isMobile }"
+        :title="getActionTitle(action)"
+      />
+    </template>
   </div>
 </template>
 
 <script>
 import Button from 'primevue/button'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import NxConfirmIconButton from '@nonix-common/components/NxConfirmIconButton.vue'
 
 export default {
   name: 'NxActionButtons',
-  components: { Button },
+  components: { Button, NxConfirmIconButton },
   
   props: {
     actions: {
@@ -36,26 +48,31 @@ export default {
       type: String,
       default: 'responsive', // 'responsive', 'icons-only', 'text-only', 'both'
       validator: value => ['responsive', 'icons-only', 'text-only', 'both'].includes(value)
+    },
+    confirmActions: {
+      type: Array,
+      default: () => ['delete']
     }
   },
   
   setup(props) {
     const isMobile = ref(false)
-    
+    const confirmActiveAction = ref(null)
+
     const checkMobile = () => {
       isMobile.value = window.innerWidth < 768 // md breakpoint
     }
-    
+
     onMounted(() => {
       checkMobile()
       window.addEventListener('resize', checkMobile)
     })
-    
+
     onUnmounted(() => {
       window.removeEventListener('resize', checkMobile)
     })
-    
-    return { isMobile }
+
+    return { isMobile, confirmActiveAction }
   },
   
   computed: {
@@ -68,6 +85,23 @@ export default {
   },
   
   methods: {
+    usesInlineConfirm(action) {
+      return this.confirmActions.includes(action)
+    },
+    onActionClick(action) {
+      if (this.usesInlineConfirm(action)) {
+        this.confirmActiveAction = action
+        return
+      }
+      this.$emit('action', action, this.rowData)
+    },
+    onCancelConfirm() {
+      this.confirmActiveAction = null
+    },
+    emitRowAction(action) {
+      this.confirmActiveAction = null
+      this.$emit('action', action, this.rowData)
+    },
     handleAction(action) {
       this.$emit('action', action, this.rowData)
     },

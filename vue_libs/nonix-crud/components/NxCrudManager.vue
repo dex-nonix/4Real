@@ -90,33 +90,6 @@
     </Dialog>
 
     <Dialog
-        v-model:visible="showDeleteConfirm"
-        header="Confirm Delete"
-        :modal="true"
-        :closable="true"
-        :style="{ width: '30vw' }"
-    >
-      <div class="delete-confirmation">
-        <p>Are you sure you want to delete this {{ entitySingular }}?</p>
-        <p class="entity-name">{{ entityToDelete?.name || entityToDelete?.title }}</p>
-      </div>
-
-      <template #footer>
-        <Button
-            @click="showDeleteConfirm = false"
-            label="Cancel"
-            severity="secondary"
-        />
-        <Button
-            @click="confirmDelete"
-            label="Delete"
-            severity="danger"
-            :loading="deleting"
-        />
-      </template>
-    </Dialog>
-
-    <Dialog
         v-model:visible="showBulkDeleteConfirm"
         header="Confirm Bulk Delete"
         :modal="true"
@@ -183,14 +156,11 @@ export default {
       loading: false,
       formDialogVisible: false,
       showViewDialog: false,
-      showDeleteConfirm: false,
       showBulkDeleteConfirm: false,
       editingEntity: null,
       currentEntity: null,
       viewingEntity: null,
-      entityToDelete: null,
       selectedEntities: [],
-      deleting: false,
       bulkDeleting: false,
       isEditing: false
     }
@@ -322,9 +292,15 @@ export default {
       this.formDialogVisible = true
     },
 
-    deleteEntity(entity) {
-      this.entityToDelete = entity
-      this.showDeleteConfirm = true
+    async deleteEntity(entity) {
+      try {
+        await this.service.delete(entity.id)
+        await this.loadEntities()
+        this.notifySuccess('Deleted successfully')
+      } catch (error) {
+        this.notifyError('Failed to delete')
+        console.error('Delete error:', error)
+      }
     },
 
     async openView(entity) {
@@ -405,27 +381,6 @@ export default {
         }
       }
       return payload
-    },
-
-    async confirmDelete() {
-      if (!this.entityToDelete?.id) {
-        this.showDeleteConfirm = false
-        return
-      }
-      this.deleting = true
-      try {
-        await this.service.delete(this.entityToDelete.id)
-        this.showDeleteConfirm = false
-        this.entityToDelete = null
-        await this.loadEntities()
-        this.notifySuccess('Deleted successfully')
-      } catch (error) {
-        this.notifyError('Failed to delete')
-        // eslint-disable-next-line no-console
-        console.error('Delete error:', error)
-      } finally {
-        this.deleting = false
-      }
     },
 
     async confirmBulkDelete() {
