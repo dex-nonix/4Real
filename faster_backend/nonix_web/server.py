@@ -2,15 +2,27 @@ import logging
 import logging.handlers
 import os
 from contextlib import asynccontextmanager
+from socketio import ASGIApp
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from socketio import AsyncServer, ASGIApp
+from socketio import AsyncServer
 
 from nonix_di.register import di_register
 from nonix_plugin.manager import NxPluginManager
 from .config import Settings
 from .web_socket_service import NxWebServerWebSocketService
+
+
+def _is_debugger_attached():
+    """Checks if a debugger is attached to the current process."""
+    import sys
+    return sys.gettrace() is not None
+
+
+def _run_server_in_process(settings: Settings):
+    """Helper function that receives the settings object and runs the server."""
+    NxWebServer._run_uvicorn(settings)
 
 
 class NxWebServer:
@@ -31,10 +43,6 @@ class NxWebServer:
             openapi_url=None
         )
         di_register(FastAPI, instance=self.app)
-        if settings.WS_ENABLED:
-            self._enable_websocket()
-        # self.daemon_manager = NxDaemonManager()
-        # di_register(NxDaemonManager, instance=self.daemon_manager)
         self.plugin_manager = NxPluginManager(self.settings.PLUGIN_SEARCH_PATH)
         di_register(NxPluginManager, instance=self.plugin_manager)
         self.__init__server()
@@ -47,6 +55,8 @@ class NxWebServer:
         await self._teardown_server()
 
     async def _setup_server(self):
+        if self.settings.WS_ENABLED:
+            self._enable_websocket()
         await self.plugin_manager.startup_plugins(self.settings.PLUGINS)
 
     async def _teardown_server(self):
@@ -110,25 +120,69 @@ class NxWebServer:
             print(f"Client {sid} joined room: {room}")
 
         @sio.on("leave_room")
-        async def join_room(sid, room):
+        async def leave_room(sid, room):
             await sio.leave_room(sid, room)
             print(f"Client {sid} leaves room: {room}")
 
     def get_gunicorn_app(self):
-        if self.sio is None:
-            return self.app
-        return ASGIApp(self.sio, other_asgi_app=self.app)
+        server_ref = self
+
+        async def dispatch(scope, receive, send):
+            if server_ref.sio is None:
+                return await server_ref.app(scope, receive, send)
+            return await ASGIApp(server_ref.sio, other_asgi_app=server_ref.app)(scope, receive, send)
+
+        return dispatch
 
     @classmethod
-    def run_gunicorn(cls, settings: Settings = None):
+    def _run_uvicorn(cls, settings: Settings):
+        """Internal method that contains the actual uvicorn.run call."""
+        import asyncio
         import uvicorn
-        if settings is None:
-            settings = Settings()
+
+        asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
+
+        def run_app():
+            import nest_asyncio
+            nest_asyncio.apply()
+            return cls(settings).get_gunicorn_app()
+
         uvicorn.run(
-            lambda: cls(settings).get_gunicorn_app(),
+            run_app,
             host=settings.HOST,
             port=settings.PORT,
-            reload=settings.DEBUG,
+            reload=False,  # Reload must be False for debug subprocess
             log_level=settings.LOG_LEVEL,
-            factory=True
+            factory=True,
+            loop="asyncio",
+            ws="websockets"
         )
+
+    @classmethod
+    def run_gunicorn(cls, settings: Settings):
+        if _is_debugger_attached():
+            import multiprocessing
+            import os
+
+            if os.environ.get("NX_SERVER_IN_CHILD_PROCESS"):
+                cls._run_uvicorn(settings)
+                return
+
+            print("✓ Debugger detected. Spawning server in a new process...")
+
+            try:
+                multiprocessing.set_start_method("spawn", force=True)
+            except RuntimeError:
+                pass
+
+            os.environ["NX_SERVER_IN_CHILD_PROCESS"] = "1"
+
+            process = multiprocessing.Process(target=_run_server_in_process, args=(settings,))
+            process.start()
+            try:
+                process.join()
+            except KeyboardInterrupt:
+                process.terminate()
+                process.join()
+        else:
+            cls._run_uvicorn(settings)
