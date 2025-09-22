@@ -31,7 +31,7 @@
   "streaming_preset": {
     "format": "pcm16",
     "frame_ms": 100,
-    "partial_results": true,
+    "partial_results": false,
     "endpointing_json": {
       "enabled": false,
       "silence_threshold_ms": 1000,
@@ -41,19 +41,19 @@
     "enabled": true
   },
   "feature_preset": {
-    "language_detection": true,
+    "language_detection": false,
     "diarization_json": {
       "enabled": false,
       "method": "pyannote",
       "num_speakers": null
     },
     "timestamps": false,
-    "punctuation": true,
+    "punctuation": false,
     "enabled": true
   },
   "postprocess_preset": {
-    "remove_fillers": true,
-    "capitalize_sentences": true,
+    "remove_fillers": false,
+    "capitalize_sentences": false,
     "custom_rules_json": {
       "enabled": false,
       "rules": []
