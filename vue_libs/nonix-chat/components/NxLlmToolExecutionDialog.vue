@@ -9,8 +9,12 @@
     <div v-if="selectedTool" class="tool-form">
       <p class="text-600 mb-3 text-sm">{{ selectedTool.description }}</p>
 
+      <div v-if="schemaLoading" class="text-center p-3">
+        <ProgressSpinner style="width: 30px; height: 30px" />
+        <p class="text-500 text-sm mt-2">Loading tool parameters...</p>
+      </div>
       <NxDynamicForm
-        v-if="selectedTool.parameters && selectedTool.parameters.length > 0"
+        v-else-if="selectedTool.parameters && selectedTool.parameters.length > 0"
         :config="formConfig"
         :initial-data="toolFormData"
         :submit-label="'Execute Tool'"
@@ -30,11 +34,13 @@
 import { ref, defineExpose, defineEmits, computed } from 'vue';
 import Dialog from 'primevue/dialog';
 import Button from 'primevue/button';
+import ProgressSpinner from 'primevue/progressspinner';
 import NxDynamicForm from '@nonix-dynamic/form/NxDynamicForm.vue';
 
 // Props
 const props = defineProps({
-  selectedTool: { type: Object, required: false, default: null }
+  selectedTool: { type: Object, required: false, default: null },
+  schemaLoading: { type: Boolean, default: false }
 });
 
 // Emits

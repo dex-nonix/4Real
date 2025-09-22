@@ -89,6 +89,7 @@ const groupedToolsLocal = ref([]);
 const toolsLoading = ref(false);
 const selectedTool = ref(null);
 const toolExecutionDialogRef = ref(null);
+const schemaLoading = ref(false);
 
 const totalNotifications = computed(() => {
   return props.errors.length + (toolsLoading.value ? 1 : 0);
@@ -137,29 +138,35 @@ const handleToolSelected = async (toolPayload) => {
   // toolPayload now includes: name, description, parameters, namespace, is_external
   const fullToolName = toolPayload.is_external ? `${toolPayload.namespace}:${toolPayload.name}` : toolPayload.name;
 
-  let parameters = toolPayload.parameters || [];
-
-  // For external tools, fetch parameters on-demand if not already available
-  if (toolPayload.is_external && (!parameters || parameters.length === 0)) {
-    try {
-      const schema = await chatService.getToolSchema(props.selectedSession.persona_id, fullToolName);
-      parameters = schema.parameters || [];
-    } catch (error) {
-      console.error('Failed to fetch tool schema:', error);
-      parameters = [];
-    }
-  }
-
   selectedTool.value = {
     name: fullToolName,
     description: toolPayload.description,
-    parameters: parameters,
+    parameters: toolPayload.parameters || [],
     namespace: toolPayload.namespace,
     is_external: toolPayload.is_external
   };
 
   if (toolExecutionDialogRef.value) {
     toolExecutionDialogRef.value.openDialog(selectedTool.value);
+  }
+
+  if (toolPayload.is_external) {
+    schemaLoading.value = true;
+    try {
+      const schema = await chatService.getToolSchema(props.selectedSession.persona_id, fullToolName);
+      selectedTool.value = {
+        ...selectedTool.value,
+        parameters: schema.parameters || []
+      };
+    } catch (error) {
+      console.error('Failed to fetch tool schema:', error);
+      selectedTool.value = {
+        ...selectedTool.value,
+        parameters: []
+      };
+    } finally {
+      schemaLoading.value = false;
+    }
   }
 };
 
@@ -444,11 +451,11 @@ defineExpose({
     <!-- More Menu -->
     <Menu ref="moreMenu" id="more_menu" :model="moreMenuItems" :popup="true"/>
     <!-- Tools Dialog -->
-    <NxLlmAvailableToolsDialog :visible="showToolsDialog" :groupedTools="groupedToolsLocal" :personaId="props.selectedSession?.persona_id"
+    <NxLlmAvailableToolsDialog :visible="showToolsDialog" :groupedTools="groupedToolsLocal" :personaId="props.selectedSession?.persona_id" :loading="toolsLoading"
                                @update:visible="showToolsDialog = $event" @tool-selected="handleToolSelected"/>
 
     <!-- Tool Execution Dialog -->
-    <NxLlmToolExecutionDialog ref="toolExecutionDialogRef" :selected-tool="selectedTool"
+    <NxLlmToolExecutionDialog ref="toolExecutionDialogRef" :selected-tool="selectedTool" :schema-loading="schemaLoading"
                               @execute-tool="executeToolWithForm"/>
 
     <!-- STT Configuration Dialog -->

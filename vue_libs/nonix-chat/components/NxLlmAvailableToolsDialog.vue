@@ -7,7 +7,11 @@
       class="p-dialog-sm"
       @update:visible="$emit('update:visible', $event)"
   >
-    <div v-if="groupedTools.length > 0">
+    <div v-if="loading" class="text-center p-4">
+      <ProgressSpinner />
+      <p class="text-500 text-sm mt-2">Loading available tools...</p>
+    </div>
+    <div v-else-if="groupedTools.length > 0">
       <Accordion>
         <AccordionTab v-for="namespace in groupedTools" :key="namespace.namespace" :header="getNamespaceHeader(namespace)">
           <div class="space-y-2">
@@ -43,6 +47,7 @@ import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
 import Accordion from 'primevue/accordion'
 import AccordionTab from 'primevue/accordiontab'
+import ProgressSpinner from 'primevue/progressspinner'
 
 const props = defineProps({
   visible: Boolean,
@@ -53,6 +58,10 @@ const props = defineProps({
   personaId: {
     type: [String, Number],
     default: null
+  },
+  loading: {
+    type: Boolean,
+    default: false
   }
 })
 
