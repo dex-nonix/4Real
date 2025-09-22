@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 import logging
 
+from nonix_web.web_socket_service import NxWebServerWebSocketService
 from nonix_web_db import AsyncSessionLocal
 from nonix_di.resolve import NxInject
 from ..models.mcp_server import MCPServer
@@ -18,20 +19,20 @@ class ToolExecutionService:
     """Service for tool execution and MCP operations."""
 
     agentic_tool_manager: AgenticToolManager = NxInject(AgenticToolManager)
+    web_socket_service: NxWebServerWebSocketService = NxInject(NxWebServerWebSocketService)
 
     def __init__(self):
         self._logger = logging.getLogger(self.__class__.__name__)
 
-    # async def list_persona_tools(self, persona_id: int):
-    #     """Get available tools for a specific persona."""
-    #     async with AsyncSessionLocal() as db_session:
-    #         stmt = select(Persona).where(Persona.id == persona_id)
-    #         result = await db_session.execute(stmt)
-    #         persona = result.scalar_one_or_none()
-    #
-    #         if not persona:
-    #             raise ValueError('Persona not found')
-    #         return await self.agentic_tool_manager.list_persona_tools(persona.id)
+    async def _get_persona_mcp_links(self, persona_id: int):
+        """Shared helper: Get active MCP server links for a persona."""
+        async with AsyncSessionLocal() as db_session:
+            stmt = select(PersonaMCPServer).options(
+                joinedload(PersonaMCPServer.mcp_server)
+            ).where(PersonaMCPServer.persona_id == persona_id,
+                   PersonaMCPServer.is_active)
+            result = await db_session.execute(stmt)
+            return result.scalars().all()
 
     async def list_registry_tools(self):
         """List all registered LLM tools from the in-memory registry (plugin-first)."""
@@ -92,13 +93,7 @@ class ToolExecutionService:
         return list(namespace_map.values())
 
     async def get_external_servers(self, persona_id: int):
-        async with AsyncSessionLocal() as db_session:
-            stmt = select(PersonaMCPServer).options(
-                joinedload(PersonaMCPServer.mcp_server)
-            ).where(PersonaMCPServer.persona_id == persona_id,
-                   PersonaMCPServer.is_active)
-            result = await db_session.execute(stmt)
-            links = result.scalars().all()
+        links = await self._get_persona_mcp_links(persona_id)
         out = []
         for link in links:
             tools = await list_mcp_server_tools_by_server_id(link.mcp_server_id)
@@ -126,22 +121,12 @@ class ToolExecutionService:
         else:
             # External tool - parse namespace and get schema
             namespace, actual_tool_name = tool_name.split(':', 1)
-            # Find the server ID for this namespace/persona
-            async with AsyncSessionLocal() as db_session:
-                stmt = select(PersonaMCPServer).options(
-                    joinedload(PersonaMCPServer.mcp_server)
-                ).where(
-                    PersonaMCPServer.persona_id == persona_id,
-                    PersonaMCPServer.is_active,
-                    MCPServer.name == namespace,
-                    MCPServer.is_active
-                )
-                result = await db_session.execute(stmt)
-                link = result.scalar_one_or_none()
-                if link:
-                    return await self.get_tool_schema(link.mcp_server_id, actual_tool_name)
-                else:
-                    return {'name': tool_name, 'description': '', 'parameters': []}
+            links = await self._get_persona_mcp_links(persona_id)
+            link = next((l for l in links if l.mcp_server and l.mcp_server.name == namespace), None)
+            if link:
+                return await self.get_tool_schema(link.mcp_server_id, actual_tool_name)
+            else:
+                return {'name': tool_name, 'description': '', 'parameters': []}
 
     async def execute_tool_for_persona(self, persona_id: int, tool_name: str, parameters: Dict[str, Any]):
         """Execute a tool for a specific persona."""
@@ -218,28 +203,6 @@ class ToolExecutionService:
                 )
                 raise
 
-    async def discover_mcp_tools_for_persona(self, persona_id: int):
-        """Return MCP tools for each active persona-assigned server."""
-        async with AsyncSessionLocal() as db_session:
-            stmt = select(PersonaMCPServer).options(
-                joinedload(PersonaMCPServer.mcp_server)
-            ).where(PersonaMCPServer.persona_id == persona_id,
-                   PersonaMCPServer.is_active)
-            result = await db_session.execute(stmt)
-            links = result.scalars().all()
-
-        out = []
-        for link in links:
-            tools = await list_mcp_server_tools_by_server_id(link.mcp_server_id)
-            out.append({
-                'persona_mcp_server_id': link.id,
-                'mcp_server_id': link.mcp_server_id,
-                'mcp_server_name': getattr(link.mcp_server, 'name', None),
-                'tools': tools
-            })
-        return out
-
-
     async def call_persona_mcp_tool(self, persona_id: int, persona_mcp_server_id: int,
                                     tool_name: str, tool_args: Dict[str, Any] | None = None):
         """Call a tool on a persona-assigned MCP server (verifies assignment)."""
@@ -268,20 +231,8 @@ class ToolExecutionService:
         if ':' not in tool_name:
             raise ValueError('Tool name must have namespace: server_name:tool_name')
         server_name, actual_tool_name = tool_name.split(':', 1)
-        async with AsyncSessionLocal() as db_session:
-            stmt = (
-                select(PersonaMCPServer)
-                .join(MCPServer, PersonaMCPServer.mcp_server)
-                .options(joinedload(PersonaMCPServer.mcp_server))
-                .where(
-                    PersonaMCPServer.persona_id == persona_id,
-                    PersonaMCPServer.is_active,
-                    MCPServer.name == server_name,
-                    MCPServer.is_active
-                )
-            )
-            result = await db_session.execute(stmt)
-            link = result.scalar_one_or_none()
-            if not link:
-                raise ValueError(f'External server {server_name} not assigned to persona {persona_id}')
+        links = await self._get_persona_mcp_links(persona_id)
+        link = next((l for l in links if l.mcp_server and l.mcp_server.name == server_name), None)
+        if not link:
+            raise ValueError(f'External server {server_name} not assigned to persona {persona_id}')
         return await call_mcp_tool_by_server_id(link.mcp_server_id, actual_tool_name, parameters)

@@ -229,7 +229,7 @@ class ChatRouter(NxWebServerRouter):
     @route('/personas/{persona_id}/mcp-servers/tools', methods=['GET'])
     async def persona_mcp_servers_tools(self, req: Request, persona_id: int):
         return await self.service_call_and_respond(
-            self.tool_service.discover_mcp_tools_for_persona,
+            self.tool_service.get_external_servers,
             service_args=(persona_id,)
         )
 
