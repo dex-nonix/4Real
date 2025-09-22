@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlalchemy import Column, Integer, String, Text, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 
 from nonix_web_db import BaseModel
 
@@ -15,7 +15,7 @@ class ChatHistory(BaseModel):
     message_count = Column(Integer, default=0)
 
     # Relationships
-    session = relationship('ChatSession', foreign_keys=[session_id], backref='histories')
+    session = relationship('ChatSession', foreign_keys=[session_id], backref=backref('histories', lazy=True, cascade='all, delete-orphan'))
 
     # messages relationship is handled by backref in ChatMessage model
 

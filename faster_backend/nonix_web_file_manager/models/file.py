@@ -22,7 +22,7 @@ class File(BaseModel):
     duration_seconds = Column(Integer)
 
     # Relationships
-    category = relationship('FileCategory', foreign_keys=[category_id], backref=backref('files', lazy=True))
+    category = relationship('FileCategory', foreign_keys=[category_id], backref=backref('files', lazy=True, cascade='all, delete-orphan'))
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<File id={self.id} original={self.original_filename!r}>"

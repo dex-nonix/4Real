@@ -16,7 +16,7 @@ class Track(BaseModel):
     lyrics = Column(Text)
 
     # Relationships
-    album = relationship('Album', foreign_keys=[album_id], backref=backref('tracks', lazy=True))
+    album = relationship('Album', foreign_keys=[album_id], backref=backref('tracks', lazy=True, cascade='all, delete-orphan'))
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Track id={self.id} title={self.title!r}>"

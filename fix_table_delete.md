@@ -3,21 +3,21 @@
 ## Models Needing Cascade Updates
 
 ### Music Artist Module
-- [ ] **album.py** - `albums` backref (Artist → Albums)
-- [ ] **track.py** - `tracks` backref (Album → Tracks)
+- [x] **album.py** - `albums` backref (Artist → Albums)
+- [x] **track.py** - `tracks` backref (Album → Tracks)
 
 ### Agentic Module
-- [ ] **persona.py** - `personas` backref (Artist → Personas)
-- [ ] **persona.py** - `personas` backref (AIModelMapping → Personas)
-- [ ] **chat_session.py** - `chat_sessions` backref (Persona → ChatSessions)
-- [ ] **chat_session.py** - `current_sessions` backref (ChatHistory → ChatSessions)
-- [ ] **chat_history.py** - `histories` backref (ChatSession → ChatHistories)
-- [ ] **chat_message.py** - `messages` backref (ChatHistory → ChatMessages)
-- [ ] **ai_model_mapping.py** - `model_mappings` backref (AIProvider → AIModelMappings)
-- [ ] **chat_prompt.py** - `chat_prompts` backref (Template → ChatPrompts)
+- [x] **persona.py** - `personas` backref (Artist → Personas)
+- [x] **persona.py** - `personas` backref (AIModelMapping → Personas)
+- [x] **chat_session.py** - `chat_sessions` backref (Persona → ChatSessions)
+- [x] **chat_session.py** - `current_sessions` backref (ChatHistory → ChatSessions)
+- [x] **chat_history.py** - `histories` backref (ChatSession → ChatHistories)
+- [x] **chat_message.py** - `messages` backref (ChatHistory → ChatMessages)
+- [x] **ai_model_mapping.py** - `model_mappings` backref (AIProvider → AIModelMappings)
+- [x] **chat_prompt.py** - `chat_prompts` backref (Template → ChatPrompts)
 
 ### File Manager Module
-- [ ] **file.py** - `files` backref (FileCategory → Files)
+- [x] **file.py** - `files` backref (FileCategory → Files)
 
 ## Cascade Delete Hierarchy
 

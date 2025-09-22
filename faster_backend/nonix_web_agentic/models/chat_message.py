@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlalchemy import Column, Integer, String, JSON, ForeignKey, Index
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 
 from nonix_web_db import BaseModel
 
@@ -25,7 +25,7 @@ class ChatMessage(BaseModel):
     tool_run_id = Column(String(64))
 
     # Relationships
-    history = relationship('ChatHistory', foreign_keys=[history_id], backref='messages')
+    history = relationship('ChatHistory', foreign_keys=[history_id], backref=backref('messages', lazy=True, cascade='all, delete-orphan'))
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<ChatMessage id={self.id} role={self.role!r}>"

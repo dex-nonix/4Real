@@ -17,7 +17,7 @@ class AIModelMapping(BaseModel):
     is_active = Column(Boolean, nullable=False, server_default=text('1'))
 
     # Relationships
-    provider = relationship('AIProvider', foreign_keys=[provider_id], backref=backref('model_mappings', lazy=True))
+    provider = relationship('AIProvider', foreign_keys=[provider_id], backref=backref('model_mappings', lazy=True, cascade='all, delete-orphan'))
 
     # personas relationship is handled by backref in Persona model
 

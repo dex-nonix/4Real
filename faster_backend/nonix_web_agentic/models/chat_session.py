@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 
 from nonix_web_db import BaseModel
 
@@ -16,8 +16,8 @@ class ChatSession(BaseModel):
     is_active = Column(Boolean, nullable=False, server_default="1")
 
     # Relationships
-    persona = relationship("Persona", foreign_keys=[persona_id], backref="chat_sessions")
-    current_history = relationship("ChatHistory", foreign_keys=[current_history_id])
+    persona = relationship("Persona", foreign_keys=[persona_id], backref=backref("chat_sessions", lazy=True, cascade='all, delete-orphan'))
+    current_history = relationship("ChatHistory", foreign_keys=[current_history_id], backref=backref("current_sessions", lazy=True, cascade='all, delete-orphan'))
 
     # histories relationship is handled by backref in ChatHistory model
 
