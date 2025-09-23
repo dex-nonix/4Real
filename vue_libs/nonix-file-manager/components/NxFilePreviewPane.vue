@@ -93,7 +93,7 @@
           icon="pi pi-download"
           text rounded v-tooltip.top="'Download'"
           size="small"
-          @click="downloadFile"
+          @click="downloadFileLocal"
         />
         <Button
           icon="pi pi-pencil"
@@ -249,7 +249,7 @@
           icon="pi pi-download"
           text rounded v-tooltip.top="'Download'"
           size="small"
-          @click="downloadFile"
+          @click="downloadFileLocal"
         />
         <Button
           icon="pi pi-pencil"
@@ -327,8 +327,8 @@ import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Card from 'primevue/card'
-import Fieldset from 'primevue/fieldset'
 import NxFilePreview from './NxFilePreview.vue'
+import { downloadFile, formatDate, formatDuration } from '../utils/index.js'
 
 // Props
 const props = defineProps({
@@ -354,16 +354,8 @@ const renaming = ref(false)
 // Computed
 const previewUrl = computed(() => {
   if (!props.selectedFile) return ''
-  const fileId = props.selectedFile.id
-  if (!fileId) return ''
-
-  if (isImage.value) {
-    return fileManagerService.getPreviewUrl(fileId)
-  } else if (isVideo.value || isAudio.value) {
-    return fileManagerService.getStreamUrl(fileId)
-  } else {
-    return fileManagerService.getFileUrl(fileId, 'download')
-  }
+  // Use the url field directly - it's already a full URL
+  return props.selectedFile.url || ''
 })
 
 const isImage = computed(() => {
@@ -391,10 +383,8 @@ const categoryName = computed(() => {
 })
 
 // Methods
-const downloadFile = () => {
-  if (props.selectedFile?.id) {
-    fileManagerService.downloadFile(props.selectedFile.id)
-  }
+const downloadFileLocal = () => {
+  downloadFile(props.selectedFile)
 }
 
 const renameFile = async () => {
@@ -417,23 +407,6 @@ const renameFile = async () => {
   }
 }
 
-const formatDate = (dateString) => {
-  if (!dateString) return 'Unknown'
-  return new Date(dateString).toLocaleDateString()
-}
-
-const formatDuration = (seconds) => {
-  if (!seconds) return 'Unknown'
-
-  const hours = Math.floor(seconds / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  const secs = Math.floor(seconds % 60)
-
-  if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
-  return `${minutes}:${secs.toString().padStart(2, '0')}`
-}
 
 // Watchers
 watch(() => props.selectedFile, (newFile) => {

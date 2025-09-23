@@ -37,6 +37,10 @@ dev.local:8443, :8443 {
         reverse_proxy localhost:5000
     }
 
+    handle /static/* {
+        reverse_proxy localhost:5000
+    }
+
     # Everything else goes to frontend
     reverse_proxy localhost:5173
     tls /certs/dev.local.pem /certs/dev.local-key.pem

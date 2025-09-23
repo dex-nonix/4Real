@@ -79,13 +79,14 @@
           @row-action="handleFileAction"
           @bulk-action="handleBulkAction"
           @view-mode-change="handleViewModeChange"
-          @upload="handleUpload"
           @create-category="handleCreateCategory"
           @category-select="handleCategorySelectFromList"
           @file-select="handleFileSelect"
           @file-open="handleFileOpen"
           @file-uploaded="handleFileUploaded"
         />
+
+        <!-- Remove the unused @upload="handleUpload" -->
 
         <!-- Mobile Preview Modal -->
         <Dialog
@@ -159,6 +160,7 @@ import Dropdown from 'primevue/dropdown'
 import NxFileTree from './components/NxFileTree.vue'
 import NxFileListView from './components/NxFileListView.vue'
 import NxFilePreviewPane from './components/NxFilePreviewPane.vue'
+import { downloadFile } from './utils/index.js'
 
 // Props
 const props = defineProps({
@@ -293,9 +295,7 @@ const handleFileSelect = (file) => {
 }
 
 const handleFileOpen = (file) => {
-  if (file.id) {
-    fileManagerService.downloadFile(file.id)
-  }
+  downloadFile(file)
 }
 
 const deleteFile = (file) => {
@@ -408,7 +408,7 @@ const handleFileUploaded = (uploadedFile) => {
   // Add uploaded file to the list
   files.value.push(uploadedFile)
   emit('file-uploaded', uploadedFile)
-  
+
   // Update count for the category
   updateCategoryCount(uploadedFile.category_id, 1)
 }

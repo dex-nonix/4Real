@@ -9,7 +9,8 @@ from nonix_web_db.crud.query_processor import process_query
 from .file_manager_schemas import (
     FileUploadResponse, FileDeleteResponse, FileCopyResponse, FileMoveResponse,
     FileRenameResponse, CategoryCreateResponse, CategoryUpdateResponse,
-    BulkOperationResponse, FileListResponse, CategoryListResponse, CategoryWithCountListResponse
+    BulkOperationResponse, FileListResponse, CategoryListResponse, CategoryWithCountListResponse,
+    FileManagerFileResponse, FileManagerListResponse
 )
 from ..services.file_category_service import FileCategoryService
 from ..services.file_link_service import FileLinkService
@@ -32,10 +33,23 @@ class FileManagerRouter(NxWebServerRouter):
         """Upload single file with validation"""
         return await upload_file_logic(file, title, category_id, self.file_service)
 
-    @route('/files', methods=['GET'], response_model=FileListResponse)
-    async def list_files(self, req: Request) -> FileListResponse:
-        """List files with category information"""
-        return await self.file_service.get_all(await process_query(self.file_service, req))
+    @route('/files', methods=['GET'], response_model=FileManagerListResponse)
+    async def list_files(self, req: Request) -> FileManagerListResponse:
+        base_url = f"{req.url.scheme}://{req.url.netloc}"
+        results = await self.file_service.get_all(await process_query(self.file_service, req))
+        response_data = [FileManagerFileResponse.from_file_data(item, base_url) for item in results["data"]]
+        return FileManagerListResponse(
+            data=response_data,
+            pagination=results.get("pagination", {})
+        )
+
+    @route('/files/{file_id}', methods=['GET'], response_model=FileManagerFileResponse)
+    async def get_file_info(self, file_id: int, req: Request) -> FileManagerFileResponse:
+        file_data = await self.file_service.get_one(file_id)
+        if not file_data:
+            raise HTTPException(status_code=404, detail="File not found")
+        base_url = f"{req.url.scheme}://{req.url.netloc}"
+        return FileManagerFileResponse.from_file_data(file_data, base_url)
 
     @route('/files/{id}', methods=['DELETE'], response_model=FileDeleteResponse)
     async def delete_file(self, req: Request, id: int) -> FileDeleteResponse:
@@ -79,87 +93,6 @@ class FileManagerRouter(NxWebServerRouter):
             return FileRenameResponse(data=result, status="success")
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Rename failed: {str(e)}")
-
-    @route('/files/{file_id}/download', methods=['GET'])
-    async def download_file(self, file_id: int):
-        """Download file through backend API with permission checks"""
-        try:
-            file_data = await self.file_service.get_one(file_id)
-            if not file_data:
-                raise HTTPException(status_code=404, detail="File not found")
-
-            # Resolve file path from storage_url
-            file_path = os.path.join(
-                self.file_service.upload_folder,
-                os.path.basename(file_data.storage_url)
-            )
-
-            if not os.path.exists(file_path):
-                raise HTTPException(status_code=404, detail="File not found on disk")
-
-            # Return file with proper headers
-            return FileResponse(
-                path=file_path,
-                filename=file_data.original_filename,
-                media_type=file_data.mime_type
-            )
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Download failed: {str(e)}")
-
-    @route('/files/{file_id}/preview', methods=['GET'])
-    async def preview_file(self, file_id: int):
-        """Preview file (images, PDFs) through backend API"""
-        try:
-            file_data = await self.file_service.get_one(file_id)
-            if not file_data:
-                raise HTTPException(status_code=404, detail="File not found")
-
-            # Check if file type supports preview
-            if not file_data.mime_type.startswith(('image/', 'application/pdf')):
-                raise HTTPException(status_code=400, detail="File type not supported for preview")
-
-            file_path = os.path.join(
-                self.file_service.upload_folder,
-                os.path.basename(file_data.storage_url)
-            )
-
-            if not os.path.exists(file_path):
-                raise HTTPException(status_code=404, detail="File not found on disk")
-
-            return FileResponse(
-                path=file_path,
-                media_type=file_data.mime_type
-            )
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Preview failed: {str(e)}")
-
-    @route('/files/{file_id}/stream', methods=['GET'])
-    async def stream_file(self, file_id: int):
-        """Stream file (videos, audio) through backend API"""
-        try:
-            file_data = await self.file_service.get_one(file_id)
-            if not file_data:
-                raise HTTPException(status_code=404, detail="File not found")
-
-            # Check if file type supports streaming
-            if not file_data.mime_type.startswith(('video/', 'audio/')):
-                raise HTTPException(status_code=400, detail="File type not supported for streaming")
-
-            file_path = os.path.join(
-                self.file_service.upload_folder,
-                os.path.basename(file_data.storage_url)
-            )
-
-            if not os.path.exists(file_path):
-                raise HTTPException(status_code=404, detail="File not found on disk")
-
-            return FileResponse(
-                path=file_path,
-                media_type=file_data.mime_type,
-                headers={"Accept-Ranges": "bytes"}
-            )
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Stream failed: {str(e)}")
 
     # Category Operations
     @route('/categories', methods=['GET'], response_model=CategoryListResponse)
