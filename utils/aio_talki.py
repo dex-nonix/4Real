@@ -193,11 +193,19 @@ class AudioProcessor(QObject):
 
 
 class MainWindow(QMainWindow):
+    # Signals for thread-safe GUI operations (must be class attributes in PyQt6)
+    clear_text_signal = pyqtSignal()
+    auto_submit_signal = pyqtSignal(bool)  # True for Ctrl+Enter, False for Enter
+
     def __init__(self):
         super().__init__()
         logger.info("🏠 Initializing MainWindow...")
         self.setWindowTitle("Real-Time Transcription")
         self.setGeometry(100, 100, 400, 500)
+
+        # Connect signals to slots
+        self.clear_text_signal.connect(self._clear_text_area_slot)
+        self.auto_submit_signal.connect(self._auto_submit_slot)
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.layout = QVBoxLayout(self.central_widget)
@@ -235,9 +243,12 @@ class MainWindow(QMainWindow):
 
         checkbox_layout = QHBoxLayout()
         self.auto_submit_checkbox = QCheckBox("Auto-submit (Enter)")
+        self.auto_submit_checkbox.setChecked(True)
         self.ctrl_enter_checkbox = QCheckBox("Use Ctrl+Enter")
         self.auto_send_checkbox = QCheckBox("Auto-send after stop")
+        self.auto_send_checkbox.setChecked(True)
         self.clear_history_checkbox = QCheckBox("Clear after sending")
+        self.clear_history_checkbox.setChecked(True)
         checkbox_layout.addWidget(self.auto_submit_checkbox)
         checkbox_layout.addWidget(self.ctrl_enter_checkbox)
         checkbox_layout.addWidget(self.auto_send_checkbox)
@@ -331,10 +342,10 @@ class MainWindow(QMainWindow):
                             logger.info("⏎  Auto-submit enabled - scheduling Enter")
                             QTimer.singleShot(100, self._send_enter)
 
-                    # Clear text if option enabled
+                    # Clear text if option enabled (thread-safe via signal)
                     if self.clear_history_checkbox.isChecked():
                         logger.info("🧹 Clear history enabled - clearing text area after auto-send")
-                        self.text_area.clear()
+                        self.clear_text_signal.emit()
                 else:
                     logger.debug("📝 No text to auto-send")
         else:
@@ -461,21 +472,21 @@ class MainWindow(QMainWindow):
             self._type_text_directly(self.pending_paste_text)
             logger.info("✅ Paste operation completed")
 
-            # Clear text area after successful paste if option is enabled
+            # Clear text area after successful paste if option is enabled (thread-safe via signal)
             if self.clear_history_checkbox.isChecked():
                 logger.info("🧹 Clear history enabled - clearing text area after paste")
-                self.text_area.clear()
+                self.clear_text_signal.emit()
 
-            # Auto-submit if enabled
+            # Auto-submit if enabled (thread-safe via signal)
             if self.auto_submit_checkbox.isChecked():
-                if self.ctrl_enter_checkbox.isChecked():
+                use_ctrl_enter = self.ctrl_enter_checkbox.isChecked()
+                if use_ctrl_enter:
                     logger.info("⏎  Auto-submit enabled - scheduling Ctrl+Enter key press")
-                    QTimer.singleShot(100, self._send_ctrl_enter)
                     logger.debug("⏰ Ctrl+Enter will be pressed in 100ms")
                 else:
                     logger.info("⏎  Auto-submit enabled - scheduling Enter key press")
-                    QTimer.singleShot(100, self._send_enter)
                     logger.debug("⏰ Enter will be pressed in 100ms")
+                self.auto_submit_signal.emit(use_ctrl_enter)
             else:
                 logger.debug("🚫 Auto-submit disabled")
         else:
@@ -525,6 +536,20 @@ class MainWindow(QMainWindow):
         self.keyboard_controller.press(keyboard.Key.ctrl)
         self.keyboard_controller.tap(keyboard.Key.enter)
         self.keyboard_controller.release(keyboard.Key.ctrl)
+
+    def _clear_text_area_slot(self):
+        """Slot for clearing text area from any thread"""
+        logger.debug("🧹 Clearing text area via signal")
+        self.text_area.clear()
+
+    def _auto_submit_slot(self, use_ctrl_enter):
+        """Slot for auto-submit from any thread"""
+        if use_ctrl_enter:
+            logger.debug("⏎ Auto-submit slot: Ctrl+Enter")
+            QTimer.singleShot(100, self._send_ctrl_enter)
+        else:
+            logger.debug("⏎ Auto-submit slot: Enter")
+            QTimer.singleShot(100, self._send_enter)
 
 
 
