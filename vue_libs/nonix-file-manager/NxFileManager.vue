@@ -42,6 +42,7 @@
               @category-select="handleCategorySelectFromList"
               @file-select="handleFileSelect"
               @file-open="handleFileOpen"
+              @file-view-dialog="openFullscreenView"
               @file-uploaded="handleFileUploaded"
             />
           </SplitterPanel>
@@ -57,6 +58,7 @@
               @close="selectedFile = null"
               @file-action="handleFileAction"
               @file-renamed="handleFileRenamed"
+              @open-fullscreen-dialog="openFullscreenView(selectedFile)"
             />
           </SplitterPanel>
         </Splitter>
@@ -83,6 +85,7 @@
           @category-select="handleCategorySelectFromList"
           @file-select="handleFileSelect"
           @file-open="handleFileOpen"
+          @file-view-dialog="openFullscreenView"
           @file-uploaded="handleFileUploaded"
         />
 
@@ -101,6 +104,7 @@
             :selectedFile="selectedFile"
             @file-action="handleFileAction"
             @file-renamed="handleFileRenamed"
+            @open-fullscreen-dialog="openFullscreenView(selectedFile)"
           />
         </Dialog>
       </div>
@@ -147,7 +151,14 @@
         />
       </template>
     </Dialog>
+
   </div>
+
+  <!-- Fullscreen Dialog -->
+  <NxFileViewDialog
+    v-model:visible="showFullscreenView"
+    :selectedFile="fullscreenViewFile"
+  />
 </template>
 
 <script setup>
@@ -160,6 +171,7 @@ import Dropdown from 'primevue/dropdown'
 import NxFileTree from './components/NxFileTree.vue'
 import NxFileListView from './components/NxFileListView.vue'
 import NxFilePreviewPane from './components/NxFilePreviewPane.vue'
+import NxFileViewDialog from './components/NxFileViewDialog.vue'
 import { downloadFile } from './utils/index.js'
 
 // Props
@@ -213,6 +225,8 @@ const viewMode = ref(props.defaultViewMode)
 const showSidebar = ref(false)
 const showPreviewModal = ref(false)
 const showBulkDialog = ref(false)
+const showFullscreenView = ref(false)
+const fullscreenViewFile = ref(null)
 
 // Operations
 const bulkOperation = ref('')
@@ -436,6 +450,11 @@ const getBulkIcon = (operation) => {
     delete: 'pi pi-trash'
   }
   return icons[operation] || 'pi pi-check'
+}
+
+const openFullscreenView = (file) => {
+  fullscreenViewFile.value = file
+  showFullscreenView.value = true
 }
 
 // Lifecycle

@@ -81,7 +81,7 @@
                   </div>
                 </div>
                 <div class="flex gap-2">
-                  <Button icon="pi pi-eye" size="small" text rounded v-tooltip.top="'View File'" @click.stop="openFile(item)" />
+                  <Button icon="pi pi-eye" size="small" text rounded v-tooltip.top="'View File'" @click.stop="handleGridFileClick(item)" />
                   <Button icon="pi pi-trash" size="small" text rounded severity="danger" v-tooltip.top="'Delete File'" @click.stop="handleRowAction('delete', item)" />
                 </div>
               </div>
@@ -115,7 +115,11 @@
               </div>
               <div class="w-full">
                 <div class="text-sm font-medium mb-1 break-word line-height-2">{{ item.original_filename ? truncateFileName(item.original_filename) : 'Untitled' }}</div>
-                <div class="text-color-secondary">{{ item.size_bytes ? formattedSize(item.size_bytes) : '' }}</div>
+                <div class="text-color-secondary mb-2">{{ item.size_bytes ? formattedSize(item.size_bytes) : '' }}</div>
+                <div class="flex justify-content-center gap-1">
+                  <Button icon="pi pi-eye" size="small" text rounded v-tooltip.top="'View File'" @click.stop="handleGridFileClick(item)" />
+                  <Button icon="pi pi-trash" size="small" text rounded severity="danger" v-tooltip.top="'Delete File'" @click.stop="handleRowAction('delete', item)" />
+                </div>
               </div>
             </div>
           </div>
@@ -237,7 +241,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['update:selectedFiles', 'row-action', 'bulk-action', 'upload', 'view-mode-change', 'file-select', 'file-open', 'file-uploaded', 'category-select'])
+const emit = defineEmits(['update:selectedFiles', 'row-action', 'bulk-action', 'upload', 'view-mode-change', 'file-select', 'file-open', 'file-uploaded', 'category-select', 'file-view-dialog'])
 
 // Services
 const fileTypeManager = inject('fileTypeManager')
@@ -303,6 +307,10 @@ const exitMultiSelectMode = () => {
 
 const openFile = (file) => {
   emit('file-open', file)
+}
+
+const handleGridFileClick = (file) => {
+  emit('file-view-dialog', file)
 }
 
 const isSelected = (file) => {
