@@ -1,26 +1,30 @@
 <template>
-  <div class="flex align-items-center gap-2">
+  <div :class="containerClasses">
     <!-- Image preview -->
     <template v-if="isImage && effectiveUrl">
-      <img :src="effectiveUrl" :alt="altText"
-           style="max-width: 48px; max-height: 48px; object-fit: cover; border-radius: 4px;"/>
+      <img :src="effectiveUrl" :alt="altText" :class="imageClasses"/>
     </template>
 
     <!-- Audio controls -->
     <template v-else-if="isAudio && effectiveUrl">
-      <audio :src="effectiveUrl" controls style="height: 32px"></audio>
+      <audio :src="effectiveUrl" controls :class="audioClasses"></audio>
+    </template>
+
+    <!-- Video controls -->
+    <template v-else-if="isVideo && effectiveUrl">
+      <video :src="effectiveUrl" controls :class="videoClasses"></video>
     </template>
 
     <!-- File type icon with proper detection -->
     <template v-else>
-      <i :class="fileTypeIconClass" :style="{ color: fileTypeColor }" style="font-size: 1.5rem;"></i>
+      <i :class="iconClasses" :style="{ color: fileTypeColor }"></i>
     </template>
 
     <!-- File info with proper file type detection -->
-    <div class="flex flex-column">
+    <div v-if="showInfo" class="flex flex-column">
       <span class="text-sm font-medium">{{ displayName }}</span>
-      <small v-if="showSize && formattedSize" class="text-gray-600">{{ formattedSize }}</small>
-      <small v-if="showCategory" class="text-gray-600">{{ fileTypeDisplayName }}</small>
+      <small v-if="showSize && formattedSize" class="text-color-secondary">{{ formattedSize }}</small>
+      <small v-if="showCategory" class="text-color-secondary">{{ fileTypeDisplayName }}</small>
     </div>
   </div>
 </template>
@@ -38,7 +42,8 @@ const props = defineProps({
   size: {type: Number, default: 0},
   urlField: {type: String, default: 'storage_url'},
   showSize: {type: Boolean, default: false},
-  showCategory: {type: Boolean, default: false}
+  showCategory: {type: Boolean, default: false},
+  variant: {type: String, default: 'thumbnail', validator: value => ['thumbnail', 'preview'].includes(value)}
 })
 
 // Services
@@ -101,6 +106,45 @@ const isImage = computed(() => {
 
 const isAudio = computed(() => {
   return fileTypeInfo.value.category === 'audio'
+})
+
+const isVideo = computed(() => {
+  return fileTypeInfo.value.category === 'video'
+})
+
+// Variant-based classes
+const containerClasses = computed(() => {
+  return props.variant === 'preview'
+    ? 'flex flex-column align-items-center gap-3'
+    : 'flex align-items-center gap-2'
+})
+
+const imageClasses = computed(() => {
+  return props.variant === 'preview'
+    ? 'max-w-full max-h-25rem border-round object-contain'
+    : 'w-3rem h-3rem border-round object-cover'
+})
+
+const audioClasses = computed(() => {
+  return props.variant === 'preview'
+    ? 'w-full h-4rem'
+    : 'h-2rem'
+})
+
+const videoClasses = computed(() => {
+  return props.variant === 'preview'
+    ? 'max-w-full max-h-20rem border-round object-contain'
+    : 'w-3rem h-3rem border-round object-cover'
+})
+
+const iconClasses = computed(() => {
+  return props.variant === 'preview'
+    ? [fileTypeIconClass.value, 'text-6xl']
+    : [fileTypeIconClass.value, 'text-xl']
+})
+
+const showInfo = computed(() => {
+  return props.variant === 'thumbnail'
 })
 
 // Display name with fallback to file type name
