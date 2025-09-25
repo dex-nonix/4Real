@@ -1,16 +1,16 @@
-import sys
-import threading
+import logging
 import queue
+import threading
+
+import colorama
 import numpy as np
 import sounddevice as sd
-import logging
-import colorama
 from faster_whisper import WhisperModel
 
-# Initialize colorama for colored console output
 colorama.init()
 
-# Configure logging with custom formatter
+from faster_whisper import WhisperModel
+
 class ColoredFormatter(logging.Formatter):
     def format(self, record):
         if record.levelno == logging.INFO:
@@ -22,6 +22,7 @@ class ColoredFormatter(logging.Formatter):
         elif record.levelno == logging.DEBUG:
             record.levelname = f"🔍 {record.levelname}"
         return super().format(record)
+
 
 # Set up logger
 logger = logging.getLogger('STTLogger')
@@ -39,7 +40,7 @@ class STTEngine:
     Independent of Qt, uses callback functions for communication
     """
 
-    def __init__(self, model_size="tiny.en", on_transcript=None, on_error=None, on_status=None):
+    def __init__(self, model_size="large-v3-turbo", on_transcript=None, on_error=None, on_status=None):
         """
         Initialize STT Engine
 
@@ -56,7 +57,7 @@ class STTEngine:
         logger.info(f"🎯 Initializing STT Engine with model: {model_size}")
         try:
             logger.debug("🔄 Loading Whisper model...")
-            self.whisper_model = WhisperModel(model_size, device="cpu", compute_type="int8")
+            self.whisper_model = WhisperModel(model_size, device="cuda", compute_type="int8")
             logger.info("✅ Whisper model loaded successfully")
         except Exception as e:
             logger.error(f"❌ Failed to load Whisper model: {e}")
@@ -87,7 +88,8 @@ class STTEngine:
             logger.debug("🔍 Querying audio device information...")
             device_info = sd.query_devices(device_index, 'input')
             self.native_samplerate = int(device_info['default_samplerate'])
-            logger.info(f"📊 Device info: {device_info['name']} (index {device_index}), rate: {self.native_samplerate}Hz")
+            logger.info(
+                f"📊 Device info: {device_info['name']} (index {device_index}), rate: {self.native_samplerate}Hz")
 
             self.is_recording = True
             logger.debug("🔄 Creating audio input stream...")

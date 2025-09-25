@@ -1,34 +1,19 @@
 # FILE: Your main UI file.
 # DELETE EVERYTHING AND REPLACE IT WITH THIS.
 
-import sys
 import asyncio
 import logging
-import colorama
-import sounddevice as sd
+import sys
+
 import qasync
+import sounddevice as sd
+from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QPushButton, QComboBox, QTextEdit, QCheckBox, QLabel)
-from PyQt6.QtCore import QTimer, pyqtSignal
 from pynput import keyboard, mouse
-from async_stt_engine import AsyncSTTEngine
 
-# --- Logger setup (unchanged) ---
-colorama.init()
-
-
-class ColoredFormatter(logging.Formatter):
-    def format(self, record):
-        if record.levelno == logging.INFO:
-            record.levelname = f"ℹ️  {record.levelname}"
-        elif record.levelno == logging.WARNING:
-            record.levelname = f"⚠️  {record.levelname}"
-        elif record.levelno == logging.ERROR:
-            record.levelname = f"❌ {record.levelname}"
-        elif record.levelno == logging.DEBUG:
-            record.levelname = f"🔍 {record.levelname}"
-        return super().format(record)
-
+from stt_engine import ColoredFormatter
+from stt_engine.engine import AsyncSTTEngine
 
 logger = logging.getLogger('TalkiV2Logger')
 logger.setLevel(logging.DEBUG)
@@ -127,8 +112,13 @@ class MainWindow(QMainWindow):
     def finish_initialization(self):
         logger.info("🚀 FINISH_INIT: Starting backend initialization...")
         try:
-            self.stt_engine = AsyncSTTEngine(model_size="tiny.en", on_transcript=self.transcript_signal.emit,
-                                             on_error=self.error_signal.emit, on_status=self.on_status_update)
+            self.stt_engine = AsyncSTTEngine(
+                model_size="tiny.en",
+                on_transcript=self.transcript_signal.emit,
+                on_error=self.error_signal.emit,
+                on_status=self.on_status_update
+            )
+
             self.keyboard_controller = keyboard.Controller()
             self.populate_microphones()
             self.setup_hotkeys()
@@ -260,7 +250,8 @@ class MainWindow(QMainWindow):
                                                              on_release=self.on_paste_key_release);
             self.paste_keyboard_listener.start()
         except Exception as e:
-            logger.error(f"❌ Failed to enable paste listeners: {e}"); self._disable_paste_listeners()
+            logger.error(f"❌ Failed to enable paste listeners: {e}");
+            self._disable_paste_listeners()
 
     def _disable_paste_listeners(self):
         if self.paste_mouse_listener: self.paste_mouse_listener.stop(); self.paste_mouse_listener = None
@@ -273,7 +264,8 @@ class MainWindow(QMainWindow):
         if pressed and button == mouse.Button.left and self.paste_mode_active and self.ctrl_pressed:
             current_text = self.text_area.toPlainText()
             if current_text:
-                self.pending_paste_text = current_text; self._execute_paste()
+                self.pending_paste_text = current_text;
+                self._execute_paste()
             else:
                 self._disable_paste_listeners()
 

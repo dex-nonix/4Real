@@ -1,8 +1,7 @@
 import sys
 import threading
 import queue
-import numpy as np
-import sounddevice as sd
+
 import logging
 import colorama
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -50,7 +49,7 @@ class AudioProcessor(QObject):
         logger.info(f"🎯 Initializing AudioProcessor with model: {model_size}")
         try:
             logger.debug("🔄 Loading Whisper model...")
-            self.whisper_model = WhisperModel(model_size, device="cpu", compute_type="int8")
+            self.whisper_model = WhisperModel(model_size, device="cuda", compute_type="int8")
             logger.info("✅ Whisper model loaded successfully")
         except Exception as e:
             logger.error(f"❌ Failed to load Whisper model: {e}")

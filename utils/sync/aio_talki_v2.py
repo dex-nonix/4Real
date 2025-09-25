@@ -115,7 +115,7 @@ class MainWindow(QMainWindow):
 
         # Backend - STT Engine V2 with Qt signal callbacks
         self.stt_engine = STTEngine(
-            model_size="tiny.en",
+            model_size="large-v3-turbo",
             on_transcript=self.transcript_signal.emit,
             on_error=self.error_signal.emit,
             on_status=self.on_status_update
