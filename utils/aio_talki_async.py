@@ -61,6 +61,22 @@ class MainWindow(QMainWindow):
         mic_layout.addWidget(self.mic_combo)
         self.layout.addLayout(mic_layout)
 
+        mode_layout = QHBoxLayout()
+        self.mode_combo = QComboBox()
+        self.mode_combo.addItems([
+            "🎙️ Live Streaming",
+            "📦 Buffered (Unlimited)",
+            "💾 Buffered (100MB ~47h)",
+            "💾 Buffered (500MB ~4.5h)",
+            "💾 Buffered (1GB ~9h)",
+            "💾 Buffered (2GB ~18h)",
+            "💾 Buffered (5GB ~100h)",
+            "💾 Buffered (10GB ~200h)"
+        ])
+        mode_layout.addWidget(QLabel("Recording Mode:"))
+        mode_layout.addWidget(self.mode_combo)
+        self.layout.addLayout(mode_layout)
+
         button_layout = QHBoxLayout()
         self.start_button = QPushButton("Start Recording")
         self.stop_button = QPushButton("Stop Recording")
@@ -129,6 +145,7 @@ class MainWindow(QMainWindow):
             self.paste_status_label.setStyleSheet("color: gray; font-weight: bold;")
             self.start_button.setEnabled(True)
             self.mic_combo.setEnabled(True)
+            self.mode_combo.setEnabled(True)
             logger.info("✅ FINISH_INIT: Backend initialized successfully.")
         except Exception as e:
             logger.error(f"❌ FATAL: Backend initialization failed: {e}")
@@ -141,9 +158,30 @@ class MainWindow(QMainWindow):
             # Create microphone source with selected device
             audio_source = MicrophoneSource(device_index=device_index)
             self.stt_engine.set_audio_source(audio_source)
+            mode, buffer_mb = self.parse_mode_selection(self.mode_combo.currentText())
+            self.stt_engine.configure_processing(mode, buffer_mb)
             await self.stt_engine.start_transcription()
         else:
             logger.error("❌ No valid microphone device selected")
+
+    def parse_mode_selection(self, mode_text):
+        if "Live Streaming" in mode_text:
+            return "live", float('inf')
+        elif "Unlimited" in mode_text:
+            return "buffered", float('inf')
+        elif "100MB" in mode_text:
+            return "buffered", 100
+        elif "500MB" in mode_text:
+            return "buffered", 500
+        elif "1GB" in mode_text:
+            return "buffered", 1024
+        elif "2GB" in mode_text:
+            return "buffered", 2048
+        elif "5GB" in mode_text:
+            return "buffered", 5120
+        elif "10GB" in mode_text:
+            return "buffered", 10240
+        return "live", float('inf')
 
     def stop_recording(self):
         if self.stt_engine and self.stt_engine.is_task_running():

@@ -1,5 +1,7 @@
 import asyncio
 from logging import getLogger
+import os
+import tempfile
 
 import numpy as np
 from faster_whisper import WhisperModel
@@ -14,7 +16,8 @@ class AsyncSTTEngine:
     """
 
     def __init__(self, audio_source: AudioSource = None, model_size="tiny.en", device="cuda", compute_type="int8",
-                 on_transcript=None, on_error=None, on_status=None):
+                 on_transcript=None, on_error=None, on_status=None, processing_mode: str = "live",
+                 buffer_limit_mb: float = float('inf')):
         self.audio_source = audio_source
         self.model_size = model_size
         self.device = device
@@ -26,12 +29,19 @@ class AsyncSTTEngine:
         self.whisper_model = None
         self.processing_task = None
         self.loop = asyncio.get_event_loop()
+        self.processing_mode = processing_mode
+        self.buffer_limit_bytes = float('inf') if buffer_limit_mb == float('inf') else int(buffer_limit_mb * 1024 * 1024)
+        self._temp_file_path = None
         logger.info("🎤 Async STT Engine initialized and ready")
 
     def set_audio_source(self, audio_source: AudioSource):
         """Set the audio source for the engine."""
         self.audio_source = audio_source
         logger.info("🎤 Audio source updated")
+
+    def configure_processing(self, processing_mode: str = "live", buffer_limit_mb: float = float('inf')):
+        self.processing_mode = processing_mode
+        self.buffer_limit_bytes = float('inf') if buffer_limit_mb == float('inf') else int(buffer_limit_mb * 1024 * 1024)
 
     async def initialize_model(self):
         """Asynchronously loads the Whisper model in a background thread."""
@@ -76,6 +86,12 @@ class AsyncSTTEngine:
                 logger.warning("⚠️ Timeout waiting for processing task. Forcing cancellation.")
                 self.processing_task.cancel()
 
+        if self._temp_file_path and os.path.exists(self._temp_file_path):
+            try:
+                os.unlink(self._temp_file_path)
+            except Exception:
+                pass
+
         logger.info("✅ Transcription engine stopped.")
         self.on_status("Transcription stopped")
 
@@ -101,44 +117,87 @@ class AsyncSTTEngine:
             self.on_transcript(text.strip() + " ")
 
     async def _process_audio(self):
-        """Asynchronous audio processing task that reads from the source and transcribes."""
         logger.info("🧵 Audio processing task started")
+        try:
+            if self.processing_mode == "live":
+                await self._process_live_mode()
+            else:
+                await self._process_buffered_mode()
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            logger.error(f"❌ Error in audio processing task: {e}")
+            self.on_error(f"Processing error: {e}")
+        logger.info("🧵 Audio processing task finished.")
+
+    async def _process_live_mode(self):
         audio_buffer = np.array([], dtype=np.float32)
-        PROCESSING_INTERVAL_SAMPLES = int(16000 * 2.0)  # Process in 2-second chunks
-
+        processing_interval_samples = int(16000 * 2.0)
         while True:
-            try:
-                audio_chunk = await self.audio_source.read()
-
-                if audio_chunk is None:  # End of stream signal
-                    logger.debug("🛑 Received end of stream signal.")
-                    break
-
-                # --- THIS IS THE FIX ---
-                # Ensure the incoming chunk is flattened to 1D before concatenation,
-                # just like in the original working code.
-                audio_buffer = np.concatenate([audio_buffer, audio_chunk.flatten()])
-
-                if len(audio_buffer) >= PROCESSING_INTERVAL_SAMPLES:
-                    logger.info("🔥 Processing accumulated audio chunk")
-                    await self._transcribe_chunk(audio_buffer)
-                    audio_buffer = np.array([], dtype=np.float32)
-
-            except asyncio.CancelledError:
-                logger.info("Processing task cancelled.")
+            audio_chunk = await self.audio_source.read()
+            if audio_chunk is None:
                 break
-            except Exception as e:
-                logger.error(f"❌ Error in audio processing task: {e}")
-                self.on_error(f"Processing error: {e}")
-                # Stop processing on error to avoid spamming logs
-                break
-
-        # Process any leftover audio
+            audio_buffer = np.concatenate([audio_buffer, audio_chunk.flatten()])
+            if len(audio_buffer) >= processing_interval_samples:
+                await self._transcribe_chunk(audio_buffer)
+                audio_buffer = np.array([], dtype=np.float32)
         if len(audio_buffer) > 0:
-            logger.info(f"🔚 Processing {len(audio_buffer) / 16000:.2f}s of leftover audio.")
             await self._transcribe_chunk(audio_buffer)
 
-        logger.info("🧵 Audio processing task finished.")
+    async def _process_buffered_mode(self):
+        current_bytes = 0
+        in_memory = []
+        spilled = False
+        while True:
+            audio_chunk = await self.audio_source.read()
+            if audio_chunk is None:
+                break
+            flat = audio_chunk.flatten().astype(np.float32)
+            in_memory.append(flat)
+            current_bytes += int(flat.size * 4)
+            if self.buffer_limit_bytes != float('inf') and current_bytes > self.buffer_limit_bytes:
+                await self._spill_to_disk(in_memory)
+                in_memory = []
+                current_bytes = 0
+                spilled = True
+        if spilled:
+            disk_audio = await self._load_spilled_audio()
+            if in_memory:
+                mem_audio = np.concatenate(in_memory)
+                if disk_audio.size > 0:
+                    complete_audio = np.concatenate([disk_audio, mem_audio])
+                else:
+                    complete_audio = mem_audio
+            else:
+                complete_audio = disk_audio
+            if complete_audio.size > 0:
+                await self._transcribe_chunk(complete_audio)
+        else:
+            if in_memory:
+                complete_audio = np.concatenate(in_memory)
+                await self._transcribe_chunk(complete_audio)
+
+    async def _spill_to_disk(self, buffer_list):
+        if not self._temp_file_path:
+            fd, path = tempfile.mkstemp(suffix='.f32')
+            os.close(fd)
+            self._temp_file_path = path
+        if buffer_list:
+            data = np.concatenate(buffer_list).astype(np.float32)
+            with open(self._temp_file_path, 'ab') as f:
+                data.tofile(f)
+
+    async def _load_spilled_audio(self):
+        if not self._temp_file_path or not os.path.exists(self._temp_file_path):
+            return np.array([], dtype=np.float32)
+        with open(self._temp_file_path, 'rb') as f:
+            data = np.fromfile(f, dtype=np.float32)
+        try:
+            os.unlink(self._temp_file_path)
+        except Exception:
+            pass
+        self._temp_file_path = None
+        return data
 
 
 logger = getLogger(AsyncSTTEngine.__name__)
