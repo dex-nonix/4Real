@@ -14,6 +14,7 @@ from pynput import keyboard, mouse
 
 from stt_engine import ColoredFormatter
 from stt_engine.engine import AsyncSTTEngine
+from stt_engine.audio_sources.microphone_source import MicrophoneSource
 
 logger = logging.getLogger('TalkiV2Logger')
 logger.setLevel(logging.DEBUG)
@@ -137,23 +138,26 @@ class MainWindow(QMainWindow):
     async def start_recording(self):
         device_index = self.mic_combo.currentData()
         if device_index is not None:
-            await self.stt_engine.start_recording(device_index)
+            # Create microphone source with selected device
+            audio_source = MicrophoneSource(device_index=device_index)
+            self.stt_engine.set_audio_source(audio_source)
+            await self.stt_engine.start_transcription()
         else:
             logger.error("❌ No valid microphone device selected")
 
     def stop_recording(self):
-        if self.stt_engine and self.stt_engine.is_recording:
+        if self.stt_engine and self.stt_engine.is_task_running():
             logger.info("⏹️ Stop recording requested")
             self.status_label.setText("Stopping...")
             self.stop_button.setEnabled(False)  # Disable immediately for responsiveness
-            asyncio.create_task(self.stt_engine.stop_recording())
+            asyncio.create_task(self.stt_engine.stop_transcription())
 
     def on_status_update(self, msg):
-        if msg == "Recording started":
+        if msg == "Transcription started":
             self.status_label.setText("Recording...")
             self.start_button.setEnabled(False)
             self.stop_button.setEnabled(True)
-        elif msg == "Recording stopped":
+        elif msg == "Transcription stopped":
             self.status_label.setText("Stopped.")
             self.start_button.setEnabled(True)
             self.stop_button.setEnabled(False)
@@ -207,7 +211,7 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         logger.info("🔄 Application closing...")
-        if self.stt_engine: asyncio.create_task(self.stt_engine.stop_recording())
+        if self.stt_engine: asyncio.create_task(self.stt_engine.stop_transcription())
         if self.hotkey_listener: self.hotkey_listener.stop()
         event.accept()
 

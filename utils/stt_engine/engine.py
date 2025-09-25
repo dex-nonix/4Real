@@ -13,7 +13,7 @@ class AsyncSTTEngine:
     This engine is now agnostic to the audio input source.
     """
 
-    def __init__(self, audio_source: AudioSource, model_size="tiny.en", device="cuda", compute_type="int8",
+    def __init__(self, audio_source: AudioSource = None, model_size="tiny.en", device="cuda", compute_type="int8",
                  on_transcript=None, on_error=None, on_status=None):
         self.audio_source = audio_source
         self.model_size = model_size
@@ -27,6 +27,11 @@ class AsyncSTTEngine:
         self.processing_task = None
         self.loop = asyncio.get_event_loop()
         logger.info("🎤 Async STT Engine initialized and ready")
+
+    def set_audio_source(self, audio_source: AudioSource):
+        """Set the audio source for the engine."""
+        self.audio_source = audio_source
+        logger.info("🎤 Audio source updated")
 
     async def initialize_model(self):
         """Asynchronously loads the Whisper model in a background thread."""
@@ -47,6 +52,9 @@ class AsyncSTTEngine:
 
     async def start_transcription(self):
         """Starts the transcription process."""
+        if self.audio_source is None:
+            raise ValueError("Audio source not set. Call set_audio_source() first.")
+
         await self.initialize_model()
 
         await self.audio_source.start()
