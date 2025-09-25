@@ -1,15 +1,12 @@
 import sys
-import threading
-import queue
-import numpy as np
-import sounddevice as sd
 import logging
 import colorama
+import sounddevice as sd
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QPushButton, QComboBox, QTextEdit, QCheckBox, QLabel)
 from PyQt6.QtCore import QTimer, pyqtSignal, QObject
-from faster_whisper import WhisperModel
 from pynput import keyboard, mouse
+from stt_engine import STTEngine
 
 # Initialize colorama for colored console output
 colorama.init()
@@ -28,7 +25,7 @@ class ColoredFormatter(logging.Formatter):
         return super().format(record)
 
 # Set up logger
-logger = logging.getLogger('TalkiLogger')
+logger = logging.getLogger('TalkiV2Logger')
 logger.setLevel(logging.DEBUG)
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.DEBUG)
@@ -37,175 +34,24 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 
-class AudioProcessor(QObject):
-    """
-    This version uses a simple, robust, time-based chunking method.
-    The failed VAD logic has been completely removed.
-    """
-    transcript_update = pyqtSignal(str)
-    error_signal = pyqtSignal(str)
-
-    def __init__(self, model_size="tiny.en"):
-        super().__init__()
-        logger.info(f"🎯 Initializing AudioProcessor with model: {model_size}")
-        try:
-            logger.debug("🔄 Loading Whisper model...")
-            self.whisper_model = WhisperModel(model_size, device="cpu", compute_type="int8")
-            logger.info("✅ Whisper model loaded successfully")
-        except Exception as e:
-            logger.error(f"❌ Failed to load Whisper model: {e}")
-            self.error_signal.emit(f"Failed to load Whisper model: {e}")
-            return
-
-        self.is_recording = False
-        self.audio_queue = queue.Queue()
-        self.stream = None
-        self.native_samplerate = None
-        self.target_samplerate = 16000
-        self.processing_thread = None
-        logger.info("🎤 AudioProcessor initialized and ready")
-
-    def start_recording(self, device_index):
-        if self.is_recording:
-            logger.warning("⚠️  Recording already in progress, ignoring start request")
-            return
-
-        logger.info(f"🎤 Starting recording on device {device_index}")
-        try:
-            logger.debug("🔍 Querying audio device information...")
-            device_info = sd.query_devices(device_index, 'input')
-            self.native_samplerate = int(device_info['default_samplerate'])
-            logger.info(f"📊 V1 Device info: {device_info['name']} (index {device_index}), rate: {self.native_samplerate}Hz")
-
-            self.is_recording = True
-            logger.debug("🔄 Creating audio input stream...")
-            self.stream = sd.InputStream(
-                samplerate=self.native_samplerate, channels=1, device=device_index,
-                dtype="float32", callback=self._audio_callback
-            )
-
-            logger.debug("▶️  Starting audio stream...")
-            self.stream.start()
-            logger.debug("🧵 Starting processing thread...")
-            self.processing_thread = threading.Thread(target=self._process_audio)
-            self.processing_thread.start()
-
-            logger.info("✅ Recording started successfully")
-        except Exception as e:
-            logger.error(f"❌ Error starting audio stream: {e}")
-            self.error_signal.emit(f"Error starting audio stream: {e}")
-            self.is_recording = False
-
-    def stop_recording(self):
-        if not self.is_recording:
-            logger.debug("🔇 Recording not active, ignoring stop request")
-            return
-
-        logger.info("⏹️  Stopping recording...")
-        self.is_recording = False
-
-        logger.debug("📤 Sending stop signal to processing thread...")
-        self.audio_queue.put(None)  # Sentinel to unblock the thread
-
-        if self.stream:
-            logger.debug("🔄 Stopping and closing audio stream...")
-            self.stream.stop(ignore_errors=True)
-            self.stream.close(ignore_errors=True)
-            self.stream = None
-
-        logger.info("✅ Recording stopped")
-
-    def is_thread_alive(self):
-        return self.processing_thread is not None and self.processing_thread.is_alive()
-
-    def _audio_callback(self, indata, frames, time_info, status):
-        if status:
-            logger.warning(f"⚠️  Audio callback status: {status}")
-            self.error_signal.emit(str(status))
-
-        logger.debug(f"📡 Audio chunk received: {frames} frames")
-        self.audio_queue.put(indata.copy())
-
-    def _resample(self, audio_chunk):
-        if self.native_samplerate == self.target_samplerate:
-            return audio_chunk
-        num_samples = audio_chunk.shape[0]
-        resampled_num_samples = int(num_samples * self.target_samplerate / self.native_samplerate)
-        original_indices = np.arange(num_samples)
-        resampled_indices = np.linspace(0, num_samples - 1, resampled_num_samples)
-        return np.interp(resampled_indices, original_indices, audio_chunk.flatten()).astype(np.float32)
-
-    def _transcribe_chunk(self, audio_chunk):
-        chunk_duration = len(audio_chunk) / self.target_samplerate
-        logger.debug(f"🔊 Processing chunk: {chunk_duration:.2f}s duration")
-
-        if len(audio_chunk) < self.target_samplerate * 0.2:
-            logger.debug(f"🗑️  Chunk too small ({chunk_duration:.2f}s), skipping")
-            return  # Ignore tiny fragments
-
-        logger.debug("🎯 Starting transcription...")
-        segments, _ = self.whisper_model.transcribe(audio_chunk, beam_size=5)
-        text = "".join(s.text for s in segments)
-
-        if text.strip():
-            logger.info(f"📝 Transcribed: \"{text.strip()}\"")
-            self.transcript_update.emit(text.strip() + " ")
-        else:
-            logger.debug("🤫 No speech detected in chunk")
-
-    def _process_audio(self):
-        logger.info("🧵 Audio processing thread started")
-        audio_buffer = np.array([], dtype=np.float32)
-        PROCESSING_INTERVAL_SAMPLES = int(self.target_samplerate * 2.0)
-        logger.debug(f"⚙️  Processing interval: {PROCESSING_INTERVAL_SAMPLES} samples (2.0s)")
-
-        while self.is_recording:
-            try:
-                raw_chunk = self.audio_queue.get(timeout=0.1)
-                if raw_chunk is None:
-                    logger.debug("🛑 Received stop signal, exiting processing loop")
-                    break
-
-                logger.debug("🔄 Processing raw audio chunk...")
-                resampled_chunk = self._resample(raw_chunk)
-                audio_buffer = np.concatenate([audio_buffer, resampled_chunk])
-
-                buffer_duration = len(audio_buffer) / self.target_samplerate
-                logger.debug(f"🔄 Audio buffer size: {buffer_duration:.2f}s")
-
-                # Process every 2 seconds of audio for a live feel
-                if len(audio_buffer) >= PROCESSING_INTERVAL_SAMPLES:
-                    logger.info("🔥 Processing audio chunk (2s interval)")
-                    self._transcribe_chunk(audio_buffer)
-                    audio_buffer = np.array([], dtype=np.float32)  # Clear buffer
-                    logger.debug("🧹 Audio buffer cleared")
-
-            except queue.Empty:
-                continue
-
-        # After loop ends, process any leftover audio in the buffer
-        if len(audio_buffer) > 0:
-            leftover_duration = len(audio_buffer) / self.target_samplerate
-            logger.info(f"🔚 Processing leftover audio: {leftover_duration:.2f}s")
-            self._transcribe_chunk(audio_buffer)
-
-        logger.info("🧵 Audio processing thread finished")
-
-
 class MainWindow(QMainWindow):
     # Signals for thread-safe GUI operations (must be class attributes in PyQt6)
     clear_text_signal = pyqtSignal()
-    auto_submit_signal = pyqtSignal(bool)  # True for Ctrl+Enter, False for Enter
+    transcript_signal = pyqtSignal(str)
+    error_signal = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
-        logger.info("🏠 Initializing MainWindow...")
-        self.setWindowTitle("Real-Time Transcription")
+        logger.info("🏠 Initializing Talki V2 MainWindow...")
+
+        self.setWindowTitle("Real-Time Transcription V2")
         self.setGeometry(100, 100, 400, 500)
 
         # Connect signals to slots
         self.clear_text_signal.connect(self._clear_text_area_slot)
-        self.auto_submit_signal.connect(self._auto_submit_slot)
+        self.transcript_signal.connect(self.update_text_area)
+        self.error_signal.connect(self.on_audio_error)
+
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.layout = QVBoxLayout(self.central_widget)
@@ -267,10 +113,13 @@ class MainWindow(QMainWindow):
         self.status_label = QLabel("Ready.")
         self.layout.addWidget(self.status_label)
 
-        # Backend
-        self.audio_processor = AudioProcessor()
-        self.audio_processor.transcript_update.connect(self.update_text_area)
-        self.audio_processor.error_signal.connect(self.on_audio_error)
+        # Backend - STT Engine V2 with Qt signal callbacks
+        self.stt_engine = STTEngine(
+            model_size="tiny.en",
+            on_transcript=self.transcript_signal.emit,
+            on_error=self.error_signal.emit,
+            on_status=self.on_status_update
+        )
 
         self.thread_check_timer = QTimer(self)
         self.thread_check_timer.setInterval(100)
@@ -294,30 +143,23 @@ class MainWindow(QMainWindow):
         if device_index is not None:
             logger.info(f"▶️  Start recording button pressed - Device: {device_index}")
             self.status_label.setText("Starting...")
-            logger.debug("🎯 Calling audio_processor.start_recording()")
-            self.audio_processor.start_recording(device_index)
-            if self.audio_processor.is_recording:
-                logger.info("✅ Recording state confirmed - updating UI")
-                self.start_button.setEnabled(False)
-                self.stop_button.setEnabled(True)
-                self.status_label.setText("Recording...")
-            else:
-                logger.warning("⚠️  Recording failed to start")
+            logger.debug("🎯 Calling stt_engine.start_recording()")
+            self.stt_engine.start_recording(device_index)
         else:
             logger.error("❌ No valid microphone device selected")
-    
+
     def stop_recording(self):
         logger.info("⏹️  Stop recording button pressed")
         self.status_label.setText("Stopping...")
         self.stop_button.setEnabled(False)
-        logger.debug("🎯 Calling audio_processor.stop_recording()")
-        self.audio_processor.stop_recording()
+        logger.debug("🎯 Calling stt_engine.stop_recording()")
+        self.stt_engine.stop_recording()
         logger.debug("⏰ Starting thread check timer")
         self.thread_check_timer.start()
 
     def check_if_thread_is_done(self):
         logger.debug("⏰ Thread check timer tick")
-        if not self.audio_processor.is_thread_alive():
+        if not self.stt_engine.is_thread_alive():
             logger.info("✅ Processing thread finished - resetting UI")
             self.thread_check_timer.stop()
             self.start_button.setEnabled(True)
@@ -357,6 +199,18 @@ class MainWindow(QMainWindow):
         self.start_button.setEnabled(True)
         self.stop_button.setEnabled(False)
         logger.info("🔄 UI reset due to audio error")
+
+    def on_status_update(self, msg):
+        """Handle status updates from STT engine"""
+        logger.debug(f"📊 Status update: {msg}")
+        if msg == "Recording started":
+            self.status_label.setText("Recording...")
+            self.start_button.setEnabled(False)
+            self.stop_button.setEnabled(True)
+        elif msg == "Recording stopped":
+            self.status_label.setText("Stopped.")
+            self.start_button.setEnabled(True)
+            self.stop_button.setEnabled(False)
 
     def update_text_area(self, text):
         logger.debug(f"📝 Updating text area with: \"{text.strip()}\"")
@@ -486,7 +340,8 @@ class MainWindow(QMainWindow):
                 else:
                     logger.info("⏎  Auto-submit enabled - scheduling Enter key press")
                     logger.debug("⏰ Enter will be pressed in 100ms")
-                self.auto_submit_signal.emit(use_ctrl_enter)
+                # Use signal for thread-safe submission
+                QTimer.singleShot(100, lambda: self._send_keys(use_ctrl_enter))
             else:
                 logger.debug("🚫 Auto-submit disabled")
         else:
@@ -525,6 +380,13 @@ class MainWindow(QMainWindow):
         except Exception as e:
             logger.error(f"❌ Error typing text directly: {e}")
 
+    def _send_keys(self, use_ctrl_enter):
+        """Send keypress (thread-safe)"""
+        if use_ctrl_enter:
+            self._send_ctrl_enter()
+        else:
+            self._send_enter()
+
     def _send_enter(self):
         """Send Enter keypress"""
         logger.debug("⏎ Sending Enter keypress")
@@ -541,17 +403,6 @@ class MainWindow(QMainWindow):
         """Slot for clearing text area from any thread"""
         logger.debug("🧹 Clearing text area via signal")
         self.text_area.clear()
-
-    def _auto_submit_slot(self, use_ctrl_enter):
-        """Slot for auto-submit from any thread"""
-        if use_ctrl_enter:
-            logger.debug("⏎ Auto-submit slot: Ctrl+Enter")
-            QTimer.singleShot(100, self._send_ctrl_enter)
-        else:
-            logger.debug("⏎ Auto-submit slot: Enter")
-            QTimer.singleShot(100, self._send_enter)
-
-
 
     def populate_microphones(self):
         try:
@@ -626,7 +477,7 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         logger.info("🔄 Application closing - performing cleanup...")
         logger.debug("⏹️  Stopping audio recording...")
-        self.audio_processor.stop_recording()
+        self.stt_engine.stop_recording()
 
         # Disable paste mode if active
         if self.paste_mode_active:
@@ -637,18 +488,17 @@ class MainWindow(QMainWindow):
             logger.debug("🔥 Stopping hotkey listener...")
             self.hotkey_listener.stop()
 
-        if self.audio_processor.is_thread_alive():
+        if self.stt_engine.is_thread_alive():
             logger.debug("🧵 Waiting for processing thread to finish...")
-            self.audio_processor.processing_thread.join(timeout=0.5)
-            if self.audio_processor.processing_thread.is_alive():
-                logger.warning("⚠️  Processing thread did not finish within timeout")
+            # Note: STTEngine handles its own thread cleanup
+            pass
 
         logger.info("✅ Application cleanup completed")
         event.accept()
 
 
 def main():
-    logger.info("🚀 Starting Talki Real-Time Transcription Application")
+    logger.info("🚀 Starting Talki V2 Real-Time Transcription Application")
     logger.info("=" * 60)
 
     logger.debug("📱 Creating QApplication...")
@@ -665,7 +515,7 @@ def main():
 
     logger.info("✅ Application initialized and ready")
     logger.info("🎤 Features available:")
-    logger.info("   • Real-time speech-to-text transcription")
+    logger.info("   • Real-time speech-to-text transcription (Standalone STT Engine)")
     logger.info("   • Send to Focused Input: Click button → regular clicks focus windows → Ctrl+Click pastes")
     logger.info("   • Auto-send after recording stop (background mode)")
     logger.info("   • Direct text typing (no clipboard)")

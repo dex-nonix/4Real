@@ -1,15 +1,15 @@
 import sys
-import asyncio
+import threading
+import queue
+import numpy as np
+import sounddevice as sd
 import logging
 import colorama
-import sounddevice as sd
-import qasync
-import time
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QPushButton, QComboBox, QTextEdit, QCheckBox, QLabel)
 from PyQt6.QtCore import QTimer, pyqtSignal, QObject
+from faster_whisper import WhisperModel
 from pynput import keyboard, mouse
-from speech_to_text import SpeechToTextEngine, MicrophoneSource
 
 # Initialize colorama for colored console output
 colorama.init()
@@ -39,8 +39,8 @@ logger.addHandler(console_handler)
 
 class AudioProcessor(QObject):
     """
-    Qt wrapper around the new SpeechToTextEngine package.
-    Maintains backward compatibility with the existing UI.
+    This version uses a simple, robust, time-based chunking method.
+    The failed VAD logic has been completely removed.
     """
     transcript_update = pyqtSignal(str)
     error_signal = pyqtSignal(str)
@@ -48,26 +48,22 @@ class AudioProcessor(QObject):
     def __init__(self, model_size="tiny.en"):
         super().__init__()
         logger.info(f"🎯 Initializing AudioProcessor with model: {model_size}")
+        try:
+            logger.debug("🔄 Loading Whisper model...")
+            self.whisper_model = WhisperModel(model_size, device="cpu", compute_type="int8")
+            logger.info("✅ Whisper model loaded successfully")
+        except Exception as e:
+            logger.error(f"❌ Failed to load Whisper model: {e}")
+            self.error_signal.emit(f"Failed to load Whisper model: {e}")
+            return
 
-        # Create the new engine
-        self.engine = SpeechToTextEngine(
-            model_size=model_size,
-            on_transcript=self._on_transcript,
-            on_error=self._on_error
-        )
-
-        # Don't create microphone source yet - will be created on demand
-        self.current_device_index = None
         self.is_recording = False
+        self.audio_queue = queue.Queue()
+        self.stream = None
+        self.native_samplerate = None
+        self.target_samplerate = 16000
+        self.processing_thread = None
         logger.info("🎤 AudioProcessor initialized and ready")
-
-    def _on_transcript(self, text: str):
-        """Handle transcription results from the engine."""
-        self.transcript_update.emit(text)
-
-    def _on_error(self, error: str):
-        """Handle errors from the engine."""
-        self.error_signal.emit(error)
 
     def start_recording(self, device_index):
         if self.is_recording:
@@ -75,29 +71,29 @@ class AudioProcessor(QObject):
             return
 
         logger.info(f"🎤 Starting recording on device {device_index}")
-
         try:
-            # Ensure clean state - stop any existing processing first
-            if self.engine.is_processing:
-                logger.warning("Engine still processing, forcing stop")
-                # Run async stop in current event loop
-                loop = asyncio.get_running_loop()
-                loop.create_task(self.engine.stop_processing())
-
-            # Create fresh microphone source for this session
-            microphone_source = MicrophoneSource(device_index=device_index)
-            self.engine.set_audio_source(microphone_source)
-            self.current_device_index = device_index
+            logger.debug("🔍 Querying audio device information...")
+            device_info = sd.query_devices(device_index, 'input')
+            self.native_samplerate = int(device_info['default_samplerate'])
+            logger.info(f"📊 V1 Device info: {device_info['name']} (index {device_index}), rate: {self.native_samplerate}Hz")
 
             self.is_recording = True
-            # Start processing in async context
-            loop = asyncio.get_running_loop()
-            loop.create_task(self.engine.start_processing())
-            logger.info("✅ Recording started successfully")
+            logger.debug("🔄 Creating audio input stream...")
+            self.stream = sd.InputStream(
+                samplerate=self.native_samplerate, channels=1, device=device_index,
+                dtype="float32", callback=self._audio_callback
+            )
 
+            logger.debug("▶️  Starting audio stream...")
+            self.stream.start()
+            logger.debug("🧵 Starting processing thread...")
+            self.processing_thread = threading.Thread(target=self._process_audio)
+            self.processing_thread.start()
+
+            logger.info("✅ Recording started successfully")
         except Exception as e:
-            logger.error(f"❌ Error starting recording: {e}")
-            self.error_signal.emit(f"Error starting recording: {e}")
+            logger.error(f"❌ Error starting audio stream: {e}")
+            self.error_signal.emit(f"Error starting audio stream: {e}")
             self.is_recording = False
 
     def stop_recording(self):
@@ -107,14 +103,103 @@ class AudioProcessor(QObject):
 
         logger.info("⏹️  Stopping recording...")
         self.is_recording = False
-        # Stop processing in async context
-        loop = asyncio.get_running_loop()
-        loop.create_task(self.engine.stop_processing())
-        logger.info("✅ Recording stopped cleanly")
+
+        logger.debug("📤 Sending stop signal to processing thread...")
+        self.audio_queue.put(None)  # Sentinel to unblock the thread
+
+        if self.stream:
+            logger.debug("🔄 Stopping and closing audio stream...")
+            self.stream.stop(ignore_errors=True)
+            self.stream.close(ignore_errors=True)
+            self.stream = None
+
+        # Clear the queue to prevent stale audio in next recording
+        try:
+            while not self.audio_queue.empty():
+                try:
+                    self.audio_queue.get_nowait()
+                except queue.Empty:
+                    break
+        except Exception as e:
+            logger.warning(f"⚠️  Error clearing audio queue: {e}")
+
+        logger.info("✅ Recording stopped")
 
     def is_thread_alive(self):
-        """Check if the engine is still processing."""
-        return self.engine.is_processing
+        return self.processing_thread is not None and self.processing_thread.is_alive()
+
+    def _audio_callback(self, indata, frames, time_info, status):
+        if status:
+            logger.warning(f"⚠️  Audio callback status: {status}")
+            self.error_signal.emit(str(status))
+
+        logger.debug(f"📡 Audio chunk received: {frames} frames")
+        self.audio_queue.put(indata.copy())
+
+    def _resample(self, audio_chunk):
+        if self.native_samplerate == self.target_samplerate:
+            return audio_chunk
+        num_samples = audio_chunk.shape[0]
+        resampled_num_samples = int(num_samples * self.target_samplerate / self.native_samplerate)
+        original_indices = np.arange(num_samples)
+        resampled_indices = np.linspace(0, num_samples - 1, resampled_num_samples)
+        return np.interp(resampled_indices, original_indices, audio_chunk.flatten()).astype(np.float32)
+
+    def _transcribe_chunk(self, audio_chunk):
+        chunk_duration = len(audio_chunk) / self.target_samplerate
+        logger.debug(f"🔊 Processing chunk: {chunk_duration:.2f}s duration")
+
+        if len(audio_chunk) < self.target_samplerate * 0.2:
+            logger.debug(f"🗑️  Chunk too small ({chunk_duration:.2f}s), skipping")
+            return  # Ignore tiny fragments
+
+        logger.debug("🎯 Starting transcription...")
+        segments, _ = self.whisper_model.transcribe(audio_chunk, beam_size=5)
+        text = "".join(s.text for s in segments)
+
+        if text.strip():
+            logger.info(f"📝 Transcribed: \"{text.strip()}\"")
+            self.transcript_update.emit(text.strip() + " ")
+        else:
+            logger.debug("🤫 No speech detected in chunk")
+
+    def _process_audio(self):
+        logger.info("🧵 Audio processing thread started")
+        audio_buffer = np.array([], dtype=np.float32)
+        PROCESSING_INTERVAL_SAMPLES = int(self.target_samplerate * 2.0)
+        logger.debug(f"⚙️  Processing interval: {PROCESSING_INTERVAL_SAMPLES} samples (2.0s)")
+
+        while self.is_recording:
+            try:
+                raw_chunk = self.audio_queue.get(timeout=0.1)
+                if raw_chunk is None:
+                    logger.debug("🛑 Received stop signal, exiting processing loop")
+                    break
+
+                logger.debug("🔄 Processing raw audio chunk...")
+                resampled_chunk = self._resample(raw_chunk)
+                audio_buffer = np.concatenate([audio_buffer, resampled_chunk])
+
+                buffer_duration = len(audio_buffer) / self.target_samplerate
+                logger.debug(f"🔄 Audio buffer size: {buffer_duration:.2f}s")
+
+                # Process every 2 seconds of audio for a live feel
+                if len(audio_buffer) >= PROCESSING_INTERVAL_SAMPLES:
+                    logger.info("🔥 Processing audio chunk (2s interval)")
+                    self._transcribe_chunk(audio_buffer)
+                    audio_buffer = np.array([], dtype=np.float32)  # Clear buffer
+                    logger.debug("🧹 Audio buffer cleared")
+
+            except queue.Empty:
+                continue
+
+        # After loop ends, process any leftover audio in the buffer
+        if len(audio_buffer) > 0:
+            leftover_duration = len(audio_buffer) / self.target_samplerate
+            logger.info(f"🔚 Processing leftover audio: {leftover_duration:.2f}s")
+            self._transcribe_chunk(audio_buffer)
+
+        logger.info("🧵 Audio processing thread finished")
 
 
 class MainWindow(QMainWindow):
@@ -445,6 +530,7 @@ class MainWindow(QMainWindow):
                     # Type regular characters
                     self.keyboard_controller.type(char)
                 # Small delay between characters for reliability
+                import time
                 time.sleep(0.001)
         except Exception as e:
             logger.error(f"❌ Error typing text directly: {e}")
@@ -578,9 +664,6 @@ def main():
     logger.debug("📱 Creating QApplication...")
     app = QApplication(sys.argv)
 
-    loop = qasync.QEventLoop(app)
-    asyncio.set_event_loop(loop)
-
     logger.debug("🏠 Creating MainWindow...")
     window = MainWindow()
 
@@ -601,8 +684,7 @@ def main():
     logger.info("   • Cmd+Space hotkey for recording toggle")
     logger.info("=" * 60)
 
-    with loop:
-        loop.run_forever()
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":
