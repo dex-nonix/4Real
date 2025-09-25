@@ -1,6 +1,3 @@
-# FILE: Your main UI file.
-# DELETE EVERYTHING AND REPLACE IT WITH THIS.
-
 import asyncio
 import logging
 import sys
@@ -26,6 +23,18 @@ if not logger.handlers:
     console_handler.setFormatter(formatter)
 
 
+MODE_OPTIONS = [
+    ("🎙️ Live Streaming", ("live", float('inf'))),
+    ("📦 Buffered (Unlimited)", ("buffered", float('inf'))),
+    ("💾 Buffered (100MB ~47h)", ("buffered", 100)),
+    ("💾 Buffered (500MB ~4.5h)", ("buffered", 500)),
+    ("💾 Buffered (1GB ~9h)", ("buffered", 1024)),
+    ("💾 Buffered (2GB ~18h)", ("buffered", 2048)),
+    ("💾 Buffered (5GB ~100h)", ("buffered", 5120)),
+    ("💾 Buffered (10GB ~200h)", ("buffered", 10240)),
+]
+
+
 class MainWindow(QMainWindow):
     clear_text_signal = pyqtSignal()
     transcript_signal = pyqtSignal(str)
@@ -42,6 +51,7 @@ class MainWindow(QMainWindow):
         self.ctrl_pressed = False
         self.paste_mode_active = False
         self.pending_paste_text = None
+        self._silent_stop = False
 
         self.setWindowTitle("Async Real-Time Transcription V2 (Working)")
         self.setGeometry(100, 100, 400, 500)
@@ -63,16 +73,13 @@ class MainWindow(QMainWindow):
 
         mode_layout = QHBoxLayout()
         self.mode_combo = QComboBox()
-        self.mode_combo.addItems([
-            "🎙️ Live Streaming",
-            "📦 Buffered (Unlimited)",
-            "💾 Buffered (100MB ~47h)",
-            "💾 Buffered (500MB ~4.5h)",
-            "💾 Buffered (1GB ~9h)",
-            "💾 Buffered (2GB ~18h)",
-            "💾 Buffered (5GB ~100h)",
-            "💾 Buffered (10GB ~200h)"
-        ])
+        for label, data in MODE_OPTIONS:
+            self.mode_combo.addItem(label, data)
+        for i in range(self.mode_combo.count()):
+            data = self.mode_combo.itemData(i)
+            if isinstance(data, tuple) and len(data) > 1 and data[1] == 100:
+                self.mode_combo.setCurrentIndex(i)
+                break
         mode_layout.addWidget(QLabel("Recording Mode:"))
         mode_layout.addWidget(self.mode_combo)
         self.layout.addLayout(mode_layout)
@@ -158,30 +165,17 @@ class MainWindow(QMainWindow):
             # Create microphone source with selected device
             audio_source = MicrophoneSource(device_index=device_index)
             self.stt_engine.set_audio_source(audio_source)
-            mode, buffer_mb = self.parse_mode_selection(self.mode_combo.currentText())
-            self.stt_engine.configure_processing(mode, buffer_mb)
+            data = self.mode_combo.currentData()
+            if data is not None:
+                mode, buffer_mb = data
+                self.stt_engine.configure_processing(mode, buffer_mb)
+            else:
+                self.stt_engine.configure_processing("buffered", 100)
             await self.stt_engine.start_transcription()
         else:
             logger.error("❌ No valid microphone device selected")
 
-    def parse_mode_selection(self, mode_text):
-        if "Live Streaming" in mode_text:
-            return "live", float('inf')
-        elif "Unlimited" in mode_text:
-            return "buffered", float('inf')
-        elif "100MB" in mode_text:
-            return "buffered", 100
-        elif "500MB" in mode_text:
-            return "buffered", 500
-        elif "1GB" in mode_text:
-            return "buffered", 1024
-        elif "2GB" in mode_text:
-            return "buffered", 2048
-        elif "5GB" in mode_text:
-            return "buffered", 5120
-        elif "10GB" in mode_text:
-            return "buffered", 10240
-        return "live", float('inf')
+    
 
     def stop_recording(self):
         if self.stt_engine and self.stt_engine.is_task_running():
@@ -199,11 +193,11 @@ class MainWindow(QMainWindow):
             self.status_label.setText("Stopped.")
             self.start_button.setEnabled(True)
             self.stop_button.setEnabled(False)
-            self.handle_post_recording_actions()
+            if self._silent_stop:
+                self._silent_stop = False
+            else:
+                self.handle_post_recording_actions()
 
-    # =========================================================================
-    # FIX: Call the new async handler to deal with the async typing method.
-    # =========================================================================
     def handle_post_recording_actions(self):
         """Synchronous method that triggers the asynchronous handling."""
         if self.auto_send_checkbox.isChecked():
@@ -221,7 +215,6 @@ class MainWindow(QMainWindow):
         if self.clear_history_checkbox.isChecked():
             self.clear_text_signal.emit()
 
-    # =========================================================================
 
     def update_text_area(self, text):
         self.text_area.insertPlainText(text)
@@ -262,6 +255,7 @@ class MainWindow(QMainWindow):
     def setup_hotkeys(self):
         try:
             hotkeys = {keyboard.Key.cmd, keyboard.Key.space};
+            hotkeys_silent_stop = {keyboard.Key.cmd, keyboard.Key.esc}
             pressed_keys = set()
 
             def on_press(key):
@@ -270,14 +264,26 @@ class MainWindow(QMainWindow):
                     if pressed_keys == hotkeys:
                         QTimer.singleShot(0,
                                           self.start_recording if self.start_button.isEnabled() else self.stop_recording)
+                if key in hotkeys_silent_stop:
+                    pressed_keys.add(key)
+                    if pressed_keys == hotkeys_silent_stop and self.stt_engine and self.stt_engine.is_task_running():
+                        QTimer.singleShot(0, self.stop_recording_silent)
 
             def on_release(key):
-                if key in hotkeys: pressed_keys.discard(key)
+                if key in hotkeys or key in hotkeys_silent_stop: pressed_keys.discard(key)
 
             self.hotkey_listener = keyboard.Listener(on_press=on_press, on_release=on_release);
             self.hotkey_listener.start()
         except Exception as e:
             logger.error(f"❌ Failed to set up hotkeys: {e}")
+    
+    def stop_recording_silent(self):
+        if self.stt_engine and self.stt_engine.is_task_running():
+            logger.info("⏹️ Stop recording (silent) requested")
+            self._silent_stop = True
+            self.status_label.setText("Stopping...")
+            self.stop_button.setEnabled(False)
+            asyncio.create_task(self.stt_engine.stop_transcription())
 
     def send_to_focused(self):
         self.paste_mode_active = True;
@@ -318,9 +324,6 @@ class MainWindow(QMainWindow):
     def on_paste_key_release(self, key):
         if key in (keyboard.Key.ctrl_l, keyboard.Key.ctrl_r): self.ctrl_pressed = False
 
-    # =========================================================================
-    # FIX: _execute_paste now calls the new async handler.
-    # =========================================================================
     def _execute_paste(self):
         if self.pending_paste_text:
             asyncio.create_task(self._async_execute_paste(self.pending_paste_text))
@@ -333,8 +336,6 @@ class MainWindow(QMainWindow):
             await asyncio.sleep(0.1)
             self._send_keys(self.ctrl_enter_checkbox.isChecked())
 
-    # =========================================================================
-
     def _update_paste_status(self):
         if self.paste_mode_active:
             self.paste_status_label.setText("🎯 Paste Mode: Ctrl+Click pastes (ESC cancels)");
@@ -343,10 +344,6 @@ class MainWindow(QMainWindow):
             self.paste_status_label.setText("🎯 Ready - Click 'Send to Focused Input' to begin");
             self.paste_status_label.setStyleSheet("color: gray; font-weight: bold;")
 
-    # =========================================================================
-    # FIX: The method is now `async def` and correctly `await`s the sleep.
-    # This completely resolves the RuntimeWarning.
-    # =========================================================================
     async def _type_text_directly(self, text):
         if not self.keyboard_controller: return
         try:
@@ -355,8 +352,6 @@ class MainWindow(QMainWindow):
                 await asyncio.sleep(0.001)  # Correct, non-blocking sleep
         except Exception as e:
             logger.error(f"❌ Error typing text: {e}")
-
-    # =========================================================================
 
     def _send_keys(self, use_ctrl_enter):
         if use_ctrl_enter:
