@@ -7,7 +7,8 @@ import sounddevice as sd
 from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QPushButton, QComboBox, QTextEdit, QCheckBox, QLabel)
-from pynput import keyboard, mouse
+from pynput import keyboard
+import mouse
 
 from stt_engine import ColoredFormatter
 from stt_engine.engine import AsyncSTTEngine
@@ -46,12 +47,12 @@ class MainWindow(QMainWindow):
         self.stt_engine = None
         self.keyboard_controller = None
         self.hotkey_listener = None
-        self.paste_mouse_listener = None
         self.paste_keyboard_listener = None
         self.ctrl_pressed = False
         self.paste_mode_active = False
         self.pending_paste_text = None
         self._silent_stop = False
+        self.global_mouse_hook_registered = False
 
         self.setWindowTitle("Async Real-Time Transcription V2 (Working)")
         self.setGeometry(100, 100, 400, 500)
@@ -145,7 +146,7 @@ class MainWindow(QMainWindow):
 
             self.keyboard_controller = keyboard.Controller()
             self.populate_microphones()
-            self.setup_hotkeys()
+            self.setup_global_listeners()
 
             self.status_label.setText("Ready.")
             self.paste_status_label.setText("🎯 Ready - Click 'Send to Focused Input' to begin");
@@ -252,7 +253,7 @@ class MainWindow(QMainWindow):
         self.start_button.setEnabled(True);
         self.stop_button.setEnabled(False)
 
-    def setup_hotkeys(self):
+    def setup_global_listeners(self):
         try:
             hotkeys = {keyboard.Key.cmd, keyboard.Key.space};
             hotkeys_silent_stop = {keyboard.Key.cmd, keyboard.Key.esc}
@@ -274,9 +275,41 @@ class MainWindow(QMainWindow):
 
             self.hotkey_listener = keyboard.Listener(on_press=on_press, on_release=on_release);
             self.hotkey_listener.start()
+
+            if not self.global_mouse_hook_registered:
+                mouse.on_button(self._mouse_button_callback)
+                self.global_mouse_hook_registered = True
+
         except Exception as e:
-            logger.error(f"❌ Failed to set up hotkeys: {e}")
+            logger.error(f"❌ Failed to set up global listeners: {e}")
     
+    def _mouse_button_callback(self, button, event_type):
+        if event_type == 'down':
+            logger.info(f"Mouse button pressed: {button}")
+            if button == mouse.XButton1:
+                logger.info("XButton1 (backward) detected")
+                QTimer.singleShot(0, self._handle_backward_button_press)
+            elif button == mouse.XButton2:
+                logger.info("XButton2 (forward) detected")
+                QTimer.singleShot(0, self._handle_forward_button_press)
+            elif button == mouse.LEFT and self.paste_mode_active and self.ctrl_pressed:
+                QTimer.singleShot(0, self._execute_paste_from_mouse_click)
+
+    def _handle_backward_button_press(self):
+        QTimer.singleShot(0, self.start_recording if self.start_button.isEnabled() else self.stop_recording)
+
+    def _handle_forward_button_press(self):
+        if self.stt_engine and self.stt_engine.is_task_running():
+            QTimer.singleShot(0, self.stop_recording_silent)
+
+    def _execute_paste_from_mouse_click(self):
+        current_text = self.text_area.toPlainText()
+        if current_text:
+            self.pending_paste_text = current_text
+            self._execute_paste()
+        else:
+            self._disable_paste_listeners()
+
     def stop_recording_silent(self):
         if self.stt_engine and self.stt_engine.is_task_running():
             logger.info("⏹️ Stop recording (silent) requested")
@@ -292,8 +325,6 @@ class MainWindow(QMainWindow):
 
     def _enable_paste_listeners(self):
         try:
-            self.paste_mouse_listener = mouse.Listener(on_click=self.on_paste_click);
-            self.paste_mouse_listener.start()
             self.paste_keyboard_listener = keyboard.Listener(on_press=self.on_paste_key_press,
                                                              on_release=self.on_paste_key_release);
             self.paste_keyboard_listener.start()
@@ -302,20 +333,10 @@ class MainWindow(QMainWindow):
             self._disable_paste_listeners()
 
     def _disable_paste_listeners(self):
-        if self.paste_mouse_listener: self.paste_mouse_listener.stop(); self.paste_mouse_listener = None
         if self.paste_keyboard_listener: self.paste_keyboard_listener.stop(); self.paste_keyboard_listener = None
         self.paste_mode_active = False;
         self.pending_paste_text = None;
         self._update_paste_status()
-
-    def on_paste_click(self, x, y, button, pressed):
-        if pressed and button == mouse.Button.left and self.paste_mode_active and self.ctrl_pressed:
-            current_text = self.text_area.toPlainText()
-            if current_text:
-                self.pending_paste_text = current_text;
-                self._execute_paste()
-            else:
-                self._disable_paste_listeners()
 
     def on_paste_key_press(self, key):
         if key == keyboard.Key.esc: self._disable_paste_listeners(); return False
