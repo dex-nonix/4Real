@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from ..models.persona_mcp_server import PersonaMCPServer
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from ..utils.mcp_client import call_mcp_tool_by_server_id
+from ..utils.mcp_client import call_mcp_tool_by_server_id, build_mcp_server_config
 
 from nonix_web_db import AsyncSessionLocal
 from ..models.persona import Persona
@@ -296,12 +296,7 @@ class AgenticToolManager:
             external_servers = result.scalars().all()
         for server_link in external_servers:
             server = server_link.mcp_server
-            server_config = {
-                "command": server.command,
-                "args": server.args_json or [],
-                "env": server.env_json or {},
-                "transport": "stdio"
-            }
+            server_config = build_mcp_server_config(server)
             client = MultiServerMCPClient({f"server_{server.id}": server_config})
             try:
                 external_tools = await client.get_tools()

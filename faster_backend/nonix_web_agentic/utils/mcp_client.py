@@ -28,8 +28,8 @@ async def _load_server(server_id: int) -> Optional[MCPServer]:
         return await db.get(MCPServer, server_id)
 
 
-def _generate_config_hash(command: str, args: list, env: dict) -> str:
-    config_str = f"{command}|{json.dumps(args, sort_keys=True)}|{json.dumps(env, sort_keys=True)}"
+def _generate_config_hash(command: str, args: list, env: dict, transport: str, url: str) -> str:
+    config_str = f"{command}|{json.dumps(args, sort_keys=True)}|{json.dumps(env, sort_keys=True)}|{transport}|{url}"
     return hashlib.sha256(config_str.encode()).hexdigest()
 
 
@@ -45,6 +45,25 @@ async def _cleanup_idle_clients():
             del _mcp_client_cache[config_hash]
 
 
+def build_mcp_server_config(server) -> dict:
+    transport = server.transport or "stdio"
+
+    if transport == "stdio":
+        return {
+            "command": server.command,
+            "args": server.args_json or [],
+            "env": server.env_json or {},
+            "transport": "stdio"
+        }
+    elif transport in ["websocket", "http"]:
+        return {
+            "url": server.url,
+            "transport": transport
+        }
+    else:
+        raise ValueError(f"Unsupported transport: {transport}")
+
+
 async def _get_or_create_cached_client(server_id: int) -> Optional[MultiServerMCPClient]:
     server = await _load_server(server_id)
     if not server:
@@ -52,7 +71,13 @@ async def _get_or_create_cached_client(server_id: int) -> Optional[MultiServerMC
 
     await _cleanup_idle_clients()
 
-    config_hash = _generate_config_hash(server.command, server.args_json or [], server.env_json or {})
+    config_hash = _generate_config_hash(
+        server.command or "",
+        server.args_json or [],
+        server.env_json or {},
+        server.transport or "stdio",
+        server.url or ""
+    )
 
     async with _cache_lock:
         if config_hash in _mcp_client_cache:
@@ -61,12 +86,7 @@ async def _get_or_create_cached_client(server_id: int) -> Optional[MultiServerMC
             cached_client.server_ids.add(server_id)
             return cached_client.client
 
-        server_config = {
-            "command": server.command,
-            "args": server.args_json or [],
-            "env": server.env_json or {},
-            "transport": "stdio"
-        }
+        server_config = build_mcp_server_config(server)
 
         client = MultiServerMCPClient({f"server_{server_id}": server_config})
         cached_client = CachedMCPClient(client, config_hash)
