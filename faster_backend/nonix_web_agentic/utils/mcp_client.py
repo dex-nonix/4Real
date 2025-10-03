@@ -55,7 +55,7 @@ def build_mcp_server_config(server) -> dict:
             "env": server.env_json or {},
             "transport": "stdio"
         }
-    elif transport in ["websocket", "http"]:
+    elif transport in ["websocket", "http","streamable_http"]:
         return {
             "url": server.url,
             "transport": transport

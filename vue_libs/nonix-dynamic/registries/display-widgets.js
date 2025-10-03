@@ -76,7 +76,15 @@ export const NX_DISPLAY_WIDGETS = {
     render() { return h('span', this.label) }
   }, defaultProps: {} }
   ,
-  'llm_tool': { component: NxLlmTool, defaultProps: { mode: 'display' } }
+  'llm_tool': { component: NxLlmTool, defaultProps: { mode: 'display' } },
+  'mcp_connection': { component: {
+    props: { value: [String, null], rowData: { type: Object, default: () => ({}) } },
+    render() {
+      const transport = this.rowData.transport || 'stdio'
+      const displayValue = transport === 'stdio' ? this.rowData.command : this.rowData.url
+      return h('span', { class: 'text-sm' }, displayValue || '')
+    }
+  }, defaultProps: {} }
 }
 
 
