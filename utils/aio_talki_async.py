@@ -25,6 +25,26 @@ if not logger.handlers:
     logger.addHandler(console_handler)
     console_handler.setFormatter(formatter)
 
+LANGUAGE_OPTIONS = [
+    ("Auto", None),
+    ("English", "en"),
+    ("Spanish", "es"),
+    ("French", "fr"),
+    ("German", "de"),
+    ("Italian", "it"),
+    ("Portuguese", "pt"),
+    ("Russian", "ru"),
+    ("Chinese", "zh"),
+    ("Japanese", "ja"),
+    ("Korean", "ko"),
+]
+
+
+def get_helsinki_model_name(src, tgt):
+    """Return Helsinki-NLP model name for src->tgt or None if not possible."""
+    if not src or not tgt:
+        return None
+    return f"Helsinki-NLP/opus-mt-{src}-{tgt}"
 
 MODE_OPTIONS = [
     ("🎙️ Live Streaming", ("live", float('inf'))),
@@ -91,20 +111,7 @@ class MainWindow(QMainWindow):
 
         lang_layout = QHBoxLayout()
         self.lang_combo = QComboBox()
-        languages = [
-            ("Auto", None),
-            ("English", "en"),
-            ("Spanish", "es"),
-            ("French", "fr"),
-            ("German", "de"),
-            ("Italian", "it"),
-            ("Portuguese", "pt"),
-            ("Russian", "ru"),
-            ("Chinese", "zh"),
-            ("Japanese", "ja"),
-            ("Korean", "ko"),
-        ]
-        for label, code in languages:
+        for label, code in LANGUAGE_OPTIONS:
             self.lang_combo.addItem(label, code)
         lang_layout.addWidget(QLabel("Language:"))
         lang_layout.addWidget(self.lang_combo)
@@ -112,21 +119,10 @@ class MainWindow(QMainWindow):
 
         translate_layout = QHBoxLayout()
         self.translate_combo = QComboBox()
-        translate_options = [
-            ("No Translation", None),
-            ("English", "en"),
-            ("Spanish", "es"),
-            ("French", "fr"),
-            ("German", "de"),
-            ("Italian", "it"),
-            ("Portuguese", "pt"),
-            ("Russian", "ru"),
-            ("Chinese", "zh"),
-            ("Japanese", "ja"),
-            ("Korean", "ko"),
-        ]
-        for label, code in translate_options:
-            self.translate_combo.addItem(label, code)
+        self.translate_combo.addItem("No Translation", None)
+        for label, code in LANGUAGE_OPTIONS:
+            if code is not None:
+                self.translate_combo.addItem(label, code)
         translate_layout.addWidget(QLabel("Translate to:"))
         translate_layout.addWidget(self.translate_combo)
         self.layout.addLayout(translate_layout)
@@ -220,21 +216,8 @@ class MainWindow(QMainWindow):
                 on_status=self.on_status_update
             )
 
-            # Prepare translators cache (load on demand per target language)
+            # Prepare translators cache (load on demand per src->tgt key)
             self.translators = {}
-            # Map simple target language codes to Helsinki models (source assumed 'en')
-            self.translation_model_map = {
-                "de": "Helsinki-NLP/opus-mt-en-de",
-                "es": "Helsinki-NLP/opus-mt-en-es",
-                "fr": "Helsinki-NLP/opus-mt-en-fr",
-                "it": "Helsinki-NLP/opus-mt-en-it",
-                "pt": "Helsinki-NLP/opus-mt-en-pt",
-                "ru": "Helsinki-NLP/opus-mt-en-ru",
-                "zh": "Helsinki-NLP/opus-mt-en-zh",
-                "ja": "Helsinki-NLP/opus-mt-en-ja",
-                "ko": "Helsinki-NLP/opus-mt-en-ko",
-                "en": None,  # no-op
-            }
             self.status_label.setText("Setting up listeners...")
 
             self.keyboard_controller = keyboard.Controller()
@@ -411,26 +394,27 @@ class MainWindow(QMainWindow):
         # No translation requested
         if not target:
             return text
-        # Prevent translating into same language as STT
-        stt_lang = self.lang_combo.currentData()
+        # Determine source language from STT selection (fallback to 'en')
+        stt_lang = self.lang_combo.currentData() or 'en'
+        # No-op if same language
         if target == stt_lang:
             return text
 
-        model_name = self.translation_model_map.get(target)
+        model_name = get_helsinki_model_name(stt_lang, target)
         if not model_name:
-            logger.warning(f"No translation model configured for target '{target}'")
+            logger.warning(f"No Helsinki model available for {stt_lang}->{target}")
             return text
 
-        # Load pipeline on demand and cache it
-        translator = self.translators.get(target)
+        key = f"{stt_lang}-{target}"
+        translator = self.translators.get(key)
         if translator is None:
             try:
-                self.status_label.setText(f"Loading translator for {target}...")
+                self.status_label.setText(f"Loading translator {model_name}...")
                 translator = pipeline("translation", model=model_name)
-                self.translators[target] = translator
+                self.translators[key] = translator
                 self.status_label.setText("Ready.")
             except Exception as e:
-                logger.error(f"Failed to load translation model for {target}: {e}")
+                logger.error(f"Failed to load translation model {model_name}: {e}")
                 self.status_label.setText(f"Translation load failed: {e}")
                 return text
 
@@ -438,7 +422,7 @@ class MainWindow(QMainWindow):
             result = translator(text, max_length=512)
             return result[0].get('translation_text', text)
         except Exception as e:
-            logger.error(f"Translation error: {e}")
+            logger.error(f"Translation error ({stt_lang}->{target}): {e}")
             return text
 
     def setup_global_listeners(self):
