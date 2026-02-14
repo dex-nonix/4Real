@@ -6,7 +6,7 @@ import qasync
 import sounddevice as sd
 from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                             QPushButton, QComboBox, QTextEdit, QCheckBox, QLabel)
+                             QPushButton, QComboBox, QTextEdit, QCheckBox, QLabel, QSplitter, QSizePolicy)
 from pynput import keyboard
 import mouse
 
@@ -57,7 +57,9 @@ class MainWindow(QMainWindow):
         self.global_mouse_hook_registered = False
 
         self.setWindowTitle("Async Real-Time Transcription V2 (Working)")
-        self.setGeometry(100, 100, 400, 500)
+        self.setGeometry(100, 100, 600, 600)
+        self.setMinimumWidth(600)
+        self.setMinimumHeight(600)
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.layout = QVBoxLayout(self.central_widget)
@@ -139,7 +141,21 @@ class MainWindow(QMainWindow):
         self.layout.addLayout(button_layout)
 
         self.text_area = QTextEdit()
-        self.layout.addWidget(self.text_area)
+        self.translated_area = QTextEdit()
+        self.translated_area.setReadOnly(True)
+        self.translated_area.setPlaceholderText("Translated text will appear here")
+        splitter = QSplitter()
+        splitter.addWidget(self.text_area)
+        splitter.addWidget(self.translated_area)
+        splitter.setSizes([400, 400])  # Equal sizes
+        self.layout.addWidget(splitter)
+        # Give the splitter the layout stretch so it expands while footer/status remain fixed
+        try:
+            idx = self.layout.indexOf(splitter)
+            if idx != -1:
+                self.layout.setStretch(idx, 1)
+        except Exception:
+            pass
         action_layout = QHBoxLayout()
         self.clear_button = QPushButton("Clear")
         self.send_button = QPushButton("Send to Focused Input")
@@ -162,12 +178,25 @@ class MainWindow(QMainWindow):
         paste_status_layout = QHBoxLayout()
         self.paste_status_label = QLabel("🎯 Initializing...");
         self.paste_status_label.setStyleSheet("color: gray;")
+        self.paste_status_label.setWordWrap(True)
+        # Keep paste status compact and prevent vertical expansion
+        self.paste_status_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.paste_status_label.setMaximumHeight(40)
         paste_status_layout.addWidget(QLabel("Status:"));
         paste_status_layout.addWidget(self.paste_status_label);
         paste_status_layout.addStretch()
         self.layout.addLayout(paste_status_layout)
         self.status_label = QLabel("Initializing...")
-        self.layout.addWidget(self.status_label)
+        self.status_label.setWordWrap(True)
+        # Keep status label compact and prevent vertical expansion
+        self.status_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.status_label.setMaximumHeight(40)
+        status_layout = QHBoxLayout()
+        status_layout.addWidget(QLabel("Status:"))
+        status_layout.addWidget(self.status_label)
+        status_layout.addStretch()
+        self.layout.addLayout(status_layout)
+        self.layout.addStretch()
 
         self.start_button.setEnabled(False)
         self.stop_button.setEnabled(False)
@@ -175,7 +204,7 @@ class MainWindow(QMainWindow):
         self.start_button.clicked.connect(self.start_recording)
         self.stop_button.clicked.connect(self.stop_recording)
         self.reload_button.clicked.connect(self.reload_engine)
-        self.clear_button.clicked.connect(self.text_area.clear)
+        self.clear_button.clicked.connect(self.clear_texts)
         self.send_button.clicked.connect(self.send_to_focused)
 
         logger.info("✅ CONSTRUCTOR: UI created. Deferring backend initialization.")
@@ -191,8 +220,21 @@ class MainWindow(QMainWindow):
                 on_status=self.on_status_update
             )
 
-            self.status_label.setText("Loading translation model...")
-            self.translator = await asyncio.to_thread(pipeline, "translation", model="Helsinki-NLP/opus-mt-en-de")
+            # Prepare translators cache (load on demand per target language)
+            self.translators = {}
+            # Map simple target language codes to Helsinki models (source assumed 'en')
+            self.translation_model_map = {
+                "de": "Helsinki-NLP/opus-mt-en-de",
+                "es": "Helsinki-NLP/opus-mt-en-es",
+                "fr": "Helsinki-NLP/opus-mt-en-fr",
+                "it": "Helsinki-NLP/opus-mt-en-it",
+                "pt": "Helsinki-NLP/opus-mt-en-pt",
+                "ru": "Helsinki-NLP/opus-mt-en-ru",
+                "zh": "Helsinki-NLP/opus-mt-en-zh",
+                "ja": "Helsinki-NLP/opus-mt-en-ja",
+                "ko": "Helsinki-NLP/opus-mt-en-ko",
+                "en": None,  # no-op
+            }
             self.status_label.setText("Setting up listeners...")
 
             self.keyboard_controller = keyboard.Controller()
@@ -302,6 +344,13 @@ class MainWindow(QMainWindow):
     def update_text_area(self, text):
         self.text_area.insertPlainText(text)
         self.text_area.ensureCursorVisible()
+        # Update translated if enabled
+        target = self.translate_combo.currentData()
+        if target:
+            full_text = self.text_area.toPlainText()
+            translated = self.translate_text(full_text)
+            self.translated_area.setPlainText(translated)
+            self.translated_area.ensureCursorVisible()
 
     def populate_microphones(self):
         self.mic_combo.clear()
@@ -335,6 +384,10 @@ class MainWindow(QMainWindow):
         self.start_button.setEnabled(True);
         self.stop_button.setEnabled(False)
 
+    def clear_texts(self):
+        self.text_area.clear()
+        self.translated_area.clear()
+
     def on_language_changed(self):
         if self.stt_engine:
             lang = self.lang_combo.currentData()
@@ -355,13 +408,35 @@ class MainWindow(QMainWindow):
 
     def translate_text(self, text):
         target = self.translate_combo.currentData()
-        if target != "de":
-            if target:
-                logger.warning(f"Translation to {target} not supported yet. Only German is available.")
+        # No translation requested
+        if not target:
             return text
+        # Prevent translating into same language as STT
+        stt_lang = self.lang_combo.currentData()
+        if target == stt_lang:
+            return text
+
+        model_name = self.translation_model_map.get(target)
+        if not model_name:
+            logger.warning(f"No translation model configured for target '{target}'")
+            return text
+
+        # Load pipeline on demand and cache it
+        translator = self.translators.get(target)
+        if translator is None:
+            try:
+                self.status_label.setText(f"Loading translator for {target}...")
+                translator = pipeline("translation", model=model_name)
+                self.translators[target] = translator
+                self.status_label.setText("Ready.")
+            except Exception as e:
+                logger.error(f"Failed to load translation model for {target}: {e}")
+                self.status_label.setText(f"Translation load failed: {e}")
+                return text
+
         try:
-            result = self.translator(text, max_length=512)
-            return result[0]['translation_text']
+            result = translator(text, max_length=512)
+            return result[0].get('translation_text', text)
         except Exception as e:
             logger.error(f"Translation error: {e}")
             return text
@@ -505,6 +580,7 @@ class MainWindow(QMainWindow):
 
     def _clear_text_area_slot(self):
         self.text_area.clear()
+        self.translated_area.clear()
 
 
 if __name__ == "__main__":
