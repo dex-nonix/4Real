@@ -10,11 +10,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QH
 from pynput import keyboard
 import mouse
 
-try:
-    from transformers import pipeline
-    TRANSLATION_AVAILABLE = True
-except ImportError:
-    TRANSLATION_AVAILABLE = False
+from transformers import pipeline
 
 from stt_engine import ColoredFormatter
 from stt_engine.engine import AsyncSTTEngine
@@ -183,9 +179,8 @@ class MainWindow(QMainWindow):
         self.send_button.clicked.connect(self.send_to_focused)
 
         logger.info("✅ CONSTRUCTOR: UI created. Deferring backend initialization.")
-        QTimer.singleShot(50, self.finish_initialization)
 
-    def finish_initialization(self):
+    async def finish_initialization(self):
         logger.info("🚀 FINISH_INIT: Starting backend initialization...")
         try:
             self.stt_engine = AsyncSTTEngine(
@@ -196,16 +191,16 @@ class MainWindow(QMainWindow):
                 on_status=self.on_status_update
             )
 
-            if TRANSLATION_AVAILABLE:
-                self.translator = ctranslate2.Translator("Helsinki-NLP/opus-mt-en-de", device="cpu")
-                self.tokenizer = transformers.AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-de")
-            else:
-                self.translator = None
-                self.tokenizer = None
+            self.status_label.setText("Loading translation model...")
+            self.translator = await asyncio.to_thread(pipeline, "translation", model="Helsinki-NLP/opus-mt-en-de")
+            self.status_label.setText("Setting up listeners...")
 
             self.keyboard_controller = keyboard.Controller()
             self.populate_microphones()
-            self.setup_global_listeners()
+            try:
+                self.setup_global_listeners()
+            except Exception as e:
+                logger.warning(f"⚠️ Global listeners failed (run as root for full features): {e}")
 
             self.status_label.setText("Ready.")
             self.paste_status_label.setText("🎯 Ready - Click 'Send to Focused Input' to begin");
@@ -360,15 +355,13 @@ class MainWindow(QMainWindow):
 
     def translate_text(self, text):
         target = self.translate_combo.currentData()
-        if not self.translator or not self.tokenizer or target != "de":
-            if target and target != "de":
+        if target != "de":
+            if target:
                 logger.warning(f"Translation to {target} not supported yet. Only German is available.")
             return text
         try:
-            source = self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(text))
-            results = self.translator.translate_batch([source])
-            translated = results[0].hypotheses[0]
-            return self.tokenizer.decode(self.tokenizer.convert_tokens_to_ids(translated), skip_special_tokens=True)
+            result = self.translator(text, max_length=512)
+            return result[0]['translation_text']
         except Exception as e:
             logger.error(f"Translation error: {e}")
             return text
@@ -521,6 +514,7 @@ if __name__ == "__main__":
         asyncio.set_event_loop(loop)
         window = MainWindow()
         window.show()
+        loop.create_task(window.finish_initialization())
         with loop:
             loop.run_forever()
     except KeyboardInterrupt:
