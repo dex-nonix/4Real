@@ -23,5 +23,19 @@
             "folderPath": "4Real/vue_libs/",
             "color": "foldercolorizer.color_009900"
         }
-    ]
+    ],
+    "projectColorizer.workspaceColor": "#a9a32d",
+    "workbench.colorCustomizations": {
+        "activityBar.background": "#a9a32d",
+        "activityBar.foreground": "#000000",
+        "activityBarBadge.background": "#000000",
+        "activityBarBadge.foreground": "#a9a32d",
+        "statusBar.background": "#a9a32d",
+        "statusBar.foreground": "#000000",
+        "statusBarItem.hoverBackground": "#bab331",
+        "titleBar.activeBackground": "#a9a32d",
+        "titleBar.activeForeground": "#000000",
+        "titleBar.inactiveBackground": "#7d792e",
+        "titleBar.inactiveForeground": "#000000b3"
+    }
 }
