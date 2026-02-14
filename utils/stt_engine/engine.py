@@ -17,11 +17,12 @@ class AsyncSTTEngine:
 
     def __init__(self, audio_source: AudioSource = None, model_size="tiny.en", device="cuda", compute_type="int8",
                  on_transcript=None, on_error=None, on_status=None, processing_mode: str = "live",
-                 buffer_limit_mb: float = float('inf')):
+                 buffer_limit_mb: float = float('inf'), language=None):
         self.audio_source = audio_source
         self.model_size = model_size
         self.device = device
         self.compute_type = compute_type
+        self.language = language
         self.on_transcript = on_transcript or (lambda text: None)
         self.on_error = on_error or (lambda msg: None)
         self.on_status = on_status or (lambda msg: None)
@@ -38,6 +39,19 @@ class AsyncSTTEngine:
         """Set the audio source for the engine."""
         self.audio_source = audio_source
         logger.info("🎤 Audio source updated")
+
+    def set_language(self, language):
+        """Set the transcription language."""
+        self.language = language
+        if language == "en":
+            new_model = "tiny.en"
+        else:
+            new_model = "tiny"
+        if self.model_size != new_model:
+            self.model_size = new_model
+            self.is_initialized = False  # Force reload on next transcription
+            logger.info(f"🌐 Model changed to {new_model} for language {language}, will reload on next transcription")
+        logger.info(f"🌐 Language set to: {language}")
 
     def configure_processing(self, processing_mode: str = "live", buffer_limit_mb: float = float('inf')):
         self.processing_mode = processing_mode
@@ -77,7 +91,8 @@ class AsyncSTTEngine:
         """Stops the transcription process."""
         logger.info("⏹️ Stopping transcription engine...")
 
-        await self.audio_source.stop()
+        if self.audio_source:
+            await self.audio_source.stop()
 
         if self.processing_task:
             try:
@@ -101,6 +116,8 @@ class AsyncSTTEngine:
 
     async def _transcribe_chunk(self, audio_chunk: np.ndarray):
         """Transcribes an audio chunk using Whisper in a non-blocking way."""
+        if not self.is_initialized:
+            await self.initialize_model()
         target_samplerate = 16000
         chunk_duration = len(audio_chunk) / target_samplerate
         logger.debug(f"🔊 Processing chunk: {chunk_duration:.2f}s duration")
@@ -109,7 +126,7 @@ class AsyncSTTEngine:
             logger.debug(f"🗑️ Chunk too small ({chunk_duration:.2f}s), skipping")
             return
 
-        segments, _ = await asyncio.to_thread(self.whisper_model.transcribe, audio_chunk, beam_size=5)
+        segments, _ = await asyncio.to_thread(self.whisper_model.transcribe, audio_chunk, beam_size=5, language=self.language)
         text = "".join(s.text for s in segments)
 
         if text.strip():

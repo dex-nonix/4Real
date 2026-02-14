@@ -85,11 +85,34 @@ class MainWindow(QMainWindow):
         mode_layout.addWidget(self.mode_combo)
         self.layout.addLayout(mode_layout)
 
+        lang_layout = QHBoxLayout()
+        self.lang_combo = QComboBox()
+        languages = [
+            ("Auto", None),
+            ("English", "en"),
+            ("Spanish", "es"),
+            ("French", "fr"),
+            ("German", "de"),
+            ("Italian", "it"),
+            ("Portuguese", "pt"),
+            ("Russian", "ru"),
+            ("Chinese", "zh"),
+            ("Japanese", "ja"),
+            ("Korean", "ko"),
+        ]
+        for label, code in languages:
+            self.lang_combo.addItem(label, code)
+        lang_layout.addWidget(QLabel("Language:"))
+        lang_layout.addWidget(self.lang_combo)
+        self.layout.addLayout(lang_layout)
+
         button_layout = QHBoxLayout()
         self.start_button = QPushButton("Start Recording")
         self.stop_button = QPushButton("Stop Recording")
+        self.reload_button = QPushButton("Reload Engine")
         button_layout.addWidget(self.start_button)
         button_layout.addWidget(self.stop_button)
+        button_layout.addWidget(self.reload_button)
         self.layout.addLayout(button_layout)
 
         self.text_area = QTextEdit()
@@ -128,6 +151,7 @@ class MainWindow(QMainWindow):
 
         self.start_button.clicked.connect(self.start_recording)
         self.stop_button.clicked.connect(self.stop_recording)
+        self.reload_button.clicked.connect(self.reload_engine)
         self.clear_button.clicked.connect(self.text_area.clear)
         self.send_button.clicked.connect(self.send_to_focused)
 
@@ -138,7 +162,8 @@ class MainWindow(QMainWindow):
         logger.info("🚀 FINISH_INIT: Starting backend initialization...")
         try:
             self.stt_engine = AsyncSTTEngine(
-                model_size="tiny.en",
+                model_size="tiny",
+                language=self.lang_combo.currentData(),
                 on_transcript=self.transcript_signal.emit,
                 on_error=self.error_signal.emit,
                 on_status=self.on_status_update
@@ -154,6 +179,9 @@ class MainWindow(QMainWindow):
             self.start_button.setEnabled(True)
             self.mic_combo.setEnabled(True)
             self.mode_combo.setEnabled(True)
+            self.lang_combo.setEnabled(True)
+            self.reload_button.setEnabled(True)
+            self.lang_combo.currentIndexChanged.connect(self.on_language_changed)
             logger.info("✅ FINISH_INIT: Backend initialized successfully.")
         except Exception as e:
             logger.error(f"❌ FATAL: Backend initialization failed: {e}")
@@ -184,6 +212,27 @@ class MainWindow(QMainWindow):
             self.status_label.setText("Stopping...")
             self.stop_button.setEnabled(False)  # Disable immediately for responsiveness
             asyncio.create_task(self.stt_engine.stop_transcription())
+
+    @qasync.asyncSlot()
+    async def reload_engine(self):
+        logger.info("🔄 Reloading STT Engine...")
+        self.status_label.setText("Reloading engine...")
+        self.start_button.setEnabled(False)
+        self.stop_button.setEnabled(False)
+        self.reload_button.setEnabled(False)
+        if self.stt_engine:
+            await self.stt_engine.stop_transcription()
+        self.stt_engine = AsyncSTTEngine(
+            model_size="tiny",
+            language=self.lang_combo.currentData(),
+            on_transcript=self.transcript_signal.emit,
+            on_error=self.error_signal.emit,
+            on_status=self.on_status_update
+        )
+        self.status_label.setText("Engine reloaded.")
+        self.start_button.setEnabled(True)
+        self.reload_button.setEnabled(True)
+        logger.info("✅ Engine reloaded successfully.")
 
     def on_status_update(self, msg):
         if msg == "Transcription started":
@@ -252,6 +301,14 @@ class MainWindow(QMainWindow):
         self.status_label.setText(f"Error: {msg}")
         self.start_button.setEnabled(True);
         self.stop_button.setEnabled(False)
+
+    def on_language_changed(self):
+        if self.stt_engine:
+            lang = self.lang_combo.currentData()
+            self.stt_engine.set_language(lang)
+            lang_label = self.lang_combo.currentText()
+            self.status_label.setText(f"Language set to: {lang_label}")
+            logger.info(f"🌐 UI: Language changed to {lang_label} ({lang})")
 
     def setup_global_listeners(self):
         try:
