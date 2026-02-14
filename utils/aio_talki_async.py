@@ -9,8 +9,18 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QH
                              QPushButton, QComboBox, QTextEdit, QCheckBox, QLabel, QSplitter, QSizePolicy)
 from pynput import keyboard
 import mouse
+import os
+import shutil
 
-from transformers import pipeline
+from transformers import pipeline, AutoTokenizer
+
+# Optional fast translator (CTranslate2). Available only if installed on the system.
+try:
+    import ctranslate2
+    HAS_CTRANSLATE2 = True
+except Exception:
+    ctranslate2 = None
+    HAS_CTRANSLATE2 = False
 
 from stt_engine import ColoredFormatter
 from stt_engine.engine import AsyncSTTEngine
@@ -45,6 +55,15 @@ def get_helsinki_model_name(src, tgt):
     if not src or not tgt:
         return None
     return f"Helsinki-NLP/opus-mt-{src}-{tgt}"
+
+
+def detect_cuda_available() -> bool:
+    """Best-effort CUDA detection: prefer torch.cuda, fallback to nvidia-smi presence."""
+    try:
+        import torch
+        return torch.cuda.is_available()
+    except Exception:
+        return shutil.which("nvidia-smi") is not None
 
 MODE_OPTIONS = [
     ("🎙️ Live Streaming", ("live", float('inf'))),
@@ -218,6 +237,11 @@ class MainWindow(QMainWindow):
 
             # Prepare translators cache (load on demand per src->tgt key)
             self.translators = {}
+            # ctranslate2 translator cache (keyed by 'src-tgt')
+            self.ctranslators = {}
+            # Feature flags
+            self._has_ctranslate2 = HAS_CTRANSLATE2
+            self._cuda_available = detect_cuda_available()
             self.status_label.setText("Setting up listeners...")
 
             self.keyboard_controller = keyboard.Controller()
@@ -405,6 +429,51 @@ class MainWindow(QMainWindow):
             logger.warning(f"No Helsinki model available for {stt_lang}->{target}")
             return text
 
+        # --- Prefer CTranslate2 on CUDA when available and preconverted model exists ---
+        if self._has_ctranslate2:
+            ct_key = f"ct2:{stt_lang}-{target}"
+            ct_entry = self.ctranslators.get(ct_key)
+            if ct_entry is None:
+                # look for common local preconverted ctranslate2 model paths
+                candidates = [
+                    os.path.join(os.getcwd(), f"faster-translator/opus-mt-{stt_lang}-{target}-ct2-int8"),
+                    os.path.join(os.getcwd(), f"faster-translator/opus-mt-{stt_lang}-{target}-ct2"),
+                    os.path.join(os.getcwd(), f"ct2_models/opus-mt-{stt_lang}-{target}"),
+                    os.path.expanduser(f"~/.cache/ctranslate2/opus-mt-{stt_lang}-{target}"),
+                ]
+                found = None
+                for p in candidates:
+                    if os.path.isdir(p):
+                        found = p
+                        break
+                if found:
+                    try:
+                        device = "cuda" if self._cuda_available else "cpu"
+                        compute_type = "float16" if device == "cuda" else "int8"
+                        ct_trans = ctranslate2.Translator(found, device=("cuda" if self._cuda_available else "cpu"), compute_type=compute_type)
+                        tokenizer = AutoTokenizer.from_pretrained(model_name)
+                        self.ctranslators[ct_key] = (ct_trans, tokenizer)
+                        ct_entry = (ct_trans, tokenizer)
+                        self.status_label.setText(f"Loaded CTranslate2 model ({'GPU' if device=='cuda' else 'CPU'})")
+                    except Exception as e:
+                        logger.error(f"Failed to load CTranslate2 model at {found}: {e}")
+
+            if ct_entry:
+                ct_trans, tokenizer = ct_entry
+                try:
+                    ids = tokenizer.encode(text, add_special_tokens=False)
+                    tokens = tokenizer.convert_ids_to_tokens(ids)
+                    results = ct_trans.translate_batch([tokens])
+                    # results[0].hypotheses[0] is a list of token strings
+                    hypo_tokens = results[0].hypotheses[0]
+                    out_ids = tokenizer.convert_tokens_to_ids(hypo_tokens)
+                    translated = tokenizer.decode(out_ids, skip_special_tokens=True)
+                    return translated
+                except Exception as e:
+                    logger.error(f"CTranslate2 translation error ({stt_lang}->{target}): {e}")
+                    # fall through to HF pipeline
+
+        # --- Fallback: Hugging Face transformers pipeline (existing behavior) ---
         key = f"{stt_lang}-{target}"
         translator = self.translators.get(key)
         if translator is None:
