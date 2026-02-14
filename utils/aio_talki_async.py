@@ -10,6 +10,12 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QH
 from pynput import keyboard
 import mouse
 
+try:
+    from transformers import pipeline
+    TRANSLATION_AVAILABLE = True
+except ImportError:
+    TRANSLATION_AVAILABLE = False
+
 from stt_engine import ColoredFormatter
 from stt_engine.engine import AsyncSTTEngine
 from stt_engine.audio_sources.microphone_source import MicrophoneSource
@@ -106,6 +112,27 @@ class MainWindow(QMainWindow):
         lang_layout.addWidget(self.lang_combo)
         self.layout.addLayout(lang_layout)
 
+        translate_layout = QHBoxLayout()
+        self.translate_combo = QComboBox()
+        translate_options = [
+            ("No Translation", None),
+            ("English", "en"),
+            ("Spanish", "es"),
+            ("French", "fr"),
+            ("German", "de"),
+            ("Italian", "it"),
+            ("Portuguese", "pt"),
+            ("Russian", "ru"),
+            ("Chinese", "zh"),
+            ("Japanese", "ja"),
+            ("Korean", "ko"),
+        ]
+        for label, code in translate_options:
+            self.translate_combo.addItem(label, code)
+        translate_layout.addWidget(QLabel("Translate to:"))
+        translate_layout.addWidget(self.translate_combo)
+        self.layout.addLayout(translate_layout)
+
         button_layout = QHBoxLayout()
         self.start_button = QPushButton("Start Recording")
         self.stop_button = QPushButton("Stop Recording")
@@ -169,6 +196,13 @@ class MainWindow(QMainWindow):
                 on_status=self.on_status_update
             )
 
+            if TRANSLATION_AVAILABLE:
+                self.translator = ctranslate2.Translator("Helsinki-NLP/opus-mt-en-de", device="cpu")
+                self.tokenizer = transformers.AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-de")
+            else:
+                self.translator = None
+                self.tokenizer = None
+
             self.keyboard_controller = keyboard.Controller()
             self.populate_microphones()
             self.setup_global_listeners()
@@ -180,6 +214,7 @@ class MainWindow(QMainWindow):
             self.mic_combo.setEnabled(True)
             self.mode_combo.setEnabled(True)
             self.lang_combo.setEnabled(True)
+            self.translate_combo.setEnabled(True)
             self.reload_button.setEnabled(True)
             self.lang_combo.currentIndexChanged.connect(self.on_language_changed)
             logger.info("✅ FINISH_INIT: Backend initialized successfully.")
@@ -257,6 +292,9 @@ class MainWindow(QMainWindow):
 
     async def _async_handle_post_actions(self, text):
         """Asynchronous handler for typing and submitting text."""
+        target_lang = self.translate_combo.currentData()
+        if target_lang:
+            text = self.translate_text(text)
         await self._type_text_directly(text)
         if self.auto_submit_checkbox.isChecked():
             # A small delay before submitting can be more reliable
@@ -309,6 +347,31 @@ class MainWindow(QMainWindow):
             lang_label = self.lang_combo.currentText()
             self.status_label.setText(f"Language set to: {lang_label}")
             logger.info(f"🌐 UI: Language changed to {lang_label} ({lang})")
+            # Update translate combo to disable the same language
+            for i in range(self.translate_combo.count()):
+                item_data = self.translate_combo.itemData(i)
+                item = self.translate_combo.model().item(i)
+                if item_data == lang:
+                    item.setEnabled(False)
+                    if self.translate_combo.currentData() == lang:
+                        self.translate_combo.setCurrentIndex(0)  # Set to No Translation
+                else:
+                    item.setEnabled(True)
+
+    def translate_text(self, text):
+        target = self.translate_combo.currentData()
+        if not self.translator or not self.tokenizer or target != "de":
+            if target and target != "de":
+                logger.warning(f"Translation to {target} not supported yet. Only German is available.")
+            return text
+        try:
+            source = self.tokenizer.convert_ids_to_tokens(self.tokenizer.encode(text))
+            results = self.translator.translate_batch([source])
+            translated = results[0].hypotheses[0]
+            return self.tokenizer.decode(self.tokenizer.convert_tokens_to_ids(translated), skip_special_tokens=True)
+        except Exception as e:
+            logger.error(f"Translation error: {e}")
+            return text
 
     def setup_global_listeners(self):
         try:
@@ -362,6 +425,9 @@ class MainWindow(QMainWindow):
     def _execute_paste_from_mouse_click(self):
         current_text = self.text_area.toPlainText()
         if current_text:
+            target_lang = self.translate_combo.currentData()
+            if target_lang:
+                current_text = self.translate_text(current_text)
             self.pending_paste_text = current_text
             self._execute_paste()
         else:
