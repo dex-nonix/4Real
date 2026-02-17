@@ -509,7 +509,21 @@ class MainWindow(QMainWindow):
                 self.global_mouse_hook_registered = True
 
         except Exception as e:
-            logger.error(f"❌ Failed to set up global listeners: {e}")
+            # Graceful fallback when global listeners (pynput/mouse) cannot be installed.
+            # Keep this non-fatal: app continues with UI-only functionality.
+            msg = (
+                "Global hotkeys/mouse hooks unavailable — continuing without global "
+                "hotkey/paste support. To enable on Linux run the app as root or grant "
+                "access to /dev/input devices."
+            )
+            logger.warning(f"⚠️ {msg} ({e})")
+            # Update UI so users/developers immediately see reduced functionality.
+            try:
+                self.paste_status_label.setText("⚠️ Global paste/hotkeys disabled (use 'Send to Focused Input')")
+                self.paste_status_label.setStyleSheet("color: orange; font-weight: bold;")
+                self.status_label.setText("Partial functionality: global hotkeys disabled")
+            except Exception:
+                pass
     
     def _mouse_button_callback(self, button, event_type):
         if event_type == 'down':
