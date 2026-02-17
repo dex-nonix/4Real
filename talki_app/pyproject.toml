@@ -24,3 +24,13 @@ dependencies = [
   "mouse"
 ]
 
+[project.scripts]
+talki-app = "talki_app.__main__:main"
+
+[tool.setuptools]
+packages = ["talki_app"]
+
+[tool.setuptools.package-dir]
+talki_app = "."
+
+
