@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "talki_app"
+version = "0.1.0"
+description = "UI-first Talki app (bundles STT engine internally)."
+readme = "README.md"
+authors = [{name = "You"}]
+dependencies = [
+  "numpy",
+  "colorama",
+  "sounddevice",
+  "librosa",
+  "faster-whisper",
+  "torch",
+  "transformers",
+  "tokenizers",
+  "ctranslate2",
+  "PyQt6",
+  "qasync",
+  "pynput",
+  "mouse"
+]
